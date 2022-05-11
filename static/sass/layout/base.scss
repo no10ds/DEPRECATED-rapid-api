@@ -1,0 +1,54 @@
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: inherit;
+}
+
+html {
+    box-sizing: border-box;
+    font-size: 62.5%;
+}
+
+body {
+    font-family: 'Open Sans', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    color: var(--dark-grey-2);
+
+    background-image: linear-gradient(to right bottom, var(--light-pink), var(--dark-pink));
+    background-size: cover;
+    background-repeat: no-repeat;
+
+    min-height: 100vh;
+}
+
+.content {
+    display: grid;
+    grid-template-rows: [header-start] 20vh [header-end content-start] 30vh min-content [content-end];
+    grid-template-columns: [full-start] minmax(6rem, 1fr) [center-start]
+    repeat(8, [col-start] minmax(min-content, 14rem) [col-end])
+    [center-end] minmax(6rem, 1fr) [full-end];
+
+    &_body {
+        font-size: 1.6rem;
+
+        border-radius: 1rem;
+        grid-row-start: content-start;
+        grid-row-end: content-end;
+        grid-column-start: center-start;
+        grid-column-end: center-end;
+
+        display: grid;
+        background-color: var(--light-grey-1);
+        text-align: center;
+
+        grid-template-rows: minmax(5rem, 1fr) minmax(5rem, 0.5fr);
+    }
+
+    &_header {
+        padding: 3rem;
+        align-self: start;
+    }
+}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rAPId - Upload</title>
+    <link href="static/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="content">
+        <form class="form--logout" action="/logout" method="get">
+            <button class="btn btn--secondary btn--medium">Log out</button>
+        </form>
+        <form class="form">
+            <div class="form_body">
+                <div class="form-select">
+                    <label class="form-select_label">Upload</label>
+                    <label class="form_helper-text" for="dataset">Step 1: Choose the dataset you want to upload your file to:</label>
+                    <select class="form-select_dropdown" id="dataset">
+                        {% for dataset in datasets %}
+                        <option value="{{dataset}}">{{ dataset }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-input">
+                    <label class="form_helper-text">Step 2: Choose a file that corresponds to this dataset:</label>
+                    <label class="form-input_label btn btn--secondary" for="file">Choose file</label>
+                    <label class="form-input_filename" id="filename">No file selected</label>
+                    <input class="form-input_file" name="file" id="file" type="file">
+                </div>
+            </div>
+            <div class="form_submit">
+                <label class="form_helper-text" id="upload-dataset">Step 3: Hit "Upload dataset" button and the data will be uploaded to {{ datasets[0] }}</label>
+                <button class="btn" type="button" onclick="uploadDataset()">Upload dataset</button>
+                <label class="response-msg" id="response-title"></label>
+                <label class="response-msg" id="response"></label>
+            </div>
+        </form>
+    </div>
+    {% block javascript %}
+    <script type="text/javascript">
+        {% include "./js/upload.js" %}
+    </script>
+    {% endblock %}
+</body>
+</html>

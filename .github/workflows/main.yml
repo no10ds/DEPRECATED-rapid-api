@@ -1,0 +1,75 @@
+name: rAPId Deployment
+
+on:
+  push:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Log commit SHA
+        run: echo $GITHUB_SHA
+
+      - name: Export env vars
+        run:
+          cp ./.github/.github.env .env
+
+      - name: Export AWS_ACCOUNT
+        run:
+          echo AWS_ACCOUNT=${{ secrets.AWS_ACCOUNT }} >> .env
+
+      - name: Export AWS_REGION
+        run:
+          echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
+
+      - name: Build Image
+        run: make create-runtime-env
+
+      - name: Security Checks
+        run: make security
+
+      - name: Static Analysis
+        run: make lint
+
+      - name: Run Tests
+        run: make test-coverage
+
+      - name: Tag and Upload
+        run: make tag-and-upload
+
+      - name: Check image scan for vulnerabitities
+        run: make scan-for-vulns-and-tag
+
+      - name: Tag PROD candidate
+        run: make tag-prod-candidate
+
+      - name: Deploy new image to Prod
+        run: make app-live-in-prod
+
+      # Prevent check-app-is-running below to time out by adding extra time
+      - name: Allow time for the application to start
+        run: sleep 120
+
+      - name: Wait for application to be running
+        id: await-running-app
+        run: make check-app-is-running
+
+      # TODO: Run these manually for the moment
+      # - name: Run journey tests
+      #   id: journey-tests
+      #   run: make test-e2e
+
+      - name: Tag image as failure
+        if: always() && steps.await-running-app.conclusion == 'failure' || steps.journey-tests.conclusion == 'failure'
+        run: make tag-prod-failure
+
+      - name: Clean Docker context
+        if: always()
+        run: make clean-pipeline-docker-context
