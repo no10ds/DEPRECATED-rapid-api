@@ -1,6 +1,9 @@
 # Project rAPId
 ![Deployment Pipeline](https://github.com/no10ds/rapid-api/actions/workflows/main.yml/badge.svg)
 
+
+<img src="./logo.png" display=block margin-left= auto margin-right=auto width=80%;/>
+
 ⚠️ This is an MVP, feedback is welcome!
 
 # Product Vision 🔭
