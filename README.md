@@ -27,7 +27,7 @@ ingest and share named, standardised datasets.
 
 Please reach out to us on [slack](https://ukgovernmentdigital.slack.com/archives/C03E5GV2LQM) if you would like the rAPId team to deploy and manage a rAPId instance on your behalf.
 
-Or you can consult the [Infrastructure Repo](https://github.com/Project-rAPId/rapid-infrastructure) for guidance on how to spin up an instance yourself.
+Or you can consult the [Infrastructure Repo](https://github.com/no10ds/rapid-infrastructure) for guidance on how to spin up an instance yourself.
 
 # Using the rAPId service 🙋
 

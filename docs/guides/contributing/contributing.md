@@ -7,7 +7,7 @@ Familiarise yourself with the following documentation:
 1. [Developer usage guide](dev-usage.md)
 2. [Application context](application_context.md)
 3. [ADRs](../../architecture/adr/)
-4. [Infrastructure guides](https://github.com/Project-rAPId/rapid-infrastructure)
+4. [Infrastructure guides](https://github.com/no10ds/rapid-infrastructure)
 5. [Application limitations](application_limitations.md)
 5. [Future improvements](improvements.md)
 
@@ -189,7 +189,7 @@ Removing extra semicolon causing the config validation to fail
 
 ## Deployment and Infrastructure 🚀
 
-Service infrastructure is stored in a [separate repository](https://github.com/Project-rAPId/rapid-infrastructure).
+Service infrastructure is stored in a [separate repository](https://github.com/no10ds/rapid-infrastructure).
 
 See README and docs in that repository for more details
 
