@@ -135,7 +135,7 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
         payload = {
             "grant_type": "client_credentials",
             "client_id": self.cognito_client_id,
-            "scope": f"https://{DOMAIN_NAME}/READ_ALL https://{DOMAIN_NAME}/WRITE_ALL https://{DOMAIN_NAME}/DELETE_ALL",
+            "scope": f"https://{DOMAIN_NAME}/READ_ALL https://{DOMAIN_NAME}/WRITE_ALL",
         }
 
         response = requests.post(

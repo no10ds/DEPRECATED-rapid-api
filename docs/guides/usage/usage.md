@@ -565,7 +565,7 @@ When a valid file in the domain/dataset is deleted success message will be displ
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `DELETE` scope, e.g.: `DELETE_ALL`, `DELETE_PUBLIC`, `DELETE_SENSITIVE`
+a `WRITE` scope, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_SENSITIVE`
 
 ### Examples
 

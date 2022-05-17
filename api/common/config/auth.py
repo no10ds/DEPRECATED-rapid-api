@@ -52,7 +52,6 @@ def construct_user_auth_url(client_id: str):
 class Action(BaseEnum):
     READ = "READ"
     WRITE = "WRITE"
-    DELETE = "DELETE"
     ADD_CLIENT = "ADD_CLIENT"
     ADD_SCHEMA = "ADD_SCHEMA"
 
