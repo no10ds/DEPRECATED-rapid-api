@@ -16,7 +16,9 @@ class ClientRequest(BaseModel):
         We restrict further beyond Cognito limits:
         https://docs.aws.amazon.com/cognito/latest/developerguide/limits.html
         """
-        if self.client_name is not None and re.fullmatch("[a-zA-Z][a-zA-Z0-9@._-]{2,127}", self.client_name):
+        if self.client_name is not None and re.fullmatch(
+            "[a-zA-Z][a-zA-Z0-9@._-]{2,127}", self.client_name
+        ):
             return self.client_name
         raise UserError("Invalid client name provided")
 

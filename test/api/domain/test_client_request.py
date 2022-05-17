@@ -14,7 +14,7 @@ class TestClientRequest:
             "VA.li_d@na-mE",
             "A....",
             "S1234",
-        ]
+        ],
     )
     def test_get_validated_client_name(self, provided_client_name):
         request = ClientRequest(client_name=provided_client_name)
@@ -37,8 +37,8 @@ class TestClientRequest:
             "1234",
             "....",
             "A" * 2,
-            "A" * 129
-        ]
+            "A" * 129,
+        ],
     )
     def test_raises_error_when_invalid_client_name(self, provided_client_name):
         request = ClientRequest(client_name=provided_client_name)

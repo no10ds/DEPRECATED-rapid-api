@@ -3,7 +3,12 @@ from typing import List, Union, Any, Optional
 
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import INFERRED_UNNAMED_COLUMN_PREFIX, MAX_CUSTOM_TAG_COUNT
-from api.common.config.constants import TAG_VALUES_REGEX, TAG_KEYS_REGEX, DATE_FORMAT_REGEX, COLUMN_NAME_REGEX
+from api.common.config.constants import (
+    TAG_VALUES_REGEX,
+    TAG_KEYS_REGEX,
+    DATE_FORMAT_REGEX,
+    COLUMN_NAME_REGEX,
+)
 from api.common.custom_exceptions import SchemaError
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema
@@ -43,7 +48,12 @@ def has_non_empty_column_names(schema: Schema):
 
 
 def has_valid_inferred_column_names(schema: Schema):
-    if any((column.name.startswith(INFERRED_UNNAMED_COLUMN_PREFIX) for column in schema.columns)):
+    if any(
+        (
+            column.name.startswith(INFERRED_UNNAMED_COLUMN_PREFIX)
+            for column in schema.columns
+        )
+    ):
         raise SchemaError("You can not have empty column names")
 
 
@@ -74,10 +84,14 @@ def schema_has_valid_metadata_values(schema: Schema):
     dataset_name = schema.get_dataset()
 
     if any((char in domain_name for char in ["-"])):
-        raise SchemaError(f"The value set for domain [{domain_name}] cannot contain hyphens")
+        raise SchemaError(
+            f"The value set for domain [{domain_name}] cannot contain hyphens"
+        )
 
     if any((char in dataset_name for char in ["-"])):
-        raise SchemaError(f"The value set for dataset [{dataset_name}] cannot contain hyphens")
+        raise SchemaError(
+            f"The value set for dataset [{dataset_name}] cannot contain hyphens"
+        )
     has_valid_sensitivity_level(schema)
 
 
@@ -91,14 +105,18 @@ def schema_has_valid_tag_set(schema: Schema):
             raise SchemaError("You cannot prefix tags with `aws`")
         if not re.match(TAG_KEYS_REGEX, key):
             raise SchemaError(
-                "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters")
+                "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters"
+            )
         if not re.match(TAG_VALUES_REGEX, value):
             raise SchemaError(
-                "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters")
+                "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters"
+            )
 
 
 def has_unique_partition_indexes(schema: Schema):
-    __has_unique_value(schema.get_partition_indexes(), schema.get_partitions(), "partition indexes")
+    __has_unique_value(
+        schema.get_partition_indexes(), schema.get_partitions(), "partition indexes"
+    )
 
 
 def has_valid_partition_index_values(schema: Schema):
@@ -106,13 +124,20 @@ def has_valid_partition_index_values(schema: Schema):
         raise SchemaError("You can not a negative partition number")
     if len(schema.get_partition_indexes()) == len(schema.columns):
         raise SchemaError("At least one column should not be partitioned")
-    if any(partition >= len(schema.get_partitions()) for partition in schema.get_partition_indexes()):
-        raise SchemaError("You can not have a partition number greater than the number of partition columns")
+    if any(
+        partition >= len(schema.get_partitions())
+        for partition in schema.get_partition_indexes()
+    ):
+        raise SchemaError(
+            "You can not have a partition number greater than the number of partition columns"
+        )
 
 
 def has_only_accepted_data_types(schema: Schema):
     data_types = schema.get_data_types()
-    if any((data_type not in DataTypes.accepted_data_types() for data_type in data_types)):
+    if any(
+        (data_type not in DataTypes.accepted_data_types() for data_type in data_types)
+    ):
         raise SchemaError("You are specifying one or more unaccepted data types")
 
 
@@ -143,7 +168,9 @@ def _owner_email_is_changed(owner):
         raise SchemaError("You must change the default owner")
 
 
-def __has_unique_value(set_to_compare: List[Union[str, int]], actual_value: List[Any], field_name: str):
+def __has_unique_value(
+    set_to_compare: List[Union[str, int]], actual_value: List[Any], field_name: str
+):
     if len(set(set_to_compare)) != len(actual_value):
         raise SchemaError(f"You can not have duplicated {field_name}")
 
@@ -156,15 +183,23 @@ def __has_value_for(value: Optional[Any]) -> bool:
 
 def __has_valid_date_format(date_format: str):
     accepted_format = DATE_FORMAT_REGEX
-    accepted_date_format_codes = ['Y', 'm', 'd']
+    accepted_date_format_codes = ["Y", "m", "d"]
 
     matches_accepted_format = re.match(accepted_format, date_format)
-    duplicate_format_codes = any(date_format.count(letter) > 1 for letter in accepted_date_format_codes)
+    duplicate_format_codes = any(
+        date_format.count(letter) > 1 for letter in accepted_date_format_codes
+    )
 
     if duplicate_format_codes or not matches_accepted_format:
-        raise SchemaError(f"You must specify a valid data format. [{date_format}] is not accepted")
+        raise SchemaError(
+            f"You must specify a valid data format. [{date_format}] is not accepted"
+        )
 
 
 def __has_punctuation_or_only_one_type_of_character(col_name: str) -> bool:
-    if re.findall(COLUMN_NAME_REGEX, col_name) or re.match("\\d+", col_name) or re.match("_+", col_name):
+    if (
+        re.findall(COLUMN_NAME_REGEX, col_name)
+        or re.match("\\d+", col_name)
+        or re.match("_+", col_name)
+    ):
         return True

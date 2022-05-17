@@ -23,4 +23,4 @@ class DeleteService:
 
     def _validate_filename(self, filename: str):
         if not re.match(FILENAME_WITH_TIMESTAMP_REGEX, filename):
-            raise UserError(f'Invalid file name [{filename}]')
+            raise UserError(f"Invalid file name [{filename}]")

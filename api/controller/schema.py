@@ -9,7 +9,11 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
 from api.common.config.auth import Action
-from api.common.custom_exceptions import AWSServiceError, CrawlerCreateFailsError, UserGroupCreationError
+from api.common.custom_exceptions import (
+    AWSServiceError,
+    CrawlerCreateFailsError,
+    UserGroupCreationError,
+)
 from api.common.logger import AppLogger
 from api.controller.utils import _response_body
 from api.domain.schema import Schema
@@ -28,18 +32,30 @@ schema_router = APIRouter(
 
 
 @schema_router.post("/{sensitivity}/{domain}/{dataset}/generate")
-async def generate_schema(sensitivity: str, domain: str, dataset: str, file: UploadFile = File(...)):
+async def generate_schema(
+    sensitivity: str, domain: str, dataset: str, file: UploadFile = File(...)
+):
     file_contents = await file.read()
-    return schema_infer_service.infer_schema(domain, dataset, sensitivity, file_contents)
+    return schema_infer_service.infer_schema(
+        domain, dataset, sensitivity, file_contents
+    )
 
 
-@schema_router.post("", status_code=http_status.HTTP_201_CREATED,
-                    dependencies=[Security(protect_endpoint, scopes=[Action.ADD_SCHEMA.value])])
+# TODO: Add an error to this if the protected domain does not exist
+
+
+@schema_router.post(
+    "",
+    status_code=http_status.HTTP_201_CREATED,
+    dependencies=[Security(protect_endpoint, scopes=[Action.ADD_SCHEMA.value])],
+)
 async def upload_schema(schema: Schema):
     try:
         schema_file_name = data_service.upload_schema(schema)
         cognito_adapter.create_user_groups(schema.get_domain(), schema.get_dataset())
-        glue_adapter.create_crawler(schema.get_domain(), schema.get_dataset(), schema.get_tags())
+        glue_adapter.create_crawler(
+            schema.get_domain(), schema.get_dataset(), schema.get_tags()
+        )
         return _response_body(schema_file_name)
     except UserGroupCreationError as error:
         _delete_uploaded_schema(schema)
@@ -49,8 +65,13 @@ async def upload_schema(schema: Schema):
         _log_and_raise_error("Failed to create crawler", error.args[0])
 
 
+# TODO: Add an error to this if the protected domain does not exist
+
+
 def _delete_uploaded_schema(schema: Schema):
-    delete_service.delete_schema(schema.get_domain(), schema.get_dataset(), schema.get_sensitivity())
+    delete_service.delete_schema(
+        schema.get_domain(), schema.get_dataset(), schema.get_sensitivity()
+    )
 
 
 def _delete_created_groups_and_schema(schema: Schema):

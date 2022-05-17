@@ -16,8 +16,11 @@ client_router = APIRouter(
 )
 
 
-@client_router.post("", status_code=http_status.HTTP_201_CREATED,
-                    dependencies=[Security(protect_endpoint, scopes=[Action.ADD_CLIENT.value])])
+@client_router.post(
+    "",
+    status_code=http_status.HTTP_201_CREATED,
+    dependencies=[Security(protect_endpoint, scopes=[Action.ADD_CLIENT.value])],
+)
 async def create_client(client_request: ClientRequest):
     client_response = client_service.create_client(client_request)
     return client_response

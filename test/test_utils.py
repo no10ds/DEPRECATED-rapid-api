@@ -12,7 +12,11 @@ def set_encoded_content(string_content: str) -> bytes:
 
 def mock_schema_response():
     body_json = {
-        "metadata": {"domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC"},
+        "metadata": {
+            "domain": "test_domain",
+            "dataset": "test_dataset",
+            "sensitivity": "PUBLIC",
+        },
         "columns": [
             {
                 "name": "colname1",
@@ -29,27 +33,27 @@ def mock_schema_response():
     return {"Body": response_body}
 
 
-def mock_list_schemas_response(domain: str = "test_domain", dataset: str = "test_dataset", sensitivity: str = "PUBLIC"):
+def mock_list_schemas_response(
+    domain: str = "test_domain",
+    dataset: str = "test_dataset",
+    sensitivity: str = "PUBLIC",
+):
     return {
-        'Contents': [
+        "Contents": [
+            {"Key": "data/schemas/"},
+            {"Key": f"data/schemas/{sensitivity}/"},
             {
-                'Key': 'data/schemas/'
+                "Key": f"data/schemas/{sensitivity}/{domain}-{dataset}.json",
             },
-            {
-                'Key': f'data/schemas/{sensitivity}/'
-            },
-            {
-                'Key': f'data/schemas/{sensitivity}/{domain}-{dataset}.json',
-            }
         ],
-        'Name': 'bucket-name',
-        'Prefix': 'data/schemas',
-        'EncodingType': 'url'
+        "Name": "bucket-name",
+        "Prefix": "data/schemas",
+        "EncodingType": "url",
     }
 
 
 def mock_protect_dataset_endpoint():
-    """ Naming is very important with dependency overrides; unfortunately we cannot just return a Mock object """
+    """Naming is very important with dependency overrides; unfortunately we cannot just return a Mock object"""
 
     def protect_dataset_endpoint():
         pass
@@ -58,7 +62,7 @@ def mock_protect_dataset_endpoint():
 
 
 def mock_protect_endpoint():
-    """ Naming is very important with dependency overrides; unfortunately we cannot just return a Mock object """
+    """Naming is very important with dependency overrides; unfortunately we cannot just return a Mock object"""
 
     def protect_endpoint():
         pass

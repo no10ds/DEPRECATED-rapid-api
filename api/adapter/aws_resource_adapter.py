@@ -11,13 +11,25 @@ from api.domain.storage_metadata import EnrichedDatasetMetaData
 
 
 class AWSResourceAdapter:
-    def __init__(self, resource_client=boto3.client("resourcegroupstaggingapi", region_name=AWS_REGION)):
+    def __init__(
+        self,
+        resource_client=boto3.client(
+            "resourcegroupstaggingapi", region_name=AWS_REGION
+        ),
+    ):
         self.__resource_client = resource_client
 
-    def get_datasets_metadata(self, query: DatasetFilterQuery = DatasetFilterQuery()) -> List[EnrichedDatasetMetaData]:
+    def get_datasets_metadata(
+        self, query: DatasetFilterQuery = DatasetFilterQuery()
+    ) -> List[EnrichedDatasetMetaData]:
         try:
-            aws_resources = self._get_resources(['glue:crawler'], query.format_resource_query())
-            return [self._to_dataset_metadata(resource) for resource in aws_resources["ResourceTagMappingList"]]
+            aws_resources = self._get_resources(
+                ["glue:crawler"], query.format_resource_query()
+            )
+            return [
+                self._to_dataset_metadata(resource)
+                for resource in aws_resources["ResourceTagMappingList"]
+            ]
         except KeyError:
             return []
         except ClientError as error:
@@ -25,20 +37,29 @@ class AWSResourceAdapter:
 
     def _handle_client_error(self, error):
         AppLogger.error(f"Failed to request datasets tags error={error.response}")
-        if error.response and error.response['Error'] and error.response['Error']['Code'] and \
-                error.response['Error']['Code'] == 'InvalidParameterException':
+        if (
+            error.response
+            and error.response["Error"]
+            and error.response["Error"]["Code"]
+            and error.response["Error"]["Code"] == "InvalidParameterException"
+        ):
             raise UserError("Wrong parameters sent to list datasets")
         else:
-            raise AWSServiceError("Internal server error, please contact system administrator")
+            raise AWSServiceError(
+                "Internal server error, please contact system administrator"
+            )
 
     def _get_resources(self, resource_types: List[str], tag_filters: List[Dict]):
         return self.__resource_client.get_resources(
-            ResourceTypeFilters=resource_types,
-            TagFilters=tag_filters
+            ResourceTypeFilters=resource_types, TagFilters=tag_filters
         )
 
-    def _to_dataset_metadata(self, resource_tag_mapping: Dict) -> EnrichedDatasetMetaData:
-        domain, dataset = self._infer_domain_and_dataset_from_crawler_arn(resource_tag_mapping["ResourceARN"])
+    def _to_dataset_metadata(
+        self, resource_tag_mapping: Dict
+    ) -> EnrichedDatasetMetaData:
+        domain, dataset = self._infer_domain_and_dataset_from_crawler_arn(
+            resource_tag_mapping["ResourceARN"]
+        )
         tags = {tag["Key"]: tag["Value"] for tag in resource_tag_mapping["Tags"]}
         return EnrichedDatasetMetaData(domain, dataset, tags)
 

@@ -14,7 +14,9 @@ for line in changelog_lines:
         parsed_lines.append(line)
 
 if not parsed_lines:
-    raise Exception("It looks like there is no release information in the changelog. Please check it.")
+    raise Exception(
+        "It looks like there is no release information in the changelog. Please check it."
+    )
 else:
-    with open("latest_release_changelog.md", 'w+') as latest_changelog:
+    with open("latest_release_changelog.md", "w+") as latest_changelog:
         latest_changelog.writelines(parsed_lines[4:])
