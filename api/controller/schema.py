@@ -47,7 +47,7 @@ async def generate_schema(
 @schema_router.post(
     "",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(protect_endpoint, scopes=[Action.ADD_SCHEMA.value])],
+    dependencies=[Security(protect_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
 async def upload_schema(schema: Schema):
     try:

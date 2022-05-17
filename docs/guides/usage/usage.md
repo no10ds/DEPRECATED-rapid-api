@@ -24,7 +24,7 @@ During upload, a data 'crawler' is started which looks at the persisted data and
 has finished running (usually around 4-5 minutes) the data can be queried.
 
 The application can be used by both human and programmatic clients (see more below)
-- When accessing the REST API as a client application, different actions require the client to have different permissions e.g.:`READ`, `WRITE`, `ADD_SCHEMA`, etc., and different dataset sensitivity level permissions e.g.: `PUBLIC`, `PRIVATE`, etc.
+- When accessing the REST API as a client application, different actions require the client to have different permissions e.g.:`READ`, `WRITE`, `DATA_ADMIN`, etc., and different dataset sensitivity level permissions e.g.: `PUBLIC`, `PRIVATE`, etc.
 - When accessing the UI as a human user, permissions are granted by user groups e.g.: `WRITE/trains/completed_journeys`
 
 ## Data upload and query flows
@@ -106,7 +106,7 @@ output of this endpoint in the Schema Upload endpoint.
 
 | Parameters    | Usage                                   | Example values               | Definition            |
 |---------------|-----------------------------------------|------------------------------|-----------------------|
-| `sensitivity` | URL parameter                           | `PUBLIC, PRIVATE, SENSITIVE` | sensitivity of the dataset |
+| `sensitivity` | URL parameter                           | `PUBLIC, PRIVATE, PROTECTED` | sensitivity of the dataset |
 | `domain`      | URL parameter                           | `land`                       | domain of the dataset |
 | `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
 | `file`        | File in form data with key value `file` | `train_journeys.csv`         | the dataset file itself |
@@ -223,7 +223,7 @@ None
 
 ### Accepted scopes
 
-In order to use this endpoint you need the `ADD_SCHEMA` scope.
+In order to use this endpoint you need the `DATA_ADMIN` scope.
 
 ## Upload dataset
 
@@ -785,8 +785,8 @@ Available choices are:
 - `WRITE_PUBLIC` - allow client to write any public dataset
 - `WRITE_PRIVATE` - allow client to write any dataset with sensitivity private and below
 - `WRITE_SENSITIVE` - allow client to write any dataset with sensitivity sensitive and below
-- `ADD_SCHEMA` - allow client to add a schema for a dataset of any sensitivity
-- `ADD_CLIENT` - allow client to add a new client
+- `DATA_ADMIN` - allow client to add a schema for a dataset of any sensitivity
+- `USER_ADMIN` - allow client to add a new client
 
 ### Outputs
 
@@ -806,7 +806,7 @@ Once the new client has been created, the following information is returned in t
 
 ### Accepted scopes
 
-In order to use this endpoint you need the `ADD_CLIENT` scope
+In order to use this endpoint you need the `USER_ADMIN` scope
 
 # UI usage
 

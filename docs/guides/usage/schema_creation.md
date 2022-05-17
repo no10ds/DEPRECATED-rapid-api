@@ -20,8 +20,9 @@ The schema will have the following structure:
   - `partition_index` (Optional) - Integer value, whether the column is a [partition](#partitions-) and its index.
   - `format` (Conditional) - String value, regular expression used to specify the format of the dates. Will only be used and required if the data_type is date.
 
+# TODO: Add docs on protected
 ### Sensitivity 😭
-The sensitivity level of a dataset can be described by one of three values: `PUBLIC`, `PRIVATE` and `SENSITIVE`.
+The sensitivity level of a dataset can be described by one of three values: `PUBLIC`, `PRIVATE` and `PROTECTED`.
 These determine the access level that different clients will have to the data depending on their permissions.
 
 ### Tags 🏷
