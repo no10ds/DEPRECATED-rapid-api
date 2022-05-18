@@ -42,7 +42,7 @@ class SchemaMetadata(BaseModel):
     @classmethod
     def from_path(cls, path: str):
         sensitivity = parse_categorisation(path, SensitivityLevel.values(), "PUBLIC")
-        domain, dataset = path.split('/')[-1].replace('.json', '').split('-')
+        domain, dataset = path.split("/")[-1].replace(".json", "").split("-")
         return cls(domain=domain, dataset=dataset, sensitivity=sensitivity)
 
     def get_custom_tags(self) -> Dict[str, str]:
@@ -71,9 +71,16 @@ class SchemaMetadatas:
 
     def find(self, domain: str, dataset: str) -> SchemaMetadata:
         try:
-            return list(filter(lambda data: data.domain == domain and data.dataset == dataset, self.metadatas))[0]
+            return list(
+                filter(
+                    lambda data: data.domain == domain and data.dataset == dataset,
+                    self.metadatas,
+                )
+            )[0]
         except IndexError:
-            raise SchemaNotFoundError(f'Schema not found for domain={domain} and dataset={dataset}')
+            raise SchemaNotFoundError(
+                f"Schema not found for domain={domain} and dataset={dataset}"
+            )
 
     @classmethod
     def empty(cls):

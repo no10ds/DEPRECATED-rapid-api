@@ -16,4 +16,5 @@ class MimeType(Enum):
         except ValueError:
             allowed_mime_types = ", ".join([str(item.value) for item in list(MimeType)])
             raise UserError(
-                f"Provided value for Accept header parameter [{mime_type}] is not supported. Supported formats: {allowed_mime_types}")
+                f"Provided value for Accept header parameter [{mime_type}] is not supported. Supported formats: {allowed_mime_types}"
+            )

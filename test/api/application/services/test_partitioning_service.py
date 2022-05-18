@@ -42,8 +42,12 @@ class TestPartitioning:
         column_dtype = "Int64"
 
         schema = Schema(
-            metadata=SchemaMetadata(domain="test_domain", dataset="test_dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="change_me", email="change_me@email.com")]),
+            metadata=SchemaMetadata(
+                domain="test_domain",
+                dataset="test_dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="change_me", email="change_me@email.com")],
+            ),
             columns=[
                 Column(
                     name="col1",
@@ -94,8 +98,12 @@ class TestPartitioning:
         column_dtype = "Int64"
 
         schema = Schema(
-            metadata=SchemaMetadata(domain="test_domain", dataset="test_dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="change_me", email="change_me@email.com")]),
+            metadata=SchemaMetadata(
+                domain="test_domain",
+                dataset="test_dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="change_me", email="change_me@email.com")],
+            ),
             columns=[
                 Column(
                     name="col1",
@@ -134,8 +142,12 @@ class TestPartitioning:
         column_dtype = "Int64"
 
         schema = Schema(
-            metadata=SchemaMetadata(domain="test_domain", dataset="test_dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="change_me", email="change_me@email.com")]),
+            metadata=SchemaMetadata(
+                domain="test_domain",
+                dataset="test_dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="change_me", email="change_me@email.com")],
+            ),
             columns=[
                 Column(
                     name="col1",

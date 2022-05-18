@@ -12,13 +12,22 @@ from api.domain.schema import Schema, SchemaMetadata, Owner, Column
 
 
 class SchemaInferService:
-
-    def infer_schema(self, domain: str, dataset: str, sensitivity: str, file_content: Union[bytes, str]) -> Schema:
+    def infer_schema(
+        self,
+        domain: str,
+        dataset: str,
+        sensitivity: str,
+        file_content: Union[bytes, str],
+    ) -> Schema:
         dataframe = self._construct_dataframe(file_content)
         schema = Schema(
-            metadata=SchemaMetadata(domain=domain, dataset=dataset, sensitivity=sensitivity,
-                                    owners=[Owner(name="change_me", email="change_me@email.com")]),
-            columns=self._infer_columns(dataframe)
+            metadata=SchemaMetadata(
+                domain=domain,
+                dataset=dataset,
+                sensitivity=sensitivity,
+                owners=[Owner(name="change_me", email="change_me@email.com")],
+            ),
+            columns=self._infer_columns(dataframe),
         )
         validate_schema(schema)
         return schema
@@ -45,7 +54,9 @@ class SchemaInferService:
     def _infer_columns(self, dataframe: pd.DataFrame) -> List[Column]:
         columns = []
         for data_column in dataframe.columns:
-            columns.append(self._infer_column(data_column, dataframe[data_column].dtype))
+            columns.append(
+                self._infer_column(data_column, dataframe[data_column].dtype)
+            )
         return columns
 
     def _infer_column(self, name: str, data_type) -> Column:
@@ -56,4 +67,5 @@ class SchemaInferService:
             partition_index=None,
             data_type=data_type_name,
             allow_null=True,
-            format=None)
+            format=None,
+        )

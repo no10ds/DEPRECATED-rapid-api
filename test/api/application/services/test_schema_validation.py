@@ -2,7 +2,10 @@ from typing import List, Any
 
 import pytest
 
-from api.application.services.schema_validation import validate_schema_for_upload, schema_has_valid_tag_set
+from api.application.services.schema_validation import (
+    validate_schema_for_upload,
+    schema_has_valid_tag_set,
+)
 from api.application.services.schema_validation import validate_schema
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import MAX_CUSTOM_TAG_COUNT
@@ -13,8 +16,12 @@ from api.domain.schema import Schema, SchemaMetadata, Column, Owner
 class TestSchemaValidation:
     def setup_method(self):
         self.valid_schema = Schema(
-            metadata=SchemaMetadata(domain="some_domain", dataset="other_dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some_domain",
+                dataset="other_dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -37,7 +44,9 @@ class TestSchemaValidation:
             ],
         )
 
-    def _assert_validate_schema_raises_error(self, invalid_schema: Schema, message_pattern: str):
+    def _assert_validate_schema_raises_error(
+        self, invalid_schema: Schema, message_pattern: str
+    ):
         with pytest.raises(SchemaError, match=message_pattern):
             validate_schema(invalid_schema)
 
@@ -49,16 +58,26 @@ class TestSchemaValidation:
 
     def test_is_invalid_schema_with_no_columns(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You need to define at least one column")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You need to define at least one column"
+        )
 
     def test_is_invalid_schema_with_domain_name_containing_hyphen(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="test-domain", dataset="dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="test-domain",
+                dataset="dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -69,13 +88,18 @@ class TestSchemaValidation:
             ],
         )
         self._assert_validate_schema_raises_error(
-            invalid_schema, r"The value set for domain \[test-domain\] cannot contain hyphens"
+            invalid_schema,
+            r"The value set for domain \[test-domain\] cannot contain hyphens",
         )
 
     def test_is_invalid_schema_with_dataset_name_containing_hyphen(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="domain", dataset="test-dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="domain",
+                dataset="test-dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -86,39 +110,60 @@ class TestSchemaValidation:
             ],
         )
         self._assert_validate_schema_raises_error(
-            invalid_schema, r"The value set for dataset \[test-dataset\] cannot contain hyphens"
+            invalid_schema,
+            r"The value set for dataset \[test-dataset\] cannot contain hyphens",
         )
 
     def test_is_invalid_schema_with_empty_column_name(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
-            columns=[Column(
-                name="",
-                partition_index=None,
-                data_type="object",
-                allow_null=False,
-            )],
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                )
+            ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not have empty column names")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not have empty column names"
+        )
 
     def test_is_invalid_schema_with_invalid_inferred_column_name_from_empty_name(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
-            columns=[Column(
-                name="unnamed_1",
-                partition_index=None,
-                data_type="object",
-                allow_null=False,
-            )],
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="unnamed_1",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                )
+            ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not have empty column names")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not have empty column names"
+        )
 
     def test_is_invalid_schema_with_duplicate_column_name(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")], ),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -134,12 +179,18 @@ class TestSchemaValidation:
                 ),
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not have duplicated column names")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not have duplicated column names"
+        )
 
     def test_is_invalid_schema_with_empty_domain(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -155,12 +206,18 @@ class TestSchemaValidation:
                 ),
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not have empty metadata values")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not have empty metadata values"
+        )
 
     def test_is_invalid_schema_with_empty_dataset(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="domain", dataset="", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="domain",
+                dataset="",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -176,12 +233,18 @@ class TestSchemaValidation:
                 ),
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not have empty metadata values")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not have empty metadata values"
+        )
 
     def test_is_invalid_schema_with_empty_sensitivity(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="domain", dataset="dataset", sensitivity="",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="domain",
+                dataset="dataset",
+                sensitivity="",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -191,7 +254,9 @@ class TestSchemaValidation:
                 )
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not have empty metadata values")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not have empty metadata values"
+        )
 
     @pytest.mark.parametrize(
         "col_name",
@@ -210,8 +275,12 @@ class TestSchemaValidation:
     )
     def test_is_invalid_schema_with_invalid_column_name(self, col_name: str):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="domain", dataset="dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="domain",
+                dataset="dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name=col_name,
@@ -221,12 +290,18 @@ class TestSchemaValidation:
                 )
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You must conform to the column heading style guide")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You must conform to the column heading style guide"
+        )
 
     def test_is_invalid_schema_with_duplicate_partition_number(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -242,12 +317,18 @@ class TestSchemaValidation:
                 ),
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not have duplicated partition indexes")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not have duplicated partition indexes"
+        )
 
     def test_is_invalid_schema_with_negative_partition_number(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="change_me", email="change_me@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="change_me", email="change_me@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -263,12 +344,20 @@ class TestSchemaValidation:
                 ),
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "You can not a negative partition number")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You can not a negative partition number"
+        )
 
-    def test_is_invalid_schema_with_partition_number_higher_than_the_number_of_partitioned_columns(self):
+    def test_is_invalid_schema_with_partition_number_higher_than_the_number_of_partitioned_columns(
+        self,
+    ):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -292,13 +381,17 @@ class TestSchemaValidation:
         )
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            "You can not have a partition number greater than the number of partition columns"
+            "You can not have a partition number greater than the number of partition columns",
         )
 
     def test_is_invalid_schema_when_all_columns_are_partitioned(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -314,7 +407,9 @@ class TestSchemaValidation:
                 ),
             ],
         )
-        self._assert_validate_schema_raises_error(invalid_schema, "At least one column should not be partitioned")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "At least one column should not be partitioned"
+        )
 
     @pytest.mark.parametrize(
         "data_type",
@@ -327,13 +422,17 @@ class TestSchemaValidation:
             "datetime",
             "timestamp",
             "something",
-            "else"
+            "else",
         ],
     )
     def test_is_invalid_schema_when_has_not_accepted_data_types(self, data_type: str):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="test_domain", dataset="test_dataset", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="test_domain",
+                dataset="test_dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -345,26 +444,31 @@ class TestSchemaValidation:
         )
 
         self._assert_validate_schema_raises_error(
-            invalid_schema,
-            "You are specifying one or more unaccepted data types"
+            invalid_schema, "You are specifying one or more unaccepted data types"
         )
 
     def test_is_invalid_when_date_type_column_does_not_define_format(self):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
                     partition_index=None,
                     data_type="date",
                     allow_null=True,
-                    format=None
+                    format=None,
                 ),
             ],
         )
 
-        self._assert_validate_schema_raises_error(invalid_schema, "You must specify all required fields")
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "You must specify all required fields"
+        )
 
     @pytest.mark.parametrize(
         "date_format",
@@ -377,27 +481,33 @@ class TestSchemaValidation:
             "%Y:%m:%d",
             "%Y%m%d",
             "something",
-            "else"
+            "else",
         ],
     )
-    def test_is_invalid_when_date_type_column_has_incorrectly_defined_format(self, date_format: str):
+    def test_is_invalid_when_date_type_column_has_incorrectly_defined_format(
+        self, date_format: str
+    ):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
                     partition_index=None,
                     data_type="date",
                     allow_null=True,
-                    format=date_format
+                    format=date_format,
                 ),
             ],
         )
 
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            rf"You must specify a valid data format. \[{date_format}\] is not accepted"
+            rf"You must specify a valid data format. \[{date_format}\] is not accepted",
         )
 
     @pytest.mark.parametrize(
@@ -417,17 +527,23 @@ class TestSchemaValidation:
             "%Y-%m-%d",
         ],
     )
-    def test_is_valid_when_date_type_column_has_correctly_defined_format(self, date_format: str):
+    def test_is_valid_when_date_type_column_has_correctly_defined_format(
+        self, date_format: str
+    ):
         valid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
                     partition_index=None,
                     data_type="date",
                     allow_null=True,
-                    format=date_format
+                    format=date_format,
                 ),
             ],
         )
@@ -441,10 +557,16 @@ class TestSchemaValidation:
         "provided_sensitivity",
         SensitivityLevel.values(),
     )
-    def test_is_valid_when_provided_sensitivity_is_supported(self, provided_sensitivity: str):
+    def test_is_valid_when_provided_sensitivity_is_supported(
+        self, provided_sensitivity: str
+    ):
         valid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity=provided_sensitivity,
-                                    owners=[Owner(name="owner", email="owner@email.com")], ),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity=provided_sensitivity,
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -467,17 +589,24 @@ class TestSchemaValidation:
             "public",
             "private",
             "sensitive",
+            "protected",
             # blatantly incorrect values
             "WRONG",
             "INCORRECT",
             "not provided",
-            "67"
+            "67",
         ],
     )
-    def test_invalid_schema_when_provided_sensitivity_is_unsupported(self, provided_sensitivity: str):
+    def test_invalid_schema_when_provided_sensitivity_is_unsupported(
+        self, provided_sensitivity: str
+    ):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity=provided_sensitivity,
-                                    owners=[Owner(name="owner", email="owner@email.com")], ),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity=provided_sensitivity,
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -490,17 +619,21 @@ class TestSchemaValidation:
 
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            r"You must specify a valid sensitivity level. Accepted values: \['PUBLIC', 'PRIVATE', 'SENSITIVE'\]"
+            r"You must specify a valid sensitivity level. Accepted values: \['PUBLIC', 'PRIVATE', 'SENSITIVE', 'PROTECTED'\]",
         )
 
     def test_valid_schema_when_all_custom_tags_are_set(self):
         tags = {f"tag_{index}": "" for index in range(MAX_CUSTOM_TAG_COUNT - 1)}
 
         valid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")],
-                                    key_value_tags=tags,
-                                    key_only_tags=["tag"]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags=tags,
+                key_only_tags=["tag"],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -517,13 +650,20 @@ class TestSchemaValidation:
             pytest.fail("Unexpected SchemaError was thrown")
 
     def test_invalid_schema_when_too_many_tags_are_specified(self):
-        key_value_tags = {f"tag_{index}": "" for index in range(MAX_CUSTOM_TAG_COUNT - 1)}
+        key_value_tags = {
+            f"tag_{index}": "" for index in range(MAX_CUSTOM_TAG_COUNT - 1)
+        }
         key_only_tags = ["tag1", "tag2"]
 
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")],
-                                    key_value_tags=key_value_tags, key_only_tags=key_only_tags),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags=key_value_tags,
+                key_only_tags=key_only_tags,
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -534,31 +674,51 @@ class TestSchemaValidation:
             ],
         )
 
-        with pytest.raises(SchemaError, match=f"You cannot specify more than {MAX_CUSTOM_TAG_COUNT} tags"):
+        with pytest.raises(
+            SchemaError,
+            match=f"You cannot specify more than {MAX_CUSTOM_TAG_COUNT} tags",
+        ):
             validate_schema_for_upload(invalid_schema)
 
     @pytest.mark.parametrize(
         "tags, message",
         [
             ({"aws:": "", "valid_tag": ""}, "You cannot prefix tags with `aws`"),
-            ({"": "", "valid_tag": ""},
-             "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters"),
-            ({"Tag/1": ""},
-             "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters"),
-            ({"T!ag+1": ""},
-             "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters"),
-            ({"====": ""},
-             "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters"),
-            ({"A" * 129: ""},
-             "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters"),
+            (
+                {"": "", "valid_tag": ""},
+                "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters",
+            ),
+            (
+                {"Tag/1": ""},
+                "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters",
+            ),
+            (
+                {"T!ag+1": ""},
+                "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters",
+            ),
+            (
+                {"====": ""},
+                "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters",
+            ),
+            (
+                {"A" * 129: ""},
+                "Tag keys can only include alphanumeric characters, underscores and hyphens between 1 and 128 characters",
+            ),
         ],
     )
-    def test_invalid_schema_when_tag_keys_are_in_wrong_format(self, tags: List[Any], message: str):
-        key_only_tags = [tag.split(":")[0].strip('\"') for tag in tags]
+    def test_invalid_schema_when_tag_keys_are_in_wrong_format(
+        self, tags: List[Any], message: str
+    ):
+        key_only_tags = [tag.split(":")[0].strip('"') for tag in tags]
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")],
-                                    key_value_tags=tags, key_only_tags=key_only_tags),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags=tags,
+                key_only_tags=key_only_tags,
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -575,21 +735,35 @@ class TestSchemaValidation:
     @pytest.mark.parametrize(
         "tags, message",
         [
-            ({"Tag1": "value/1"},
-             "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters"),
-            ({"Tag1": "v!lue+1"},
-             "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters"),
-            ({"Tag1": "===="},
-             "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters"),
-            ({"Tag1": "A" * 257},
-             "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters"),
+            (
+                {"Tag1": "value/1"},
+                "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters",
+            ),
+            (
+                {"Tag1": "v!lue+1"},
+                "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters",
+            ),
+            (
+                {"Tag1": "===="},
+                "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters",
+            ),
+            (
+                {"Tag1": "A" * 257},
+                "Tag values can only include alphanumeric characters, underscores and hyphens up to 256 characters",
+            ),
         ],
     )
-    def test_invalid_schema_when_tag_values_are_in_wrong_format(self, tags: List[Any], message: str):
+    def test_invalid_schema_when_tag_values_are_in_wrong_format(
+        self, tags: List[Any], message: str
+    ):
         invalid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")],
-                                    key_value_tags=tags),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags=tags,
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -614,11 +788,16 @@ class TestSchemaValidation:
         ],
     )
     def test_valid_schema_when_tags_are_correct(self, tags: List[Any]):
-        key_only_tags = [tag.split(":")[0].strip('\"') for tag in tags]
+        key_only_tags = [tag.split(":")[0].strip('"') for tag in tags]
         valid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")],
-                                    key_value_tags=tags, key_only_tags=key_only_tags),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags=tags,
+                key_only_tags=key_only_tags,
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -636,10 +815,14 @@ class TestSchemaValidation:
 
     def test_validate_schema_removes_duplicated_tags(self):
         valid_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=[Owner(name="owner", email="owner@email.com")],
-                                    key_value_tags={"tag1": "value-1", "Tag1": "val1", "tag2": "val2"},
-                                    key_only_tags=["Tag1", "tag2", "tag4"]),
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags={"tag1": "value-1", "Tag1": "val1", "tag2": "val2"},
+                key_only_tags=["Tag1", "tag2", "tag4"],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -651,12 +834,13 @@ class TestSchemaValidation:
         )
 
         result_dict = {
-            'domain': 'some',
-            'dataset': 'other',
-            'sensitivity': 'PUBLIC',
-            'key_value_tags': {"tag1": "value-1", "Tag1": "val1", "tag2": "val2"},
-            'key_only_tags': ["tag4"],
-            'owners': [{'name': 'owner', 'email': 'owner@email.com'}]}
+            "domain": "some",
+            "dataset": "other",
+            "sensitivity": "PUBLIC",
+            "key_value_tags": {"tag1": "value-1", "Tag1": "val1", "tag2": "val2"},
+            "key_only_tags": ["tag4"],
+            "owners": [{"name": "owner", "email": "owner@email.com"}],
+        }
 
         schema_has_valid_tag_set(valid_schema)
 
@@ -672,15 +856,23 @@ class TestSchemaValidation:
         "owners",
         [
             [Owner(name="owner", email="change_me@email.com")],
-            [Owner(name="owner", email="change_me@email.com"), Owner(name="owner2", email="owner2@email.com")],
-            [Owner(name="owner1", email="owner1@email.com"), Owner(name="owner", email="change_me@email.com")],
-
+            [
+                Owner(name="owner", email="change_me@email.com"),
+                Owner(name="owner2", email="owner2@email.com"),
+            ],
+            [
+                Owner(name="owner1", email="owner1@email.com"),
+                Owner(name="owner", email="change_me@email.com"),
+            ],
         ],
     )
-    def test_is_invalid_when_schema_for_upload_has_invalid_owners_email_address(self, owners: List[Owner]):
+    def test_is_invalid_when_schema_for_upload_has_invalid_owners_email_address(
+        self, owners: List[Owner]
+    ):
         invalid_upload_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=owners),
+            metadata=SchemaMetadata(
+                domain="some", dataset="other", sensitivity="PUBLIC", owners=owners
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -708,15 +900,13 @@ class TestSchemaValidation:
 
     @pytest.mark.parametrize(
         "owners",
-        [
-            [],
-            None
-        ],
+        [[], None],
     )
     def test_is_invalid_when_schema_for_upload_has_no_owners(self, owners: List[Owner]):
         invalid_upload_schema = Schema(
-            metadata=SchemaMetadata(domain="some", dataset="other", sensitivity="PUBLIC",
-                                    owners=owners),
+            metadata=SchemaMetadata(
+                domain="some", dataset="other", sensitivity="PUBLIC", owners=owners
+            ),
             columns=[
                 Column(
                     name="colname1",

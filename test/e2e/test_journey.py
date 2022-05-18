@@ -41,7 +41,6 @@ class BaseJourneyTest(ABC):
 
 
 class TestUnauthenticatedJourneys(BaseJourneyTest):
-
     def test_http_request_is_redirected_to_https(self):
         response = requests.get(f"https://{DOMAIN_NAME}status")
         assert f"https://{DOMAIN_NAME}" in response.url
@@ -69,7 +68,9 @@ class TestUnauthenticatedJourneys(BaseJourneyTest):
 
 class TestUnauthorisedJourney(BaseJourneyTest):
     token_url = f"https://{DOMAIN_NAME}/oauth2/token"
-    credentials = get_secret(secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET")  # pragma: allowlist secret
+    credentials = get_secret(
+        secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
+    )
     cognito_client_id = credentials["CLIENT_ID"]
     cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
 
@@ -78,7 +79,7 @@ class TestUnauthorisedJourney(BaseJourneyTest):
     def setup_class(self):
         auth = HTTPBasicAuth(self.cognito_client_id, self.cognito_client_secret)
 
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         payload = {
             "grant_type": "client_credentials",
@@ -86,12 +87,16 @@ class TestUnauthorisedJourney(BaseJourneyTest):
             "scope": f"https://{DOMAIN_NAME}/WRITE_ALL",
         }
 
-        response = requests.post(self.token_url, auth=auth, headers=headers, json=payload)
+        response = requests.post(
+            self.token_url, auth=auth, headers=headers, json=payload
+        )
 
         if response.status_code != 200:
             raise AuthenticationFailedError(f"{response.status_code}")
 
-        self.token = json.loads(response.content.decode(CONTENT_ENCODING))["access_token"]
+        self.token = json.loads(response.content.decode(CONTENT_ENCODING))[
+            "access_token"
+        ]
 
     def generate_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"}
@@ -114,7 +119,9 @@ class TestUnauthorisedJourney(BaseJourneyTest):
 
 class TestAuthenticatedJourneys(BaseJourneyTest):
     token_url = f"https://{DOMAIN_NAME}/oauth2/token"
-    credentials = get_secret(secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET")  # pragma: allowlist secret
+    credentials = get_secret(
+        secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
+    )
     cognito_client_id = credentials["CLIENT_ID"]
     cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
 
@@ -123,48 +130,59 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
     def setup_class(self):
         auth = HTTPBasicAuth(self.cognito_client_id, self.cognito_client_secret)
 
-        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         payload = {
             "grant_type": "client_credentials",
             "client_id": self.cognito_client_id,
-            "scope": f"https://{DOMAIN_NAME}/READ_ALL https://{DOMAIN_NAME}/WRITE_ALL https://{DOMAIN_NAME}/DELETE_ALL"
+            "scope": f"https://{DOMAIN_NAME}/READ_ALL https://{DOMAIN_NAME}/WRITE_ALL https://{DOMAIN_NAME}/DELETE_ALL",
         }
 
-        response = requests.post(self.token_url, auth=auth, headers=headers, json=payload)
+        response = requests.post(
+            self.token_url, auth=auth, headers=headers, json=payload
+        )
 
         if response.status_code != 200:
             raise AuthenticationFailedError(f"{response.status_code}")
 
-        self.token = json.loads(response.content.decode(CONTENT_ENCODING))["access_token"]
+        self.token = json.loads(response.content.decode(CONTENT_ENCODING))[
+            "access_token"
+        ]
 
         self.s3_client.put_object(
             Bucket=DATA_BUCKET,
             Key=f"{self.raw_data_filepath}/delete/{self.filename}",
-            Body=open("./test/e2e/" + self.filename, "rb"))
+            Body=open("./test/e2e/" + self.filename, "rb"),
+        )
 
         self.s3_client.put_object(
             Bucket=DATA_BUCKET,
             Key=f"{self.data_filepath}/delete/{self.filename}",
-            Body=open("./test/e2e/" + self.filename, "rb"))
+            Body=open("./test/e2e/" + self.filename, "rb"),
+        )
 
     def teardown_class(self):
         files = self.s3_client.list_objects_v2(
-            Bucket=DATA_BUCKET,
-            Prefix=f"{self.raw_data_filepath}/upload")
+            Bucket=DATA_BUCKET, Prefix=f"{self.raw_data_filepath}/upload"
+        )
 
-        files_to_delete = [file["Key"].rsplit('/', 1)[-1] for file in files["Contents"] if file["Key"].endswith(".csv")]
+        files_to_delete = [
+            file["Key"].rsplit("/", 1)[-1]
+            for file in files["Contents"]
+            if file["Key"].endswith(".csv")
+        ]
 
         filepaths_to_delete = []
         for filename in files_to_delete:
-            filepaths_to_delete.append({"Key": f"{self.raw_data_filepath}/upload/{filename}"})
-            filepaths_to_delete.append({"Key": f"{self.data_filepath}/upload/{filename}"})
+            filepaths_to_delete.append(
+                {"Key": f"{self.raw_data_filepath}/upload/{filename}"}
+            )
+            filepaths_to_delete.append(
+                {"Key": f"{self.data_filepath}/upload/{filename}"}
+            )
 
         self.s3_client.delete_objects(
-            Bucket=DATA_BUCKET,
-            Delete={
-                'Objects': filepaths_to_delete
-            }
+            Bucket=DATA_BUCKET, Delete={"Objects": filepaths_to_delete}
         )
 
     def generate_auth_headers(self):
@@ -182,9 +200,11 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
         assert response.status_code == 201
 
     def test_list_when_authorised(self):
-        response = requests.post(self.datasets_url,
-                                 headers=self.generate_auth_headers(),
-                                 json={"tags": {"test": "e2e"}})
+        response = requests.post(
+            self.datasets_url,
+            headers=self.generate_auth_headers(),
+            json={"tags": {"test": "e2e"}},
+        )
         assert response.status_code == 200
 
     def test_query_existing_dataset_when_authorised(self):
@@ -201,10 +221,12 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
         response = requests.post(url, headers=headers)
         assert response.status_code == 200
 
-        assert response.text == \
-               '"","year","month","case_type","region","offence_group","remand_status","value","source"\n' + \
-               '0,"2017","7","3. Committed for sentence","North West","05: Criminal damage and arson","bail","89","XHIBIT"\n' + \
-               '1,"2017","7","3. Committed for sentence","North West","04: Theft offences","unknown","167","XHIBIT"\n'
+        assert (
+            response.text
+            == '"","year","month","case_type","region","offence_group","remand_status","value","source"\n'
+            + '0,"2017","7","3. Committed for sentence","North West","05: Criminal damage and arson","bail","89","XHIBIT"\n'
+            + '1,"2017","7","3. Committed for sentence","North West","04: Theft offences","unknown","167","XHIBIT"\n'
+        )
 
     def test_get_existing_dataset_info_when_authorised(self):
         url = self.info_dataset_url(domain="test_e2e", dataset="query")
@@ -213,9 +235,7 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
 
     def test_fails_to_query_when_authorised_and_sql_injection_attempted(self):
         url = self.query_dataset_url(domain="test_e2e", dataset="query")
-        body = {
-            "filter": "';DROP TABLE test_e2e--"
-        }
+        body = {"filter": "';DROP TABLE test_e2e--"}
         response = requests.post(url, headers=(self.generate_auth_headers()), json=body)
         assert response.status_code == 403
 
@@ -227,7 +247,9 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
         response_list = json.loads(response1.text)
         assert self.filename in response_list
 
-        url2 = self.delete_data_url(domain="test_e2e", dataset="delete", filename=response_list[0])
+        url2 = self.delete_data_url(
+            domain="test_e2e", dataset="delete", filename=response_list[0]
+        )
         response2 = requests.delete(url2, headers=(self.generate_auth_headers()))
 
         assert response2.status_code == 204

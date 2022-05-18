@@ -6,7 +6,6 @@ from api.domain.validation_context import ValidationContext
 
 
 class TestValidationContext:
-
     def test_function_chain_call_with_errors(self):
         df1 = pd.DataFrame()
 

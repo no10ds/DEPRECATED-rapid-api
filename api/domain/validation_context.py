@@ -8,7 +8,12 @@ class ValidationContext:
         self._error_context: List[str] = list()
         self._df: pd.DataFrame = df
 
-    def pipe(self, function: Callable[[pd.DataFrame, ...], Tuple[pd.DataFrame, list[str]]], *args, **kwargs):
+    def pipe(
+        self,
+        function: Callable[[pd.DataFrame, ...], Tuple[pd.DataFrame, list[str]]],
+        *args,
+        **kwargs
+    ):
         result, errors = function(self._df, *args, **kwargs)
         self._error_context.extend(errors) if errors else None
         self._df = result

@@ -12,4 +12,4 @@ def clean_column_name(value: str) -> str:
     4. Lowercase the text
 
     """
-    return re.sub("[^\\w\\s\\d]+", '', value).strip().replace(' ', '_').lower()
+    return re.sub("[^\\w\\s\\d]+", "", value).strip().replace(" ", "_").lower()

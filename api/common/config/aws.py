@@ -22,4 +22,6 @@ GLUE_QUOTE_CHAR = '"'
 GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT = 18
 GLUE_TABLE_PRESENCE_CHECK_INTERVAL = 20
 
-INFERRED_UNNAMED_COLUMN_PREFIX = "unnamed_"  # Pandas infers an empty column name as "unnamed_\d"
+INFERRED_UNNAMED_COLUMN_PREFIX = (
+    "unnamed_"  # Pandas infers an empty column name as "unnamed_\d"
+)

@@ -20,7 +20,7 @@ class StorageMetaData:
         return f"{self.raw_data_location()}/{filename}"
 
     def glue_table_prefix(self):
-        return self.domain + '_'
+        return self.domain + "_"
 
     def glue_table_name(self) -> str:
         return f"{self.glue_table_prefix()}{self.dataset}"

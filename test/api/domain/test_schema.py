@@ -5,11 +5,14 @@ from api.domain.schema import Schema, SchemaMetadata, Owner, Column, SchemaMetad
 
 
 class TestSchema:
-
     def setup_method(self):
         self.schema = Schema(
-            metadata=SchemaMetadata(domain="test_domain", dataset="test_dataset", sensitivity="test_sensitivity",
-                                    owners=[Owner(name="owner", email="owner@email.com")], ),
+            metadata=SchemaMetadata(
+                domain="test_domain",
+                dataset="test_dataset",
+                sensitivity="test_sensitivity",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -69,8 +72,12 @@ class TestSchema:
 
     def test_get_query_columns(self):
         schema = Schema(
-            metadata=SchemaMetadata(domain="test_domain", dataset="test_dataset", sensitivity="test_sensitivity",
-                                    owners=[Owner(name="owner", email="owner@email.com")], ),
+            metadata=SchemaMetadata(
+                domain="test_domain",
+                dataset="test_dataset",
+                sensitivity="test_sensitivity",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
             columns=[
                 Column(
                     name="colname1",
@@ -85,7 +92,7 @@ class TestSchema:
                     data_type="date",
                     allow_null=False,
                     format="%d/%m/%Y",
-                )
+                ),
             ],
         )
 
@@ -93,7 +100,7 @@ class TestSchema:
             "max(colname1) as max_colname1",
             "min(colname1) as min_colname1",
             "max(colname2) as max_colname2",
-            "min(colname2) as min_colname2"
+            "min(colname2) as min_colname2",
         ]
 
         actual_query_columns = schema.get_statistics_query_columns()
@@ -102,7 +109,6 @@ class TestSchema:
 
 
 class TestSchemaMetadata:
-
     def test_creates_metadata_from_s3_key(self):
         key = "data/schemas/PUBLIC/hi-there.json"
         result = SchemaMetadata.from_path(key)
@@ -118,25 +124,42 @@ class TestSchemaMetadata:
             SchemaMetadata.from_path(key)
 
     def test_schema_path(self):
-        schema_metadata = SchemaMetadata(domain='DOMAIN', dataset='DATASET', sensitivity='sensitivity',
-                                         owners=[Owner(name="owner", email="owner@email.com")])
-        assert schema_metadata.schema_path() == "data/schemas/sensitivity/DOMAIN-DATASET.json"
+        schema_metadata = SchemaMetadata(
+            domain="DOMAIN",
+            dataset="DATASET",
+            sensitivity="sensitivity",
+            owners=[Owner(name="owner", email="owner@email.com")],
+        )
+        assert (
+            schema_metadata.schema_path()
+            == "data/schemas/sensitivity/DOMAIN-DATASET.json"
+        )
 
     def test_schema_name(self):
-        schema_metadata = SchemaMetadata(domain='DOMAIN', dataset='DATASET', sensitivity='sensitivity',
-                                         owners=[Owner(name="owner", email="owner@email.com")])
+        schema_metadata = SchemaMetadata(
+            domain="DOMAIN",
+            dataset="DATASET",
+            sensitivity="sensitivity",
+            owners=[Owner(name="owner", email="owner@email.com")],
+        )
         assert schema_metadata.schema_name() == "DOMAIN-DATASET.json"
 
     def test_initialises_with_default_tags_when_no_tags_provided(self):
-        result = SchemaMetadata(domain="domain", dataset="dataset", sensitivity="PUBLIC",
-                                owners=[Owner(name="owner", email="owner@email.com")])
+        result = SchemaMetadata(
+            domain="domain",
+            dataset="dataset",
+            sensitivity="PUBLIC",
+            owners=[Owner(name="owner", email="owner@email.com")],
+        )
 
         assert result.get_tags() == {"sensitivity": "PUBLIC"}
 
     def test_gets_tags(self):
-        provided_key_value_tags = {"tag1_key": "tag1_value",
-                                   "tag2_key": "tag2_value",
-                                   "tag3_key": "tag3_value"}
+        provided_key_value_tags = {
+            "tag1_key": "tag1_value",
+            "tag2_key": "tag2_value",
+            "tag3_key": "tag3_value",
+        }
         provided_key_only_tags = ["tag4_key", "tag5_key"]
 
         result = SchemaMetadata(
@@ -145,30 +168,61 @@ class TestSchemaMetadata:
             sensitivity="PUBLIC",
             owners=[Owner(name="owner", email="owner@email.com")],
             key_value_tags=provided_key_value_tags,
-            key_only_tags=provided_key_only_tags
+            key_only_tags=provided_key_only_tags,
         )
 
-        assert result.get_tags() == {**provided_key_value_tags, **dict.fromkeys(provided_key_only_tags, ""),
-                                     "sensitivity": "PUBLIC"}
+        assert result.get_tags() == {
+            **provided_key_value_tags,
+            **dict.fromkeys(provided_key_only_tags, ""),
+            "sensitivity": "PUBLIC",
+        }
 
 
 class TestSchemaMetadatas:
-
     def test_find_by_domain_and_dataset(self):
-        desired_metadata = SchemaMetadata(domain='domain2', dataset='dataset2', sensitivity='sensitivity',
-                                          owners=[Owner(name="owner", email="owner@email.com")])
-        data = SchemaMetadatas([SchemaMetadata(domain='domain1', dataset='dataset1', sensitivity='sensitivity',
-                                               owners=[Owner(name="owner", email="owner@email.com")], ),
-                                desired_metadata])
-        result = data.find(domain='domain2', dataset='dataset2')
+        desired_metadata = SchemaMetadata(
+            domain="domain2",
+            dataset="dataset2",
+            sensitivity="sensitivity",
+            owners=[Owner(name="owner", email="owner@email.com")],
+        )
+        data = SchemaMetadatas(
+            [
+                SchemaMetadata(
+                    domain="domain1",
+                    dataset="dataset1",
+                    sensitivity="sensitivity",
+                    owners=[Owner(name="owner", email="owner@email.com")],
+                ),
+                desired_metadata,
+            ]
+        )
+        result = data.find(domain="domain2", dataset="dataset2")
 
         assert result is desired_metadata
 
     def test_raises_error_if_cannot_find_schema_metadata(self):
-        data = SchemaMetadatas([SchemaMetadata(domain='domain1', dataset='dataset1', sensitivity='sensitivity',
-                                               owners=[Owner(name="owner", email="owner@email.com")], ),
-                                (SchemaMetadata(domain='domain2', dataset='dataset2', sensitivity='sensitivity',
-                                                owners=[Owner(name="owner", email="owner@email.com")], ))])
+        data = SchemaMetadatas(
+            [
+                SchemaMetadata(
+                    domain="domain1",
+                    dataset="dataset1",
+                    sensitivity="sensitivity",
+                    owners=[Owner(name="owner", email="owner@email.com")],
+                ),
+                (
+                    SchemaMetadata(
+                        domain="domain2",
+                        dataset="dataset2",
+                        sensitivity="sensitivity",
+                        owners=[Owner(name="owner", email="owner@email.com")],
+                    )
+                ),
+            ]
+        )
 
-        with pytest.raises(SchemaNotFoundError, match='Schema not found for domain=domain3 and dataset=dataset3'):
-            data.find(domain='domain3', dataset='dataset3')
+        with pytest.raises(
+            SchemaNotFoundError,
+            match="Schema not found for domain=domain3 and dataset=dataset3",
+        ):
+            data.find(domain="domain3", dataset="dataset3")
