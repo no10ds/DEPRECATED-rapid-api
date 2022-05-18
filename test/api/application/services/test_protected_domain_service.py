@@ -19,8 +19,8 @@ class TestProtectedDomainService:
 
         protected_domain_service = ProtectedDomainService(Mock())
 
-        protected_domain_service.cognito_adapter.update_resource_server_scopes = Mock()
+        protected_domain_service.cognito_adapter.add_resource_server_scopes = Mock()
         protected_domain_service.create_scopes("domain")
-        protected_domain_service.cognito_adapter.update_resource_server_scopes.assert_called_once_with(
+        protected_domain_service.cognito_adapter.add_resource_server_scopes.assert_called_once_with(
             COGNITO_USER_POOL_ID, COGNITO_RESOURCE_SERVER_ID, expected_scopes
         )

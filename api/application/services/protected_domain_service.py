@@ -13,7 +13,7 @@ class ProtectedDomainService:
 
     def create_scopes(self, domain: str):
         domain = domain.upper().strip()
-        self.cognito_adapter.update_resource_server_scopes(
+        self.cognito_adapter.add_resource_server_scopes(
             COGNITO_USER_POOL_ID,
             COGNITO_RESOURCE_SERVER_ID,
             [

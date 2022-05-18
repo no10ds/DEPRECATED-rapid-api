@@ -91,13 +91,13 @@ class CognitoAdapter(BaseAWSAdapter):
         )
         return response["ResourceServer"]
 
-    def update_resource_server_scopes(
+    def add_resource_server_scopes(
         self, user_pool_id: str, identifier: str, additional_scopes: List[dict]
     ):
         resource_server = self._get_resource_server(user_pool_id, identifier)
         resource_server["Scopes"].extend(additional_scopes)
         response = self.cognito_client.update_resource_server(**resource_server)
-        print(response)
+
         self.validate_response(
             response,
             f'The scopes "{additional_scopes}" could not be added, please contact system administrator',

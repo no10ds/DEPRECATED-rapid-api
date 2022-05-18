@@ -195,7 +195,7 @@ class TestCognitoAdapterClientMethods:
         ):
             self.cognito_adapter._get_resource_server("pool", "identifier")
 
-    def test_update_resource_server_success(self):
+    def test_add_resource_server_scopes_success(self):
         new_scope = [{"ScopeName": "new_scope", "ScopeDescription": "new_scope"}]
 
         self.cognito_boto_client.update_resource_server = Mock()
@@ -229,7 +229,7 @@ class TestCognitoAdapterClientMethods:
         self.cognito_boto_client.update_resource_server = Mock(
             return_value=mock_update_response
         )
-        self.cognito_adapter.update_resource_server_scopes(
+        self.cognito_adapter.add_resource_server_scopes(
             "user_pool", "identifier", new_scope
         )
 
@@ -237,7 +237,7 @@ class TestCognitoAdapterClientMethods:
             **mock_update_response["ResourceServer"]
         )
 
-    def test_update_resource_server_scopes_fails(self):
+    def test_add_resource_server_scopes_fails(self):
 
         self.cognito_adapter._get_resource_server = Mock(return_value={"Scopes": []})
 
@@ -250,6 +250,6 @@ class TestCognitoAdapterClientMethods:
             AWSServiceError,
             match='The scopes "scopes" could not be added, please contact system administrator',
         ):
-            self.cognito_adapter.update_resource_server_scopes(
+            self.cognito_adapter.add_resource_server_scopes(
                 "pool", "identifier", "scopes"
             )
