@@ -207,12 +207,10 @@ def _get_acceptable_sensitivity_values(dataset: str, domain: str) -> List[str]:
         implied_sensitivity_map = {
             # The levels in the values imply the levels in the key
             SensitivityLevel.PUBLIC: [
-                SensitivityLevel.SENSITIVE,
                 SensitivityLevel.PRIVATE,
                 SensitivityLevel.PUBLIC,
             ],
             SensitivityLevel.PRIVATE: [
-                SensitivityLevel.SENSITIVE,
                 SensitivityLevel.PRIVATE,
             ],
         }

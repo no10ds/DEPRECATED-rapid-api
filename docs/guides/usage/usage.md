@@ -24,7 +24,7 @@ During upload, a data 'crawler' is started which looks at the persisted data and
 has finished running (usually around 4-5 minutes) the data can be queried.
 
 The application can be used by both human and programmatic clients (see more below)
-- When accessing the REST API as a client application, different actions require the client to have different permissions e.g.:`READ`, `WRITE`, `ADD_SCHEMA`, etc., and different dataset sensitivity level permissions e.g.: `PUBLIC`, `PRIVATE`, etc.
+- When accessing the REST API as a client application, different actions require the client to have different permissions e.g.:`READ`, `WRITE`, `DATA_ADMIN`, etc., and different dataset sensitivity level permissions e.g.: `PUBLIC`, `PRIVATE`, etc.
 - When accessing the UI as a human user, permissions are granted by user groups e.g.: `WRITE/trains/completed_journeys`
 
 ## Data upload and query flows
@@ -106,7 +106,7 @@ output of this endpoint in the Schema Upload endpoint.
 
 | Parameters    | Usage                                   | Example values               | Definition            |
 |---------------|-----------------------------------------|------------------------------|-----------------------|
-| `sensitivity` | URL parameter                           | `PUBLIC, PRIVATE, SENSITIVE` | sensitivity of the dataset |
+| `sensitivity` | URL parameter                           | `PUBLIC, PRIVATE, PROTECTED` | sensitivity of the dataset |
 | `domain`      | URL parameter                           | `land`                       | domain of the dataset |
 | `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
 | `file`        | File in form data with key value `file` | `train_journeys.csv`         | the dataset file itself |
@@ -223,7 +223,7 @@ None
 
 ### Accepted scopes
 
-In order to use this endpoint you need the `ADD_SCHEMA` scope.
+In order to use this endpoint you need the `DATA_ADMIN` scope.
 
 ## Upload dataset
 
@@ -256,7 +256,7 @@ If successful returns file name with a timestamp included, e.g.:
 ### Accepted scopes
 
 In order to use this endpoint you need a relevant `WRITE` scope that matches the dataset sensitivity level,
-e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_SENSITIVE`
+e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`
 
 ### Examples
 
@@ -356,7 +356,7 @@ If no dataset exists or none that matches the query, you will get an empty respo
 ### Accepted scopes
 
 You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_SENSITIVE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
 
 ### Examples
 
@@ -494,7 +494,7 @@ Schema in json format in the response body:
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_SENSITIVE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
 
 ### Examples
 
@@ -534,7 +534,7 @@ List of raw files in json format in the response body:
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_SENSITIVE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
 
 ### Examples
 
@@ -565,7 +565,7 @@ When a valid file in the domain/dataset is deleted success message will be displ
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `DELETE` scope, e.g.: `DELETE_ALL`, `DELETE_PUBLIC`, `DELETE_SENSITIVE`
+a `WRITE` scope, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`
 
 ### Examples
 
@@ -780,13 +780,11 @@ Available choices are:
 - `READ_ALL` - allow client to read any dataset
 - `READ_PUBLIC` - allow client to read any public dataset
 - `READ_PRIVATE` - allow client to read any dataset with sensitivity private and below
-- `READ_SENSITIVE` - allow client to read any dataset with sensitivity sensitive and below
 - `WRITE_ALL` - allow client to write any dataset
 - `WRITE_PUBLIC` - allow client to write any public dataset
 - `WRITE_PRIVATE` - allow client to write any dataset with sensitivity private and below
-- `WRITE_SENSITIVE` - allow client to write any dataset with sensitivity sensitive and below
-- `ADD_SCHEMA` - allow client to add a schema for a dataset of any sensitivity
-- `ADD_CLIENT` - allow client to add a new client
+- `DATA_ADMIN` - allow client to add a schema for a dataset of any sensitivity
+- `USER_ADMIN` - allow client to add a new client
 
 ### Outputs
 
@@ -806,7 +804,7 @@ Once the new client has been created, the following information is returned in t
 
 ### Accepted scopes
 
-In order to use this endpoint you need the `ADD_CLIENT` scope
+In order to use this endpoint you need the `USER_ADMIN` scope
 
 # UI usage
 

@@ -20,8 +20,7 @@ protected_domain_router = APIRouter(
 @protected_domain_router.post(
     "/{domain}",
     status_code=http_status.HTTP_201_CREATED,
-    # TODO: Make the action a DATA_ADMIN one rather than just ADD_SCHEMA
-    dependencies=[Security(protect_endpoint, scopes=[Action.ADD_SCHEMA.value])],
+    dependencies=[Security(protect_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
 async def create_protected_domain(domain: str):
     await protected_domain_service.create_scopes(domain)

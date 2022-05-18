@@ -588,7 +588,6 @@ class TestSchemaValidation:
             # lowercase versions of accepted values
             "public",
             "private",
-            "sensitive",
             "protected",
             # blatantly incorrect values
             "WRONG",
@@ -619,7 +618,7 @@ class TestSchemaValidation:
 
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            r"You must specify a valid sensitivity level. Accepted values: \['PUBLIC', 'PRIVATE', 'SENSITIVE', 'PROTECTED'\]",
+            r"You must specify a valid sensitivity level. Accepted values: \['PUBLIC', 'PRIVATE', 'PROTECTED'\]",
         )
 
     def test_valid_schema_when_all_custom_tags_are_set(self):

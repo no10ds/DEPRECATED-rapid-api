@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Datasets have an associated sensitivity level. Current values are one of `PUBLIC`, `PRIVATE` or `SENSITIVE`.
+Datasets have an associated sensitivity level. Current values are one of `PUBLIC`, `PRIVATE` or `PROTECTED`.
 
 We needed a mechanism for tying the sensitivity level to the dataset.
 

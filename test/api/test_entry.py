@@ -49,7 +49,7 @@ class TestUploadPage(BaseClientTest):
         mock_extract_users.return_value = [
             "WRITE/domain1/dataset1",
             "WRITE/domain2/dataset2",
-            "ADD_CLIENT",
+            "USER_ADMIN",
             "READ/domain2/dataset2",
         ]
 

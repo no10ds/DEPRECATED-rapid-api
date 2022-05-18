@@ -145,41 +145,6 @@ infrastructure which does not have the latest security patches or bug fixes.
 
 Some mechanism for alerting departments of the need to update should also be implemented
 
-## How to change the data-file deletion endpoint from DELETE to WRITE permission
-
-### Context
-
-Upon implementation of the dataset deletion endpoint it was decided that a new permission scope would be introduced,
-namely `DELETE`, beyond the existing `READ` and `WRITE`.
-
-It is, however, anticipated that this endpoint may be folded into the `WRITE` permission and the `DELETE` permission
-deprecated in this instance.
-
-### Solution
-
-It is relatively straightforward to switch to using just the `WRITE` permission.
-
-Simply change the `DELETE` scope to `WRITE` in the endpoint dependencies:
-
-```
-OLD
-... scopes=[Action.DELETE.value])
-
-NEW
-... scopes=[Action.WRITE.value])
-```
-
-If the DELETE scope is now not being used elsewhere it may need to be deleted: remove references to it in the code and
-remove the scope from the Terraform (see "Adding/Deleting scopes for client apps" in
-the [documentation](application_context.md)).
-
-### Considerations & Assumptions
-
-- A user can only be assigned to maximum 100 groups in Cognito, so it makes sense to reduce the total number of action
-  scopes.
-- By using the `WRITE` action instead, there is an implication that write implies read and granular, layered permissions
-  are no longer possible.
-
 ## Change storage data format
 
 ### Problem

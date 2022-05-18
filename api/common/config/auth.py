@@ -52,13 +52,12 @@ def construct_user_auth_url(client_id: str):
 class Action(BaseEnum):
     READ = "READ"
     WRITE = "WRITE"
-    DELETE = "DELETE"
-    ADD_CLIENT = "ADD_CLIENT"
-    ADD_SCHEMA = "ADD_SCHEMA"
+    USER_ADMIN = "USER_ADMIN"
+    DATA_ADMIN = "DATA_ADMIN"
 
     @staticmethod
     def standalone_actions() -> List:
-        return [Action.ADD_CLIENT, Action.ADD_SCHEMA]
+        return [Action.USER_ADMIN, Action.DATA_ADMIN]
 
 
 # Classifications
@@ -66,5 +65,4 @@ class Action(BaseEnum):
 class SensitivityLevel(BaseEnum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
-    SENSITIVE = "SENSITIVE"
     PROTECTED = "PROTECTED"

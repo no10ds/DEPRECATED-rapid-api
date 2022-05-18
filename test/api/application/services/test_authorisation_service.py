@@ -242,16 +242,9 @@ class TestAcceptedScopes:
                 AcceptedScopes(required=set(), optional={"WRITE_PUBLIC"}),
                 ["WRITE_PUBLIC"],
             ),
-            # DELETE endpoint
-            (
-                AcceptedScopes(
-                    required=set(), optional={"DELETE_ALL", "DELETE_PUBLIC"}
-                ),
-                ["DELETE_PUBLIC"],
-            ),
             # Standalone action endpoints
-            (AcceptedScopes(required={"ADD_CLIENT"}, optional=set()), ["ADD_CLIENT"]),
-            (AcceptedScopes(required={"ADD_SCHEMA"}, optional=set()), ["ADD_SCHEMA"]),
+            (AcceptedScopes(required={"USER_ADMIN"}, optional=set()), ["USER_ADMIN"]),
+            (AcceptedScopes(required={"DATA_ADMIN"}, optional=set()), ["DATA_ADMIN"]),
         ],
     )
     def test_scopes_satisfy_acceptable_scopes(
@@ -272,14 +265,9 @@ class TestAcceptedScopes:
                 AcceptedScopes(required=set(), optional={"WRITE_PUBLIC"}),
                 ["READ_PUBLIC", "READ_ALL"],
             ),
-            # DELETE endpoint
-            (
-                AcceptedScopes(required=set(), optional={"DELETE_PUBLIC"}),
-                ["READ_PUBLIC", "WRITE_ALL"],
-            ),
             # Standalone action endpoints
-            (AcceptedScopes(required={"ADD_CLIENT"}, optional=set()), ["READ_ALL"]),
-            (AcceptedScopes(required={"ADD_SCHEMA"}, optional=set()), ["WRITE_ALL"]),
+            (AcceptedScopes(required={"USER_ADMIN"}, optional=set()), ["READ_ALL"]),
+            (AcceptedScopes(required={"DATA_ADMIN"}, optional=set()), ["WRITE_ALL"]),
         ],
     )
     def test_scopes_do_not_satisfy_acceptable_scopes(
@@ -307,31 +295,20 @@ class TestAppPermissionsMatching:
                         "READ_ALL",
                         "READ_PUBLIC",
                         "READ_PRIVATE",
-                        "READ_SENSITIVE",
                     },
                 ),
             ),
             (
                 "domain",
                 "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["WRITE"],
-                AcceptedScopes(  # noqa: E126
-                    required=set(), optional={"WRITE_ALL", "WRITE_SENSITIVE"}
-                ),
-            ),
-            (
-                "domain",
-                "dataset",
                 SensitivityLevel.PUBLIC,
-                ["ADD_CLIENT", "READ"],
+                ["USER_ADMIN", "READ"],
                 AcceptedScopes(  # noqa: E126
-                    required={"ADD_CLIENT"},
+                    required={"USER_ADMIN"},
                     optional={
                         "READ_ALL",
                         "READ_PUBLIC",
                         "READ_PRIVATE",
-                        "READ_SENSITIVE",
                     },
                 ),
             ),
@@ -339,16 +316,14 @@ class TestAppPermissionsMatching:
                 "domain",
                 "dataset",
                 SensitivityLevel.PRIVATE,
-                ["ADD_CLIENT", "READ", "WRITE"],  # noqa: E126
+                ["USER_ADMIN", "READ", "WRITE"],  # noqa: E126
                 AcceptedScopes(  # noqa: E126
-                    required={"ADD_CLIENT"},
+                    required={"USER_ADMIN"},
                     optional={
                         "READ_ALL",
                         "WRITE_ALL",
                         "READ_PRIVATE",
                         "WRITE_PRIVATE",
-                        "READ_SENSITIVE",
-                        "WRITE_SENSITIVE",
                     },
                 ),
             ),
@@ -356,8 +331,8 @@ class TestAppPermissionsMatching:
                 None,
                 None,
                 None,
-                ["ADD_CLIENT"],
-                AcceptedScopes(required={"ADD_CLIENT"}, optional=set()),  # noqa: E126
+                ["USER_ADMIN"],
+                AcceptedScopes(required={"USER_ADMIN"}, optional=set()),  # noqa: E126
             ),
         ],
     )
@@ -383,13 +358,6 @@ class TestAppPermissionsMatching:
             # Token with correct action and sensitivity privilege
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_PUBLIC"], ["READ"]),
             ("domain", "dataset", SensitivityLevel.PRIVATE, ["READ_PRIVATE"], ["READ"]),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["READ_SENSITIVE"],
-                ["READ"],
-            ),
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["WRITE_PUBLIC"], ["WRITE"]),
             (
                 "domain",
@@ -398,80 +366,13 @@ class TestAppPermissionsMatching:
                 ["WRITE_PRIVATE"],
                 ["WRITE"],
             ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["WRITE_SENSITIVE"],
-                ["WRITE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["DELETE_PUBLIC"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["DELETE_PRIVATE"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["DELETE_SENSITIVE"],
-                ["DELETE"],
-            ),
             # Token with ALL permission
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_ALL"], ["READ"]),
             ("domain", "dataset", SensitivityLevel.PRIVATE, ["READ_ALL"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.SENSITIVE, ["READ_ALL"], ["READ"]),
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["WRITE_ALL"], ["WRITE"]),
             ("domain", "dataset", SensitivityLevel.PRIVATE, ["WRITE_ALL"], ["WRITE"]),
-            ("domain", "dataset", SensitivityLevel.SENSITIVE, ["WRITE_ALL"], ["WRITE"]),
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["DELETE_ALL"], ["DELETE"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["DELETE_ALL"], ["DELETE"]),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["DELETE_ALL"],
-                ["DELETE"],
-            ),
             # Higher sensitivity levels imply lower ones
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["READ_SENSITIVE"],
-                ["READ"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["READ_SENSITIVE"],
-                ["READ"],
-            ),
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_PRIVATE"], ["READ"]),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["WRITE_SENSITIVE"],
-                ["WRITE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["WRITE_SENSITIVE"],
-                ["WRITE"],
-            ),
             (
                 "domain",
                 "dataset",
@@ -479,30 +380,9 @@ class TestAppPermissionsMatching:
                 ["WRITE_PRIVATE"],
                 ["WRITE"],
             ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["DELETE_SENSITIVE"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["DELETE_SENSITIVE"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["DELETE_PRIVATE"],
-                ["DELETE"],
-            ),
             # Standalone scopes (no domain or dataset, different type of action)
-            (None, None, None, ["ADD_CLIENT"], ["ADD_CLIENT"]),
-            (None, None, None, ["ADD_SCHEMA"], ["ADD_SCHEMA"]),
+            (None, None, None, ["USER_ADMIN"], ["USER_ADMIN"]),
+            (None, None, None, ["DATA_ADMIN"], ["DATA_ADMIN"]),
         ],
     )
     def test_matches_permissions(
@@ -529,186 +409,20 @@ class TestAppPermissionsMatching:
             # Token does not have required action privilege
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_PUBLIC"], ["WRITE"]),
             # Token does not have required sensitivity privilege
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["READ_PUBLIC"],
-                ["READ"],
-            ),
             ("domain", "dataset", SensitivityLevel.PRIVATE, ["READ_PUBLIC"], ["READ"]),
             (
                 "domain",
                 "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["WRITE_PUBLIC"],
-                ["WRITE"],
-            ),
-            (
-                "domain",
-                "dataset",
                 SensitivityLevel.PRIVATE,
                 ["WRITE_PUBLIC"],
                 ["WRITE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["WRITE_PRIVATE"],
-                ["WRITE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["DELETE_PUBLIC"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["DELETE_PUBLIC"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["DELETE_PRIVATE"],
-                ["DELETE"],
-            ),
-            # WRITE does not imply READ at higher sensitivity level
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["WRITE_PRIVATE"],
-                ["READ"],
             ),
             # Edge combinations
             # WRITE high sensitivity does not imply READ low sensitivity
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["WRITE_SENSITIVE"],
-                ["READ"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["WRITE_SENSITIVE"],
-                ["READ"],
-            ),
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["WRITE_PRIVATE"], ["READ"]),
             # WRITE does not imply READ
             ("domain", "dataset", SensitivityLevel.PUBLIC, ["WRITE_ALL"], ["READ"]),
             ("domain", "dataset", SensitivityLevel.PRIVATE, ["WRITE_ALL"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.SENSITIVE, ["WRITE_ALL"], ["READ"]),
-            # READ or WRITE does not imply DELETE
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_ALL"], ["DELETE"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["READ_ALL"], ["DELETE"]),
-            ("domain", "dataset", SensitivityLevel.SENSITIVE, ["READ_ALL"], ["DELETE"]),
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["WRITE_ALL"], ["DELETE"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["WRITE_ALL"], ["DELETE"]),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["WRITE_ALL"],
-                ["DELETE"],
-            ),
-            # DELETE does not imply READ or WRITE
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["DELETE_ALL"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["DELETE_ALL"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.SENSITIVE, ["DELETE_ALL"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["DELETE_ALL"], ["WRITE"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["DELETE_ALL"], ["WRITE"]),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["DELETE_ALL"],
-                ["WRITE"],
-            ),
-            # DELETE does not imply READ or WRITE at a sensitivity level
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["DELETE_PUBLIC"], ["READ"]),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["DELETE_PRIVATE"],
-                ["READ"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["DELETE_SENSITIVE"],
-                ["READ"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["DELETE_PUBLIC"],
-                ["WRITE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["DELETE_PRIVATE"],
-                ["WRITE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["DELETE_SENSITIVE"],
-                ["WRITE"],
-            ),
-            # READ does not imply DELETE at a sensitivity level
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_PUBLIC"], ["DELETE"]),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["READ_PRIVATE"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["READ_SENSITIVE"],
-                ["DELETE"],
-            ),
-            # WRITE does not imply DELETE at a sensitivity level
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["WRITE_PUBLIC"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["WRITE_PRIVATE"],
-                ["DELETE"],
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.SENSITIVE,
-                ["WRITE_SENSITIVE"],
-                ["DELETE"],
-            ),
         ],
     )
     def test_denies_permissions(
@@ -739,7 +453,6 @@ class TestUserPermissionsMatching:
             # Token with correct action and sensitivity privilege
             ("domain", "dataset", ["READ/domain/dataset"], ["READ"]),
             ("domain", "dataset", ["WRITE/domain/dataset"], ["WRITE"]),
-            ("domain", "dataset", ["DELETE/domain/dataset"], ["DELETE"]),
         ],
     )
     def test_matches_permissions(
@@ -762,8 +475,6 @@ class TestUserPermissionsMatching:
             ("domain", "dataset", ["WRITE/domain/dataset"], ["READ"]),
             ("domain", "dataset", ["READ/domain1/dataset"], ["READ"]),
             ("domain", "dataset", ["WRITE/domain/dataset1"], ["WRITE"]),
-            ("domain", "dataset", ["DELETE/domain1/dataset"], ["DELETE"]),
-            ("domain", "dataset", ["DELETE/domain/dataset1"], ["DELETE"]),
         ],
     )
     def test_denies_permissions(

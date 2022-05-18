@@ -245,8 +245,8 @@ action scopes:
 
 - `READ`
 - `WRITE`
-- `ADD_SCHEMA`
-- `ADD_CLIENT`
+- `DATA_ADMIN`
+- `USER_ADMIN`
 
 For instance, if `WRITE` scope is used, that means that whoever is trying to access the endpoint needs to have any
 of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE/<domain>/<dataset>` scopes listed in their permissions or be part of

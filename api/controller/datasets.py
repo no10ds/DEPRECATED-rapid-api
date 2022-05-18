@@ -75,7 +75,7 @@ async def list_raw_files(domain: str, dataset: str):
 
 @datasets_router.delete(
     "/{domain}/{dataset}/{filename}",
-    dependencies=[Security(protect_dataset_endpoint, scopes=[Action.DELETE.value])],
+    dependencies=[Security(protect_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 async def delete_data_file(
     domain: str, dataset: str, filename: str, response: Response

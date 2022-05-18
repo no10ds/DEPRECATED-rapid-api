@@ -387,7 +387,7 @@ class TestDatasetMetadataRetrieval:
         [
             ("test_domain", "test_dataset", "PUBLIC", SensitivityLevel.PUBLIC),
             ("sample", "other", "PRIVATE", SensitivityLevel.PRIVATE),
-            ("hi", "there", "SENSITIVE", SensitivityLevel.SENSITIVE),
+            ("hi", "there", "PROTECTED", SensitivityLevel.PROTECTED),
         ],
     )
     def test_retrieves_dataset_sensitivity(
