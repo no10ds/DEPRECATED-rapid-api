@@ -174,7 +174,7 @@ class TestCognitoAdapterClientMethods:
 
         self.cognito_boto_client.describe_resource_server.return_value = mock_response
 
-        actual_response = self.cognito_adapter._get_resource_server(
+        actual_response = self.cognito_adapter.get_resource_server(
             "user_pool", "identifier"
         )
 
@@ -193,7 +193,7 @@ class TestCognitoAdapterClientMethods:
             AWSServiceError,
             match="The resource server could not be found, please contact system administrator",
         ):
-            self.cognito_adapter._get_resource_server("pool", "identifier")
+            self.cognito_adapter.get_resource_server("pool", "identifier")
 
     def test_update_resource_server_success(self):
         new_scope = [{"ScopeName": "new_scope", "ScopeDescription": "new_scope"}]
@@ -208,7 +208,7 @@ class TestCognitoAdapterClientMethods:
                 {"ScopeName": "existing_scope", "ScopeDescription": "existing_scope"},
             ],
         }
-        self.cognito_adapter._get_resource_server = Mock(
+        self.cognito_adapter.get_resource_server = Mock(
             return_value=mock_describe_response
         )
         mock_update_response = {
@@ -239,7 +239,7 @@ class TestCognitoAdapterClientMethods:
 
     def test_update_resource_server_scopes_fails(self):
 
-        self.cognito_adapter._get_resource_server = Mock(return_value={"Scopes": []})
+        self.cognito_adapter.get_resource_server = Mock(return_value={"Scopes": []})
 
         mock_response = {"ResponseMetadata": {"HTTPStatusCode": 401}}
         self.cognito_boto_client.update_resource_server = Mock(

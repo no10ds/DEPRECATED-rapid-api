@@ -81,7 +81,7 @@ class CognitoAdapter(BaseAWSAdapter):
             f"The client '{client_request.client_name}' could not be created"
         )
 
-    def _get_resource_server(self, user_pool_id: str, identifier: str):
+    def get_resource_server(self, user_pool_id: str, identifier: str):
         response = self.cognito_client.describe_resource_server(
             UserPoolId=user_pool_id, Identifier=identifier
         )
@@ -94,7 +94,7 @@ class CognitoAdapter(BaseAWSAdapter):
     def update_resource_server_scopes(
         self, user_pool_id: str, identifier: str, additional_scopes: List[dict]
     ):
-        resource_server = self._get_resource_server(user_pool_id, identifier)
+        resource_server = self.get_resource_server(user_pool_id, identifier)
         resource_server["Scopes"].extend(additional_scopes)
         response = self.cognito_client.update_resource_server(**resource_server)
         print(response)
