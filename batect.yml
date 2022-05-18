@@ -15,6 +15,7 @@ containers:
     environment:
       AWS_ACCOUNT: ${AWS_ACCOUNT}
       AWS_REGION: ${AWS_REGION}
+      AWS_DEFAULT_REGION: ${AWS_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       DATA_BUCKET: ${DATA_BUCKET}
       DOMAIN_NAME: ${DOMAIN_NAME}
@@ -23,7 +24,6 @@ containers:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
-      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-}
 
 tasks:
   runtime-environment:
