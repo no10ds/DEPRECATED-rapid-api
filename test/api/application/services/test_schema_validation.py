@@ -588,7 +588,6 @@ class TestSchemaValidation:
             # lowercase versions of accepted values
             "public",
             "private",
-            "sensitive",
             "protected",
             # blatantly incorrect values
             "WRONG",

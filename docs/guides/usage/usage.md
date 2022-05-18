@@ -256,7 +256,7 @@ If successful returns file name with a timestamp included, e.g.:
 ### Accepted scopes
 
 In order to use this endpoint you need a relevant `WRITE` scope that matches the dataset sensitivity level,
-e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_SENSITIVE`
+e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`
 
 ### Examples
 
@@ -356,7 +356,7 @@ If no dataset exists or none that matches the query, you will get an empty respo
 ### Accepted scopes
 
 You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_SENSITIVE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
 
 ### Examples
 
@@ -494,7 +494,7 @@ Schema in json format in the response body:
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_SENSITIVE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
 
 ### Examples
 
@@ -534,7 +534,7 @@ List of raw files in json format in the response body:
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_SENSITIVE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
 
 ### Examples
 
@@ -565,7 +565,7 @@ When a valid file in the domain/dataset is deleted success message will be displ
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `WRITE` scope, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_SENSITIVE`
+a `WRITE` scope, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`
 
 ### Examples
 
@@ -780,11 +780,9 @@ Available choices are:
 - `READ_ALL` - allow client to read any dataset
 - `READ_PUBLIC` - allow client to read any public dataset
 - `READ_PRIVATE` - allow client to read any dataset with sensitivity private and below
-- `READ_SENSITIVE` - allow client to read any dataset with sensitivity sensitive and below
 - `WRITE_ALL` - allow client to write any dataset
 - `WRITE_PUBLIC` - allow client to write any public dataset
 - `WRITE_PRIVATE` - allow client to write any dataset with sensitivity private and below
-- `WRITE_SENSITIVE` - allow client to write any dataset with sensitivity sensitive and below
 - `DATA_ADMIN` - allow client to add a schema for a dataset of any sensitivity
 - `USER_ADMIN` - allow client to add a new client
 
