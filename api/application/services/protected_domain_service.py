@@ -1,3 +1,6 @@
+from typing import List
+
+
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.common.config.auth import (
     COGNITO_RESOURCE_SERVER_ID,
@@ -27,3 +30,21 @@ class ProtectedDomainService:
                 },
             ],
         )
+
+    def list_domains(self) -> List[str]:
+        scopes = self.cognito_adapter.get_resource_server(
+            COGNITO_USER_POOL_ID, COGNITO_RESOURCE_SERVER_ID
+        )["Scopes"]
+
+        protected_scopes = [
+            scope["ScopeName"]
+            for scope in scopes
+            if SensitivityLevel.PROTECTED.value in scope["ScopeName"]
+        ]
+
+        protected_domains = set(
+            scope.split(SensitivityLevel.PROTECTED.value)[1].strip("_").lower()
+            for scope in protected_scopes
+        )
+
+        return sorted(list(protected_domains))
