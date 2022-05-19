@@ -33,6 +33,10 @@ RAPID_TAGS = [
         "name": "Client",
         "description": "Manage client creation.",
     },
+    {
+        "name": "Protected Domains",
+        "description": "Manage protected domains",
+    },
 ]
 
 
