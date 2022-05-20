@@ -37,6 +37,9 @@ class ProtectedDomainService:
         self.append_scopes_to_parameter(scopes)
 
     def append_scopes_to_parameter(self, additional_scopes: List[dict]):
+        """
+        This is to ensure that any user added scopes can be picked up by the terraform infrastructure
+        """
         scopes = json.loads(
             self.ssm_adapter.get_parameter(PROTECTED_DOMAIN_SCOPES_PARAMETER_NAME)
         )
