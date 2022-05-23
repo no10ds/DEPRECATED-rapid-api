@@ -76,3 +76,7 @@ class UserGroupCreationError(Exception):
 
 class UserGroupDeletionError(Exception):
     pass
+
+
+class ProtectedDomainDoesNotExistError(Exception):
+    pass

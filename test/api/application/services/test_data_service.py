@@ -5,6 +5,7 @@ import pytest
 
 from api.application.services.data_service import DataService
 from api.common.custom_exceptions import (
+    ProtectedDomainDoesNotExistError,
     SchemaNotFoundError,
     CrawlerIsNotReadyError,
     GetCrawlerError,
@@ -28,8 +29,12 @@ class TestUploadSchema:
         self.s3_adapter = Mock()
         self.crawler_adapter = Mock()
         self.query_adapter = Mock()
+        self.protected_domain_service = Mock()
         self.data_service = DataService(
-            self.s3_adapter, self.crawler_adapter, self.query_adapter
+            self.s3_adapter,
+            self.crawler_adapter,
+            self.query_adapter,
+            self.protected_domain_service,
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -64,6 +69,54 @@ class TestUploadSchema:
             "some", "other", "PUBLIC", self.valid_schema
         )
         assert result == "some-other.json"
+
+    def test_check_for_protected_domain_passes(self):
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="domain",
+                dataset="dataset",
+                sensitivity="PROTECTED",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+            ],
+        )
+        self.protected_domain_service.list_domains = Mock(
+            return_value=["domain", "other"]
+        )
+
+        result = self.data_service.check_for_protected_domain(schema)
+
+        self.protected_domain_service.list_domains.assert_called_once()
+        assert result == "domain"
+
+    def test_check_for_protected_domain_fails(self):
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="domain",
+                dataset="dataset",
+                sensitivity="PROTECTED",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+            ],
+        )
+        self.protected_domain_service.list_domains = Mock(return_value=["other"])
+
+        with pytest.raises(ProtectedDomainDoesNotExistError):
+            self.data_service.check_for_protected_domain(schema)
 
     def test_upload_schema_throws_error_when_schema_already_exists(self):
         self.s3_adapter.find_schema.return_value = self.valid_schema
@@ -101,11 +154,13 @@ class TestUploadDataset:
         self.s3_adapter = Mock()
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
+        self.protected_domain_service = Mock()
         self.filename_with_timestamp = Mock()
         self.data_service = DataService(
             self.s3_adapter,
             self.glue_adapter,
             self.query_adapter,
+            self.protected_domain_service,
             self.filename_with_timestamp,
         )
         self.valid_schema = Schema(
@@ -534,6 +589,7 @@ class TestDatasetInfoRetrieval:
         self.s3_adapter = Mock()
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
+        self.protected_domain_service = Mock()
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
@@ -564,7 +620,10 @@ class TestDatasetInfoRetrieval:
             ],
         )
         self.data_service = DataService(
-            self.s3_adapter, self.glue_adapter, self.query_adapter
+            self.s3_adapter,
+            self.glue_adapter,
+            self.query_adapter,
+            self.protected_domain_service,
         )
         self.glue_adapter.get_table_last_updated_date.return_value = (
             "2022-03-01 11:03:49+00:00"

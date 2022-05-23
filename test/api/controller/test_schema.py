@@ -11,6 +11,7 @@ from api.common.custom_exceptions import (
     ConflictError,
     CrawlerCreateFailsError,
     UserGroupCreationError,
+    ProtectedDomainDoesNotExistError,
 )
 from api.domain.schema import Schema, SchemaMetadata, Column, Owner
 from test.api.controller.controller_test_utils import BaseClientTest
@@ -159,6 +160,24 @@ class TestSchemaUpload(BaseClientTest):
 
         mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC")
         mock_create_user_groups.assert_called_once_with("some", "thing")
+
+    @patch.object(DataService, "upload_schema")
+    def test_returns_500_if_protected_domain_does_not_exist(
+        self,
+        mock_upload_schema,
+    ):
+        request_body, _ = self._generate_schema()
+
+        mock_upload_schema.side_effect = ProtectedDomainDoesNotExistError(
+            "Protected domain error"
+        )
+
+        response = self.client.post(
+            "/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {"details": "Protected domain error"}
 
     def _generate_schema(self) -> Tuple[Dict, Schema]:
         request_body = {
