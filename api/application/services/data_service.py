@@ -96,7 +96,7 @@ class DataService:
                 not in self.protected_domain_service.list_domains()
             ):
                 raise ProtectedDomainDoesNotExistError(
-                    f"The protected domain '{schema.get_domain()}' does not exist. Please create it first."
+                    f"The protected domain '{schema.get_domain()}' does not exist, please create it first."
                 )
         return schema.get_domain()
 

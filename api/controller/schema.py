@@ -13,6 +13,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerCreateFailsError,
     UserGroupCreationError,
+    ProtectedDomainDoesNotExistError,
 )
 from api.common.logger import AppLogger
 from api.controller.utils import _response_body
@@ -54,6 +55,8 @@ async def upload_schema(schema: Schema):
             schema.get_domain(), schema.get_dataset(), schema.get_tags()
         )
         return _response_body(schema_file_name)
+    except ProtectedDomainDoesNotExistError as error:
+        _log_and_raise_error("Protected domain error", error.args[0])
     except UserGroupCreationError as error:
         _delete_uploaded_schema(schema)
         _log_and_raise_error("User group creation error", error.args[0])
