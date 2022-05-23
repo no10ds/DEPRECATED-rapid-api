@@ -41,9 +41,6 @@ async def generate_schema(
     )
 
 
-# TODO: Add an error to this if the protected domain does not exist
-
-
 @schema_router.post(
     "",
     status_code=http_status.HTTP_201_CREATED,
@@ -63,9 +60,6 @@ async def upload_schema(schema: Schema):
     except CrawlerCreateFailsError as error:
         _delete_created_groups_and_schema(schema)
         _log_and_raise_error("Failed to create crawler", error.args[0])
-
-
-# TODO: Add an error to this if the protected domain does not exist
 
 
 def _delete_uploaded_schema(schema: Schema):

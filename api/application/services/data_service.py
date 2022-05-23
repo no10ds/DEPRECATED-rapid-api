@@ -7,8 +7,15 @@ from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.dataset_validation import get_validated_dataframe
 from api.application.services.partitioning_service import generate_partitioned_data
+from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
-from api.common.custom_exceptions import SchemaNotFoundError, ConflictError, UserError
+from api.common.config.auth import SensitivityLevel
+from api.common.custom_exceptions import (
+    SchemaNotFoundError,
+    ConflictError,
+    UserError,
+    ProtectedDomainDoesNotExistError,
+)
 from api.common.logger import AppLogger
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -26,12 +33,14 @@ class DataService:
         persistence_adapter=S3Adapter(),
         glue_adapter=GlueAdapter(),
         query_adapter=DatasetQuery(),
+        protected_domain_service=ProtectedDomainService(),
         filename_with_timestamp_func=filename_with_timestamp,
     ):
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
         self.query_adapter = query_adapter
         self.filename_with_timestamp = filename_with_timestamp_func
+        self.protected_domain_service = protected_domain_service
 
     def list_raw_files(self, domain: str, dataset: str) -> list[str]:
         raw_files = self.persistence_adapter.list_raw_files(domain, dataset)
@@ -74,10 +83,22 @@ class DataService:
             )
             raise ConflictError("Schema already exists")
 
+        self.check_for_protected_domain(schema)
         validate_schema_for_upload(schema)
         return self.persistence_adapter.save_schema(
             schema.get_domain(), schema.get_dataset(), schema.get_sensitivity(), schema
         )
+
+    def check_for_protected_domain(self, schema: Schema):
+        if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
+            if (
+                schema.get_domain().lower()
+                not in self.protected_domain_service.list_domains()
+            ):
+                raise ProtectedDomainDoesNotExistError(
+                    f"The protected domain '{schema.get_domain()}' does not exist. Please create it first."
+                )
+        return schema.get_domain()
 
     def get_dataset_info(self, domain: str, dataset: str) -> EnrichedSchema:
         schema = self._get_schema(domain, dataset)
