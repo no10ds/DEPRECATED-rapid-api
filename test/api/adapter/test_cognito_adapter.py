@@ -185,9 +185,11 @@ class TestCognitoAdapterClientMethods:
         assert actual_response == expected_response
 
     def test_get_resource_server_fails(self):
-        mock_response = {"ResponseMetadata": {"HTTPStatusCode": 401}}
         self.cognito_boto_client.describe_resource_server = Mock(
-            return_value=mock_response
+            side_effect=ClientError(
+                error_response={"Error": {"Code": "SomeException"}},
+                operation_name="DescribeResourceServer",
+            )
         )
         with pytest.raises(
             AWSServiceError,
@@ -241,9 +243,11 @@ class TestCognitoAdapterClientMethods:
 
         self.cognito_adapter.get_resource_server = Mock(return_value={"Scopes": []})
 
-        mock_response = {"ResponseMetadata": {"HTTPStatusCode": 401}}
         self.cognito_boto_client.update_resource_server = Mock(
-            return_value=mock_response
+            side_effect=ClientError(
+                error_response={"Error": {"Code": "SomeException"}},
+                operation_name="UpdateResourceServer",
+            )
         )
 
         with pytest.raises(

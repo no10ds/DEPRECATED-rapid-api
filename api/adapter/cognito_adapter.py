@@ -2,7 +2,6 @@ import boto3
 from botocore.exceptions import ClientError
 from typing import List
 
-from api.adapter.base_aws_adapter import BaseAWSAdapter
 from api.common.config.auth import (
     COGNITO_RESOURCE_SERVER_ID,
     COGNITO_USER_POOL_ID,
@@ -19,7 +18,7 @@ from api.common.custom_exceptions import (
 from api.domain.client import ClientRequest
 
 
-class CognitoAdapter(BaseAWSAdapter):
+class CognitoAdapter:
     def __init__(
         self, cognito_client=boto3.client("cognito-idp", region_name=AWS_REGION)
     ):
@@ -82,13 +81,15 @@ class CognitoAdapter(BaseAWSAdapter):
         )
 
     def get_resource_server(self, user_pool_id: str, identifier: str):
-        response = self.cognito_client.describe_resource_server(
-            UserPoolId=user_pool_id, Identifier=identifier
-        )
-        self.validate_response(
-            response,
-            "The resource server could not be found, please contact system administrator",
-        )
+        try:
+            response = self.cognito_client.describe_resource_server(
+                UserPoolId=user_pool_id, Identifier=identifier
+            )
+        except ClientError:
+            raise AWSServiceError(
+                "The resource server could not be found, please contact system administrator"
+            )
+
         return response["ResourceServer"]
 
     def add_resource_server_scopes(
@@ -96,9 +97,9 @@ class CognitoAdapter(BaseAWSAdapter):
     ):
         resource_server = self.get_resource_server(user_pool_id, identifier)
         resource_server["Scopes"].extend(additional_scopes)
-        response = self.cognito_client.update_resource_server(**resource_server)
-
-        self.validate_response(
-            response,
-            f'The scopes "{additional_scopes}" could not be added, please contact system administrator',
-        )
+        try:
+            self.cognito_client.update_resource_server(**resource_server)
+        except ClientError:
+            raise AWSServiceError(
+                f'The scopes "{additional_scopes}" could not be added, please contact system administrator'
+            )
