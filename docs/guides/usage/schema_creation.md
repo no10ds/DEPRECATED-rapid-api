@@ -10,7 +10,7 @@ The schema will have the following structure:
 - `metadata` - General information of the schema.
   - `domain` - String value, is the name of the domain that owns the dataset, it could be for example the name of the department that handles the data.
   - `dataset` - String value, is the name of the dataset. e.g.: "receipts" or "address".
-  - `sensitivity` - String value, is the sensitivity level of the dataset. e.g.: "PUBLIC", "PRIVATE" 
+  - `sensitivity` - String value, is the sensitivity level of the dataset. e.g.: "PUBLIC", "PRIVATE", "PROTECTED"
   - `key_value_tags` - Dictionary of string keys and values to associate to the dataset. e.g.: `{"school_level": "primary", "school_type": "private"}`
   - `key_only_tags` - List of strings of tags to associate to the dataset. e.g.: `["schooling", "benefits", "archive", "historic"]`
 - `columns` - List of columns with the schema definition, at least one column is required, each column will have:
@@ -20,10 +20,11 @@ The schema will have the following structure:
   - `partition_index` (Optional) - Integer value, whether the column is a [partition](#partitions-) and its index.
   - `format` (Conditional) - String value, regular expression used to specify the format of the dates. Will only be used and required if the data_type is date.
 
-# TODO: Add docs on protected
 ### Sensitivity 😭
 The sensitivity level of a dataset can be described by one of three values: `PUBLIC`, `PRIVATE` and `PROTECTED`.
-These determine the access level that different clients will have to the data depending on their permissions.
+These determine the access level that different clients will have to the data depending on their permissions. 
+
+Note: If you wish to use the sensitivity level `PROTECTED` then you must first create a Protected Domain for your Dataset. See the [data access docs](data_access.md)
 
 ### Tags 🏷
 You can add up to 30 custom tags to a dataset. These are in a key: value format which allow for identification and categorisation of the datasets.
