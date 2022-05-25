@@ -148,6 +148,9 @@ async def upload_data(
 async def query_dataset(
     domain: str, dataset: str, request: Request, query: Optional[SQLQuery] = SQLQuery()
 ):
+    """
+    Use this endpoint to query a dataset
+    """
     df = query_adapter.query(domain, dataset, query)
     string_df = df.astype("string")
     output_format = request.headers.get("Accept")
