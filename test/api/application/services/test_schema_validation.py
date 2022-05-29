@@ -10,7 +10,7 @@ from api.application.services.schema_validation import validate_schema
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import MAX_CUSTOM_TAG_COUNT
 from api.common.custom_exceptions import SchemaError
-from api.domain.schema import Schema, SchemaMetadata, Column, Owner
+from api.domain.schema import Schema, SchemaMetadata, Column, Owner, UpdateBehaviour
 
 
 class TestSchemaValidation:
@@ -621,6 +621,75 @@ class TestSchemaValidation:
             r"You must specify a valid sensitivity level. Accepted values: \['PUBLIC', 'PRIVATE', 'PROTECTED'\]",
         )
 
+    @pytest.mark.parametrize(
+        "provided_update_behaviour",
+        UpdateBehaviour.values(),
+    )
+    def test_is_valid_when_provided_update_behaviour_is_supported(
+        self, provided_update_behaviour: str
+    ):
+        valid_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                update_behaviour=provided_update_behaviour,
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=True,
+                ),
+            ],
+        )
+
+        try:
+            validate_schema(valid_schema)
+        except SchemaError:
+            pytest.fail("Unexpected SchemaError was thrown")
+
+    @pytest.mark.parametrize(
+        "provided_update_behaviour",
+        [
+            # lowercase versions of accepted values
+            "update",
+            "append",
+            # blatantly incorrect values
+            "WRONG",
+            "INCORRECT",
+            "not provided",
+            "67",
+        ],
+    )
+    def test_is_invalid_when_provided_update_behaviour_is_unsupported(
+        self, provided_update_behaviour: str
+    ):
+        invalid_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                update_behaviour=provided_update_behaviour,
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=True,
+                ),
+            ],
+        )
+
+        self._assert_validate_schema_raises_error(
+            invalid_schema,
+            r"You must specify a valid update behaviour. Accepted values: \['APPEND', 'OVERWRITE'\]",
+        )
+
     def test_valid_schema_when_all_custom_tags_are_set(self):
         tags = {f"tag_{index}": "" for index in range(MAX_CUSTOM_TAG_COUNT - 1)}
 
@@ -839,6 +908,7 @@ class TestSchemaValidation:
             "key_value_tags": {"tag1": "value-1", "Tag1": "val1", "tag2": "val2"},
             "key_only_tags": ["tag4"],
             "owners": [{"name": "owner", "email": "owner@email.com"}],
+            "update_behaviour": "APPEND",
         }
 
         schema_has_valid_tag_set(valid_schema)

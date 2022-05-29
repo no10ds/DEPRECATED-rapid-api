@@ -11,7 +11,7 @@ from api.common.config.constants import (
 )
 from api.common.custom_exceptions import SchemaError
 from api.domain.data_types import DataTypes
-from api.domain.schema import Schema
+from api.domain.schema import Schema, UpdateBehaviour
 
 
 def validate_schema_for_upload(schema: Schema):
@@ -93,6 +93,7 @@ def schema_has_valid_metadata_values(schema: Schema):
             f"The value set for dataset [{dataset_name}] cannot contain hyphens"
         )
     has_valid_sensitivity_level(schema)
+    has_valid_update_behaviour(schema)
 
 
 def schema_has_valid_tag_set(schema: Schema):
@@ -166,6 +167,13 @@ def schema_has_valid_data_owner(schema: Schema):
 def _owner_email_is_changed(owner):
     if owner.email == "change_me@email.com":
         raise SchemaError("You must change the default owner")
+
+
+def has_valid_update_behaviour(schema: Schema):
+    if schema.get_update_behaviour() not in UpdateBehaviour.values():
+        raise SchemaError(
+            f"You must specify a valid update behaviour. Accepted values: {UpdateBehaviour.values()}"
+        )
 
 
 def __has_unique_value(

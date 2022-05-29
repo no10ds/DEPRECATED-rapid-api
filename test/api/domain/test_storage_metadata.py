@@ -31,6 +31,6 @@ class TestStorageMetaData:
 
 
 def test_filename_with_timestamp():
-    filename = filename_with_timestamp("my_data.csv")
-    pattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}-my_data.csv"
+    filename = filename_with_timestamp("data")
+    pattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}-data"
     assert re.match(pattern, filename)

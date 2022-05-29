@@ -13,6 +13,7 @@ The schema will have the following structure:
   - `sensitivity` - String value, is the sensitivity level of the dataset. e.g.: "PUBLIC", "PRIVATE", "PROTECTED"
   - `key_value_tags` - Dictionary of string keys and values to associate to the dataset. e.g.: `{"school_level": "primary", "school_type": "private"}`
   - `key_only_tags` - List of strings of tags to associate to the dataset. e.g.: `["schooling", "benefits", "archive", "historic"]`
+  - `update_behaviour` - String value, the action to take when a new file is uploaded. e.g.: `APPEND`, `OVERWRITE`.
 - `columns` - List of columns with the schema definition, at least one column is required, each column will have:
   - `name` - String value, name of the column.
   - `data_type` - String value, this is an [accepted pandas' data type](#accepted-data-types-), will be used to validate the schema.
@@ -43,6 +44,11 @@ You must specify at least one dataset owner.
 Typically this is a point of contact if there are issues or questions surrounding the dataset.
 
 You MUST change the default values, otherwise an error will be thrown and schema upload will fail.
+
+### Update Behaviour
+The behaviour of the API when a new file is uploaded to the dataset. The possible values are:
+- `APPEND` - New files will be added to the dataset, there are no duplication checks so new data must be unique. This is the default behaviour.
+- `OVERWRITE` - Any new file will overwrite the current content. The overwrite will happen on the partitions, so if there is an old partition that is not included in the new dataset, that will not be overwritten.
 
 ### Column headings 🏛
 Column heading names should follow a strict format. The [requirements](https://docs.aws.amazon.com/glue/latest/dg/add-classifier.html) are:
