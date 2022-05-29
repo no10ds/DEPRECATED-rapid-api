@@ -13,7 +13,6 @@ See the full [changelog here](https://github.com/no10ds/rapid-api/blob/master/ch
 ### Create schema [documentation](https://github.com/no10ds/rapid-api/blob/master/docs/usage/schema_creation.md)
 
 ### ADR [documentation](https://github.com/no10ds/rapid-api/blob/master/docs/architecture/adr/0001-query-endpoint.md)
-
 """
 
 RAPID_TAGS = [

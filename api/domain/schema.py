@@ -8,12 +8,18 @@ from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import SCHEMAS_LOCATION
 from api.common.custom_exceptions import SchemaNotFoundError
 from api.common.data_parsers import parse_categorisation
+from api.common.utilities import BaseEnum
 from api.domain.data_types import DataTypes
 
 
 class Owner(BaseModel):
     name: str
     email: EmailStr
+
+
+class UpdateBehaviour(BaseEnum):
+    APPEND = "APPEND"
+    OVERWRITE = "OVERWRITE"
 
 
 class SchemaMetadata(BaseModel):
@@ -23,6 +29,7 @@ class SchemaMetadata(BaseModel):
     key_value_tags: Dict[str, str] = dict()
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
+    update_behaviour: str = UpdateBehaviour.APPEND.value
 
     def get_domain(self) -> str:
         return self.domain
@@ -53,6 +60,9 @@ class SchemaMetadata(BaseModel):
 
     def get_owners(self) -> Optional[List[Owner]]:
         return self.owners
+
+    def get_update_behaviour(self) -> str:
+        return self.update_behaviour
 
     def remove_duplicates(self):
         updated_key_only_list = []
@@ -105,7 +115,7 @@ class Schema(BaseModel):
     def get_dataset(self) -> str:
         return self.metadata.get_dataset()
 
-    def get_sensitivity(self):
+    def get_sensitivity(self) -> str:
         return self.metadata.get_sensitivity()
 
     def get_custom_tags(self) -> Dict[str, str]:
@@ -116,6 +126,9 @@ class Schema(BaseModel):
 
     def get_owners(self) -> Optional[List[Owner]]:
         return self.metadata.get_owners()
+
+    def get_update_behaviour(self) -> str:
+        return self.metadata.get_update_behaviour()
 
     def get_column_names(self) -> List[str]:
         return [column.name for column in self.columns]

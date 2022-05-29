@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Tuple
 
 import pandas as pd
 
@@ -22,7 +22,7 @@ from api.domain.enriched_schema import (
     EnrichedSchemaMetadata,
     EnrichedColumn,
 )
-from api.domain.schema import Schema
+from api.domain.schema import Schema, UpdateBehaviour
 from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import filename_with_timestamp, StorageMetaData
 
@@ -34,12 +34,10 @@ class DataService:
         glue_adapter=GlueAdapter(),
         query_adapter=DatasetQuery(),
         protected_domain_service=ProtectedDomainService(),
-        filename_with_timestamp_func=filename_with_timestamp,
     ):
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
         self.query_adapter = query_adapter
-        self.filename_with_timestamp = filename_with_timestamp_func
         self.protected_domain_service = protected_domain_service
 
     def list_raw_files(self, domain: str, dataset: str) -> list[str]:
@@ -50,6 +48,22 @@ class DataService:
             )
         else:
             return raw_files
+
+    def generate_raw_filename(self, filename: str) -> str:
+        return filename_with_timestamp(filename)
+
+    def generate_raw_and_permanent_filenames(
+        self, schema: Schema, filename: str
+    ) -> Tuple[str, str]:
+        behaviour = schema.get_update_behaviour()
+
+        raw_filename = self.generate_raw_filename(filename)
+        converter = {
+            UpdateBehaviour.APPEND.value: raw_filename,
+            UpdateBehaviour.OVERWRITE.value: f"{schema.get_domain()}.csv",
+        }
+        permanent_filename = converter[behaviour]
+        return raw_filename, permanent_filename
 
     def upload_dataset(
         self, domain: str, dataset: str, filename: str, file_contents: str
@@ -62,17 +76,19 @@ class DataService:
         else:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
             validated_dataframe = get_validated_dataframe(schema, file_contents)
-            filename_timestamp = self.filename_with_timestamp(filename)
+            raw_filname, permanent_filename = self.generate_raw_and_permanent_filenames(
+                schema, filename
+            )
             self.persistence_adapter.upload_raw_data(
                 schema.get_domain(),
                 schema.get_dataset(),
-                filename_timestamp,
+                raw_filname,
                 file_contents,
             )
-            self._upload_data(schema, validated_dataframe, filename_timestamp)
+            self._upload_data(schema, validated_dataframe, permanent_filename)
             self.glue_adapter.start_crawler(domain, dataset)
             self.glue_adapter.update_catalog_table_config(domain, dataset)
-            return filename_timestamp
+            return permanent_filename
 
     def upload_schema(self, schema: Schema) -> str:
         if self._get_schema(schema.get_domain(), schema.get_dataset()) is not None:
