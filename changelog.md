@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## v1.2.0 - _2022-05-31_
+
+See [v1.2.0] changes
+
+### Added
+- Documentation improvements
+  - OpenAPI spec includes endpoint behaviour documentation
+  - Added example scripts for programmatic interaction
+
+[v1.2.0]: https://github.com/no10ds/rapid-api/compare/v1.1.0...v1.2.0
+
 ## v1.1.0 - _2022-05-29_
 
 See [v1.1.0] changes
