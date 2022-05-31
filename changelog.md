@@ -3,9 +3,21 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased changes
+## v1.1.0 - _2022-05-29_
 
-See [Unreleased changes] changes on GitHub
+See [v1.1.0] changes
+
+### Added
+- Protected domains:
+  - Allows the separation of access permissions for specific `protected domains`
+  - See the data acccess [docs](./docs/guides/usage/data_access.md)
+  - See usage [docs](./docs/guides/usage/usage.md#domain)
+- Overwrite update behaviour:
+  - Allows datasets to be overwritten when a new file is uploaded, rather than just appended to
+  - See the schema creation [docs](./docs/guides/usage/schema_creation.md#update-behaviour)
+
+[v1.1.0]: https://github.com/no10ds/rapid-api/compare/v1.0.0...v1.1.0
+
 
 ## v1.0.0 - _2022-05-10_
 

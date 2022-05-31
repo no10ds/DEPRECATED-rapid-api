@@ -43,6 +43,7 @@ COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME = os.getenv(
     "COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME", "rapid_cognito_user_secrets"
 )
 COGNITO_REDIRECT_URI = f"https://{DOMAIN_NAME}/oauth2/success"
+PROTECTED_DOMAIN_SCOPES_PARAMETER_NAME = RESOURCE_PREFIX + "_protected_domain_scopes"
 
 
 def construct_user_auth_url(client_id: str):
@@ -61,7 +62,6 @@ class Action(BaseEnum):
 
 
 # Classifications
-# TODO: Review the naming of these
 class SensitivityLevel(BaseEnum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"

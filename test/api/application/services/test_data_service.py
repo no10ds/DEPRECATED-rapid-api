@@ -19,7 +19,7 @@ from api.domain.enriched_schema import (
     EnrichedSchemaMetadata,
     EnrichedColumn,
 )
-from api.domain.schema import Schema, SchemaMetadata, Owner, Column
+from api.domain.schema import Schema, SchemaMetadata, Owner, Column, UpdateBehaviour
 from api.domain.sql_query import SQLQuery
 from test.test_utils import set_encoded_content
 
@@ -70,7 +70,7 @@ class TestUploadSchema:
         )
         assert result == "some-other.json"
 
-    def test_check_for_protected_domain_passes(self):
+    def test_check_for_protected_domain_success(self):
         schema = Schema(
             metadata=SchemaMetadata(
                 domain="domain",
@@ -155,13 +155,11 @@ class TestUploadDataset:
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
         self.protected_domain_service = Mock()
-        self.filename_with_timestamp = Mock()
         self.data_service = DataService(
             self.s3_adapter,
             self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
-            self.filename_with_timestamp,
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -225,7 +223,9 @@ class TestUploadDataset:
         partitioned_data = [("", expected)]
         mock_partitioner.return_value = partitioned_data
 
-        self.filename_with_timestamp.return_value = "2022-03-03T12:00:00-data.csv"
+        self.data_service.generate_raw_filename = Mock(
+            return_value=("2022-03-03T12:00:00-data.csv")
+        )
 
         filename = self.data_service.upload_dataset(
             "some", "other", "data.csv", file_contents
@@ -240,7 +240,7 @@ class TestUploadDataset:
             "some", "other"
         )
 
-        self.filename_with_timestamp.assert_called_once_with("data.csv")
+        self.data_service.generate_raw_filename.assert_called_once_with("data.csv")
 
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_dataset_in_two_partitioned_files(self, mock_partitioner):
@@ -283,7 +283,9 @@ class TestUploadDataset:
         ]
         mock_partitioner.return_value = partitioned_data
 
-        self.filename_with_timestamp.return_value = "2022-03-02T12:00:00-data.csv"
+        self.data_service.generate_raw_filename = Mock(
+            return_value=("2022-03-02T12:00:00-data.csv")
+        )
 
         filename = self.data_service.upload_dataset(
             "some", "other", "data.csv", file_contents
@@ -292,6 +294,118 @@ class TestUploadDataset:
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
             "some", "other", "2022-03-02T12:00:00-data.csv", partitioned_data
+        )
+
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(
+            "some", "other"
+        )
+
+    # Happy Path -------------------------------------
+    @patch("api.application.services.data_service.generate_partitioned_data")
+    def test_upload_dataset_with_overwrite_behaviour_with_no_partition(
+        self, mock_partitioner
+    ):
+        file_contents = set_encoded_content(
+            "colname1,colname2\n" "1234,Carlos\n" "4567,Ada\n"
+        )
+        expected = pd.DataFrame(
+            {
+                "colname1": [1234, 4567],
+                "colname2": ["Carlos", "Ada"],
+            }
+        )
+        expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
+
+        self.s3_adapter.find_schema.return_value = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                update_behaviour=UpdateBehaviour.OVERWRITE.value,
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=None,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+        partitioned_data = [("", expected)]
+        mock_partitioner.return_value = partitioned_data
+
+        filename = self.data_service.upload_dataset(
+            "some", "other", "data.csv", file_contents
+        )
+        assert filename == "some.csv"
+
+        self.s3_adapter.upload_partitioned_data.assert_called_once_with(
+            "some", "other", "some.csv", partitioned_data
+        )
+
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(
+            "some", "other"
+        )
+
+    @patch("api.application.services.data_service.generate_partitioned_data")
+    def test_upload_dataset_with_overwrite_behaviour_with_two_partitions(
+        self, mock_partitioner
+    ):
+        file_contents = set_encoded_content(
+            "colname1,colname2\n" "1234,Carlos\n" "4567,Ada\n"
+        )
+        expected = pd.DataFrame(
+            {
+                "colname1": [1234, 4567],
+                "colname2": ["Carlos", "Ada"],
+            }
+        )
+        expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
+
+        self.s3_adapter.find_schema.return_value = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                update_behaviour=UpdateBehaviour.OVERWRITE.value,
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+        partitioned_data = [
+            ("colname1=1234", pd.DataFrame({"colname2": ["Carlos"]})),
+            ("colname1=4567", pd.DataFrame({"colname2": ["Ada"]})),
+        ]
+        mock_partitioner.return_value = partitioned_data
+
+        filename = self.data_service.upload_dataset(
+            "some", "other", "data.csv", file_contents
+        )
+        assert filename == "some.csv"
+
+        self.s3_adapter.upload_partitioned_data.assert_called_once_with(
+            "some", "other", "some.csv", partitioned_data
         )
 
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(
@@ -343,7 +457,9 @@ class TestUploadDataset:
 
         mock_partitioner.return_value(expected_transformed_df)
 
-        self.filename_with_timestamp.return_value = "2022-03-03T12:00:00-data.csv"
+        self.data_service.generate_raw_filename = Mock(
+            return_value=("2022-03-03T12:00:00-data.csv")
+        )
 
         filename = self.data_service.upload_dataset(
             "some", "other", "data.csv", file_contents
@@ -550,8 +666,9 @@ class TestUploadDataset:
                 ),
             ],
         )
-
-        self.filename_with_timestamp.return_value = "2022-03-03T12:00:00-data.csv"
+        self.data_service.generate_raw_filename = Mock(
+            return_value=("2022-03-03T12:00:00-data.csv")
+        )
 
         self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
 
