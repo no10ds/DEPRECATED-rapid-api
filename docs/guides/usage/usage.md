@@ -74,8 +74,7 @@ To update these, currently an admin will need to go to Cognito user pool in the 
 
 #### Via programmatic access:
 
-See the [rapid test client](https://github.com/no10ds/rapid-test-client/blob/main/test_client.py) repository for
-an example of programmatic client configuration.
+See the [scripts](./scripts/) section for examples of programmatic client interaction.
 
 The general concept is to retrieve an access token using client credentials and making subsequent requests passing that
 token.
@@ -256,7 +255,7 @@ If successful returns file name with a timestamp included, e.g.:
 ### Accepted scopes
 
 In order to use this endpoint you need a relevant `WRITE` scope that matches the dataset sensitivity level,
-e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`
+e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -356,7 +355,7 @@ If no dataset exists or none that matches the query, you will get an empty respo
 ### Accepted scopes
 
 You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -425,7 +424,7 @@ Here we retrieve all datasets that have a tag with key `tag1` with any value, an
 
 This example has the same effect as Example 3.
 
-## Schema info
+## Dataset info
 
 Use this endpoint to retrieve basic information for specific datasets, if there is no data stored for the dataset and
 error will be thrown.
@@ -494,7 +493,7 @@ Schema in json format in the response body:
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -534,7 +533,7 @@ List of raw files in json format in the response body:
 ### Accepted scopes
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`
+a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -564,8 +563,7 @@ When a valid file in the domain/dataset is deleted success message will be displ
 
 ### Accepted scopes
 
-You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `WRITE` scope, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`
+In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -586,7 +584,7 @@ Data can be queried provided data has been uploaded at some point in the past an
 | Parameters    | Required     | Usage                   | Example values             | Definition                    |
 |---------------|--------------|-------------------------|----------------------------|-------------------------------|
 | `domain`      | True         | URL parameter           | `space`                    | domain of the dataset         |
-| `dataset`     | True         | URL parameter           | `rocket_circumnavigations` | dataset title                 |
+| `dataset`     | True         | URL parameter           | `rocket_lauches` | dataset title                 |
 | `query`       | False        | JSON Request Body       | see below                  | the query object              |
 
 #### How to construct a query object:
@@ -700,7 +698,7 @@ e.g.: `READ_PRIVATE`.
 
 #### Example 3 - Dataset filtered by date and ordered by column:
 
-- Request url: `/datasets/space/rocket_circumnavigations/query`
+- Request url: `/datasets/space/rocket_lauches/query`
 - Request Body:
 
 ```json

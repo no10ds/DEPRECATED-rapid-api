@@ -6,27 +6,24 @@ VERSION = os.getenv("VERSION", None)
 COMMIT_SHA = os.getenv("COMMIT_SHA", None)
 
 RAPID_DESCRIPTION = """
-See the full [changelog here](https://github.com/no10ds/rapid-api/blob/master/changelog.md)
+See the full [changelog here](https://github.com/no10ds/rapid-api/blob/main/changelog.md)
 
-### rAPId usage [guide](https://github.com/no10ds/rapid-api/blob/master/docs/usage/usage.md)
+### rAPId usage [guide](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md)
 
-### Create schema [documentation](https://github.com/no10ds/rapid-api/blob/master/docs/usage/schema_creation.md)
+### Create schema [documentation](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md)
 
-### ADR [documentation](https://github.com/no10ds/rapid-api/blob/master/docs/architecture/adr/0001-query-endpoint.md)
+### Data Access [documentation](https://github.com/no10ds/rapid-api/blob/master/docs/guides/usage/data_access.md)
+
 """
 
 RAPID_TAGS = [
     {
-        "name": "Status",
-        "description": "Shows current status of application, version and commit sha.",
+        "name": "Datasets",
+        "description": "Manage dataset upload and querying.",
     },
     {
         "name": "Schema",
         "description": "Manage schema generation and upload.",
-    },
-    {
-        "name": "Datasets",
-        "description": "Manage dataset upload and querying.",
     },
     {
         "name": "Client",
@@ -35,6 +32,10 @@ RAPID_TAGS = [
     {
         "name": "Protected Domains",
         "description": "Manage protected domains",
+    },
+    {
+        "name": "Status",
+        "description": "Shows current status of application, version and commit sha.",
     },
 ]
 

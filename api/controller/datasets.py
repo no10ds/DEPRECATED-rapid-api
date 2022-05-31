@@ -48,6 +48,28 @@ datasets_router = APIRouter(
     status_code=http_status.HTTP_200_OK,
 )
 async def list_all_datasets(tag_filters: DatasetFilterQuery = DatasetFilterQuery()):
+    """
+    ## List datasets
+
+    Use this endpoint to retrieve a list of available datasets. You can also filter by the dataset sensitivity level or by
+    tags specified on the dataset.
+
+    If you do not specify any filter values, you will retrieve all available datasets.
+
+    ### Inputs
+
+    | Parameters    | Usage                                   | Example values                                                                                         | Definition            |
+    |---------------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
+    | query         | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
+
+    ### Accepted scopes
+
+    You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
+    a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
     return resource_adapter.get_datasets_metadata(tag_filters)
 
 
@@ -56,6 +78,33 @@ async def list_all_datasets(tag_filters: DatasetFilterQuery = DatasetFilterQuery
     dependencies=[Security(protect_dataset_endpoint, scopes=[Action.READ.value])],
 )
 async def get_dataset_info(domain: str, dataset: str):
+    """
+    ## Dataset info
+
+    Use this endpoint to retrieve basic information for specific datasets, if there is no data stored for the dataset and
+    error will be thrown.
+
+    When a valid dataset is retrieved the available data will be the schema definition with some extra values such as:
+
+    - number of rows
+    - number of columns
+    - statistics data for date columns
+
+    ### Inputs
+
+    | Parameters    | Usage                                   | Example values               | Definition            |
+    |---------------|-----------------------------------------|------------------------------|-----------------------|
+    | `domain`      | URL parameter                           | `land`                       | domain of the dataset |
+    | `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
+
+    ### Accepted scopes
+
+    You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
+    a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
     try:
         dataset_info = data_service.get_dataset_info(domain, dataset)
         return dataset_info
@@ -69,6 +118,40 @@ async def get_dataset_info(domain: str, dataset: str):
     dependencies=[Security(protect_dataset_endpoint, scopes=[Action.READ.value])],
 )
 async def list_raw_files(domain: str, dataset: str):
+    """
+    ## List Raw Files
+
+    Use this endpoint to retrieve all raw files linked to a specific domain/dataset, if there is no data stored for the
+    domain/dataset an error will be thrown.
+
+    When a valid domain/dataset is retrieved the available raw file uploads will be displayed in list format.
+
+    ### Inputs
+
+    | Parameters    | Usage                                   | Example values               | Definition            |
+    |---------------|-----------------------------------------|------------------------------|-----------------------|
+    | `domain`      | URL parameter                           | `land`                       | domain of the dataset |
+    | `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
+
+    ### Outputs
+
+    List of raw files in json format in the response body:
+
+    ```json
+    [
+    "2022-01-21T17:12:31-file1.csv",
+    "2022-01-24T11:43:28-file2.csv"
+    ]
+    ```
+
+    ### Accepted scopes
+
+    You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
+    a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
     raw_files = data_service.list_raw_files(domain, dataset)
     return raw_files
 
@@ -80,6 +163,34 @@ async def list_raw_files(domain: str, dataset: str):
 async def delete_data_file(
     domain: str, dataset: str, filename: str, response: Response
 ):
+    """
+    ## Delete Data File
+
+    Use this endpoint to delete raw files linked to a specific domain/dataset, if there is no data stored for the
+    domain/dataset or the file name is invalid an error will be thrown.
+
+    When a valid file in the domain/dataset is deleted success message will be displayed
+
+    ### General structure
+
+    `GET /datasets/{domain}/{dataset}/{filename}`
+
+    ### Inputs
+
+    | Parameters | Usage                                   | Example values                  | Definition                    |
+    |------------|-----------------------------------------|---------------------------------|-------------------------------|
+    | `domain`   | URL parameter                           | `land`                          | domain of the dataset         |
+    | `dataset`  | URL parameter                           | `train_journeys`                | dataset title                 |
+    | `filename` | URL parameter                           | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
+
+
+    ### Accepted scopes
+    In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level,
+    e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
     try:
         delete_service.delete_dataset_file(domain, dataset, filename)
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
@@ -102,6 +213,39 @@ async def delete_data_file(
 async def upload_data(
     domain: str, dataset: str, response: Response, file: UploadFile = File(...)
 ):
+    """
+    ## Upload dataset
+
+    Given a schema has been uploaded you can upload data which matches that schema. Uploading a CSV file via this endpoint
+    ensures that the data matches the schema and that it is consistent and sanitised. Should any errors be detected during
+    upload, these are sent back in the response to facilitate you fixing the issues.
+
+    ### Inputs
+
+    | Parameters    | Usage                                   | Example values               | Definition              |
+    |---------------|-----------------------------------------|------------------------------|-------------------------|
+    | `domain`      | URL parameter                           | `air`                        | domain of the dataset   |
+    | `dataset`     | URL parameter                           | `passengers_by_airport`      | dataset title           |
+    | `file`        | File in form data with key value `file` | `passengers_by_airport.csv`  | the dataset file itself |
+
+    ### Output
+
+    If successful returns file name with a timestamp included, e.g.:
+
+    ```json
+    {
+    "uploaded": "2022-01-01T13:00:00-passengers_by_airport.csv"
+    }
+    ```
+
+    ### Accepted scopes
+
+    In order to use this endpoint you need a relevant `WRITE` scope that matches the dataset sensitivity level,
+    e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
     try:
         file_contents = await file.read()
         filename = data_service.upload_dataset(
@@ -148,6 +292,54 @@ async def upload_data(
 async def query_dataset(
     domain: str, dataset: str, request: Request, query: Optional[SQLQuery] = SQLQuery()
 ):
+    """
+    ## Query dataset
+
+    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run.
+
+    ### Inputs
+
+    | Parameters    | Required     | Usage                   | Example values                                                                                                              | Definition                    |
+    |---------------|--------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+    | `domain`      | True         | URL parameter           | `space`                                                                                                                     | domain of the dataset         |
+    | `dataset`     | True         | URL parameter           | `rocket_launches`                                                                                                           | dataset title                 |
+    | `query`       | False        | JSON Request Body       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#how-to-construct-a-query-object)| the query object              |
+
+
+    ### Outputs
+
+    #### JSON
+
+    By default, the result of the query are returned in JSON format where each key represents a row, e.g.:
+
+    ```json
+    {
+        "0": {
+            "column1": "value1",
+            "column2": "value2"
+        },
+        ...
+    }
+    ```
+
+    #### CSV
+
+    To get a CSV response, the `Accept` Header has to be set to `text/csv`, this can be set below. The response will come as a table, e.g.:
+
+    ```csv
+    "","column1","column2"
+    0,"value1","value2"
+    ...
+    ```
+
+    ### Accepted scopes
+
+    In order to use this endpoint you need a `READ` scope with appropriate sensitivity level permission,
+    e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
     df = query_adapter.query(domain, dataset, query)
     string_df = df.astype("string")
     output_format = request.headers.get("Accept")

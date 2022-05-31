@@ -23,6 +23,34 @@ protected_domain_router = APIRouter(
     dependencies=[Security(protect_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
 def create_protected_domain(domain: str):
+    """
+    ## Create protected domain
+
+    Protected domains can be created to restrict access permissions to specific domains
+
+    Use this endpoint to create a new protected domain. After this you can create clients with the scope for this domain and create `PROTECTED` datasets within this domain.
+
+
+    ### Inputs
+
+    | Parameters       | Usage               | Example values   | Definition                       |
+    |------------------|---------------------|------------------|----------------------------------|
+    | `domain`         | URL Parameter       | `land`           | The name of the protected domain |
+
+    ### Domain
+
+    The domain name must adhere to the following conditions:
+
+    - Alphanumeric
+    - Start with an alphabetic character
+    - Can contain any symbol of `- _`
+
+    ### Accepted scopes
+
+    In order to use this endpoint you need the `DATA_ADMIN` scope
+
+    ### Click  `Try it out` to use the endpoint
+    """
     protected_domain_service.create_scopes(domain)
     return f"Successfully created protected domain for {domain}"
 
@@ -32,4 +60,25 @@ def create_protected_domain(domain: str):
     dependencies=[Security(protect_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
 def list_protected_domains():
+    """
+    ## List protected domains
+
+    Use this endpoint to list the protected domains that currently exist.
+
+    ### Outputs
+
+    List of protected scopes in json format in the response body:
+
+    ```json
+    [
+    "land",
+    "department"
+    ]
+    ```
+    ### Accepted scopes
+
+    In order to use this endpoint you need the `DATA_ADMIN` scope
+
+    ### Click  `Try it out` to use the endpoint
+    """
     return protected_domain_service.list_domains()
