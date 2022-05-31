@@ -74,8 +74,7 @@ To update these, currently an admin will need to go to Cognito user pool in the 
 
 #### Via programmatic access:
 
-See the [rapid test client](https://github.com/no10ds/rapid-test-client/blob/main/test_client.py) repository for
-an example of programmatic client configuration.
+See the [scripts](./scripts/) section for examples of programmatic client interaction.
 
 The general concept is to retrieve an access token using client credentials and making subsequent requests passing that
 token.
