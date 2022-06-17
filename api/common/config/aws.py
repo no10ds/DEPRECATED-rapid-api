@@ -6,12 +6,12 @@ RESOURCE_PREFIX = os.environ["RESOURCE_PREFIX"]
 DOMAIN_NAME = os.environ["DOMAIN_NAME"]
 AWS_REGION = os.environ["AWS_REGION"]
 
-OUTPUT_QUERY_BUCKET = "aws-athena-query-results-" + AWS_ACCOUNT + "-" + AWS_REGION
+OUTPUT_QUERY_BUCKET = RESOURCE_PREFIX + "-aws-athena-query-results-" + AWS_ACCOUNT
 GLUE_CATALOGUE_DB_NAME = RESOURCE_PREFIX + "_catalogue_db"
 ATHENA_DATABASE = GLUE_CATALOGUE_DB_NAME
 ATHENA_WORKGROUP = RESOURCE_PREFIX + "_athena_workgroup"
-GLUE_CRAWLER_ROLE = "glue_services_access"
-GLUE_CONNECTION_NAME = "s3-network-connection"
+GLUE_CRAWLER_ROLE = RESOURCE_PREFIX + "glue_services_access"
+GLUE_CONNECTION_NAME = RESOURCE_PREFIX + "s3-network-connection"
 
 SCHEMAS_LOCATION = "data/schemas"
 
