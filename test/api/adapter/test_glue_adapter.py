@@ -29,10 +29,10 @@ class TestGlueAdapterCrawlerMethods:
 
     def test_create_crawler(self):
         self.glue_adapter.create_crawler(
-            "domain", "dataset", {"tag1": "value1", "tag2": "value2", "tag3": "value3"}
+            "resource_prefix", "domain", "dataset", {"tag1": "value1", "tag2": "value2", "tag3": "value3"}
         )
         self.glue_boto_client.create_crawler.assert_called_once_with(
-            Name="rapid_crawler/domain/dataset",
+            Name="resource_prefix_rapid_crawler/domain/dataset",
             Role="GLUE_CRAWLER_ROLE",
             DatabaseName="GLUE_CATALOGUE_DB_NAME",
             TablePrefix="domain_",
@@ -59,7 +59,7 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(CrawlerCreateFailsError):
-            self.glue_adapter.create_crawler("domain", "dataset", {})
+            self.glue_adapter.create_crawler("resource_prefix", "domain", "dataset", {})
 
     def test_create_crawler_fails(self):
         self.glue_boto_client.create_crawler.side_effect = ClientError(
@@ -68,12 +68,12 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(CrawlerCreateFailsError):
-            self.glue_adapter.create_crawler("domain", "dataset", {})
+            self.glue_adapter.create_crawler("resource_prefix", "domain", "dataset", {})
 
     def test_start_crawler(self):
-        self.glue_adapter.start_crawler("domain", "dataset")
+        self.glue_adapter.start_crawler("resource_prefix", "domain", "dataset")
         self.glue_boto_client.start_crawler.assert_called_once_with(
-            Name="rapid_crawler/domain/dataset"
+            Name="resource_prefix_rapid_crawler/domain/dataset"
         )
 
     def test_start_crawler_fails(self):
@@ -83,12 +83,12 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(CrawlerStartFailsError):
-            self.glue_adapter.start_crawler("domain", "dataset")
+            self.glue_adapter.start_crawler("resource_prefix", "domain", "dataset")
 
     def test_delete_crawler(self):
-        self.glue_adapter.delete_crawler("domain", "dataset")
+        self.glue_adapter.delete_crawler("resource_prefix", "domain", "dataset")
         self.glue_boto_client.delete_crawler.assert_called_once_with(
-            "rapid_crawler/domain/dataset"
+            "resource_prefix_rapid_crawler/domain/dataset"
         )
 
     def test_delete_crawler_fails(self):
@@ -98,7 +98,7 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(CrawlerDeleteFailsError):
-            self.glue_adapter.delete_crawler("domain", "dataset")
+            self.glue_adapter.delete_crawler("resource_prefix", "domain", "dataset")
 
     def test_fails_to_check_if_crawler_is_running(self):
         self.glue_boto_client.get_crawler.side_effect = ClientError(
@@ -107,7 +107,7 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(GetCrawlerError):
-            self.glue_adapter.check_crawler_is_ready("domain", "dataset")
+            self.glue_adapter.check_crawler_is_ready("resource_prefix", "domain", "dataset")
 
     def test_check_crawler_is_ready(self):
         self.glue_boto_client.get_crawler.return_value = {
@@ -115,9 +115,9 @@ class TestGlueAdapterCrawlerMethods:
                 "State": "READY",
             }
         }
-        self.glue_adapter.check_crawler_is_ready("domain", "dataset")
+        self.glue_adapter.check_crawler_is_ready("resource_prefix", "domain", "dataset")
         self.glue_boto_client.get_crawler.assert_called_once_with(
-            Name="rapid_crawler/domain/dataset"
+            Name="resource_prefix_rapid_crawler/domain/dataset"
         )
 
     def test_check_crawler_is_not_ready(self):
@@ -128,10 +128,10 @@ class TestGlueAdapterCrawlerMethods:
                 }
             }
             with pytest.raises(CrawlerIsNotReadyError):
-                self.glue_adapter.check_crawler_is_ready("domain", "dataset")
+                self.glue_adapter.check_crawler_is_ready("resource_prefix", "domain", "dataset")
 
             self.glue_boto_client.get_crawler.assert_called_with(
-                Name="rapid_crawler/domain/dataset"
+                Name="resource_prefix_rapid_crawler/domain/dataset"
             )
 
 
