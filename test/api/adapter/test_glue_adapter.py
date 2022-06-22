@@ -4,7 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from api.adapter.glue_adapter import GlueAdapter
-from api.common.config.aws import GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT, DATA_BUCKET
+from api.common.config.aws import GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT, GLUE_CSV_CLASSIFIER, DATA_BUCKET
 from api.common.custom_exceptions import (
     CrawlerCreateFailsError,
     CrawlerStartFailsError,
@@ -36,7 +36,7 @@ class TestGlueAdapterCrawlerMethods:
             Role="GLUE_CRAWLER_ROLE",
             DatabaseName="GLUE_CATALOGUE_DB_NAME",
             TablePrefix="domain_",
-            Classifiers=["single_column_csv_classifier"],
+            Classifiers=[GLUE_CSV_CLASSIFIER],
             Targets={
                 "S3Targets": [
                     {
