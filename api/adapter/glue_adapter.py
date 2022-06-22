@@ -11,6 +11,7 @@ from api.common.config.aws import (
     GLUE_CRAWLER_ROLE,
     GLUE_CONNECTION_NAME,
     GLUE_QUOTE_CHAR,
+    GLUE_CSV_CLASSIFIER,
     GLUE_CSV_SERIALISATION_LIBRARY,
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     GLUE_TABLE_PRESENCE_CHECK_INTERVAL,
@@ -50,7 +51,7 @@ class GlueAdapter:
                 DatabaseName=self.glue_catalogue_db_name,
                 TablePrefix=data_store.glue_table_prefix(),
                 Classifiers=[
-                    "single_column_csv_classifier",
+                    GLUE_CSV_CLASSIFIER,
                 ],
                 Targets={
                     "S3Targets": [
