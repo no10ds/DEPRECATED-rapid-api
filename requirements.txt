@@ -34,7 +34,7 @@ lxml==4.6.5
 MarkupSafe==2.1.0
 mccabe==0.6.1
 mypy-extensions==0.4.3
-numpy==1.21.4
+numpy==1.22.0
 openpyxl==3.0.9
 opensearch-py==1.0.0
 packaging==21.3
