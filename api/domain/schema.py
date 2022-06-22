@@ -23,6 +23,7 @@ class UpdateBehaviour(BaseEnum):
 
 
 class SchemaMetadata(BaseModel):
+    resource_prefix: str
     domain: str
     dataset: str
     sensitivity: str
@@ -30,6 +31,9 @@ class SchemaMetadata(BaseModel):
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
     update_behaviour: str = UpdateBehaviour.APPEND.value
+
+    def get_resource_prefix(self) -> str:
+        return self.resource_prefix
 
     def get_domain(self) -> str:
         return self.domain
@@ -108,6 +112,9 @@ class Column(BaseModel):
 class Schema(BaseModel):
     metadata: SchemaMetadata
     columns: List[Column]
+
+    def get_resource_prefix(self) -> str:
+        return self.metadata.get_resource_prefix()
 
     def get_domain(self) -> str:
         return self.metadata.get_domain()

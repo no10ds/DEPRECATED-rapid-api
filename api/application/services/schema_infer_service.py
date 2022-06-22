@@ -14,6 +14,7 @@ from api.domain.schema import Schema, SchemaMetadata, Owner, Column
 class SchemaInferService:
     def infer_schema(
         self,
+        resource_prefix: str,
         domain: str,
         dataset: str,
         sensitivity: str,
@@ -22,6 +23,7 @@ class SchemaInferService:
         dataframe = self._construct_dataframe(file_content)
         schema = Schema(
             metadata=SchemaMetadata(
+                resource_prefix=resource_prefix,
                 domain=domain,
                 dataset=dataset,
                 sensitivity=sensitivity,
