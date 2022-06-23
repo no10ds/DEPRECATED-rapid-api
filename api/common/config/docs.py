@@ -8,6 +8,8 @@ COMMIT_SHA = os.getenv("COMMIT_SHA", None)
 RAPID_DESCRIPTION = """
 See the full [changelog here](https://github.com/no10ds/rapid-api/blob/main/changelog.md)
 
+## Getting Started [guide](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/getting_started.md)
+
 ### rAPId usage [guide](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md)
 
 ### Create schema [documentation](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md)

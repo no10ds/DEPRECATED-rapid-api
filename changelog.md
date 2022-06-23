@@ -8,7 +8,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 See [v1.3.0] changes
 
-### Fix
+### Added
+- Getting started documentation to walkthrough dataset uploading and querying
+
+### Fixed
 - Add `resource_prefix` to the necessary AWS resources to enable the hosting of multiple rAPId instances
 
 [v1.3.0]: https://github.com/no10ds/rapid-api/compare/v1.2.0...v1.3.0
