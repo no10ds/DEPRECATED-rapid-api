@@ -50,6 +50,6 @@ class DatasetQuery:
     def _handle_query_error(self, error, table_name):
         if re.match(".+ Table .+ does not exist", error.args[0]):
             raise UserError(
-                f"Query failed to execute: The table [{table_name}] does not exist. Please check your spelling or there may be no data yet"
+                f"Query failed to execute: The table [{table_name}] does not exist. The data could be currently processing or you might need to upload it."
             )
         raise UserError(f"Query failed to execute: {error.args[0]}")

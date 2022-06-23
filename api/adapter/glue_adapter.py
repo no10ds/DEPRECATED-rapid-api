@@ -153,7 +153,7 @@ class GlueAdapter:
             )
 
     def _generate_crawler_name(self, resource_prefix: str, domain: str, dataset: str) -> str:
-        return resource_prefix + "_rapid_crawler/" + domain + "/" + dataset
+        return resource_prefix + "_crawler/" + domain + "/" + dataset
 
     def _handle_crawler_create_error(self, error: ClientError):
         if error.response["Error"]["Code"] == "AlreadyExistsException":

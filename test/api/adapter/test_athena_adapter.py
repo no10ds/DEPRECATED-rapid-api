@@ -94,7 +94,7 @@ class TestAthenaAdapter:
             "SYNTAX_ERROR: line 1:15: Table awsdatacatalog.rapid_catalogue_db.my_table does not exist"
         )
 
-        expected_message = r"Query failed to execute: The table \[my_table\] does not exist. Please check your spelling or there may be no data yet"
+        expected_message = r"Query failed to execute: The table \[my_table\] does not exist. The data could be currently processing or you might need to upload it."
 
         with pytest.raises(UserError, match=expected_message):
             self.dataset_query.query("my", "table", SQLQuery())
