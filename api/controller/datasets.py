@@ -193,7 +193,7 @@ async def delete_data_file(
 
     """
     try:
-        delete_service.delete_dataset_file(domain, dataset, filename)
+        delete_service.delete_dataset_file(RESOURCE_PREFIX, domain, dataset, filename)
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
     except CrawlerIsNotReadyError as error:
         AppLogger.warning("File deletion did not occur: %s", error.args[0])

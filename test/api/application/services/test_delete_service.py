@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from api.application.services.delete_service import DeleteService
+from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     CrawlerIsNotReadyError,
     CrawlerStartFailsError,
@@ -25,25 +26,27 @@ class TestDeleteService:
 
     def test_delete_file_when_crawler_is_ready(self):
         self.delete_service.delete_dataset_file(
-            "domain", "dataset", "2022-01-01T00:00:00-file.csv"
+            RESOURCE_PREFIX, "domain", "dataset", "2022-01-01T00:00:00-file.csv"
         )
         self.s3_adapter.find_raw_file.assert_called_once_with(
             "domain", "dataset", "2022-01-01T00:00:00-file.csv"
         )
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "domain", "dataset"
+            RESOURCE_PREFIX, "domain", "dataset"
         )
         self.s3_adapter.delete_dataset_files.assert_called_once_with(
             "domain", "dataset", "2022-01-01T00:00:00-file.csv"
         )
-        self.glue_adapter.start_crawler.assert_called_once_with("domain", "dataset")
+        self.glue_adapter.start_crawler.assert_called_once_with(
+            RESOURCE_PREFIX, "domain", "dataset"
+        )
 
     def test_delete_file_when_file_does_not_exist(self):
         self.s3_adapter.find_raw_file.side_effect = UserError("Some message")
 
         with pytest.raises(UserError):
             self.delete_service.delete_dataset_file(
-                "domain", "dataset", "2022-01-01T00:00:00-file.csv"
+                RESOURCE_PREFIX, "domain", "dataset", "2022-01-01T00:00:00-file.csv"
             )
 
         self.s3_adapter.find_raw_file.assert_called_once_with(
@@ -57,14 +60,14 @@ class TestDeleteService:
 
         with pytest.raises(CrawlerIsNotReadyError):
             self.delete_service.delete_dataset_file(
-                "domain", "dataset", "2022-01-01T00:00:00-file.csv"
+                RESOURCE_PREFIX, "domain", "dataset", "2022-01-01T00:00:00-file.csv"
             )
 
         self.s3_adapter.find_raw_file.assert_called_once_with(
             "domain", "dataset", "2022-01-01T00:00:00-file.csv"
         )
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "domain", "dataset"
+            RESOURCE_PREFIX, "domain", "dataset"
         )
         assert (
             not self.s3_adapter.delete_dataset_files.called
@@ -77,19 +80,21 @@ class TestDeleteService:
 
         with pytest.raises(CrawlerStartFailsError):
             self.delete_service.delete_dataset_file(
-                "domain", "dataset", "2022-01-01T00:00:00-file.csv"
+                RESOURCE_PREFIX, "domain", "dataset", "2022-01-01T00:00:00-file.csv"
             )
 
         self.s3_adapter.find_raw_file.assert_called_once_with(
             "domain", "dataset", "2022-01-01T00:00:00-file.csv"
         )
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "domain", "dataset"
+            RESOURCE_PREFIX, "domain", "dataset"
         )
         self.s3_adapter.delete_dataset_files.assert_called_once_with(
             "domain", "dataset", "2022-01-01T00:00:00-file.csv"
         )
-        self.glue_adapter.start_crawler.assert_called_once_with("domain", "dataset")
+        self.glue_adapter.start_crawler.assert_called_once_with(
+            RESOURCE_PREFIX, "domain", "dataset"
+        )
 
     @pytest.mark.parametrize(
         "filename",
@@ -108,4 +113,4 @@ class TestDeleteService:
     )
     def test_delete_filename_error_for_bad_filenames(self, filename: str):
         with pytest.raises(UserError, match=f"Invalid file name \\[{filename}\\]"):
-            self.delete_service.delete_dataset_file("domain", "dataset", filename)
+            self.delete_service.delete_dataset_file(RESOURCE_PREFIX, "domain", "dataset", filename)

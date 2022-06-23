@@ -516,7 +516,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 204
@@ -535,7 +535,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 429
@@ -557,7 +557,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 202
@@ -573,7 +573,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 400
