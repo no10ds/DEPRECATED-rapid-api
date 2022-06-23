@@ -19,6 +19,7 @@ from api.domain.dataset_filter_query import DatasetFilterQuery
 from api.domain.schema import Schema, SchemaMetadata, Owner, Column
 from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import EnrichedDatasetMetaData
+from api.common.config.aws import RESOURCE_PREFIX
 
 from test.api.controller.controller_test_utils import BaseClientTest
 
@@ -39,7 +40,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", file_name, file_content
+            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 201
@@ -61,7 +62,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", file_name, file_content
+            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 400
@@ -85,7 +86,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", file_name, file_content
+            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 202
@@ -138,7 +139,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", file_name, file_content
+            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 429
@@ -160,7 +161,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", file_name, file_content
+            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 500

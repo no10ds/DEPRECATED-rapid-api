@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 
 import pandas as pd
+from api.common.config.aws import RESOURCE_PREFIX
 import pytest
 
 from api.application.services.data_service import DataService
@@ -228,7 +229,7 @@ class TestUploadDataset:
         )
 
         filename = self.data_service.upload_dataset(
-            "some", "other", "data.csv", file_contents
+            RESOURCE_PREFIX, "some", "other", "data.csv", file_contents
         )
         assert filename == "2022-03-03T12:00:00-data.csv"
 
@@ -288,7 +289,7 @@ class TestUploadDataset:
         )
 
         filename = self.data_service.upload_dataset(
-            "some", "other", "data.csv", file_contents
+            RESOURCE_PREFIX, "some", "other", "data.csv", file_contents
         )
         assert filename == "2022-03-02T12:00:00-data.csv"
 
@@ -343,7 +344,7 @@ class TestUploadDataset:
         mock_partitioner.return_value = partitioned_data
 
         filename = self.data_service.upload_dataset(
-            "some", "other", "data.csv", file_contents
+            RESOURCE_PREFIX, "some", "other", "data.csv", file_contents
         )
         assert filename == "some.csv"
 
@@ -400,7 +401,7 @@ class TestUploadDataset:
         mock_partitioner.return_value = partitioned_data
 
         filename = self.data_service.upload_dataset(
-            "some", "other", "data.csv", file_contents
+            RESOURCE_PREFIX, "some", "other", "data.csv", file_contents
         )
         assert filename == "some.csv"
 
@@ -462,7 +463,7 @@ class TestUploadDataset:
         )
 
         filename = self.data_service.upload_dataset(
-            "some", "other", "data.csv", file_contents
+            RESOURCE_PREFIX, "some", "other", "data.csv", file_contents
         )
         assert filename == "2022-03-03T12:00:00-data.csv"
 
@@ -490,7 +491,7 @@ class TestUploadDataset:
         self.s3_adapter.find_schema.return_value = None
 
         with pytest.raises(SchemaNotFoundError):
-            self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
+            self.data_service.upload_dataset(RESOURCE_PREFIX, "some", "other", "data.csv", file_contents)
 
         self.s3_adapter.find_schema.assert_called_once_with("some", "other")
 
@@ -526,10 +527,10 @@ class TestUploadDataset:
         self.glue_adapter.check_crawler_is_ready.side_effect = GetCrawlerError("msg")
 
         with pytest.raises(GetCrawlerError):
-            self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
+            self.data_service.upload_dataset(RESOURCE_PREFIX, "some", "other", "data.csv", file_contents)
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "some", "other"
+            RESOURCE_PREFIX, "some", "other"
         )
 
     def test_upload_dataset_fails_when_crawler_is_not_ready(self):
@@ -565,10 +566,10 @@ class TestUploadDataset:
         )
 
         with pytest.raises(CrawlerIsNotReadyError):
-            self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
+            self.data_service.upload_dataset(RESOURCE_PREFIX, "some", "other", "data.csv", file_contents)
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "some", "other"
+            RESOURCE_PREFIX, "some", "other"
         )
 
     def test_upload_dataset_starts_crawler(self):
@@ -599,9 +600,9 @@ class TestUploadDataset:
             ],
         )
 
-        self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
+        self.data_service.upload_dataset(RESOURCE_PREFIX, "some", "other", "data.csv", file_contents)
 
-        self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
+        self.glue_adapter.start_crawler.assert_called_once_with(RESOURCE_PREFIX, "some", "other")
 
     def test_upload_dataset_fails_to_start_crawler(self):
         file_contents = set_encoded_content(
@@ -636,7 +637,7 @@ class TestUploadDataset:
         )
 
         with pytest.raises(CrawlerStartFailsError):
-            self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
+            self.data_service.upload_dataset(RESOURCE_PREFIX, "some", "other", "data.csv", file_contents)
 
     # Persist raw copy of data -------------------------------
     def test_upload_dataset_persists_raw_copy_of_data(self):
@@ -670,7 +671,7 @@ class TestUploadDataset:
             return_value=("2022-03-03T12:00:00-data.csv")
         )
 
-        self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
+        self.data_service.upload_dataset(RESOURCE_PREFIX, "some", "other", "data.csv", file_contents)
 
         self.s3_adapter.upload_raw_data.assert_called_once_with(
             "some", "other", "2022-03-03T12:00:00-data.csv", file_contents

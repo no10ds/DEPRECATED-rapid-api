@@ -66,7 +66,7 @@ class DataService:
         return raw_filename, permanent_filename
 
     def upload_dataset(
-        self, domain: str, dataset: str, filename: str, file_contents: str
+        self, resource_prefix: str, domain: str, dataset: str, filename: str, file_contents: str
     ) -> str:
         schema = self._get_schema(domain, dataset)
         if not schema:
@@ -74,7 +74,7 @@ class DataService:
                 f"Could not find schema related to the dataset [{dataset}]"
             )
         else:
-            self.glue_adapter.check_crawler_is_ready(domain, dataset)
+            self.glue_adapter.check_crawler_is_ready(resource_prefix, domain, dataset)
             validated_dataframe = get_validated_dataframe(schema, file_contents)
             raw_filname, permanent_filename = self.generate_raw_and_permanent_filenames(
                 schema, filename
@@ -86,7 +86,7 @@ class DataService:
                 file_contents,
             )
             self._upload_data(schema, validated_dataframe, permanent_filename)
-            self.glue_adapter.start_crawler(domain, dataset)
+            self.glue_adapter.start_crawler(resource_prefix, domain, dataset)
             self.glue_adapter.update_catalog_table_config(domain, dataset)
             return permanent_filename
 

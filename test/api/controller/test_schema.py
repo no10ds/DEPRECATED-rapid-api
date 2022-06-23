@@ -15,6 +15,7 @@ from api.common.custom_exceptions import (
 )
 from api.domain.schema import Schema, SchemaMetadata, Column, Owner
 from test.api.controller.controller_test_utils import BaseClientTest
+from api.common.config.aws import RESOURCE_PREFIX
 
 
 class TestSchemaUpload(BaseClientTest):
@@ -35,6 +36,7 @@ class TestSchemaUpload(BaseClientTest):
         mock_upload_schema.assert_called_once_with(expected_schema)
         mock_create_user_groups.assert_called_once_with("some", "thing")
         mock_create_crawler.assert_called_once_with(
+            RESOURCE_PREFIX,
             "some",
             "thing",
             {
