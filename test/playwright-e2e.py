@@ -2,19 +2,19 @@ from playwright.sync_api import Playwright, sync_playwright
 
 
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=False)
     context = browser.new_context()
 
     # Open new page
     page = context.new_page()
 
-    # Go to http://service-image:8000/docs
-    page.goto("http://service-image:8000/docs")
+    # Go to http://localhost:8000/docs
+    page.goto("http://localhost:8000/docs")
    
 
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
     page.locator("text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema").click()
-    page.wait_for_url("http://service-image:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
+    page.wait_for_url("http://localhost:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
 
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
@@ -65,32 +65,32 @@ def run(playwright: Playwright) -> None:
     page.locator("input[type=\"file\"]").click()
 
     # Upload test_journey_file.csv
-    page.locator("input[type=\"file\"]").set_input_files("/app/test/e2e/test_journey_file.csv")
+    page.locator("input[type=\"file\"]").set_input_files("test/e2e/test_journey_file.csv")
 
     # Click text=Execute
     page.locator("text=Execute").click()
 
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
     page.locator("text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema").click()
-    page.wait_for_url("http://service-image:8000/docs#/")
+    page.wait_for_url("http://localhost:8000/docs#/")
 
     # Click text=POST/schemaUpload Schema
     page.locator("text=POST/schemaUpload Schema").click()
-    page.wait_for_url("http://service-image:8000/docs#/Schema/upload_schema_schema_post")
+    page.wait_for_url("http://localhost:8000/docs#/Schema/upload_schema_schema_post")
 
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
 
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
     page.locator("text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema").click()
-    page.wait_for_url("http://service-image:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
+    page.wait_for_url("http://localhost:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
 
     # # Click .highlight-code > .copy-to-clipboard > button
     # page.locator(".highlight-code > .copy-to-clipboard > button").click()
 
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
     page.locator("text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema").click()
-    page.wait_for_url("http://service-image:8000/docs#/")
+    page.wait_for_url("http://localhost:8000/docs#/")
     
     # Click textarea
     page.locator("textarea").click()
