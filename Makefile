@@ -45,8 +45,8 @@ test-e2e:		## Run e2e tests
 test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage
 
-test-playwright: 	## Run playwright tests
-	python test/e2e/playwright-e2e.py
+test-browsers: 	## Run playwright tests
+	@./batect playwright-e2e
 
 # Security  --------------------
 ##

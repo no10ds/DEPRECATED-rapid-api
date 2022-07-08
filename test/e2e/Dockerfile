@@ -1,0 +1,9 @@
+FROM mcr.microsoft.com/playwright:focal
+
+WORKDIR /app
+RUN apt update
+RUN apt install -y python3.8 python3-pip
+RUN pip install playwright
+RUN playwright install
+
+CMD ["python3", "test/e2e/playwright-e2e.py"]

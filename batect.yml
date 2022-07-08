@@ -25,16 +25,16 @@ containers:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
   playwright-image:
-    # build_directory: .
-    # dockerfile: Dockerfile
-    image: mcr.microsoft.com/playwright:focal
+    build_directory: test/e2e
+    dockerfile: Dockerfile
+    # image: mcr.microsoft.com/playwright:focal
     working_directory: /app
-    # build_args:
-    #   commit_sha: ${GITHUB_SHA:-unknown}
-    #   version: ${GITHUB_REF_NAME:-unknown}
-    # run_as_current_user:
-    #   enabled: true
-    #   home_directory: /home/batect-container-user
+    build_args:
+      commit_sha: ${GITHUB_SHA:-unknown}
+      version: ${GITHUB_REF_NAME:-unknown}
+    run_as_current_user:
+      enabled: true
+      home_directory: /home/batect-container-user
     volumes:
       - local: .
         container: /app
@@ -95,14 +95,6 @@ tasks:
     run:
       container: service-image
       command: "pytest test/e2e -v"
-
-  install-dependencies:
-    description: Install playwright dependencies
-    run:
-      container: playwright-image
-      # command: "'apt update && apt install -y python3.8 python3-pip && pip install playwright'"
-      command: "'apt update && apt install -y tree'"
-      entrypoint: /bin/bash -c
     
   playwright-e2e:
     description: Run e2e tests with playwright
@@ -110,7 +102,6 @@ tasks:
       - service-image
     run:
       container: playwright-image
-      command: python test/e2e/playwright-e2e.py -v
 
   test-coverage:
     description: Run all tests with coverage report for source code only
