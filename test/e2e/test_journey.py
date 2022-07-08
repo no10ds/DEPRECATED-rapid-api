@@ -1,5 +1,6 @@
 import json
 from abc import ABC
+from wsgiref import headers
 
 import boto3
 import requests
@@ -42,7 +43,7 @@ class BaseJourneyTest(ABC):
 
 class TestUnauthenticatedJourneys(BaseJourneyTest):
     def test_http_request_is_redirected_to_https(self):
-        response = requests.get(f"https://{DOMAIN_NAME}status")
+        response = requests.get(f"https://{DOMAIN_NAME}")
         assert f"https://{DOMAIN_NAME}" in response.url
 
     def test_status_always_accessible(self):
@@ -69,7 +70,7 @@ class TestUnauthenticatedJourneys(BaseJourneyTest):
 class TestUnauthorisedJourney(BaseJourneyTest):
     token_url = f"https://{DOMAIN_NAME}/oauth2/token"
     credentials = get_secret(
-        secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
+        secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
     )
     cognito_client_id = credentials["CLIENT_ID"]
     cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
@@ -120,7 +121,7 @@ class TestUnauthorisedJourney(BaseJourneyTest):
 class TestAuthenticatedJourneys(BaseJourneyTest):
     token_url = f"https://{DOMAIN_NAME}/oauth2/token"
     credentials = get_secret(
-        secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
+        secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
     )
     cognito_client_id = credentials["CLIENT_ID"]
     cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
@@ -196,6 +197,7 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
     def test_upload_when_authorised(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
         url = self.upload_dataset_url("test_e2e", "upload")
+        print(url)
         response = requests.post(url, headers=self.generate_auth_headers(), files=files)
         assert response.status_code == 201
 
@@ -214,18 +216,20 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
 
     def test_query_existing_dataset_as_csv_when_authorised(self):
         url = self.query_dataset_url(domain="test_e2e", dataset="query")
+        print(url)
         headers = {
             "Accept": "text/csv",
             "Authorization": "Bearer " + self.token,
         }
         response = requests.post(url, headers=headers)
+        print(response.content)
         assert response.status_code == 200
 
         assert (
             response.text
-            == '"","year","month","case_type","region","offence_group","remand_status","value","source"\n'
-            + '0,"2017","7","3. Committed for sentence","North West","05: Criminal damage and arson","bail","89","XHIBIT"\n'
-            + '1,"2017","7","3. Committed for sentence","North West","04: Theft offences","unknown","167","XHIBIT"\n'
+            =='"","year","month","destination","arrival","type","status"\n'
+            +'0,"2017","7","Leeds","London","regular","completed"\n'
+            +'1,"2017","7","Darlington","Durham","regular","completed"\n'
         )
 
     def test_get_existing_dataset_info_when_authorised(self):
@@ -242,6 +246,7 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
     def test_delete_existing_data_when_authorised(self):
         url = self.list_dataset_files_url(domain="test_e2e", dataset="delete")
         response1 = requests.get(url, headers=(self.generate_auth_headers()))
+        print(url)
         assert response1.status_code == 200
 
         response_list = json.loads(response1.text)
