@@ -124,7 +124,9 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
     )
     cognito_client_id = credentials["CLIENT_ID"]
     cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
-
+    
+    print(cognito_client_id)
+    
     access_token = None
 
     def setup_class(self):

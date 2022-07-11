@@ -61,11 +61,10 @@ tasks:
 
   shell:
     description: Shell into the container
-    dependencies:
-      - service-image
     run:
       container: playwright-image
-      command: bash
+      # command: bash
+      command: python3 get_secrets.py -v
 
   run-app:
     description: Run the app locally
@@ -102,7 +101,8 @@ tasks:
       - service-image
     run:
       container: playwright-image
-      command: python3 test/e2e/playwright-chrome.py -v
+      # command: python3 test/e2e/playwright-chrome.py -v
+      command: python3 get_secrets.py -v
 
   test-coverage:
     description: Run all tests with coverage report for source code only

@@ -11,15 +11,15 @@ def run(playwright: Playwright) -> None:
     browser = playwright.chromium.launch(headless=True, slow_mo=500)
     context = browser.new_context()
     
-    token_url = f"https://{DOMAIN_NAME}/oauth2/token"
-    print(DOMAIN_NAME)
-    credentials = get_secret(
-        secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
-    )
+    # credentials = get_secret(
+    #     secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
+    # )
+    # cognito_client_id = credentials["CLIENT_ID"]
+    # cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
+    credentials = get_secret("DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET")
     cognito_client_id = credentials["CLIENT_ID"]
-    print(cognito_client_id)
-    cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
-
+    cognito_client_secret = credentials["CLIENT_SECRET"]
+    
     # Open new page
     page = context.new_page()
 
