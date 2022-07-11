@@ -8,7 +8,7 @@ from api.common.config.aws import DOMAIN_NAME
 from e2e_test_utils import get_secret
 
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=True, slow_mo=500)
+    browser = playwright.chromium.launch(headless=False, slow_mo=500)
     context = browser.new_context()
     
     # credentials = get_secret(
@@ -24,7 +24,7 @@ def run(playwright: Playwright) -> None:
     page = context.new_page()
 
     # Go to http://localhost:8000/docs
-    page.goto("http://service-image:8000/docs")
+    page.goto("http://localhost:8000/docs")
 
     # Click button:has-text("Authorize")
     page.locator("button:has-text(\"Authorize\")").click()
@@ -55,7 +55,7 @@ def run(playwright: Playwright) -> None:
 
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
     page.locator("text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema").click()
-    page.wait_for_url("http://service-image:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
+    page.wait_for_url("http://localhost:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
 
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()

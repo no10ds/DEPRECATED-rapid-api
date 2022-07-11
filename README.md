@@ -49,3 +49,22 @@ Diagrams are compiled [here](docs/architecture/C4_diagrams) and show the intende
 - AWS (ECR, ECS, EC2, S3, Athena)
 - Terraform
 - Github Actions
+
+
+
+# Playwright browser tests
+
+## Manual localhost testing
+Start the local instance and run playwright tests 
+
+```bash
+make run-dev
+python test/e2e/playwright-chrome-local.py
+```
+## Containerised test
+Start headless batect instance
+
+```bash
+make test-browsers
+```
+

@@ -46,6 +46,10 @@ containers:
       DATA_BUCKET: ${DATA_BUCKET}
       DOMAIN_NAME: ${DOMAIN_NAME}
       RESOURCE_PREFIX: ${RESOURCE_PREFIX}
+      # Optional use when working locally
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
 
 tasks:
   runtime-environment:
@@ -62,9 +66,9 @@ tasks:
   shell:
     description: Shell into the container
     run:
-      container: playwright-image
-      # command: bash
-      command: python3 get_secrets.py -v
+      container: service-image
+      command: bash
+  
 
   run-app:
     description: Run the app locally
@@ -101,8 +105,9 @@ tasks:
       - service-image
     run:
       container: playwright-image
-      # command: python3 test/e2e/playwright-chrome.py -v
-      command: python3 get_secrets.py -v
+      command: python3 test/e2e/playwright-chrome.py -v
+      # command: python3 get_secrets.py -v
+      # command: bash
 
   test-coverage:
     description: Run all tests with coverage report for source code only
