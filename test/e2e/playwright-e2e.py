@@ -2,7 +2,7 @@ from playwright.sync_api import Playwright, sync_playwright
 
 
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=True)
+    browser = playwright.chromium.launch(headless=True, slow_mo=50)
     context = browser.new_context()
 
     # Open new page
@@ -10,6 +10,7 @@ def run(playwright: Playwright) -> None:
 
     # Go to http://service-image:8000/docs
     page.goto("http://service-image:8000/docs")
+    print(page.title())
    
 
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
