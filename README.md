@@ -55,8 +55,16 @@ Diagrams are compiled [here](docs/architecture/C4_diagrams) and show the intende
 # Playwright browser tests
 
 ## Manual localhost testing
-Start the local instance and run playwright tests 
-
+ 
+create local .env file with rapid variables
+```bash
+cp example.env .env
+```
+Once you .env is populated you may need to set them locally
+```bash
+set -a && source .env && set +a
+```
+Start the local instance and run playwright tests
 ```bash
 make run-dev
 python test/e2e/playwright-chrome-local.py

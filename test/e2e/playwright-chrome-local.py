@@ -11,14 +11,11 @@ def run(playwright: Playwright) -> None:
     browser = playwright.chromium.launch(headless=False, slow_mo=500)
     context = browser.new_context()
     
-    # credentials = get_secret(
-    #     secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
-    # )
-    # cognito_client_id = credentials["CLIENT_ID"]
-    # cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
-    credentials = get_secret("DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET")
+    credentials = get_secret(
+        secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET" 
+    )
     cognito_client_id = credentials["CLIENT_ID"]
-    cognito_client_secret = credentials["CLIENT_SECRET"]
+    cognito_client_secret = credentials["CLIENT_SECRET"]  
     
     # Open new page
     page = context.new_page()
@@ -64,24 +61,15 @@ def run(playwright: Playwright) -> None:
     page.locator("[placeholder=\"sensitivity\"]").click()
 
     # Fill [placeholder="sensitivity"]
-    page.locator("[placeholder=\"sensitivity\"]").fill("playwright")
+    page.locator("[placeholder=\"sensitivity\"]").fill("PUBLIC")
 
     # Press Tab
     page.locator("[placeholder=\"sensitivity\"]").press("Tab")
 
     # Fill [placeholder="domain"]
     page.locator("[placeholder=\"domain\"]").fill("playwright")
-
-    # Click [placeholder="sensitivity"]
-    page.locator("[placeholder=\"sensitivity\"]").click()
-
-    # Fill [placeholder="sensitivity"]
-    page.locator("[placeholder=\"sensitivity\"]").fill("PUBLIC")
-
-    # Press Tab
-    page.locator("[placeholder=\"sensitivity\"]").press("Tab")
-
-    # Press Tab
+    
+        # Press Tab
     page.locator("[placeholder=\"domain\"]").press("Tab")
 
     # Fill [placeholder="dataset"]
@@ -91,7 +79,7 @@ def run(playwright: Playwright) -> None:
     page.locator("input[type=\"file\"]").click()
 
     # Upload test_journey_file.csv
-    page.locator("input[type=\"file\"]").set_input_files("./test_journey_file.csv")
+    page.locator("input[type=\"file\"]").set_input_files("test/e2e/test_journey_file.csv")
 
     # Click text=Execute
     page.locator("text=Execute").click()
