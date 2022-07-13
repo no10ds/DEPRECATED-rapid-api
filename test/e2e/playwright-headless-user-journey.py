@@ -24,7 +24,7 @@ params = {
 }
 
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=False,slow_mo=500)
+    browser = playwright.chromium.launch(headless=True,slow_mo=500)
     context = browser.new_context()
     
     credentials = get_secret(
@@ -33,11 +33,11 @@ def run(playwright: Playwright) -> None:
     cognito_client_id = credentials["CLIENT_ID"]
     cognito_client_secret = credentials["CLIENT_SECRET"] 
     
-    
+    print("Starting Playwright Headless User Journey")
     # Open new page
     page = context.new_page()
-    # Go to http://localhost:8000/docs
-    page.goto("http://localhost:8000/docs")
+    # Go to http://service-image:8000/docs
+    page.goto("http://service-image:8000/docs")
     # Click button:has-text("Authorize")
     page.locator("button:has-text(\"Authorize\")").click()
     # Click input[type="text"]
@@ -56,7 +56,7 @@ def run(playwright: Playwright) -> None:
     page.locator("text=Close").click()
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
     page.locator("text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema").click()
-    page.wait_for_url("http://localhost:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
+    page.wait_for_url("http://service-image:8000/docs#/Schema/generate_schema_schema__sensitivity___domain___dataset__generate_post")
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
     # Click [placeholder="sensitivity"]
@@ -81,10 +81,10 @@ def run(playwright: Playwright) -> None:
     page.locator(".highlight-code > .copy-to-clipboard > button").click()
     # Click text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema
     page.locator("text=POST/schema/{sensitivity}/{domain}/{dataset}/generateGenerate Schema").click()
-    page.wait_for_url("http://localhost:8000/docs#/")
+    page.wait_for_url("http://service-image:8000/docs#/")
     # Click text=POST/schemaUpload Schema
     page.locator("text=POST/schemaUpload Schema").click()
-    page.wait_for_url("http://localhost:8000/docs#/Schema/upload_schema_schema_post")
+    page.wait_for_url("http://service-image:8000/docs#/Schema/upload_schema_schema_post")
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
     # Click textarea
@@ -117,10 +117,10 @@ def run(playwright: Playwright) -> None:
     page.locator("text=Execute").click()
     # Click text=POST/schemaUpload Schema
     page.locator("text=POST/schemaUpload Schema").click()
-    page.wait_for_url("http://localhost:8000/docs#/")
+    page.wait_for_url("http://service-image:8000/docs#/")
     # Click text=POST/datasets/{domain}/{dataset}Upload Data
     page.locator("text=POST/datasets/{domain}/{dataset}Upload Data").click()
-    page.wait_for_url("http://localhost:8000/docs#/Datasets/upload_data_datasets__domain___dataset__post")
+    page.wait_for_url("http://service-image:8000/docs#/Datasets/upload_data_datasets__domain___dataset__post")
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
     # Click [placeholder="domain"]
@@ -139,16 +139,16 @@ def run(playwright: Playwright) -> None:
     page.locator("text=Execute").click()
     # Click text=POST/datasets/{domain}/{dataset}Upload Data
     page.locator("text=POST/datasets/{domain}/{dataset}Upload Data").click()
-    page.wait_for_url("http://localhost:8000/docs#/")
+    page.wait_for_url("http://service-image:8000/docs#/")
 
-    
+    print("Waiting for the table to be created")
     sleep(200)
     # ---------------------
     
     # Once the data is uploaded and table is created, we can query it
     
-    # Go to http://localhost:8000/docs
-    page.goto("http://localhost:8000/docs")
+    # Go to http://service-image:8000/docs
+    page.goto("http://service-image:8000/docs")
 
     # Click button:has-text("Authorize")
     page.locator("button:has-text(\"Authorize\")").click()
@@ -179,7 +179,7 @@ def run(playwright: Playwright) -> None:
 
     # Click text=POST/datasets/{domain}/{dataset}/queryQuery Dataset
     page.locator("text=POST/datasets/{domain}/{dataset}/queryQuery Dataset").click()
-    page.wait_for_url("http://localhost:8000/docs#/Datasets/query_dataset_datasets__domain___dataset__query_post")
+    page.wait_for_url("http://service-image:8000/docs#/Datasets/query_dataset_datasets__domain___dataset__query_post")
 
     # Click text=ParametersTry it out
     page.locator("text=ParametersTry it out").click()
@@ -204,11 +204,11 @@ def run(playwright: Playwright) -> None:
 
     # Click text=POST/datasets/{domain}/{dataset}/queryQuery Dataset
     page.locator("text=POST/datasets/{domain}/{dataset}/queryQuery Dataset").click()
-    page.wait_for_url("http://localhost:8000/docs#/")
+    page.wait_for_url("http://service-image:8000/docs#/")
 
     # Click text=GET/statusStatus
     page.locator("text=GET/statusStatus").click()
-    page.wait_for_url("http://localhost:8000/docs#/Status/status_status_get")
+    page.wait_for_url("http://service-image:8000/docs#/Status/status_status_get")
 
     # Click text=Try it out
     page.locator("text=Try it out").click()
@@ -218,7 +218,7 @@ def run(playwright: Playwright) -> None:
 
     # Click text=POST/datasetsList All Datasets
     page.locator("text=POST/datasetsList All Datasets").click()
-    page.wait_for_url("http://localhost:8000/docs#/Datasets/list_all_datasets_datasets_post")
+    page.wait_for_url("http://service-image:8000/docs#/Datasets/list_all_datasets_datasets_post")
 
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
@@ -228,11 +228,11 @@ def run(playwright: Playwright) -> None:
 
     # Click text=POST/datasetsList All Datasets
     page.locator("text=POST/datasetsList All Datasets").click()
-    page.wait_for_url("http://localhost:8000/docs#/")
+    page.wait_for_url("http://service-image:8000/docs#/")
 
     # Click text=GET/datasets/{domain}/{dataset}/infoGet Dataset Info
     page.locator("text=GET/datasets/{domain}/{dataset}/infoGet Dataset Info").click()
-    page.wait_for_url("http://localhost:8000/docs#/Datasets/get_dataset_info_datasets__domain___dataset__info_get")
+    page.wait_for_url("http://service-image:8000/docs#/Datasets/get_dataset_info_datasets__domain___dataset__info_get")
 
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
@@ -254,11 +254,11 @@ def run(playwright: Playwright) -> None:
 
     # Click text=GET/datasets/{domain}/{dataset}/infoGet Dataset Info
     page.locator("text=GET/datasets/{domain}/{dataset}/infoGet Dataset Info").click()
-    page.wait_for_url("http://localhost:8000/docs#/")
+    page.wait_for_url("http://service-image:8000/docs#/")
 
     # Click text=GET/datasets/{domain}/{dataset}/filesList Raw Files
     page.locator("text=GET/datasets/{domain}/{dataset}/filesList Raw Files").click()
-    page.wait_for_url("http://localhost:8000/docs#/Datasets/list_raw_files_datasets__domain___dataset__files_get")
+    page.wait_for_url("http://service-image:8000/docs#/Datasets/list_raw_files_datasets__domain___dataset__files_get")
 
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
@@ -281,11 +281,11 @@ def run(playwright: Playwright) -> None:
 
     # Click text=GET/datasets/{domain}/{dataset}/filesList Raw Files
     page.locator("text=GET/datasets/{domain}/{dataset}/filesList Raw Files").click()
-    page.wait_for_url("http://localhost:8000/docs#/")
+    page.wait_for_url("http://service-image:8000/docs#/")
     
     # Click text=DELETE/datasets/{domain}/{dataset}/{filename}Delete Data File
     page.locator("text=DELETE/datasets/{domain}/{dataset}/{filename}Delete Data File").click()
-    page.wait_for_url("http://localhost:8000/docs#/Datasets/delete_data_file_datasets__domain___dataset___filename__delete")
+    page.wait_for_url("http://service-image:8000/docs#/Datasets/delete_data_file_datasets__domain___dataset___filename__delete")
 
     # Click button:has-text("Try it out")
     page.locator("button:has-text(\"Try it out\")").click()
@@ -323,6 +323,7 @@ def run(playwright: Playwright) -> None:
 
     # Click [placeholder="filename"]
     page.locator("[placeholder=\"filename\"]").click()
+    print("Playwright headless user journey completed")
 
     # ---------------------
     context.close()

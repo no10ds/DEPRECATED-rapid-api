@@ -44,6 +44,9 @@ containers:
       AWS_DEFAULT_REGION: ${AWS_REGION}
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID}
       DATA_BUCKET: ${DATA_BUCKET}
+      QUERY_BUCKET: ${QUERY_BUCKET}
+      KMS_KEY: ${KMS_KEY}
+      DATABASE: ${DATABASE}
       DOMAIN_NAME: ${DOMAIN_NAME}
       RESOURCE_PREFIX: ${RESOURCE_PREFIX}
       # Optional use when working locally
@@ -99,13 +102,13 @@ tasks:
       container: service-image
       command: "pytest test/e2e -v"
     
-  playwright-e2e:
-    description: Run e2e tests with playwright
+  playwright-headless-journey:
+    description: Run e2e tests with playwright headless
     dependencies:
       - service-image
     run:
       container: playwright-image
-      command: python3 test/e2e/playwright-chrome.py -v
+      command: python3 test/e2e/playwright-headless-user-journey.py -v
 
   test-coverage:
     description: Run all tests with coverage report for source code only
