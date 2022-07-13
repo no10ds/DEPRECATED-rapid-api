@@ -106,8 +106,6 @@ tasks:
     run:
       container: playwright-image
       command: python3 test/e2e/playwright-chrome.py -v
-      # command: python3 get_secrets.py -v
-      # command: bash
 
   test-coverage:
     description: Run all tests with coverage report for source code only
