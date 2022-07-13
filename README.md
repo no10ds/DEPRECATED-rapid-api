@@ -67,7 +67,7 @@ set -a && source .env && set +a
 Start the local instance and run playwright tests
 ```bash
 make run-dev
-make test-browser-journey
+make test-chrome-journey
 ```
 ## Containerised test
 Start headless batect instance
