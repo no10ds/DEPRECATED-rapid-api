@@ -91,7 +91,7 @@ def run(playwright: Playwright) -> None:
     page.locator("input[type=\"file\"]").click()
 
     # Upload test_journey_file.csv
-    page.locator("input[type=\"file\"]").set_input_files("./test_journey_file.csv")
+    page.locator("input[type=\"file\"]").set_input_files("test/e2e/test_journey_file.csv")
 
     # Click text=Execute
     page.locator("text=Execute").click()
