@@ -1,6 +1,5 @@
 import base64
 import json
-from pydoc import cli
 from typing import Dict
 
 import boto3
@@ -11,6 +10,7 @@ from api.common.config.aws import AWS_REGION
 
 class AuthenticationFailedError(Exception):
     pass
+
 
 def get_secret(secret_name: str) -> Dict:
     client = boto3.client(service_name="secretsmanager", region_name=AWS_REGION)
