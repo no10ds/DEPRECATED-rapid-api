@@ -123,17 +123,17 @@ release:
 	@gh release create ${version} -F latest_release_changelog.md
 	@rm -rf latest_release_changelog.md
 
-tag-release-image:	        ## Tag the image with the tag name
+tag-release-image:			## Tag the image with the tag name
 	@docker tag rapid-api-service-image:latest $(PUBLIC_URI)/$(PUBLIC_IMAGE):${GITHUB_REF_NAME}
 
-upload-release-image-to-registry: 	## Upload the tagged release image to the image registry
+upload-release-image-to-registry:	## Upload the tagged release image to the image registry
 	@aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin $(PUBLIC_URI) && docker push $(PUBLIC_URI)/$(PUBLIC_IMAGE):${GITHUB_REF_NAME}
 
 tag-and-upload-release-image:		## Tag and upload the release image
 	@$(MAKE) tag-release-image
 	@$(MAKE) upload-release-image-to-registry
 
-tag-generic-release-images:			## Tag generic release images (e.g.: v1.4.x-latest and v1.x.x-latest)
+tag-generic-release-images:		## Tag generic release images (e.g.: v1.4.x-latest and v1.x.x-latest)
 	@./image-utils.sh "tag_latest_minor" ${GITHUB_REF_NAME}
 	@./image-utils.sh "tag_latest_patch" ${GITHUB_REF_NAME}
 
