@@ -1,12 +1,9 @@
+from e2e_test_utils import get_secret
+from playwright.sync_api import Playwright, sync_playwright
 import sys
 import os
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
-
-from playwright.sync_api import Playwright, sync_playwright
-
-from api.common.config.aws import DOMAIN_NAME
-from e2e_test_utils import get_secret
 
 
 def run(playwright: Playwright) -> None:
@@ -18,9 +15,10 @@ def run(playwright: Playwright) -> None:
     # )
     # cognito_client_id = credentials["CLIENT_ID"]
     # cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
-    credentials = get_secret("DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET")
+    credentials = get_secret(
+        "DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET")  # pragma: allowlist secret
     cognito_client_id = credentials["CLIENT_ID"]
-    cognito_client_secret = credentials["CLIENT_SECRET"]
+    cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
 
     # Open new page
     page = context.new_page()

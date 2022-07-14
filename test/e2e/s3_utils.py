@@ -1,6 +1,8 @@
 import boto3
 
 # Deletes all files in your path so use carefully!
+
+
 def cleanup_query_files(params):
     session = boto3.Session()
     s3 = session.resource("s3")

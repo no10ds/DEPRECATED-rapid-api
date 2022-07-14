@@ -1,19 +1,18 @@
-import sys
-import os
-from time import sleep
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
-
-from playwright.sync_api import Playwright, sync_playwright
-
-from e2e_test_utils import get_secret
+from clean_athena import athena_query
 from s3_utils import (
     get_file_names,
     cleanup_query_files,
     cleanup_data_files,
     cleanup_raw_files,
 )
-from clean_athena import athena_query
+from e2e_test_utils import get_secret
+from playwright.sync_api import Playwright, sync_playwright
+import sys
+import os
+from time import sleep
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
+
 
 params = {
     "region": os.environ["AWS_REGION"],
@@ -34,10 +33,10 @@ def run(playwright: Playwright) -> None:
     context = browser.new_context()
 
     credentials = get_secret(
-        secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"
+        secret_name="DEV_NO10DS_E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
     )
     cognito_client_id = credentials["CLIENT_ID"]
-    cognito_client_secret = credentials["CLIENT_SECRET"]
+    cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
 
     print("Starting Playwright Headless User Journey")
     # Open new page
@@ -277,7 +276,9 @@ def run(playwright: Playwright) -> None:
     # Fill [placeholder="dataset"]
     page.locator('[placeholder="dataset"]').fill("playwright01")
 
-    # Click #operations-Datasets-get_dataset_info_datasets__domain___dataset__info_get >> text=Execute
+    # Click
+    # #operations-Datasets-get_dataset_info_datasets__domain___dataset__info_get
+    # >> text=Execute
     page.locator(
         "#operations-Datasets-get_dataset_info_datasets__domain___dataset__info_get >> text=Execute"
     ).click()
@@ -307,7 +308,9 @@ def run(playwright: Playwright) -> None:
     # Fill [placeholder="dataset"]
     page.locator('[placeholder="dataset"]').fill("playwright01")
 
-    # Click #operations-Datasets-list_raw_files_datasets__domain___dataset__files_get >> text=Execute
+    # Click
+    # #operations-Datasets-list_raw_files_datasets__domain___dataset__files_get
+    # >> text=Execute
     page.locator(
         "#operations-Datasets-list_raw_files_datasets__domain___dataset__files_get >> text=Execute"
     ).click()
@@ -355,7 +358,9 @@ def run(playwright: Playwright) -> None:
     # Fill [placeholder="filename"]
     page.locator('[placeholder="filename"]').fill(file_name)
 
-    # Click #operations-Datasets-delete_data_file_datasets__domain___dataset___filename__delete >> text=Execute
+    # Click
+    # #operations-Datasets-delete_data_file_datasets__domain___dataset___filename__delete
+    # >> text=Execute
     page.locator(
         "#operations-Datasets-delete_data_file_datasets__domain___dataset___filename__delete >> text=Execute"
     ).click()
@@ -368,7 +373,7 @@ def run(playwright: Playwright) -> None:
     context.close()
     browser.close()
 
-    ## clean up
+    # clean up
     print("Cleaning up...")
     cleanup_query_files(params)
     cleanup_data_files(params)
