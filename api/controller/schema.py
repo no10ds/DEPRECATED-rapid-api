@@ -3,7 +3,6 @@ from fastapi import UploadFile, File, Security
 from fastapi import status as http_status
 
 from api.adapter.cognito_adapter import CognitoAdapter
-from api.adapter.glue_adapter import GlueAdapter
 from api.application.services.authorisation_service import protect_endpoint
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
@@ -18,11 +17,9 @@ from api.common.custom_exceptions import (
 from api.common.logger import AppLogger
 from api.controller.utils import _response_body
 from api.domain.schema import Schema
-from api.common.config.aws import RESOURCE_PREFIX
 
 data_service = DataService()
 schema_infer_service = SchemaInferService()
-glue_adapter = GlueAdapter()
 delete_service = DeleteService()
 cognito_adapter = CognitoAdapter()
 
@@ -90,10 +87,6 @@ async def upload_schema(schema: Schema):
     """
     try:
         schema_file_name = data_service.upload_schema(schema)
-        cognito_adapter.create_user_groups(schema.get_domain(), schema.get_dataset())
-        glue_adapter.create_crawler(
-            RESOURCE_PREFIX, schema.get_domain(), schema.get_dataset(), schema.get_tags()
-        )
         return _response_body(schema_file_name)
     except ProtectedDomainDoesNotExistError as error:
         _log_and_raise_error("Protected domain error", error.args[0])

@@ -1,10 +1,11 @@
 from unittest.mock import Mock, patch
 
 import pandas as pd
-from api.common.config.aws import RESOURCE_PREFIX
 import pytest
+from botocore.exceptions import ClientError
 
 from api.application.services.data_service import DataService
+from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     ProtectedDomainDoesNotExistError,
     SchemaNotFoundError,
@@ -28,14 +29,16 @@ from test.test_utils import set_encoded_content
 class TestUploadSchema:
     def setup_method(self):
         self.s3_adapter = Mock()
-        self.crawler_adapter = Mock()
+        self.glue_adapter = Mock()
         self.query_adapter = Mock()
         self.protected_domain_service = Mock()
+        self.cognito_adapter = Mock()
         self.data_service = DataService(
             self.s3_adapter,
-            self.crawler_adapter,
+            self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
+            self.cognito_adapter
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -69,7 +72,28 @@ class TestUploadSchema:
         self.s3_adapter.save_schema.assert_called_once_with(
             "some", "other", "PUBLIC", self.valid_schema
         )
+        self.cognito_adapter.create_user_groups.assert_called_once_with("some", "other")
+        self.glue_adapter.create_crawler.assert_called_once_with(
+            RESOURCE_PREFIX,
+            "some",
+            "other",
+            {
+                "sensitivity": "PUBLIC"
+            }
+        )
         assert result == "some-other.json"
+
+    def test_aborts_uploading_if_schema_upload_fails(self):
+        self.s3_adapter.find_schema.return_value = None
+        self.s3_adapter.save_schema.side_effect = ClientError(
+            error_response={"Error": {"Code": "Failed"}},
+            operation_name="PutObject")
+
+        with pytest.raises(ClientError):
+            self.data_service.upload_schema(self.valid_schema)
+
+        self.cognito_adapter.create_user_groups.assert_not_called()
+        self.glue_adapter.create_crawler.assert_not_called()
 
     def test_check_for_protected_domain_success(self):
         schema = Schema(
@@ -161,6 +185,7 @@ class TestUploadDataset:
             self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
+            None
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -742,6 +767,7 @@ class TestDatasetInfoRetrieval:
             self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
+            None
         )
         self.glue_adapter.get_table_last_updated_date.return_value = (
             "2022-03-01 11:03:49+00:00"

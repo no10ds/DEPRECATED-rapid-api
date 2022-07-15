@@ -2,7 +2,6 @@ from typing import Tuple, Dict
 from unittest.mock import patch
 
 from api.adapter.cognito_adapter import CognitoAdapter
-from api.adapter.glue_adapter import GlueAdapter
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
@@ -15,16 +14,11 @@ from api.common.custom_exceptions import (
 )
 from api.domain.schema import Schema, SchemaMetadata, Column, Owner
 from test.api.controller.controller_test_utils import BaseClientTest
-from api.common.config.aws import RESOURCE_PREFIX
 
 
 class TestSchemaUpload(BaseClientTest):
-    @patch.object(CognitoAdapter, "create_user_groups")
-    @patch.object(GlueAdapter, "create_crawler")
     @patch.object(DataService, "upload_schema")
-    def test_calls_services_successfully(
-        self, mock_upload_schema, mock_create_crawler, mock_create_user_groups
-    ):
+    def test_calls_services_successfully(self, mock_upload_schema, ):
         request_body, expected_schema = self._generate_schema()
 
         mock_upload_schema.return_value = "some-thing.json"
@@ -34,19 +28,6 @@ class TestSchemaUpload(BaseClientTest):
         )
 
         mock_upload_schema.assert_called_once_with(expected_schema)
-        mock_create_user_groups.assert_called_once_with("some", "thing")
-        mock_create_crawler.assert_called_once_with(
-            RESOURCE_PREFIX,
-            "some",
-            "thing",
-            {
-                "tag1": "value1",
-                "tag2": "value2",
-                "tag3": "",
-                "tag4": "",
-                "sensitivity": "PUBLIC",
-            },
-        )
 
         assert response.status_code == 201
         assert response.json() == {"uploaded": "some-thing.json"}
@@ -77,34 +58,24 @@ class TestSchemaUpload(BaseClientTest):
             ]
         }
 
-    @patch.object(GlueAdapter, "create_crawler")
     @patch.object(DataService, "upload_schema")
-    def test_returns_409_when_schema_already_exists(
-        self, mock_upload_schema, mock_create_crawler
-    ):
+    def test_returns_409_when_schema_already_exists(self, mock_upload_schema):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = ConflictError("Error message")
         response = self.client.post(
             "/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
         )
 
-        mock_create_crawler.assert_not_called()
-
         assert response.status_code == 409
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(GlueAdapter, "create_crawler")
     @patch.object(DataService, "upload_schema")
-    def test_returns_400_when_invalid_schema(
-        self, mock_upload_schema, mock_create_crawler
-    ):
+    def test_returns_400_when_invalid_schema(self, mock_upload_schema):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = SchemaError("Error message")
         response = self.client.post(
             "/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
         )
-
-        mock_create_crawler.assert_not_called()
 
         assert response.status_code == 400
         assert response.json() == {"details": "Error message"}
@@ -112,12 +83,10 @@ class TestSchemaUpload(BaseClientTest):
     @patch.object(CognitoAdapter, "delete_user_groups")
     @patch.object(CognitoAdapter, "create_user_groups")
     @patch.object(DeleteService, "delete_schema")
-    @patch.object(GlueAdapter, "create_crawler")
     @patch.object(DataService, "upload_schema")
     def test_returns_500_schema_deletion_if_crawler_creation_fails(
         self,
         mock_upload_schema,
-        mock_create_crawler,
         mock_delete_schema,
         mock_create_user_groups,
         mock_delete_user_groups,
@@ -126,7 +95,7 @@ class TestSchemaUpload(BaseClientTest):
 
         mock_upload_schema.return_value = "some-thing.json"
         mock_create_user_groups.return_value = None
-        mock_create_crawler.side_effect = CrawlerCreateFailsError(
+        mock_upload_schema.side_effect = CrawlerCreateFailsError(
             "Crawler creation error"
         )
 
@@ -140,16 +109,14 @@ class TestSchemaUpload(BaseClientTest):
         mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC")
         mock_delete_user_groups.assert_called_once_with("some", "thing")
 
-    @patch.object(CognitoAdapter, "create_user_groups")
     @patch.object(DeleteService, "delete_schema")
     @patch.object(DataService, "upload_schema")
     def test_returns_500_schema_deletion_if_user_group_creation_fails(
-        self, mock_upload_schema, mock_delete_schema, mock_create_user_groups
+            self, mock_upload_schema, mock_delete_schema
     ):
         request_body, _ = self._generate_schema()
 
-        mock_upload_schema.return_value = "some-thing.json"
-        mock_create_user_groups.side_effect = UserGroupCreationError(
+        mock_upload_schema.side_effect = UserGroupCreationError(
             "User group creation error"
         )
 
@@ -161,7 +128,6 @@ class TestSchemaUpload(BaseClientTest):
         assert response.json() == {"details": "User group creation error"}
 
         mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC")
-        mock_create_user_groups.assert_called_once_with("some", "thing")
 
     @patch.object(DataService, "upload_schema")
     def test_returns_500_if_protected_domain_does_not_exist(

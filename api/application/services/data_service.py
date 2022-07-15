@@ -3,6 +3,7 @@ from typing import List, Tuple
 import pandas as pd
 
 from api.adapter.athena_adapter import DatasetQuery
+from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.dataset_validation import get_validated_dataframe
@@ -10,6 +11,7 @@ from api.application.services.partitioning_service import generate_partitioned_d
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
 from api.common.config.auth import SensitivityLevel
+from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
@@ -29,16 +31,18 @@ from api.domain.storage_metadata import filename_with_timestamp, StorageMetaData
 
 class DataService:
     def __init__(
-        self,
-        persistence_adapter=S3Adapter(),
-        glue_adapter=GlueAdapter(),
-        query_adapter=DatasetQuery(),
-        protected_domain_service=ProtectedDomainService(),
+            self,
+            persistence_adapter=S3Adapter(),
+            glue_adapter=GlueAdapter(),
+            query_adapter=DatasetQuery(),
+            protected_domain_service=ProtectedDomainService(),
+            cognito_adapter=CognitoAdapter(),
     ):
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
         self.query_adapter = query_adapter
         self.protected_domain_service = protected_domain_service
+        self.cognito_adapter = cognito_adapter
 
     def list_raw_files(self, domain: str, dataset: str) -> list[str]:
         raw_files = self.persistence_adapter.list_raw_files(domain, dataset)
@@ -53,7 +57,7 @@ class DataService:
         return filename_with_timestamp(filename)
 
     def generate_raw_and_permanent_filenames(
-        self, schema: Schema, filename: str
+            self, schema: Schema, filename: str
     ) -> Tuple[str, str]:
         behaviour = schema.get_update_behaviour()
 
@@ -66,7 +70,7 @@ class DataService:
         return raw_filename, permanent_filename
 
     def upload_dataset(
-        self, resource_prefix: str, domain: str, dataset: str, filename: str, file_contents: str
+            self, resource_prefix: str, domain: str, dataset: str, filename: str, file_contents: str
     ) -> str:
         schema = self._get_schema(domain, dataset)
         if not schema:
@@ -101,9 +105,14 @@ class DataService:
 
         self.check_for_protected_domain(schema)
         validate_schema_for_upload(schema)
-        return self.persistence_adapter.save_schema(
+        schema_name = self.persistence_adapter.save_schema(
             schema.get_domain(), schema.get_dataset(), schema.get_sensitivity(), schema
         )
+        self.cognito_adapter.create_user_groups(schema.get_domain(), schema.get_dataset())
+        self.glue_adapter.create_crawler(
+            RESOURCE_PREFIX, schema.get_domain(), schema.get_dataset(), schema.get_tags()
+        )
+        return schema_name
 
     def check_for_protected_domain(self, schema: Schema):
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
@@ -134,7 +143,7 @@ class DataService:
         )
 
     def _upload_data(
-        self, schema: Schema, validated_dataframe: pd.DataFrame, filename: str
+            self, schema: Schema, validated_dataframe: pd.DataFrame, filename: str
     ):
         partitioned_data = generate_partitioned_data(schema, validated_dataframe)
         self.persistence_adapter.upload_partitioned_data(
@@ -152,7 +161,7 @@ class DataService:
         return SQLQuery(select_columns=columns_to_query)
 
     def _enrich_metadata(
-        self, schema: Schema, statistics_dataframe: pd.DataFrame, last_updated: str
+            self, schema: Schema, statistics_dataframe: pd.DataFrame, last_updated: str
     ) -> EnrichedSchemaMetadata:
         dataset_size = statistics_dataframe.at[0, "data_size"]
         return EnrichedSchemaMetadata(
@@ -163,7 +172,7 @@ class DataService:
         )
 
     def _enrich_columns(
-        self, schema: Schema, statistics_dataframe: pd.DataFrame
+            self, schema: Schema, statistics_dataframe: pd.DataFrame
     ) -> List[EnrichedColumn]:
         enriched_columns = []
         self._build_date_statistics(enriched_columns, schema, statistics_dataframe)
