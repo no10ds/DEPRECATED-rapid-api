@@ -4,3 +4,5 @@ ignore = E266, E501, W503
 max-line-length = 90
 max-complexity = 18
 select = B,C,E,F,W,T4,B9
+per-file-ignores =
+    test/journey/*:E402

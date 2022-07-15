@@ -1,18 +1,16 @@
-from clean_athena import athena_query
-from s3_utils import (
+from time import sleep
+import os
+import sys
+from playwright.sync_api import Playwright, sync_playwright
+sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
+from journey_test_utils import (
+    get_secret,
     get_file_names,
     cleanup_query_files,
     cleanup_data_files,
     cleanup_raw_files,
+    athena_query
 )
-from e2e_test_utils import get_secret
-from playwright.sync_api import Playwright, sync_playwright
-import sys
-import os
-from time import sleep
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "../../"))
-
 
 params = {
     "region": os.environ["AWS_REGION"],
@@ -29,7 +27,7 @@ params = {
 
 
 def run(playwright: Playwright) -> None:
-    browser = playwright.firefox.launch(headless=False, slow_mo=500)
+    browser = playwright.chromium.launch(headless=False, slow_mo=500)
     context = browser.new_context()
 
     credentials = get_secret(

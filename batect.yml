@@ -108,7 +108,7 @@ tasks:
       - service-image
     run:
       container: playwright-image
-      command: python3 test/e2e/playwright-headless-user-journey.py -v
+      command: python3 test/journey/playwright-headless-user-journey.py -v
 
   test-coverage:
     description: Run all tests with coverage report for source code only

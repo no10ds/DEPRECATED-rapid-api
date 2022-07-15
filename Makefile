@@ -46,10 +46,10 @@ test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage
 
 test-chrome-journey: 	## Run playwright tests
-	@python3 test/e2e/playwright-chrome-local.py -v
+	@python3 test/journey/playwright-chrome-local.py -v
 
 test-firefox-journey: 	## Run playwright tests
-	@python3 test/e2e/playwright-firefox-local.py -v
+	@python3 test/journey/playwright-firefox-local.py -v
 
 test-browser-journey-headless: 	## Run playwright tests
 	@./batect playwright-headless-journey
