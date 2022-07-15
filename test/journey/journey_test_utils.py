@@ -63,10 +63,6 @@ def get_file_names(params):
             return file_name
         else:
             raise Exception("No file found")
-    print("Cleaning up...")
-    cleanup_query_files(params)
-    cleanup_data_files(params)
-    cleanup_raw_files(params)
 
 
 def athena_query(params):
