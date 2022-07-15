@@ -154,16 +154,11 @@ class Schema(BaseModel):
     def get_columns_by_type(self, d_type: str) -> List[Column]:
         return [column for column in self.columns if column.data_type == d_type]
 
+    def get_column_names_by_type(self, d_type: str) -> List[str]:
+        return [column.name for column in self.columns if column.data_type == d_type]
+
     def get_partition_columns(self) -> List[Column]:
         return sorted(
             [column for column in self.columns if column.partition_index is not None],
             key=lambda x: x.partition_index,
         )
-
-    def get_statistics_query_columns(self) -> List[str]:
-        query_columns = []
-        for column in self.get_columns_by_type(DataTypes.DATE):
-            name = column.name
-            query_columns.append(f"max({name}) as max_{name}")
-            query_columns.append(f"min({name}) as min_{name}")
-        return query_columns

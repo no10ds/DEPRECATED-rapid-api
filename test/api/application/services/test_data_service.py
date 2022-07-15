@@ -917,8 +917,8 @@ class TestDatasetInfoRetrieval:
                 select_columns=[
                     "count(*) as data_size",
                     "max(date) as max_date",
-                    "min(date) as min_date",
                     "max(date2) as max_date2",
+                    "min(date) as min_date",
                     "min(date2) as min_date2",
                 ]
             ),

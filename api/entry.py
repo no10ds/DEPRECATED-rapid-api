@@ -7,7 +7,6 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.authorisation_service import (
     protect_dataset_endpoint,
     user_logged_in,
@@ -24,15 +23,14 @@ from api.common.logger import AppLogger, init_logger
 from api.controller.auth import auth_router
 from api.controller.client import client_router
 from api.controller.datasets import datasets_router
-from api.controller.schema import schema_router
 from api.controller.protected_domain import protected_domain_router
+from api.controller.schema import schema_router
 from api.exception_handler import add_exception_handlers
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
 sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
-resource_adapter = AWSResourceAdapter()
 add_exception_handlers(app)
 
 templates = Jinja2Templates(directory=(os.path.abspath("templates")))

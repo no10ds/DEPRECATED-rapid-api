@@ -42,6 +42,13 @@ class TestSchema:
 
         assert actual_column_names == expected_column_names
 
+    def test_gets_column_names_by_data_type(self):
+        expected_column_names = ["colname1"]
+
+        actual_column_names = self.schema.get_column_names_by_type("Int64")
+
+        assert actual_column_names == expected_column_names
+
     def test_gets_numeric_column_dtypes(self):
         expected_columns_dtypes = {"colname1": "Int64", "colname3": "boolean"}
 
@@ -69,43 +76,6 @@ class TestSchema:
         actual_data_types = self.schema.get_data_types()
 
         assert actual_data_types == expected_data_types
-
-    def test_get_query_columns(self):
-        schema = Schema(
-            metadata=SchemaMetadata(
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="test_sensitivity",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=1,
-                    data_type="date",
-                    allow_null=True,
-                    format="%d/%m/%Y",
-                ),
-                Column(
-                    name="colname2",
-                    partition_index=0,
-                    data_type="date",
-                    allow_null=False,
-                    format="%d/%m/%Y",
-                ),
-            ],
-        )
-
-        expected_query_columns = [
-            "max(colname1) as max_colname1",
-            "min(colname1) as min_colname1",
-            "max(colname2) as max_colname2",
-            "min(colname2) as min_colname2",
-        ]
-
-        actual_query_columns = schema.get_statistics_query_columns()
-
-        assert actual_query_columns == expected_query_columns
 
 
 class TestSchemaMetadata:

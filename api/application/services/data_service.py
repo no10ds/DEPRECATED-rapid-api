@@ -19,6 +19,7 @@ from api.common.custom_exceptions import (
     ProtectedDomainDoesNotExistError,
 )
 from api.common.logger import AppLogger
+from api.domain.data_types import DataTypes
 from api.domain.enriched_schema import (
     EnrichedSchema,
     EnrichedSchemaMetadata,
@@ -117,8 +118,8 @@ class DataService:
     def check_for_protected_domain(self, schema: Schema):
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
             if (
-                schema.get_domain().lower()
-                not in self.protected_domain_service.list_domains()
+                    schema.get_domain().lower()
+                    not in self.protected_domain_service.list_domains()
             ):
                 raise ProtectedDomainDoesNotExistError(
                     f"The protected domain '{schema.get_domain()}' does not exist, please create it first."
@@ -154,9 +155,14 @@ class DataService:
         return self.persistence_adapter.find_schema(domain, dataset)
 
     def _build_query(self, schema: Schema) -> SQLQuery:
+        date_columns = schema.get_columns_by_type(DataTypes.DATE)
+        date_range_queries = [
+            *[f"max({column.name}) as max_{column.name}" for column in date_columns],
+            *[f"min({column.name}) as min_{column.name}" for column in date_columns]
+        ]
         columns_to_query = [
             "count(*) as data_size",
-            *schema.get_statistics_query_columns(),
+            *date_range_queries,
         ]
         return SQLQuery(select_columns=columns_to_query)
 
@@ -171,22 +177,15 @@ class DataService:
             last_updated=last_updated,
         )
 
-    def _enrich_columns(
-            self, schema: Schema, statistics_dataframe: pd.DataFrame
-    ) -> List[EnrichedColumn]:
+    def _enrich_columns(self, schema: Schema, statistics_dataframe: pd.DataFrame) -> List[EnrichedColumn]:
         enriched_columns = []
-        self._build_date_statistics(enriched_columns, schema, statistics_dataframe)
-        return [*schema.columns, *enriched_columns]
-
-    def _build_date_statistics(self, enriched_columns, schema, statistics_dataframe):
-        for column in schema.get_columns_by_type("date"):
-            enriched_columns.append(
-                EnrichedColumn(
-                    **column.dict(),
-                    statistics={
-                        "max": statistics_dataframe.at[0, f"max_{column.name}"],
-                        "min": statistics_dataframe.at[0, f"min_{column.name}"],
-                    },
-                )
-            )
-            schema.columns.remove(column)
+        date_column_names = schema.get_column_names_by_type("date")
+        for column in schema.columns:
+            statistics = None
+            if column.name in date_column_names:
+                statistics = {
+                    "max": statistics_dataframe.at[0, f"max_{column.name}"],
+                    "min": statistics_dataframe.at[0, f"min_{column.name}"],
+                }
+            enriched_columns.append(EnrichedColumn(**column.dict(), statistics=statistics))
+        return enriched_columns
