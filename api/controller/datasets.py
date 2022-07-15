@@ -6,7 +6,7 @@ from fastapi import status as http_status
 from pandas import DataFrame
 from starlette.responses import PlainTextResponse
 
-from api.adapter.athena_adapter import DatasetQuery
+from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.authorisation_service import (
     protect_dataset_endpoint,
@@ -33,7 +33,7 @@ from api.common.config.aws import RESOURCE_PREFIX
 
 resource_adapter = AWSResourceAdapter()
 data_service = DataService()
-query_adapter = DatasetQuery()
+athena_adapter = AthenaAdapter()
 delete_service = DeleteService()
 
 datasets_router = APIRouter(
@@ -341,7 +341,7 @@ async def query_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
-    df = query_adapter.query(domain, dataset, query)
+    df = athena_adapter.query(domain, dataset, query)
     string_df = df.astype("string")
     output_format = request.headers.get("Accept")
     mime_type = MimeType.to_mimetype(output_format)

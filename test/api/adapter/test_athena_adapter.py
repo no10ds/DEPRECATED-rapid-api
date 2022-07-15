@@ -6,14 +6,14 @@ from awswrangler.exceptions import QueryFailed
 from botocore.exceptions import ClientError
 
 from api.common.custom_exceptions import UserError
-from api.adapter.athena_adapter import DatasetQuery
+from api.adapter.athena_adapter import AthenaAdapter
 from api.domain.sql_query import SQLQuery, SQLQueryOrderBy
 
 
 class TestAthenaAdapter:
     def setup_method(self):
         self.mock_athena_read_sql_query = Mock()
-        self.dataset_query = DatasetQuery(
+        self.athena_adapter = AthenaAdapter(
             database="my_database",
             athena_read_sql_query=self.mock_athena_read_sql_query,
             s3_output="out",
@@ -26,7 +26,7 @@ class TestAthenaAdapter:
 
         self.mock_athena_read_sql_query.return_value = query_result_df
 
-        result = self.dataset_query.query("my", "table", SQLQuery())
+        result = self.athena_adapter.query("my", "table", SQLQuery())
 
         self.mock_athena_read_sql_query.assert_called_once_with(
             sql="SELECT * FROM my_table",
@@ -39,7 +39,7 @@ class TestAthenaAdapter:
         assert result.equals(query_result_df)
 
     def test_no_query_provided(self):
-        self.dataset_query.query("my", "table", SQLQuery())
+        self.athena_adapter.query("my", "table", SQLQuery())
 
         self.mock_athena_read_sql_query.assert_called_once_with(
             sql="SELECT * FROM my_table",
@@ -50,7 +50,7 @@ class TestAthenaAdapter:
         )
 
     def test_query_provided(self):
-        self.dataset_query.query(
+        self.athena_adapter.query(
             "my",
             "table",
             SQLQuery(
@@ -73,7 +73,7 @@ class TestAthenaAdapter:
         self.mock_athena_read_sql_query.side_effect = QueryFailed("Some error")
 
         with pytest.raises(UserError, match="Query failed to execute: Some error"):
-            self.dataset_query.query("my", "table", SQLQuery())
+            self.athena_adapter.query("my", "table", SQLQuery())
 
     def test_query_fails_because_of_invalid_format(self):
         self.mock_athena_read_sql_query.side_effect = ClientError(
@@ -87,7 +87,7 @@ class TestAthenaAdapter:
         with pytest.raises(
             UserError, match="Failed to execute query: The error message"
         ):
-            self.dataset_query.query("my", "table", SQLQuery())
+            self.athena_adapter.query("my", "table", SQLQuery())
 
     def test_query_fails_because_table_does_not_exist(self):
         self.mock_athena_read_sql_query.side_effect = QueryFailed(
@@ -97,4 +97,4 @@ class TestAthenaAdapter:
         expected_message = r"Query failed to execute: The table \[my_table\] does not exist. The data could be currently processing or you might need to upload it."
 
         with pytest.raises(UserError, match=expected_message):
-            self.dataset_query.query("my", "table", SQLQuery())
+            self.athena_adapter.query("my", "table", SQLQuery())

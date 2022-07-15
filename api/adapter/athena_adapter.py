@@ -12,7 +12,7 @@ from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import StorageMetaData
 
 
-class DatasetQuery:
+class AthenaAdapter:
     def __init__(
         self,
         database: str = ATHENA_DATABASE,

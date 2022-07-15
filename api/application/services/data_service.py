@@ -2,7 +2,7 @@ from typing import List, Tuple
 
 import pandas as pd
 
-from api.adapter.athena_adapter import DatasetQuery
+from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
@@ -34,13 +34,13 @@ class DataService:
             self,
             persistence_adapter=S3Adapter(),
             glue_adapter=GlueAdapter(),
-            query_adapter=DatasetQuery(),
+            athena_adapter=AthenaAdapter(),
             protected_domain_service=ProtectedDomainService(),
             cognito_adapter=CognitoAdapter(),
     ):
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
-        self.query_adapter = query_adapter
+        self.athena_adapter = athena_adapter
         self.protected_domain_service = protected_domain_service
         self.cognito_adapter = cognito_adapter
 
@@ -131,7 +131,7 @@ class DataService:
             raise SchemaNotFoundError(
                 f"Could not find schema related to the domain [{domain}] and dataset [{dataset}]"
             )
-        statistics_dataframe = self.query_adapter.query(
+        statistics_dataframe = self.athena_adapter.query(
             domain, dataset, self._build_query(schema)
         )
         last_updated = self.glue_adapter.get_table_last_updated_date(
