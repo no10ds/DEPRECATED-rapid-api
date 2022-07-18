@@ -11,7 +11,8 @@ from api.common.config.constants import (
 )
 from api.common.custom_exceptions import SchemaError
 from api.domain.data_types import DataTypes
-from api.domain.schema import Schema, UpdateBehaviour
+from api.domain.schema import Schema
+from api.domain.schema_metadata import UpdateBehaviour
 
 
 def validate_schema_for_upload(schema: Schema):

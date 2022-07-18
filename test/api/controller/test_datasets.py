@@ -7,6 +7,7 @@ from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
+from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     UserError,
     DatasetError,
@@ -15,12 +16,10 @@ from api.common.custom_exceptions import (
     CrawlerIsNotReadyError,
     GetCrawlerError,
 )
-from api.domain.dataset_filter_query import DatasetFilterQuery
-from api.domain.schema import Schema, SchemaMetadata, Owner, Column
+from api.domain.dataset_filters import DatasetFilters
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, SchemaMetadata
 from api.domain.sql_query import SQLQuery
-from api.domain.storage_metadata import EnrichedDatasetMetaData
-from api.common.config.aws import RESOURCE_PREFIX
-
 from test.api.controller.controller_test_utils import BaseClientTest
 
 
@@ -172,10 +171,10 @@ class TestListDatasets(BaseClientTest):
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     def test_returns_metadata_for_all_datasets(self, mock_get_datasets_metadata):
         metadata_response = [
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1", dataset="dataset1", tags={"tag1": "value1"}
             ),
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain2", dataset="dataset2", tags={"tag2": "value2"}
             ),
         ]
@@ -187,7 +186,7 @@ class TestListDatasets(BaseClientTest):
             {"domain": "domain2", "dataset": "dataset2", "tags": {"tag2": "value2"}},
         ]
 
-        expected_query = DatasetFilterQuery()
+        expected_query = DatasetFilters()
 
         response = self.client.post(
             "/datasets",
@@ -205,10 +204,10 @@ class TestListDatasets(BaseClientTest):
         self, mock_get_datasets_metadata
     ):
         metadata_response = [
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1", dataset="dataset1", tags={"tag1": "value1"}
             ),
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain2", dataset="dataset2", tags={"tag2": "value2"}
             ),
         ]
@@ -225,7 +224,7 @@ class TestListDatasets(BaseClientTest):
             "tag2": "",
         }
 
-        expected_query_object = DatasetFilterQuery(sensitivity=None, tags=tag_filters)
+        expected_query_object = DatasetFilters(sensitivity=None, tags=tag_filters)
 
         response = self.client.post(
             "/datasets",
@@ -243,12 +242,12 @@ class TestListDatasets(BaseClientTest):
         self, mock_get_datasets_metadata
     ):
         metadata_response = [
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
                 dataset="dataset1",
                 tags={"sensitivity": "PUBLIC", "tag1": "value1"},
             ),
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain2", dataset="dataset2", tags={"sensitivity": "PUBLIC"}
             ),
         ]
@@ -268,7 +267,7 @@ class TestListDatasets(BaseClientTest):
             },
         ]
 
-        expected_query_object = DatasetFilterQuery(sensitivity="PUBLIC")
+        expected_query_object = DatasetFilters(sensitivity="PUBLIC")
 
         response = self.client.post(
             "/datasets",

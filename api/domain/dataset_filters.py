@@ -5,14 +5,14 @@ from pydantic.main import BaseModel
 from api.common.custom_exceptions import UserError
 
 
-class DatasetFilterQuery(BaseModel):
+class DatasetFilters(BaseModel):
     sensitivity: Optional[str] = None
     key_value_tags: Optional[Dict[str, Optional[str]]] = dict()
     key_only_tags: Optional[List[str]] = list()
 
     def format_resource_query(self):
         if self.sensitivity and any(
-            [key == "sensitivity" for key, _ in self.key_value_tags.items()]
+                [key == "sensitivity" for key, _ in self.key_value_tags.items()]
         ):
             raise UserError(
                 "You cannot specify sensitivity both at the root level and in the tags"

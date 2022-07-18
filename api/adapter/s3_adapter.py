@@ -11,7 +11,8 @@ from api.common.config.aws import DATA_BUCKET, SCHEMAS_LOCATION
 from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import SchemaNotFoundError, UserError, AWSServiceError
 from api.common.logger import AppLogger
-from api.domain.schema import SchemaMetadata, SchemaMetadatas, Schema
+from api.domain.schema import Schema
+from api.domain.schema_metadata import SchemaMetadata, SchemaMetadatas
 from api.domain.storage_metadata import StorageMetaData
 
 

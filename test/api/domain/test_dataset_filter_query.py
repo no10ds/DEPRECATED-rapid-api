@@ -1,16 +1,16 @@
 import pytest
 
 from api.common.custom_exceptions import UserError
-from api.domain.dataset_filter_query import DatasetFilterQuery
+from api.domain.dataset_filters import DatasetFilters
 
 
 def test_returns_empty_tag_filter_list_when_query_is_empty():
-    query = DatasetFilterQuery()
+    query = DatasetFilters()
     assert query.format_resource_query() == []
 
 
 def test_returns_tag_filter_list_when_querying_for_tags_with_values():
-    query = DatasetFilterQuery(
+    query = DatasetFilters(
         key_value_tags={"tag1": "value1", "tag2": "value2"},
         key_only_tags=["tag3", "tag4"],
     )
@@ -26,7 +26,7 @@ def test_returns_tag_filter_list_when_querying_for_tags_with_values():
 
 
 def test_returns_tag_filter_list_when_querying_for_tags_without_values():
-    query = DatasetFilterQuery(key_value_tags={"tag1": "", "tag2": None})
+    query = DatasetFilters(key_value_tags={"tag1": "", "tag2": None})
 
     expected_tag_filters = [
         {"Key": "tag1", "Values": []},
@@ -37,7 +37,7 @@ def test_returns_tag_filter_list_when_querying_for_tags_without_values():
 
 
 def test_returns_tag_filter_list_when_querying_for_tags_with_and_without_values():
-    query = DatasetFilterQuery(key_value_tags={"tag1": None, "tag2": "value2"})
+    query = DatasetFilters(key_value_tags={"tag1": None, "tag2": "value2"})
 
     expected_tag_filters = [
         {"Key": "tag1", "Values": []},
@@ -48,7 +48,7 @@ def test_returns_tag_filter_list_when_querying_for_tags_with_and_without_values(
 
 
 def test_returns_tag_filter_list_when_querying_for_sensitivity_level():
-    query = DatasetFilterQuery(sensitivity="PUBLIC")
+    query = DatasetFilters(sensitivity="PUBLIC")
 
     expected_tag_filters = [{"Key": "sensitivity", "Values": ["PUBLIC"]}]
 
@@ -56,7 +56,7 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_level():
 
 
 def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
-    query = DatasetFilterQuery(
+    query = DatasetFilters(
         sensitivity="PRIVATE",
         key_value_tags={"tag1": None, "tag2": "value2"},
         key_only_tags=["tag3"],
@@ -73,7 +73,7 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
 
 
 def test_returns_tag_filter_list_when_querying_for_sensitivity_specifically_and_by_tag():
-    query = DatasetFilterQuery(
+    query = DatasetFilters(
         sensitivity="PRIVATE", key_value_tags={"sensitivity": "PRIVATE"}
     )
 

@@ -1,3 +1,4 @@
+import re
 from unittest.mock import Mock, patch
 
 import pandas as pd
@@ -21,7 +22,8 @@ from api.domain.enriched_schema import (
     EnrichedSchemaMetadata,
     EnrichedColumn,
 )
-from api.domain.schema import Schema, SchemaMetadata, Owner, Column, UpdateBehaviour
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, UpdateBehaviour, SchemaMetadata
 from api.domain.sql_query import SQLQuery
 from test.test_utils import set_encoded_content
 
@@ -977,3 +979,8 @@ class TestDatasetInfoRetrieval:
 
         with pytest.raises(SchemaNotFoundError):
             self.data_service.get_dataset_info("some", "other")
+
+    def test_filename_with_timestamp(self):
+        filename = self.data_service.generate_raw_filename("data")
+        pattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}-data"
+        assert re.match(pattern, filename)

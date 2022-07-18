@@ -4,7 +4,8 @@ import pytest
 
 from api.application.services.schema_infer_service import SchemaInferService
 from api.common.custom_exceptions import UserError
-from api.domain.schema import Schema, SchemaMetadata, Column, Owner
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, SchemaMetadata
 
 
 class TestSchemaInfer:

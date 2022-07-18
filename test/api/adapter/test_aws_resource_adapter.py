@@ -6,8 +6,7 @@ from botocore.exceptions import ClientError
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.common.config.aws import AWS_REGION
 from api.common.custom_exceptions import UserError, AWSServiceError
-from api.domain.dataset_filter_query import DatasetFilterQuery
-from api.domain.storage_metadata import EnrichedDatasetMetaData
+from api.domain.dataset_filters import DatasetFilters
 
 
 class TestAWSResourceAdapterClientMethods:
@@ -34,13 +33,13 @@ class TestAWSResourceAdapterClientMethods:
         }
 
     def test_gets_all_datasets_metadata_when_query_is_empty(self):
-        query = DatasetFilterQuery()
+        query = DatasetFilters()
 
         expected_metadatas = [
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1", dataset="dataset1", tags={"sensitivity": "PUBLIC"}
             ),
-            EnrichedDatasetMetaData(
+            AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain2",
                 dataset="dataset2",
                 tags={"tag1": "", "sensitivity": "PUBLIC"},
@@ -57,7 +56,7 @@ class TestAWSResourceAdapterClientMethods:
         assert actual_metadatas == expected_metadatas
 
     def test_returns_empty_list_of_datasets_when_none_exist(self):
-        query = DatasetFilterQuery()
+        query = DatasetFilters()
 
         self.resource_boto_client.get_resources.return_value = {}
 
@@ -70,7 +69,7 @@ class TestAWSResourceAdapterClientMethods:
         assert len(actual_metadatas) == 0
 
     def test_calls_resource_client_with_correct_tag_filters(self):
-        query = DatasetFilterQuery(
+        query = DatasetFilters(
             key_value_tags={
                 "tag1": "value1",
                 "tag2": None,
@@ -90,7 +89,7 @@ class TestAWSResourceAdapterClientMethods:
         )
 
     def test_resource_client_returns_invalid_parameter_exception(self):
-        query = DatasetFilterQuery(
+        query = DatasetFilters(
             tags={
                 "tag1": "value1",
                 "tag2": None,
@@ -115,7 +114,7 @@ class TestAWSResourceAdapterClientMethods:
         ],
     )
     def test_resource_client_returns_another_exception(self, error_code: str):
-        query = DatasetFilterQuery(
+        query = DatasetFilters(
             tags={
                 "tag1": "value1",
                 "tag2": None,

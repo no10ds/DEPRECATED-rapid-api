@@ -1,3 +1,4 @@
+import time
 from typing import List, Tuple
 
 import pandas as pd
@@ -25,9 +26,10 @@ from api.domain.enriched_schema import (
     EnrichedSchemaMetadata,
     EnrichedColumn,
 )
-from api.domain.schema import Schema, UpdateBehaviour
+from api.domain.schema import Schema
+from api.domain.schema_metadata import UpdateBehaviour
 from api.domain.sql_query import SQLQuery
-from api.domain.storage_metadata import filename_with_timestamp, StorageMetaData
+from api.domain.storage_metadata import StorageMetaData
 
 
 class DataService:
@@ -55,7 +57,7 @@ class DataService:
             return raw_files
 
     def generate_raw_filename(self, filename: str) -> str:
-        return filename_with_timestamp(filename)
+        return f'{time.strftime("%Y-%m-%dT%H:%M:%S")}-{filename}'
 
     def generate_raw_and_permanent_filenames(
             self, schema: Schema, filename: str

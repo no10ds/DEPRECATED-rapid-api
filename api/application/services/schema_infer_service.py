@@ -8,16 +8,17 @@ from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import UserError
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
-from api.domain.schema import Schema, SchemaMetadata, Owner, Column
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, SchemaMetadata
 
 
 class SchemaInferService:
     def infer_schema(
-        self,
-        domain: str,
-        dataset: str,
-        sensitivity: str,
-        file_content: Union[bytes, str],
+            self,
+            domain: str,
+            dataset: str,
+            sensitivity: str,
+            file_content: Union[bytes, str],
     ) -> Schema:
         dataframe = self._construct_dataframe(file_content)
         schema = Schema(

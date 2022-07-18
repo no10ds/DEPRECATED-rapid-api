@@ -12,7 +12,8 @@ from api.common.custom_exceptions import (
     UserGroupCreationError,
     ProtectedDomainDoesNotExistError,
 )
-from api.domain.schema import Schema, SchemaMetadata, Column, Owner
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, SchemaMetadata
 from test.api.controller.controller_test_utils import BaseClientTest
 
 

@@ -1,6 +1,5 @@
 import time
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 from api.common.config.aws import DATA_BUCKET
 
@@ -33,11 +32,6 @@ class StorageMetaData:
 
     def _construct_raw_dataset_uploads_location(self, domain: str, dataset: str):
         return f"raw_data/{domain}/{dataset}"
-
-
-@dataclass(frozen=True)
-class EnrichedDatasetMetaData(StorageMetaData):
-    tags: Optional[Dict[str, str]] = None
 
 
 def filename_with_timestamp(filename: str):

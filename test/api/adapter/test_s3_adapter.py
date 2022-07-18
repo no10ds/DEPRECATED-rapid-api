@@ -11,7 +11,8 @@ from api.common.custom_exceptions import (
     UserError,
     AWSServiceError,
 )
-from api.domain.schema import Schema, SchemaMetadata, Owner, Column
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, SchemaMetadata
 from test.test_utils import (
     set_encoded_content,
     mock_schema_response,

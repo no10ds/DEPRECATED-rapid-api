@@ -1,7 +1,8 @@
 import pytest
 
 from api.common.custom_exceptions import SchemaNotFoundError
-from api.domain.schema import Schema, SchemaMetadata, Owner, Column, SchemaMetadatas
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, SchemaMetadata, SchemaMetadatas
 
 
 class TestSchema:

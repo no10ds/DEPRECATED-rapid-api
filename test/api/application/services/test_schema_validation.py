@@ -2,15 +2,16 @@ from typing import List, Any
 
 import pytest
 
+from api.application.services.schema_validation import validate_schema
 from api.application.services.schema_validation import (
     validate_schema_for_upload,
     schema_has_valid_tag_set,
 )
-from api.application.services.schema_validation import validate_schema
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import MAX_CUSTOM_TAG_COUNT
 from api.common.custom_exceptions import SchemaError
-from api.domain.schema import Schema, SchemaMetadata, Column, Owner, UpdateBehaviour
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, UpdateBehaviour, SchemaMetadata
 
 
 class TestSchemaValidation:

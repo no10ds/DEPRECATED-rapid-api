@@ -1,7 +1,5 @@
-import re
-
 from api.common.config.aws import DATA_BUCKET
-from api.domain.storage_metadata import StorageMetaData, filename_with_timestamp
+from api.domain.storage_metadata import StorageMetaData
 
 
 class TestStorageMetaData:
@@ -28,9 +26,3 @@ class TestStorageMetaData:
             self.dataset_meta_data.s3_path()
             == f"s3://{DATA_BUCKET}/data/DOMAIN/DATASET/"
         )
-
-
-def test_filename_with_timestamp():
-    filename = filename_with_timestamp("data")
-    pattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}-data"
-    assert re.match(pattern, filename)

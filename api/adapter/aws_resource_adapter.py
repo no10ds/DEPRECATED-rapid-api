@@ -1,4 +1,5 @@
-from typing import List, Dict, Tuple
+from dataclasses import dataclass
+from typing import List, Dict, Tuple, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -6,21 +7,25 @@ from botocore.exceptions import ClientError
 from api.common.config.aws import AWS_REGION
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
-from api.domain.dataset_filter_query import DatasetFilterQuery
-from api.domain.storage_metadata import EnrichedDatasetMetaData
+from api.domain.dataset_filters import DatasetFilters
+from api.domain.storage_metadata import StorageMetaData
 
 
 class AWSResourceAdapter:
     def __init__(
-        self,
-        resource_client=boto3.client(
-            "resourcegroupstaggingapi", region_name=AWS_REGION
-        ),
+            self,
+            resource_client=boto3.client(
+                "resourcegroupstaggingapi", region_name=AWS_REGION
+            ),
     ):
         self.__resource_client = resource_client
 
+    @dataclass(frozen=True)
+    class EnrichedDatasetMetaData(StorageMetaData):
+        tags: Optional[Dict[str, str]] = None
+
     def get_datasets_metadata(
-        self, query: DatasetFilterQuery = DatasetFilterQuery()
+            self, query: DatasetFilters = DatasetFilters()
     ) -> List[EnrichedDatasetMetaData]:
         try:
             aws_resources = self._get_resources(
@@ -55,13 +60,13 @@ class AWSResourceAdapter:
         )
 
     def _to_dataset_metadata(
-        self, resource_tag_mapping: Dict
+            self, resource_tag_mapping: Dict
     ) -> EnrichedDatasetMetaData:
         domain, dataset = self._infer_domain_and_dataset_from_crawler_arn(
             resource_tag_mapping["ResourceARN"]
         )
         tags = {tag["Key"]: tag["Value"] for tag in resource_tag_mapping["Tags"]}
-        return EnrichedDatasetMetaData(domain, dataset, tags)
+        return self.EnrichedDatasetMetaData(domain, dataset, tags)
 
     def _infer_domain_and_dataset_from_crawler_arn(self, arn: str) -> Tuple[str, str]:
         table_name = arn.split("crawler/")[-1]

@@ -16,6 +16,7 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
 from api.common.config.auth import Action
+from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
@@ -26,10 +27,9 @@ from api.common.custom_exceptions import (
 )
 from api.common.logger import AppLogger
 from api.controller.utils import _response_body
-from api.domain.dataset_filter_query import DatasetFilterQuery
+from api.domain.dataset_filters import DatasetFilters
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
-from api.common.config.aws import RESOURCE_PREFIX
 
 resource_adapter = AWSResourceAdapter()
 data_service = DataService()
@@ -48,7 +48,7 @@ datasets_router = APIRouter(
     dependencies=[Security(protect_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_200_OK,
 )
-async def list_all_datasets(tag_filters: DatasetFilterQuery = DatasetFilterQuery()):
+async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     """
     ## List datasets
 

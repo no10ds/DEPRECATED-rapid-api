@@ -18,7 +18,8 @@ from api.application.services.dataset_validation import (
 )
 from api.common.custom_exceptions import DatasetError, UserError
 from api.domain.data_types import DataTypes
-from api.domain.schema import Schema, SchemaMetadata, Owner, Column
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import Owner, SchemaMetadata
 from test.test_utils import set_encoded_content
 
 

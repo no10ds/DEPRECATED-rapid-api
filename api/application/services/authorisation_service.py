@@ -1,4 +1,5 @@
-from typing import Optional, List
+from dataclasses import dataclass
+from typing import Optional, List, Set
 
 import jwt
 from fastapi import Depends, HTTPException
@@ -25,7 +26,6 @@ from api.common.custom_exceptions import (
     UserCredentialsUnavailableError,
 )
 from api.common.logger import AppLogger
-from api.domain.accepted_scopes import AcceptedScopes
 
 
 class OAuth2ClientCredentials(OAuth2):
@@ -166,18 +166,36 @@ def match_user_permissions(
             f"{permission}/{domain}/{dataset}" for permission in endpoint_scopes
         ]
         if not any(
-            [
-                allowed_permission in token_scopes
-                for allowed_permission in allowed_permissions
-            ]
+                [
+                    allowed_permission in token_scopes
+                    for allowed_permission in allowed_permissions
+                ]
         ):
             raise AuthorisationError("Not enough permissions to access endpoint")
     elif (not domain and dataset) or (domain and not dataset):
         raise AuthorisationError("Not enough permissions to access endpoint")
 
 
+@dataclass
+class AcceptedScopes:
+    required: Set[str]
+    optional: Set[str]
+
+    def satisfied_by(self, token_scopes: List[str]) -> bool:
+        all_required = all(
+            [required_scope in token_scopes for required_scope in self.required]
+        )
+        any_optional = (
+            any([any_scope in token_scopes for any_scope in self.optional])
+            if self.optional
+            else True
+        )
+
+        return all_required and any_optional
+
+
 def generate_acceptable_scopes(
-    endpoint_actions: List[str], domain: str = None, dataset: str = None
+        endpoint_actions: List[str], domain: str = None, dataset: str = None
 ) -> AcceptedScopes:
     endpoint_actions = [Action.from_string(action) for action in endpoint_actions]
 
