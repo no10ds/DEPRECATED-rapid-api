@@ -59,6 +59,15 @@ Provided you have the above prerequisites you can get started straight out of th
 
 ## Running locally 🏃‍♂️
 
+To run the app locally, you will need to set the following environment variables:
+- `AWS_ACCOUNT` 
+- `AWS_REGION` 
+- `AWS_DEFAULT_REGION` 
+- `COGNITO_USER_POOL_ID` 
+- `DATA_BUCKET` 
+- `DOMAIN_NAME` 
+- `RESOURCE_PREFIX`
+
 `make run` runs batect to bring up a locally running version of the application within a Docker container using the base
 image.
 
@@ -111,6 +120,16 @@ project.
 For PyCharm, go to `Run Configurations > Edit Configurations > Edit Configuration Templates > Python Tests`
 Then, edit the `Working Directory` field of BOTH the `Autodetect` and `pytest` configuration templates to be the
 absolute path to the root project directory e.g.: `/Users/user/Documents/rapid-api`
+
+You will need to add some environment variables to your run configuration templates too (with sample values below):
+
+- `DATA_BUCKET=the-bucket`
+- `AWS_ACCOUNT=123456`
+- `AWS_REGION=eu-west-2`
+- `RESOURCE_PREFIX=rapid`
+- `DOMAIN_NAME=example.com`
+- `COGNITO_USER_POOL_ID=11111111`
+
 
 ### Checking your code
 
