@@ -1,10 +1,9 @@
+from typing import List
+
 import boto3
 
 from api.common.config.aws import AWS_REGION
 from api.domain.client import ClientResponse
-
-from typing import List
-
 from api.domain.permission_item import PermissionItem
 
 PERMISSIONS_TABLE_NAME = 'rapid_users_permissions'
@@ -29,7 +28,7 @@ class DynamoDBAdapter:
             }
         )
 
-    def get_scope_ids(self) -> List[PermissionItem]:
+    def get_scope_ids(self, scopes: List[str]) -> List[str]:
         table_items = self.dynamodb_client.scan(
             TableName=self.permissions_table_name,
             ScanFilter={
@@ -43,14 +42,15 @@ class DynamoDBAdapter:
                 }
             },
         )
-
         permissions_list = [self._generate_permission_item(item) for item in table_items['Items']]
-        return permissions_list
+        valid_permission_ids = [permission.id for permission in permissions_list if
+                                permission.generate_permission() in scopes]
+        return valid_permission_ids
 
     def _generate_permission_item(self, item: dict) -> PermissionItem:
         permission = PermissionItem(
             id=item['Id'][list(item['Id'])[0]],
-            sensitivity=item['Sensitivity'][list(item['Sensitivity'])[0]],
+            sensitivity=item['Sensitivity'][list(item['Sensitivity'])[0]] if 'Sensitivity' in item else None,
             type=item['Type'][list(item['Type'])[0]]
         )
         return permission

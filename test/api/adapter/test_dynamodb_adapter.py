@@ -5,6 +5,35 @@ from api.domain.client import ClientResponse
 
 
 class TestDynamoDBAdapter:
+    expected_db_scan_response = {
+        "Items":
+            [
+                {'SK': {'S': 'PER#0'},
+                 'Id': {'S': '0'},
+                 'PK': {'S': 'PER#USER_ADMIN'},
+                 'Type': {'S': 'USER_ADMIN'}
+                 },
+                {'Sensitivity': {'S': 'ALL'},
+                 'SK': {'S': 'PER#1'},
+                 'Id': {'S': '1'},
+                 'PK': {'S': 'PER#READ'},
+                 'Type': {'S': 'READ'}},
+                {'Sensitivity': {'S': 'ALL'},
+                 'SK': {'S': 'PER#2'},
+                 'Id': {'S': '2'},
+                 'PK': {'S': 'PER#WRITE'},
+                 'Type': {'S': 'WRITE'}
+                 },
+                {'Sensitivity': {'S': 'PRIVATE'},
+                 'SK': {'S': 'PER#3'},
+                 'Id': {'S': '3'},
+                 'PK': {'S': 'PER#READ'},
+                 'Type': {'S': 'READ'}
+                 }
+            ],
+        'Count': 4, 'ScannedCount': 5,
+    }
+
     def setup_method(self):
         self.dynamo_boto_client = Mock()
         self.test_permissions_table_name = 'TEST PERMISSIONS'
@@ -31,23 +60,11 @@ class TestDynamoDBAdapter:
             }
         )
 
-    def test_get_existing_scopes_with_db(self):
-        expected_scan_response = {
-            "Items":
-                [{'Sensitivity': {'S': 'ALL'},
-                  'SK': {'S': 'PER#1'},
-                  'Id': {'S': '1'},
-                  'PK': {'S': 'PER#READ'},
-                  'Type': {'S': 'READ'}}, {'Sensitivity': {'S': 'ALL'},
-                 'SK': {'S': 'PER#2'},
-                 'Id': {'S': '2'},
-                 'PK': {'S': 'PER#WRITE'},
-                 'Type': {'S': 'WRITE'}}],
-            'Count': 8, 'ScannedCount': 9,
-        }
-        self.dynamo_boto_client.scan.return_value = expected_scan_response
+    def test_get_existing_scopes_for_user_with_db(self):
+        test_user_permissions = ["READ_ALL", "WRITE_ALL"]
+        self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
 
-        self.dynamo_adapter.get_scope_ids()
+        response = self.dynamo_adapter.get_scope_ids(test_user_permissions)
 
         self.dynamo_boto_client.scan.assert_called_once_with(
             TableName=self.test_permissions_table_name,
@@ -62,4 +79,68 @@ class TestDynamoDBAdapter:
                 }
             },
         )
-        # assert response == ["0", "1"]
+        assert response == ["1", "2"]
+
+    def test_get_existing_scopes_for_user_with_no_permissions_from_db(self):
+        test_user_permissions = []
+        self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
+
+        response = self.dynamo_adapter.get_scope_ids(test_user_permissions)
+
+        self.dynamo_boto_client.scan.assert_called_once_with(
+            TableName=self.test_permissions_table_name,
+            ScanFilter={
+                'PK': {
+                    'AttributeValueList': [
+                        {
+                            'S': 'PER',
+                        },
+                    ],
+                    'ComparisonOperator': 'BEGINS_WITH'
+                }
+            },
+        )
+        assert response == []
+
+    def test_get_existing_scopes_for_user_with_invalid_permissions_from_db(self):
+        test_user_permissions = ["READ_SENSITIVE", "ACCESS_ALL", "ADMIN", "FAKE_ADMIN"]
+
+        self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
+
+        response = self.dynamo_adapter.get_scope_ids(test_user_permissions)
+
+        self.dynamo_boto_client.scan.assert_called_once_with(
+            TableName=self.test_permissions_table_name,
+            ScanFilter={
+                'PK': {
+                    'AttributeValueList': [
+                        {
+                            'S': 'PER',
+                        },
+                    ],
+                    'ComparisonOperator': 'BEGINS_WITH'
+                }
+            },
+        )
+        assert response == []
+
+    def test_get_existing_scopes_with_db_with_user_admin_permission(self):
+        test_user_permissions = ["USER_ADMIN", "WRITE_ALL"]
+        self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
+
+        response = self.dynamo_adapter.get_scope_ids(test_user_permissions)
+
+        self.dynamo_boto_client.scan.assert_called_once_with(
+            TableName=self.test_permissions_table_name,
+            ScanFilter={
+                'PK': {
+                    'AttributeValueList': [
+                        {
+                            'S': 'PER',
+                        },
+                    ],
+                    'ComparisonOperator': 'BEGINS_WITH'
+                }
+            },
+        )
+        assert response == ["0", "2"]
