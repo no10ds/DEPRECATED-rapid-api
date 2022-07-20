@@ -64,7 +64,7 @@ async def create_client(client_request: ClientRequest):
     - `DATA_ADMIN` - allow client to add a schema for a dataset of any sensitivity
     - `USER_ADMIN` - allow client to add a new client
 
-    The protected domains can be listed [here](#Protected%20Domains/create_protected_domain_protected_domains__domain__post) or created [here](#Protected%20Domains/list_protected_domains_protected_domains_get).
+    The protected domains can be listed [here](#Protected%20Domains/list_protected_domains_protected_domains_get) or created [here](#Protected%20Domains/create_protected_domain_protected_domains__domain__post).
 
     ### Click  `Try it out` to use the endpoint
 
