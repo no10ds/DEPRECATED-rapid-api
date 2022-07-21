@@ -4,7 +4,6 @@ import boto3
 
 from api.common.config.aws import AWS_REGION
 from api.common.custom_exceptions import UserError
-from api.domain.client import ClientResponse
 from api.domain.permission_item import PermissionItem
 
 PERMISSIONS_TABLE_NAME = 'rapid_users_permissions'
@@ -17,19 +16,35 @@ class DynamoDBAdapter:
         self.dynamodb_client = dynamodb_client
         self.permissions_table_name = permissions_table_name
 
-    def create_client_item(self, client_info: ClientResponse):
+    def create_client_item(self, client_id: str, client_permissions: List[str]):
+        db_permissions = self.get_db_permissions()
+        permission_ids = self.get_validated_permission_ids(db_permissions, client_permissions)
         self.dynamodb_client.put_item(
             TableName=self.permissions_table_name,
             Item={
                 "PK": {"S": "USR#CLIENT"},
-                "SK": {"S": f"USR#${client_info.client_id}"},
-                "Id": {"S": f"${client_info.client_id}"},
+                "SK": {"S": f"USR#${client_id}"},
+                "Id": {"S": f"${client_id}"},
                 "Type": {"S": "CLIENT"},
-                "Permissions": {"SS": self.get_scope_ids(client_info.scopes)}
+                "Permissions": {"SS": permission_ids}
             }
         )
 
-    def get_scope_ids(self, scopes: List[str]) -> List[str]:
+    def get_validated_permission_ids(
+            self, permissions_list: List[PermissionItem], user_permissions: List[str]) -> List[str]:
+        valid_permission_ids = []
+        for user_permission in user_permissions:
+            permission_exists = False
+            for permission_item in permissions_list:
+                if user_permission == permission_item.permission:
+                    permission_exists = True
+                    valid_permission_ids.append(permission_item.id)
+                    break
+            if not permission_exists:
+                raise UserError("One or more of the provided permissions do not exist")
+        return valid_permission_ids
+
+    def get_db_permissions(self) -> List[PermissionItem]:
         table_items = self.dynamodb_client.scan(
             TableName=self.permissions_table_name,
             ScanFilter={
@@ -43,21 +58,7 @@ class DynamoDBAdapter:
                 }
             },
         )
-        permissions_list = [self._generate_permission_item(item) for item in table_items['Items']]
-        return self._validate_permissions(permissions_list, scopes)
-
-    def _validate_permissions(self, permissions_list, scopes):
-        valid_permission_ids = []
-        for scope in scopes:
-            scope_exists = False
-            for permission in permissions_list:
-                if scope == permission.permission:
-                    scope_exists = True
-                    valid_permission_ids.append(permission.id)
-                    break
-            if not scope_exists:
-                raise UserError("One or more of the provided scopes do not exist")
-        return valid_permission_ids
+        return [self._generate_permission_item(item) for item in table_items['Items']]
 
     def _generate_permission_item(self, item: dict) -> PermissionItem:
         permission = PermissionItem(
