@@ -61,14 +61,13 @@ class DynamoDBAdapter:
                     }
                 },
             )
-            return [self._generate_permission_item(item) for item in table_items['Items']]
+            return [self._generate_permission_item(item) for item in table_items['Items']]  # noqa: E999
         except ClientError:
             raise AWSServiceError("Internal server error, please contact system administrator")
 
     def _generate_permission_item(self, item: dict) -> PermissionItem:
-        permission = PermissionItem(
+        return PermissionItem(
             perm_id=item['Id'][list(item['Id'])[0]],
             sensitivity=item['Sensitivity'][list(item['Sensitivity'])[0]] if 'Sensitivity' in item else None,
             perm_type=item['Type'][list(item['Type'])[0]]
         )
-        return permission
