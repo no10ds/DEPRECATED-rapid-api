@@ -1,6 +1,9 @@
 from unittest.mock import Mock
 
+import pytest
+
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
+from api.common.custom_exceptions import UserError
 from api.domain.client import ClientResponse
 
 
@@ -44,9 +47,9 @@ class TestDynamoDBAdapter:
             client_name='test_client',
             client_id='123456789',
             client_secret='thisisasecret',  # pragma: allowlist secret
-            scopes=['READ_PUBLIC', 'READ_PRIVATE']
+            scopes=["READ_ALL", "WRITE_ALL"]
         )
-
+        self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
         self.dynamo_adapter.create_client_item(test_client_info)
 
         self.dynamo_boto_client.put_item.assert_called_once_with(
@@ -56,7 +59,7 @@ class TestDynamoDBAdapter:
                 "SK": {"S": f"USR#${test_client_info.client_id}"},
                 "Id": {"S": f"${test_client_info.client_id}"},
                 "Type": {"S": "Client"},
-                "Permissions": {"SS": test_client_info.scopes}
+                "Permissions": {"SS": ["1", "2"]}
             }
         )
 
@@ -102,27 +105,25 @@ class TestDynamoDBAdapter:
         )
         assert response == []
 
-    def test_get_existing_scopes_for_user_with_invalid_permissions_from_db(self):
+    def test_get_existing_scopes_for_user_with_all_invalid_permissions_from_db(self):
         test_user_permissions = ["READ_SENSITIVE", "ACCESS_ALL", "ADMIN", "FAKE_ADMIN"]
 
         self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
 
-        response = self.dynamo_adapter.get_scope_ids(test_user_permissions)
+        with pytest.raises(
+                UserError, match="One or more of the provided scopes do not exist"
+        ):
+            self.dynamo_adapter.get_scope_ids(test_user_permissions)
 
-        self.dynamo_boto_client.scan.assert_called_once_with(
-            TableName=self.test_permissions_table_name,
-            ScanFilter={
-                'PK': {
-                    'AttributeValueList': [
-                        {
-                            'S': 'PER',
-                        },
-                    ],
-                    'ComparisonOperator': 'BEGINS_WITH'
-                }
-            },
-        )
-        assert response == []
+    def test_get_existing_scopes_for_user_with_some_invalid_permissions_from_db(self):
+        test_user_permissions = ["READ_SENSITIVE", "WRITE_ALL", "ACCESS_ALL", "ADMIN", "FAKE_ADMIN"]
+
+        self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
+
+        with pytest.raises(
+                UserError, match="One or more of the provided scopes do not exist"
+        ):
+            self.dynamo_adapter.get_scope_ids(test_user_permissions)
 
     def test_get_existing_scopes_with_db_with_user_admin_permission(self):
         test_user_permissions = ["USER_ADMIN", "WRITE_ALL"]

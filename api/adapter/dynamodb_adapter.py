@@ -3,6 +3,7 @@ from typing import List
 import boto3
 
 from api.common.config.aws import AWS_REGION
+from api.common.custom_exceptions import UserError
 from api.domain.client import ClientResponse
 from api.domain.permission_item import PermissionItem
 
@@ -24,7 +25,7 @@ class DynamoDBAdapter:
                 "SK": {"S": f"USR#${client_info.client_id}"},
                 "Id": {"S": f"${client_info.client_id}"},
                 "Type": {"S": "Client"},
-                "Permissions": {"SS": client_info.scopes}
+                "Permissions": {"SS": self.get_scope_ids(client_info.scopes)}
             }
         )
 
@@ -43,14 +44,25 @@ class DynamoDBAdapter:
             },
         )
         permissions_list = [self._generate_permission_item(item) for item in table_items['Items']]
-        valid_permission_ids = [permission.id for permission in permissions_list if
-                                permission.generate_permission() in scopes]
+        return self._validate_permissions(permissions_list, scopes)
+
+    def _validate_permissions(self, permissions_list, scopes):
+        valid_permission_ids = []
+        for scope in scopes:
+            scope_exists = False
+            for permission in permissions_list:
+                if scope == permission.permission:
+                    scope_exists = True
+                    valid_permission_ids.append(permission.id)
+                    continue
+            if not scope_exists:
+                raise UserError("One or more of the provided scopes do not exist")
         return valid_permission_ids
 
     def _generate_permission_item(self, item: dict) -> PermissionItem:
         permission = PermissionItem(
-            id=item['Id'][list(item['Id'])[0]],
+            perm_id=item['Id'][list(item['Id'])[0]],
             sensitivity=item['Sensitivity'][list(item['Sensitivity'])[0]] if 'Sensitivity' in item else None,
-            type=item['Type'][list(item['Type'])[0]]
+            perm_type=item['Type'][list(item['Type'])[0]]
         )
         return permission
