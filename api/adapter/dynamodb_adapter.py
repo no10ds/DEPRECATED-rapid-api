@@ -21,10 +21,10 @@ class DynamoDBAdapter:
         self.dynamodb_client.put_item(
             TableName=self.permissions_table_name,
             Item={
-                "PK": {"S": "USR#Client"},
+                "PK": {"S": "USR#CLIENT"},
                 "SK": {"S": f"USR#${client_info.client_id}"},
                 "Id": {"S": f"${client_info.client_id}"},
-                "Type": {"S": "Client"},
+                "Type": {"S": "CLIENT"},
                 "Permissions": {"SS": self.get_scope_ids(client_info.scopes)}
             }
         )
@@ -54,7 +54,7 @@ class DynamoDBAdapter:
                 if scope == permission.permission:
                     scope_exists = True
                     valid_permission_ids.append(permission.id)
-                    continue
+                    break
             if not scope_exists:
                 raise UserError("One or more of the provided scopes do not exist")
         return valid_permission_ids

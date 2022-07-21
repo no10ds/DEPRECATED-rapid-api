@@ -55,10 +55,10 @@ class TestDynamoDBAdapter:
         self.dynamo_boto_client.put_item.assert_called_once_with(
             TableName=self.test_permissions_table_name,
             Item={
-                "PK": {"S": "USR#Client"},
+                "PK": {"S": "USR#CLIENT"},
                 "SK": {"S": f"USR#${test_client_info.client_id}"},
                 "Id": {"S": f"${test_client_info.client_id}"},
-                "Type": {"S": "Client"},
+                "Type": {"S": "CLIENT"},
                 "Permissions": {"SS": ["1", "2"]}
             }
         )
