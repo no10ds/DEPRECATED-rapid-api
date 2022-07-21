@@ -1,9 +1,10 @@
 from unittest.mock import Mock
 
 import pytest
+from botocore.exceptions import ClientError
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.common.custom_exceptions import UserError
+from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.permission_item import PermissionItem
 
 
@@ -64,6 +65,21 @@ class TestDynamoDBAdapter:
                 "Permissions": {"SS": ["1", "2"]}
             }
         )
+
+    def test_dynamo_db_create_client_item_throws_error(self):
+        client_id = '123456789'
+        client_permissions = ["READ_ALL", "WRITE_ALL"]
+        self.dynamo_boto_client.scan.return_value = self.expected_db_scan_response
+
+        self.dynamo_boto_client.put_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
+            operation_name="PutItem",
+        )
+
+        with pytest.raises(
+                AWSServiceError, match="The client could not be created, please contact system administrator"
+        ):
+            self.dynamo_adapter.create_client_item(client_id, client_permissions)
 
     def test_get_db_permissions_for_user_admin(self):
         self.dynamo_boto_client.scan.return_value = {
@@ -146,6 +162,17 @@ class TestDynamoDBAdapter:
         assert response[1].id == expected_response[1].id
         assert response[1].sensitivity == expected_response[1].sensitivity
         assert response[1].type == expected_response[1].type
+
+    def test_get_db_permissions_handles_aws_error(self):
+        self.dynamo_boto_client.scan.side_effect = ClientError(
+            error_response={"Error": {"Code": "ResourceNotFoundException"}},
+            operation_name="Scan",
+        )
+
+        with pytest.raises(
+                AWSServiceError, match="Internal server error, please contact system administrator"
+        ):
+            self.dynamo_adapter.get_db_permissions()
 
     def test_get_existing_scopes_for_user_with_db(self):
         test_user_permissions = ["READ_PRIVATE", "WRITE_ALL"]
