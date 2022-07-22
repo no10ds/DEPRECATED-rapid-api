@@ -8,7 +8,7 @@ from starlette.responses import PlainTextResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.application.services.authorisation_service import (
+from api.application.services.authorisation.authorisation_service import (
     protect_dataset_endpoint,
     protect_endpoint,
 )

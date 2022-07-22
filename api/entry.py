@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 
-from api.application.services.authorisation_service import (
+from api.application.services.authorisation.authorisation_service import (
     protect_dataset_endpoint,
     user_logged_in,
     RAPID_ACCESS_TOKEN,

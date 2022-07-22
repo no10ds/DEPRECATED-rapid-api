@@ -6,7 +6,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.responses import RedirectResponse
 
-from api.application.services.authorisation_service import (
+from api.application.services.authorisation.authorisation_service import (
     UserCredentialsUnavailableError,
 )
 from api.common.custom_exceptions import SchemaError, BaseAppException

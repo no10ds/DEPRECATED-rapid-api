@@ -6,7 +6,7 @@ from fastapi import HTTPException
 from fastapi.security import SecurityScopes
 from jwt.exceptions import InvalidTokenError
 
-from api.application.services.authorisation_service import (
+from api.application.services.authorisation.authorisation_service import (
     generate_acceptable_scopes,
     match_client_app_permissions,
     AcceptedScopes,

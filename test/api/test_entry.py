@@ -3,7 +3,7 @@ from unittest.mock import patch, ANY
 
 from fastapi.templating import Jinja2Templates
 
-from api.application.services.authorisation_service import RAPID_ACCESS_TOKEN
+from api.application.services.authorisation.authorisation_service import RAPID_ACCESS_TOKEN
 from api.common.config.auth import (
     IDENTITY_PROVIDER_AUTHORIZATION_URL,
     COGNITO_REDIRECT_URI,

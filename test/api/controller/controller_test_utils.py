@@ -2,7 +2,7 @@ from abc import ABC
 
 from fastapi.testclient import TestClient
 
-from api.application.services.authorisation_service import (
+from api.application.services.authorisation.authorisation_service import (
     protect_dataset_endpoint,
     protect_endpoint,
 )
