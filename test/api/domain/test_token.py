@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import pytest
 
 from api.domain.token import Token
@@ -7,7 +9,7 @@ from api.domain.token import Token
 def valid_client_token_payload():
     yield {
         "sub": "the-client-subject",
-        "scope": ["scope1", "scope2"]
+        "scope": "https://example.com/scope1 https://example.com/scope2"
     }
 
 
@@ -20,7 +22,7 @@ def valid_user_token_payload():
 
 
 class TestSubjectExtraction:
-
+    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
     def test_extract_subject_when_available_and_valid(self, valid_client_token_payload):
         token = Token(valid_client_token_payload)
 
@@ -41,6 +43,7 @@ class TestSubjectExtraction:
 
 class TestPermissionsExtraction:
 
+    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
     def test_extracts_client_app_scopes_when_available_and_valid(self, valid_client_token_payload):
         token = Token(valid_client_token_payload)
 
@@ -58,7 +61,7 @@ class TestPermissionsExtraction:
     def test_favours_client_scopes_over_user_groups_if_both_available(self):
         payload = {
             "sub": "the-client-subject",
-            "scope": ["scope1", "scope2"],
+            "scope": "phone email",
             "cognito:groups": ["group1", "group2"]
         }
         token = Token(payload)
@@ -86,3 +89,14 @@ class TestPermissionsExtraction:
         token = Token(payload)
 
         assert token.permissions == []
+
+    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
+    def test_raises_error_when_scopes_incorrectly_formatted(self):
+        payload = {
+            "sub": "the-client-subject",
+            "scope": "https://not-example.com/scope1 https://not-example.com/scope2",
+            "cognito:groups": None
+        }
+
+        with pytest.raises(ValueError, match="Invalid scope field"):
+            Token(payload)

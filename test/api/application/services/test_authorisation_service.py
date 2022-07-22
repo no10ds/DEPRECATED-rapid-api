@@ -15,6 +15,7 @@ from api.application.services.authorisation_service import (
     extract_user_groups,
     protect_dataset_endpoint,
     secure_dataset_endpoint,
+    parse_token,
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import DOMAIN_NAME
@@ -168,12 +169,85 @@ class TestSecureDatasetEndpoint:
             )
 
 
+class TestParseToken:
+    @patch("api.application.services.authorisation_service.Token")
+    @patch(
+        "api.application.services.authorisation_service._get_validated_token_payload"
+    )
+    def test_parses_user_token_with_groups(self, mock_token_payload, mock_token):
+        token = "user-token"
+
+        payload = {
+            "sub": "the-user-id",
+            "cognito:groups": ["group1", "group2"],
+            "scope": "scope1 scope2 scope3",
+        }
+
+        mock_token_payload.return_value = payload
+
+        parse_token(token)
+
+        mock_token_payload.assert_called_once_with("user-token")
+        mock_token.assert_called_once_with(payload)
+
+    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
+    @patch("api.application.services.authorisation_service.Token")
+    @patch(
+        "api.application.services.authorisation_service._get_validated_token_payload"
+    )
+    def test_parses_client_token_with_scopes(self, mock_token_payload, mock_token):
+        token = "client-token"
+
+        payload = {
+            "sub": "the-client-id",
+            "scope": "https://example.com/scope1 https://example.com/scope2",
+        }
+
+        mock_token_payload.return_value = payload
+
+        parse_token(token)
+
+        mock_token_payload.assert_called_once_with("client-token")
+        mock_token.assert_called_once_with(payload)
+
+    @patch("api.application.services.authorisation_service.Token")
+    @patch(
+        "api.application.services.authorisation_service._get_validated_token_payload"
+    )
+    def test_parses_user_token_with_no_permissions(
+        self, mock_token_payload, mock_token
+    ):
+        token = "user-token"
+
+        payload = {
+            "sub": "the-user-id",
+            "scope": "scope1 scope2 scope3",
+        }
+
+        mock_token_payload.return_value = payload
+
+        parse_token(token)
+
+        mock_token_payload.assert_called_once_with("user-token")
+        mock_token.assert_called_once_with(payload)
+
+    @patch("api.application.services.authorisation_service.Token")
+    @patch(
+        "api.application.services.authorisation_service._get_validated_token_payload"
+    )
+    def test_passes_errors_through(self, _mock_token_payload, mock_token):
+        mock_token.side_effect = ValueError("Error detail")
+
+        with pytest.raises(ValueError, match="Error detail"):
+            parse_token("user-token")
+
+
 class TestProtectEndpoint:
     @patch("api.application.services.authorisation_service.jwks_client")
     @patch("jwt.decode")
     @patch("api.application.services.authorisation_service.match_user_permissions")
     def test_matches_user_permissions_when_user_token_provided_from_any_source(
-        self, mock_match_user_permissions, mock_decode, mock_jwks_client
+        self, mock_match_user_permissions, mock_decode, _mock_jwks_client
     ):
         browser_request = False
         mock_decode.return_value = {
@@ -221,7 +295,7 @@ class TestProtectEndpoint:
         "api.application.services.authorisation_service.match_client_app_permissions"
     )
     def test_matches_client_permissions_when_client_token_provided_from_programmatic_client(
-        self, match_client_app_permissions, mock_decode, mock_jwks_client
+        self, match_client_app_permissions, mock_decode, _mock_jwks_client
     ):
         browser_request = False
         mock_decode.return_value = {
@@ -247,7 +321,7 @@ class TestProtectEndpoint:
         "api.application.services.authorisation_service.match_client_app_permissions"
     )
     def test_raises_exception_when_schema_not_found_for_dataset(
-        self, match_client_app_permissions, mock_decode, mock_jwks_client
+        self, match_client_app_permissions, mock_decode, _mock_jwks_client
     ):
         browser_request = False
         mock_decode.return_value = {

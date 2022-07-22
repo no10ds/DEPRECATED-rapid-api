@@ -1,5 +1,7 @@
 from typing import List
 
+from api.common.config.auth import COGNITO_RESOURCE_SERVER_ID
+
 
 class Token:
     def __init__(self, payload: dict):
@@ -34,6 +36,10 @@ class Token:
 
         if permission_scopes:
             self.token_type = "CLIENT"
-            return permission_scopes
+            try:
+                scopes = payload["scope"].split()
+                return [scope.split(COGNITO_RESOURCE_SERVER_ID + "/", 1)[1] for scope in scopes]
+            except (AttributeError, IndexError):
+                raise ValueError("Invalid scope field")
 
         return []

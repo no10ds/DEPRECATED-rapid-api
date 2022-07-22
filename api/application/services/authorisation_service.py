@@ -26,6 +26,7 @@ from api.common.custom_exceptions import (
     UserCredentialsUnavailableError,
 )
 from api.common.logger import AppLogger
+from api.domain.token import Token
 
 
 class OAuth2ClientCredentials(OAuth2):
@@ -121,13 +122,15 @@ def secure_dataset_endpoint(
         raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="You are not authorised to perform this action")
 
     try:
-        parse_token(user_token, client_token)
+        token = user_token if user_token else client_token
+        parse_token(token)
     except InvalidTokenError as error:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
 
 
-def parse_token(user_token: str, client_token: str) -> None:
-    raise NotImplementedError()
+def parse_token(token: str) -> Token:
+    payload = _get_validated_token_payload(token)
+    return Token(payload)
 
 
 def missing_user_credentials(browser_request: bool, user_token: Optional[str]) -> bool:
