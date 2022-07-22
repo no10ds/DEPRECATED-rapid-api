@@ -4,6 +4,7 @@ from unittest.mock import patch, Mock, ANY
 import pytest
 from fastapi import HTTPException
 from fastapi.security import SecurityScopes
+from jwt.exceptions import InvalidTokenError
 
 from api.application.services.authorisation_service import (
     generate_acceptable_scopes,
@@ -13,6 +14,7 @@ from api.application.services.authorisation_service import (
     extract_client_app_scopes,
     extract_user_groups,
     protect_dataset_endpoint,
+    secure_dataset_endpoint,
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import DOMAIN_NAME
@@ -113,6 +115,57 @@ class TestExtractingPermissions:
             match="Not enough permissions or access token is missing/invalid",
         ):
             extract_user_groups(None)
+
+
+class TestSecureDatasetEndpoint:
+    def test_raises_error_when_no_user_credentials_provided(self):
+        client_token = None
+        user_token = None
+        browser_request = True
+
+        with pytest.raises(UserCredentialsUnavailableError):
+            secure_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=client_token,
+                user_token=user_token,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+    def test_raises_forbidden_exception_when_invalid_token(self):
+        user_token = None
+        client_token = None
+        browser_request = False
+
+        with pytest.raises(HTTPException):
+            secure_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=client_token,
+                user_token=user_token,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+    @patch("api.application.services.authorisation_service.parse_token")
+    def test_raises_unauthorised_exception_when_no_user_client_credentials_provided(
+        self, mock_parse_token
+    ):
+        client_token = "invalid-token"
+        browser_request = False
+
+        mock_parse_token.side_effect = InvalidTokenError()
+
+        with pytest.raises(HTTPException):
+            secure_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=client_token,
+                user_token=None,
+                domain="mydomain",
+                dataset="mydataset",
+            )
 
 
 class TestProtectEndpoint:

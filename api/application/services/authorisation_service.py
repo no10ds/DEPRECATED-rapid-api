@@ -9,7 +9,7 @@ from fastapi.security import SecurityScopes
 from fastapi.security.utils import get_authorization_scheme_param
 from jwt import InvalidTokenError, PyJWKClient
 from starlette.requests import Request
-from starlette.status import HTTP_401_UNAUTHORIZED
+from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
 from api.adapter.s3_adapter import S3Adapter
 from api.common.config.auth import (
@@ -74,7 +74,7 @@ def user_logged_in(request: Request) -> bool:
 
 def protect_endpoint(
     security_scopes: SecurityScopes,
-    browser_request: str = Depends(is_browser_request),
+    browser_request: bool = Depends(is_browser_request),
     client_token: str = Depends(oauth2_scheme),
     user_token: str = Depends(oauth2_user_scheme),
 ):
@@ -83,7 +83,7 @@ def protect_endpoint(
 
 def protect_dataset_endpoint(
     security_scopes: SecurityScopes,
-    browser_request: str = Depends(is_browser_request),
+    browser_request: bool = Depends(is_browser_request),
     client_token: str = Depends(oauth2_scheme),
     user_token: str = Depends(oauth2_user_scheme),
     domain: Optional[str] = None,
@@ -104,6 +104,38 @@ def protect_dataset_endpoint(
                 raise HTTPException(
                     status_code=HTTP_401_UNAUTHORIZED, detail="Not authenticated"
                 )
+
+
+def secure_dataset_endpoint(
+        security_scopes: SecurityScopes,
+        browser_request: bool = Depends(is_browser_request),
+        client_token: Optional[str] = Depends(oauth2_scheme),
+        user_token: Optional[str] = Depends(oauth2_user_scheme),
+        domain: Optional[str] = None,
+        dataset: Optional[str] = None,
+):
+    if missing_user_credentials(browser_request, user_token):
+        raise UserCredentialsUnavailableError()
+
+    if missing_client_credentials(client_token):
+        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="You are not authorised to perform this action")
+
+    try:
+        parse_token(user_token, client_token)
+    except InvalidTokenError as error:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
+
+
+def parse_token(user_token: str, client_token: str) -> None:
+    raise NotImplementedError()
+
+
+def missing_user_credentials(browser_request: bool, user_token: Optional[str]) -> bool:
+    return not user_token and browser_request
+
+
+def missing_client_credentials(client_token: Optional[str]) -> bool:
+    return not client_token
 
 
 def check_client_app_permissions(client_token, dataset, domain, security_scopes):
