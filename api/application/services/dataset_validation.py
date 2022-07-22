@@ -12,7 +12,7 @@ from api.domain.schema import Schema
 from api.domain.validation_context import ValidationContext
 
 
-def get_validated_dataframe(schema: Schema, file_contents) -> pd.DataFrame:
+def get_validated_dataframe(schema: Schema, file_contents: bytes) -> pd.DataFrame:
     df = construct_dataframe(file_contents)
     df = transform_and_validate(schema, df)
     return df
@@ -37,7 +37,7 @@ def transform_and_validate(schema: Schema, data: pd.DataFrame) -> pd.DataFrame:
     return validation_context.get_dataframe()
 
 
-def construct_dataframe(file_contents) -> pd.DataFrame:
+def construct_dataframe(file_contents: bytes) -> pd.DataFrame:
     parsed_contents = StringIO(str(file_contents, CONTENT_ENCODING))
     return pd.read_csv(parsed_contents, encoding=CONTENT_ENCODING, sep=",")
 

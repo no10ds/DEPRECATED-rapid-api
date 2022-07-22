@@ -1,11 +1,11 @@
-from typing import List, Tuple
+from typing import List, Tuple, Hashable
 
 import pandas as pd
 
 from api.domain.schema import Schema
 
 
-def generate_path(group_partitions: List[str], group_info):
+def generate_path(group_partitions: List[str], group_info: Tuple[Hashable, ...]) -> str:
     formatted_group_partitions = [
         f"{partition}={value}" for partition, value in zip(group_partitions, group_info)
     ]
@@ -16,9 +16,7 @@ def drop_columns(df: pd.DataFrame, columns: List[str]) -> pd.DataFrame:
     return df.drop(labels=columns, axis=1)
 
 
-def generate_partitioned_data(
-    schema: Schema, df: pd.DataFrame
-) -> List[Tuple[str, pd.DataFrame]]:
+def generate_partitioned_data(schema: Schema, df: pd.DataFrame) -> List[Tuple[str, pd.DataFrame]]:
     partitions = schema.get_partitions()
 
     if len(partitions) == 0:
@@ -26,7 +24,7 @@ def generate_partitioned_data(
     return partitioned_dataframe(df, partitions)
 
 
-def partitioned_dataframe(df, partitions) -> List[Tuple[str, pd.DataFrame]]:
+def partitioned_dataframe(df: pd.DataFrame, partitions: List[str]) -> List[Tuple[str, pd.DataFrame]]:
     partitioned_data = []
     grouped = df.groupby(by=partitions)
     for group_spec, group_data in grouped:
@@ -42,5 +40,5 @@ def partitioned_dataframe(df, partitions) -> List[Tuple[str, pd.DataFrame]]:
     return partitioned_data
 
 
-def non_partitioned_dataframe(df) -> List[Tuple[str, pd.DataFrame]]:
+def non_partitioned_dataframe(df: pd.DataFrame) -> List[Tuple[str, pd.DataFrame]]:
     return [("", df)]

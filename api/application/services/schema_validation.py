@@ -12,7 +12,7 @@ from api.common.config.constants import (
 from api.common.custom_exceptions import SchemaError
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema
-from api.domain.schema_metadata import UpdateBehaviour
+from api.domain.schema_metadata import UpdateBehaviour, Owner
 
 
 def validate_schema_for_upload(schema: Schema):
@@ -165,7 +165,7 @@ def schema_has_valid_data_owner(schema: Schema):
             _owner_email_is_changed(owner)
 
 
-def _owner_email_is_changed(owner):
+def _owner_email_is_changed(owner: Owner):
     if owner.email == "change_me@email.com":
         raise SchemaError("You must change the default owner")
 

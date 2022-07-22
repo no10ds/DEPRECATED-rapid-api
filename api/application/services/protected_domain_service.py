@@ -18,7 +18,7 @@ class ProtectedDomainService:
         self.cognito_adapter = cognito_adapter
         self.ssm_adapter = ssm_adapter
 
-    def create_scopes(self, domain: str):
+    def create_scopes(self, domain: str) -> None:
         domain = domain.upper().strip()
         scopes = [
             {
@@ -35,7 +35,7 @@ class ProtectedDomainService:
         )
         self.append_scopes_to_parameter(scopes)
 
-    def append_scopes_to_parameter(self, additional_scopes: List[dict]):
+    def append_scopes_to_parameter(self, additional_scopes: List[dict]) -> None:
         """
         This is to ensure that any user added scopes can be picked up by the terraform infrastructure
         """
