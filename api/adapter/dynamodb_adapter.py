@@ -61,7 +61,7 @@ class DynamoDBAdapter:
                     }
                 },
             )
-            return [self._generate_permission_item(item) for item in table_items['Items']]  # noqa: E999
+            return [self._generate_permission_item(item) for item in table_items['Items']]
         except ClientError:
             raise AWSServiceError("Internal server error, please contact system administrator")
 
