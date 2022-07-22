@@ -13,7 +13,7 @@ class Token:
     def is_user_token(self) -> bool:
         return self.token_type == "USER"
 
-    def _extract_subject(self, payload: dict):
+    def _extract_subject(self, payload: dict) -> str:
         try:
             subject = payload["sub"]
         except KeyError:
@@ -24,7 +24,7 @@ class Token:
 
         return subject
 
-    def _extract_permissions(self, payload: dict):
+    def _extract_permissions(self, payload: dict) -> List[str]:
         permission_groups = payload.get("cognito:groups", None)
         permission_scopes = payload.get("scope", None)
 
@@ -36,4 +36,4 @@ class Token:
             self.token_type = "CLIENT"
             return permission_scopes
 
-        raise ValueError("No permissions found")
+        return []

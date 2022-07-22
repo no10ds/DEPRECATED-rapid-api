@@ -67,20 +67,22 @@ class TestPermissionsExtraction:
         assert token.is_client_token() is False
         assert token.is_user_token() is True
 
-    def test_raises_error_when_neither_scopes_or_groups_exist(self):
+    def test_returns_empty_permissions_when_neither_scopes_or_groups_exist(self):
         payload = {
             "sub": "the-subject"
         }
 
-        with pytest.raises(ValueError, match="No permissions found"):
-            Token(payload)
+        token = Token(payload)
 
-    def test_raises_error_when_subject_field_empty(self):
+        assert token.permissions == []
+
+    def test_returns_empty_permissions_when_scope_and_groups_fields_empty(self):
         payload = {
             "sub": "the-client-subject",
             "scope": None,
             "cognito:groups": None
         }
 
-        with pytest.raises(ValueError):
-            Token(payload)
+        token = Token(payload)
+
+        assert token.permissions == []
