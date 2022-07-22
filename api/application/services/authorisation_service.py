@@ -115,17 +115,29 @@ def secure_dataset_endpoint(
         domain: Optional[str] = None,
         dataset: Optional[str] = None,
 ):
-    if missing_user_credentials(browser_request, user_token):
-        raise UserCredentialsUnavailableError()
-
-    if missing_client_credentials(client_token):
-        raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail="You are not authorised to perform this action")
+    check_credentials_availability(browser_request, client_token, user_token)
 
     try:
         token = user_token if user_token else client_token
-        parse_token(token)
+        token = parse_token(token)
+        check_permissions(token, security_scopes.scopes, domain, dataset)
     except InvalidTokenError as error:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
+
+
+def check_credentials_availability(browser_request: bool, client_token: str, user_token: str) -> None:
+    if not have_credentials(browser_request, client_token, user_token):
+        if browser_request:
+            raise UserCredentialsUnavailableError()
+        else:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="You are not authorised to perform this action"
+            )
+
+
+def have_credentials(browser_request: bool, client_token: str, user_token: str) -> bool:
+    return have_user_credentials(browser_request, user_token) or have_client_credentials(client_token)
 
 
 def parse_token(token: str) -> Token:
@@ -133,12 +145,16 @@ def parse_token(token: str) -> Token:
     return Token(payload)
 
 
-def missing_user_credentials(browser_request: bool, user_token: Optional[str]) -> bool:
-    return not user_token and browser_request
+def check_permissions(token: Token, endpoint_scopes: List[str], domain: str, dataset: str):
+    raise NotImplementedError()
 
 
-def missing_client_credentials(client_token: Optional[str]) -> bool:
-    return not client_token
+def have_user_credentials(browser_request: bool, user_token: Optional[str]) -> bool:
+    return bool(browser_request and user_token)
+
+
+def have_client_credentials(client_token: Optional[str]) -> bool:
+    return bool(client_token)
 
 
 def check_client_app_permissions(client_token, dataset, domain, security_scopes):

@@ -16,6 +16,7 @@ from api.application.services.authorisation_service import (
     protect_dataset_endpoint,
     secure_dataset_endpoint,
     parse_token,
+    check_credentials_availability,
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import DOMAIN_NAME
@@ -25,6 +26,7 @@ from api.common.custom_exceptions import (
     UserCredentialsUnavailableError,
     BaseAppException,
 )
+from api.domain.token import Token
 
 
 class TestExtractingPermissions:
@@ -150,7 +152,7 @@ class TestSecureDatasetEndpoint:
             )
 
     @patch("api.application.services.authorisation_service.parse_token")
-    def test_raises_unauthorised_exception_when_no_user_client_credentials_provided(
+    def test_raises_unauthorised_exception_when_invalid_token_provided(
         self, mock_parse_token
     ):
         client_token = "invalid-token"
@@ -166,6 +168,96 @@ class TestSecureDatasetEndpoint:
                 user_token=None,
                 domain="mydomain",
                 dataset="mydataset",
+            )
+
+    @patch("api.application.services.authorisation_service.check_permissions")
+    @patch("api.application.services.authorisation_service.parse_token")
+    def test_parses_token_and_checks_permissions_when_user_token_available(
+        self, mock_parse_token, mock_check_permissions
+    ):
+        user_token = "user-token"
+        token = Token({"sub": "the-user-id", "cognito:groups": ["group1", "group2"]})
+
+        mock_parse_token.return_value = token
+
+        secure_dataset_endpoint(
+            security_scopes=SecurityScopes(scopes=["READ"]),
+            browser_request=True,
+            client_token=None,
+            user_token=user_token,
+            domain="mydomain",
+            dataset="mydataset",
+        )
+
+        mock_parse_token.assert_called_once_with("user-token")
+        mock_check_permissions.assert_called_once_with(
+            token, ["READ"], "mydomain", "mydataset"
+        )
+
+    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
+    @patch("api.application.services.authorisation_service.check_permissions")
+    @patch("api.application.services.authorisation_service.parse_token")
+    def test_parses_token_and_checks_permissions_when_client_token_available(
+        self, mock_parse_token, mock_check_permissions
+    ):
+        client_token = "client-token"
+        token = Token(
+            {
+                "sub": "the-user-id",
+                "scope": "https://example.com/scope1 https://example.com/scope2",
+            }
+        )
+
+        mock_parse_token.return_value = token
+
+        secure_dataset_endpoint(
+            security_scopes=SecurityScopes(scopes=["READ"]),
+            browser_request=False,
+            client_token=client_token,
+            user_token=None,
+            domain="mydomain",
+            dataset=None,
+        )
+
+        mock_parse_token.assert_called_once_with("client-token")
+        mock_check_permissions.assert_called_once_with(
+            token, ["READ"], "mydomain", None
+        )
+
+
+class TestCheckCredentialsAvailability:
+    def test_succeeds_when_at_least_user_credential_type_available(self):
+        try:
+            check_credentials_availability(
+                browser_request=True, user_token="user-token", client_token=None
+            )
+        except UserCredentialsUnavailableError:
+            pytest.fail("Unexpected UserCredentialsUnavailableError raised")
+        except HTTPException:
+            pytest.fail("Unexpected HTTPException raised")
+
+    def test_succeeds_when_at_least_client_credential_type_available(self):
+        try:
+            check_credentials_availability(
+                browser_request=True, user_token=None, client_token="client-token"
+            )
+        except UserCredentialsUnavailableError:
+            pytest.fail("Unexpected UserCredentialsUnavailableError raised")
+        except HTTPException:
+            pytest.fail("Unexpected HTTPException raised")
+
+    def test_raises_user_credentials_error_when_is_browser_request_with_no_credentials(
+        self,
+    ):
+        with pytest.raises(UserCredentialsUnavailableError):
+            check_credentials_availability(
+                browser_request=True, user_token=None, client_token=None
+            )
+
+    def test_raises_http_error_when_is_not_browser_request_with_no_credentials(self):
+        with pytest.raises(HTTPException):
+            check_credentials_availability(
+                browser_request=False, user_token=None, client_token=None
             )
 
 
