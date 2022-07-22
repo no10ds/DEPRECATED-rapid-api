@@ -7,7 +7,7 @@ from api.domain.token import Token
 def valid_client_token_payload():
     yield {
         "sub": "the-client-subject",
-        "scopes": ["scope1", "scope2"]
+        "scope": ["scope1", "scope2"]
     }
 
 
@@ -58,7 +58,7 @@ class TestPermissionsExtraction:
     def test_favours_client_scopes_over_user_groups_if_both_available(self):
         payload = {
             "sub": "the-client-subject",
-            "scopes": ["scope1", "scope2"],
+            "scope": ["scope1", "scope2"],
             "cognito:groups": ["group1", "group2"]
         }
         token = Token(payload)
@@ -78,7 +78,7 @@ class TestPermissionsExtraction:
     def test_raises_error_when_subject_field_empty(self):
         payload = {
             "sub": "the-client-subject",
-            "scopes": None,
+            "scope": None,
             "cognito:groups": None
         }
 

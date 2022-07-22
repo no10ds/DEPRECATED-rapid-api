@@ -26,7 +26,7 @@ class Token:
 
     def _extract_permissions(self, payload: dict):
         permission_groups = payload.get("cognito:groups", None)
-        permission_scopes = payload.get("scopes", None)
+        permission_scopes = payload.get("scope", None)
 
         if permission_groups:
             self.token_type = "USER"
