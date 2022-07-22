@@ -1,21 +1,21 @@
 from typing import List
-from unittest.mock import patch, Mock, ANY
+from unittest.mock import patch, Mock
 
 import pytest
 from fastapi import HTTPException
 from fastapi.security import SecurityScopes
 from jwt.exceptions import InvalidTokenError
 
+from api.application.services.authorisation.acceptable_permissions import (
+    AcceptablePermissions,
+)
 from api.application.services.authorisation.authorisation_service import (
-    generate_acceptable_scopes,
     match_client_app_permissions,
-    AcceptedScopes,
     match_user_permissions,
     extract_client_app_scopes,
     extract_user_groups,
     protect_dataset_endpoint,
     secure_dataset_endpoint,
-    parse_token,
     check_credentials_availability,
 )
 from api.common.config.auth import SensitivityLevel
@@ -31,7 +31,7 @@ from api.domain.token import Token
 
 class TestExtractingPermissions:
     @patch("jwt.decode")
-    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.token_utils.jwks_client")
     def test_extract_token_permissions_for_apps(self, mock_jwks_client, mock_decode):
         mock_signing_key = Mock()
         mock_signing_key.key = "secret"
@@ -47,25 +47,24 @@ class TestExtractingPermissions:
         mock_decode.assert_called_once_with(None, "secret", algorithms=["RS256"])
         assert token_scopes == ["SOME_SCOPE", "ANOTHER_SCOPE"]
 
-    @patch("jwt.decode")
-    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
-    def test_extract_token_permissions_for_users(self, mock_jwks_client, mock_decode):
-        mock_signing_key = Mock()
-        mock_signing_key.key = "secret"
-        mock_jwks_client.get_signing_key_from_jwt.return_value = mock_signing_key
+    @patch(
+        "api.application.services.authorisation.authorisation_service.get_validated_token_payload"
+    )
+    def test_extract_token_permissions_for_users(
+        self, mock_get_validated_token_payload
+    ):
+        token = "test-token"
 
-        mock_decode.return_value = {
+        mock_get_validated_token_payload.return_value = {
             "cognito:groups": ["READ/domain/dataset", "WRITE/domain/dataset"],
             "scope": "phone openid email",
         }
 
-        token_scopes = extract_user_groups(None)
+        token_scopes = extract_user_groups(token)
 
-        mock_jwks_client.get_signing_key_from_jwt.assert_called_once_with(None)
-        mock_decode.assert_called_once_with(None, "secret", algorithms=["RS256"])
         assert token_scopes == ["READ/domain/dataset", "WRITE/domain/dataset"]
 
-    def test_extract_scopes_from_invalid_client_app_token(self):
+    def test_throws_error_when_invalid_client_app_token(self):
         token = "invalid-token"
         with pytest.raises(
             AuthorisationError,
@@ -73,7 +72,7 @@ class TestExtractingPermissions:
         ):
             extract_client_app_scopes(token)
 
-    def test_extract_scopes_from_invalid_user_token(self):
+    def test_throws_error_when_invalid_user_token(self):
         token = "invalid-token"
         with pytest.raises(
             AuthorisationError,
@@ -81,16 +80,15 @@ class TestExtractingPermissions:
         ):
             extract_user_groups(token)
 
-    @patch("jwt.decode")
-    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
-    def test_extract_handles_valid_client_app_token_with_invalid_payload(
-        self, mock_jwks_client, mock_decode
+    @patch(
+        "api.application.services.authorisation.authorisation_service.get_validated_token_payload"
+    )
+    def test_handles_valid_client_app_token_with_invalid_payload(
+        self, mock_get_validated_token_payload
     ):
-        mock_signing_key = Mock()
-        mock_signing_key.key = "secret"
-        mock_jwks_client.get_signing_key_from_jwt.return_value = mock_signing_key
+        token = "invalid-token"
 
-        mock_decode.return_value = {
+        mock_get_validated_token_payload.return_value = {
             "invalid": ["read/domain/dataset", "write/domain/dataset"]
         }
 
@@ -98,18 +96,17 @@ class TestExtractingPermissions:
             AuthorisationError,
             match="Not enough permissions or access token is missing/invalid",
         ):
-            extract_client_app_scopes(None)
+            extract_client_app_scopes(token)
 
-    @patch("jwt.decode")
-    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
-    def test_extract_handles_valid_user_token_with_invalid_payload(
-        self, mock_jwks_client, mock_decode
+    @patch(
+        "api.application.services.authorisation.authorisation_service.get_validated_token_payload"
+    )
+    def test_handles_valid_user_token_with_invalid_payload(
+        self, mock_get_validated_token_payload
     ):
-        mock_signing_key = Mock()
-        mock_signing_key.key = "secret"
-        mock_jwks_client.get_signing_key_from_jwt.return_value = mock_signing_key
+        token = "invalid-token"
 
-        mock_decode.return_value = {
+        mock_get_validated_token_payload.return_value = {
             "invalid": ["read/domain/dataset", "write/domain/dataset"]
         }
 
@@ -117,7 +114,7 @@ class TestExtractingPermissions:
             AuthorisationError,
             match="Not enough permissions or access token is missing/invalid",
         ):
-            extract_user_groups(None)
+            extract_user_groups(token)
 
 
 class TestSecureDatasetEndpoint:
@@ -229,6 +226,139 @@ class TestSecureDatasetEndpoint:
         )
 
 
+class TestProtectEndpoint:
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_user_permissions"
+    )
+    @patch(
+        "api.application.services.authorisation.authorisation_service.extract_user_groups"
+    )
+    def test_matches_user_permissions_when_user_token_provided_from_any_source(
+        self, mock_extract_user_groups, mock_match_user_permissions
+    ):
+        user_token = "test-token"
+        browser_request = False
+        mock_extract_user_groups.return_value = [
+            "READ/domain/dataset",
+            "WRITE/domain/dataset",
+        ]
+        protect_dataset_endpoint(
+            security_scopes=SecurityScopes(scopes=["READ"]),
+            browser_request=browser_request,
+            client_token=None,
+            user_token=user_token,
+            domain="mydomain",
+            dataset="mydataset",
+        )
+
+        mock_extract_user_groups.assert_called_once_with(user_token)
+        mock_match_user_permissions.assert_called_once_with(
+            ["READ/domain/dataset", "WRITE/domain/dataset"],
+            ["READ"],
+            "mydomain",
+            "mydataset",
+        )
+
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_user_permissions"
+    )
+    def test_raises_error_when_browser_makes_request_and_no_user_token_provided(
+        self, mock_match_user_permissions
+    ):
+        user_token = None
+        browser_request = True
+        with pytest.raises(UserCredentialsUnavailableError):
+            protect_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=None,
+                user_token=user_token,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+        assert not mock_match_user_permissions.called
+
+    @patch(
+        "api.application.services.authorisation.authorisation_service.extract_client_app_scopes"
+    )
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
+    )
+    def test_matches_client_permissions_when_client_token_provided_from_programmatic_client(
+        self, mock_match_client_app_permissions, mock_extract_client_app_scopes
+    ):
+        browser_request = False
+        client_token = ("test-client-token",)
+        mock_extract_client_app_scopes.return_value = ["READ_PUBLIC", "WRITE_PUBLIC"]
+
+        protect_dataset_endpoint(
+            security_scopes=SecurityScopes(scopes=["READ"]),
+            browser_request=browser_request,
+            client_token=client_token,
+            user_token=None,
+            domain="mydomain",
+            dataset="mydataset",
+        )
+
+        mock_extract_client_app_scopes.assert_called_once_with(client_token)
+        mock_match_client_app_permissions.assert_called_once_with(
+            ["READ_PUBLIC", "WRITE_PUBLIC"], ["READ"], "mydomain", "mydataset"
+        )
+
+    @patch(
+        "api.application.services.authorisation.authorisation_service.extract_client_app_scopes"
+    )
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
+    )
+    def test_raises_exception_when_schema_not_found_for_dataset(
+        self, mock_match_client_app_permissions, mock_extract_client_app_scopes
+    ):
+        browser_request = False
+        client_token = "test-client-token"
+        mock_extract_client_app_scopes.return_value = ["READ_PUBLIC", "WRITE_PUBLIC"]
+        mock_match_client_app_permissions.side_effect = SchemaNotFoundError()
+
+        with pytest.raises(HTTPException):
+            protect_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=client_token,
+                user_token=None,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+    def test_raises_exception_when_no_credentials_exist(self):
+        browser_request = False
+
+        with pytest.raises(HTTPException):
+            protect_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=None,
+                user_token=None,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+    def test_raises_unauthorised_exception_when_no_credentials_provided(self):
+        client_token = None
+        user_token = None
+        browser_request = False
+
+        with pytest.raises(HTTPException):
+            protect_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=client_token,
+                user_token=user_token,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+
 class TestCheckCredentialsAvailability:
     def test_succeeds_when_at_least_user_credential_type_available(self):
         try:
@@ -265,217 +395,35 @@ class TestCheckCredentialsAvailability:
             )
 
 
-class TestParseToken:
-    @patch("api.application.services.authorisation.authorisation_service.Token")
-    @patch(
-        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
-    )
-    def test_parses_user_token_with_groups(self, mock_token_payload, mock_token):
-        token = "user-token"
-
-        payload = {
-            "sub": "the-user-id",
-            "cognito:groups": ["group1", "group2"],
-            "scope": "scope1 scope2 scope3",
-        }
-
-        mock_token_payload.return_value = payload
-
-        parse_token(token)
-
-        mock_token_payload.assert_called_once_with("user-token")
-        mock_token.assert_called_once_with(payload)
-
-    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
-    @patch("api.application.services.authorisation.authorisation_service.Token")
-    @patch(
-        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
-    )
-    def test_parses_client_token_with_scopes(self, mock_token_payload, mock_token):
-        token = "client-token"
-
-        payload = {
-            "sub": "the-client-id",
-            "scope": "https://example.com/scope1 https://example.com/scope2",
-        }
-
-        mock_token_payload.return_value = payload
-
-        parse_token(token)
-
-        mock_token_payload.assert_called_once_with("client-token")
-        mock_token.assert_called_once_with(payload)
-
-    @patch("api.application.services.authorisation.authorisation_service.Token")
-    @patch(
-        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
-    )
-    def test_parses_user_token_with_no_permissions(
-        self, mock_token_payload, mock_token
-    ):
-        token = "user-token"
-
-        payload = {
-            "sub": "the-user-id",
-            "scope": "scope1 scope2 scope3",
-        }
-
-        mock_token_payload.return_value = payload
-
-        parse_token(token)
-
-        mock_token_payload.assert_called_once_with("user-token")
-        mock_token.assert_called_once_with(payload)
-
-    @patch("api.application.services.authorisation.authorisation_service.Token")
-    @patch(
-        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
-    )
-    def test_passes_errors_through(self, _mock_token_payload, mock_token):
-        mock_token.side_effect = ValueError("Error detail")
-
-        with pytest.raises(ValueError, match="Error detail"):
-            parse_token("user-token")
-
-
-class TestProtectEndpoint:
-    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
-    @patch("jwt.decode")
-    @patch(
-        "api.application.services.authorisation.authorisation_service.match_user_permissions"
-    )
-    def test_matches_user_permissions_when_user_token_provided_from_any_source(
-        self, mock_match_user_permissions, mock_decode, _mock_jwks_client
-    ):
-        browser_request = False
-        mock_decode.return_value = {
-            "cognito:groups": ["READ/domain/dataset", "WRITE/domain/dataset"],
-            "scope": "phone openid email",
-        }
-        protect_dataset_endpoint(
-            security_scopes=SecurityScopes(scopes=["READ"]),
-            browser_request=browser_request,
-            client_token=None,
-            user_token="token",
-            domain="mydomain",
-            dataset="mydataset",
-        )
-
-        mock_decode.assert_called_once_with("token", ANY, algorithms=["RS256"])
-        mock_match_user_permissions.assert_called_once_with(
-            ["READ/domain/dataset", "WRITE/domain/dataset"],
-            ["READ"],
-            "mydomain",
-            "mydataset",
-        )
-
-    @patch(
-        "api.application.services.authorisation.authorisation_service.match_user_permissions"
-    )
-    def test_raises_error_when_browser_makes_request_and_no_user_token_provided(
-        self, mock_match_user_permissions
-    ):
-        user_token = None
-        browser_request = True
-        with pytest.raises(UserCredentialsUnavailableError):
-            protect_dataset_endpoint(
-                security_scopes=SecurityScopes(scopes=["READ"]),
-                browser_request=browser_request,
-                client_token=None,
-                user_token=user_token,
-                domain="mydomain",
-                dataset="mydataset",
-            )
-
-        assert not mock_match_user_permissions.called
-
-    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
-    @patch("jwt.decode")
-    @patch(
-        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
-    )
-    def test_matches_client_permissions_when_client_token_provided_from_programmatic_client(
-        self, match_client_app_permissions, mock_decode, _mock_jwks_client
-    ):
-        browser_request = False
-        mock_decode.return_value = {
-            "scope": f"https://{DOMAIN_NAME}/READ_PUBLIC https://{DOMAIN_NAME}/WRITE_PUBLIC"
-        }
-        protect_dataset_endpoint(
-            security_scopes=SecurityScopes(scopes=["READ"]),
-            browser_request=browser_request,
-            client_token="token",
-            user_token=None,
-            domain="mydomain",
-            dataset="mydataset",
-        )
-
-        mock_decode.assert_called_once_with("token", ANY, algorithms=["RS256"])
-        match_client_app_permissions.assert_called_once_with(
-            ["READ_PUBLIC", "WRITE_PUBLIC"], ["READ"], "mydomain", "mydataset"
-        )
-
-    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
-    @patch("jwt.decode")
-    @patch(
-        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
-    )
-    def test_raises_exception_when_schema_not_found_for_dataset(
-        self, match_client_app_permissions, mock_decode, _mock_jwks_client
-    ):
-        browser_request = False
-        mock_decode.return_value = {
-            "scope": f"https://{DOMAIN_NAME}/READ_PUBLIC https://{DOMAIN_NAME}/WRITE_PUBLIC"
-        }
-        match_client_app_permissions.side_effect = SchemaNotFoundError()
-
-        with pytest.raises(HTTPException):
-            protect_dataset_endpoint(
-                security_scopes=SecurityScopes(scopes=["READ"]),
-                browser_request=browser_request,
-                client_token=None,
-                user_token=None,
-                domain="mydomain",
-                dataset="mydataset",
-            )
-
-    def test_raises_unauthorised_exception_when_no_credentials_provided(self):
-        client_token = None
-        user_token = None
-        browser_request = False
-
-        with pytest.raises(HTTPException):
-            protect_dataset_endpoint(
-                security_scopes=SecurityScopes(scopes=["READ"]),
-                browser_request=browser_request,
-                client_token=client_token,
-                user_token=user_token,
-                domain="mydomain",
-                dataset="mydataset",
-            )
-
-
 class TestAcceptedScopes:
     @pytest.mark.parametrize(
         "accepted_scopes, token_scopes",
         [
             # READ endpoint
             (
-                AcceptedScopes(required=set(), optional={"READ_ALL", "READ_PUBLIC"}),
+                AcceptablePermissions(
+                    required=set(), optional={"READ_ALL", "READ_PUBLIC"}
+                ),
                 ["READ_PUBLIC"],
             ),
             # WRITE endpoint
             (
-                AcceptedScopes(required=set(), optional={"WRITE_PUBLIC"}),
+                AcceptablePermissions(required=set(), optional={"WRITE_PUBLIC"}),
                 ["WRITE_PUBLIC"],
             ),
             # Standalone action endpoints
-            (AcceptedScopes(required={"USER_ADMIN"}, optional=set()), ["USER_ADMIN"]),
-            (AcceptedScopes(required={"DATA_ADMIN"}, optional=set()), ["DATA_ADMIN"]),
+            (
+                AcceptablePermissions(required={"USER_ADMIN"}, optional=set()),
+                ["USER_ADMIN"],
+            ),
+            (
+                AcceptablePermissions(required={"DATA_ADMIN"}, optional=set()),
+                ["DATA_ADMIN"],
+            ),
         ],
     )
     def test_scopes_satisfy_acceptable_scopes(
-        self, accepted_scopes: AcceptedScopes, token_scopes: List[str]
+        self, accepted_scopes: AcceptablePermissions, token_scopes: List[str]
     ):
         assert accepted_scopes.satisfied_by(token_scopes) is True
 
@@ -484,21 +432,29 @@ class TestAcceptedScopes:
         [
             # READ endpoint
             (
-                AcceptedScopes(required=set(), optional={"READ_ALL", "READ_PUBLIC"}),
+                AcceptablePermissions(
+                    required=set(), optional={"READ_ALL", "READ_PUBLIC"}
+                ),
                 [],
             ),  # No token scopes
             # WRITE endpoint
             (
-                AcceptedScopes(required=set(), optional={"WRITE_PUBLIC"}),
+                AcceptablePermissions(required=set(), optional={"WRITE_PUBLIC"}),
                 ["READ_PUBLIC", "READ_ALL"],
             ),
             # Standalone action endpoints
-            (AcceptedScopes(required={"USER_ADMIN"}, optional=set()), ["READ_ALL"]),
-            (AcceptedScopes(required={"DATA_ADMIN"}, optional=set()), ["WRITE_ALL"]),
+            (
+                AcceptablePermissions(required={"USER_ADMIN"}, optional=set()),
+                ["READ_ALL"],
+            ),
+            (
+                AcceptablePermissions(required={"DATA_ADMIN"}, optional=set()),
+                ["WRITE_ALL"],
+            ),
         ],
     )
     def test_scopes_do_not_satisfy_acceptable_scopes(
-        self, accepted_scopes: AcceptedScopes, token_scopes: List[str]
+        self, accepted_scopes: AcceptablePermissions, token_scopes: List[str]
     ):
         assert accepted_scopes.satisfied_by(token_scopes) is False
 
@@ -506,75 +462,6 @@ class TestAcceptedScopes:
 class TestAppPermissionsMatching:
     def setup_method(self):
         self.mock_s3_client = Mock()
-
-    @patch("api.application.services.authorisation.authorisation_service.s3_adapter")
-    @pytest.mark.parametrize(
-        "domain, dataset, sensitivity, endpoint_scopes, acceptable_scopes",
-        [
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["READ"],
-                AcceptedScopes(  # noqa: E126
-                    required=set(),
-                    optional={
-                        "READ_ALL",
-                        "READ_PUBLIC",
-                        "READ_PRIVATE",
-                    },
-                ),
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PUBLIC,
-                ["USER_ADMIN", "READ"],
-                AcceptedScopes(  # noqa: E126
-                    required={"USER_ADMIN"},
-                    optional={
-                        "READ_ALL",
-                        "READ_PUBLIC",
-                        "READ_PRIVATE",
-                    },
-                ),
-            ),
-            (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["USER_ADMIN", "READ", "WRITE"],  # noqa: E126
-                AcceptedScopes(  # noqa: E126
-                    required={"USER_ADMIN"},
-                    optional={
-                        "READ_ALL",
-                        "WRITE_ALL",
-                        "READ_PRIVATE",
-                        "WRITE_PRIVATE",
-                    },
-                ),
-            ),
-            (
-                None,
-                None,
-                None,
-                ["USER_ADMIN"],
-                AcceptedScopes(required={"USER_ADMIN"}, optional=set()),  # noqa: E126
-            ),
-        ],
-    )
-    def test_generate_acceptable_scopes(
-        self,
-        mock_s3_adapter,
-        domain: str,
-        dataset: str,
-        sensitivity: SensitivityLevel,
-        endpoint_scopes: List[str],
-        acceptable_scopes: AcceptedScopes,
-    ):
-        mock_s3_adapter.get_dataset_sensitivity.return_value = sensitivity
-        result = generate_acceptable_scopes(endpoint_scopes, domain, dataset)
-        assert result == acceptable_scopes
 
     @patch("api.application.services.authorisation.authorisation_service.s3_adapter")
     @pytest.mark.parametrize(
