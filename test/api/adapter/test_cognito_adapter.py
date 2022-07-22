@@ -24,7 +24,7 @@ class TestCognitoAdapterClientMethods:
 
     def test_create_client_app(self):
         client_request = ClientRequest(
-            client_name="my_client", scopes=["WRITE_PUBLIC", "READ_PRIVATE"]
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
 
         expected_response = {
@@ -86,7 +86,7 @@ class TestCognitoAdapterClientMethods:
         assert actual_response == expected_response
 
     def test_raises_error_when_scope_does_not_exist_in_aws(self):
-        client_request = ClientRequest(client_name="my_client", scopes=["NOT_VALID"])
+        client_request = ClientRequest(client_name="my_client", permissions=["NOT_VALID"])
 
         self.cognito_boto_client.create_user_pool_client.side_effect = ClientError(
             error_response={"Error": {"Code": "ScopeDoesNotExistException"}},
@@ -94,12 +94,12 @@ class TestCognitoAdapterClientMethods:
         )
 
         with pytest.raises(
-            UserError, match="One or more of the provided scopes do not exist"
+            UserError, match="One or more of the provided permissions does not exist"
         ):
             self.cognito_adapter.create_client_app(client_request)
 
     def test_raises_error_when_the_client_fails_to_create_in_aws(self):
-        client_request = ClientRequest(client_name="my_client", scopes=["NOT_VALID"])
+        client_request = ClientRequest(client_name="my_client", permissions=["NOT_VALID"])
 
         self.cognito_boto_client.create_user_pool_client.side_effect = ClientError(
             error_response={"Error": {"Code": "InvalidParameterException"}},

@@ -8,21 +8,22 @@ from api.domain.client import ClientRequest, ClientResponse
 class TestClientCreation:
     def setup_method(self):
         self.cognito_adapter = Mock()
-        self.client_service = ClientService(self.cognito_adapter)
+        self.dynamo_adapter = Mock()
+        self.client_service = ClientService(self.cognito_adapter, self.dynamo_adapter)
 
     def test_create_client(self):
         expected_response = ClientResponse(
             client_name="my_client",
             client_id="some-client-id",
             client_secret="some-client-secret",  # pragma: allowlist secret
-            scopes=[
+            permissions=[
                 f"https://{DOMAIN_NAME}/WRITE_PUBLIC",
                 f"https://{DOMAIN_NAME}/READ_PRIVATE",
             ],
         )
 
         client_request = ClientRequest(
-            client_name="my_client", scopes=["WRITE_PUBLIC", "READ_PRIVATE"]
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
 
         self.cognito_adapter.create_client_app.return_value = self.cognito_response
@@ -30,6 +31,10 @@ class TestClientCreation:
         client_response = self.client_service.create_client(client_request)
 
         self.cognito_adapter.create_client_app.assert_called_once_with(client_request)
+
+        self.dynamo_adapter.create_client_item.assert_called_once_with(
+            expected_response.client_id, client_request.permissions)
+
         assert client_response == expected_response
 
     cognito_response = {

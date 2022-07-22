@@ -3,13 +3,13 @@ from typing import Optional, List
 
 from pydantic import BaseModel
 
-from api.common.config.auth import DEFAULT_SCOPE
+from api.common.config.auth import DEFAULT_PERMISSION
 from api.common.custom_exceptions import UserError
 
 
 class ClientRequest(BaseModel):
     client_name: str
-    scopes: Optional[List[str]] = DEFAULT_SCOPE
+    permissions: Optional[List[str]] = DEFAULT_PERMISSION
 
     def get_validated_client_name(self):
         """
@@ -22,12 +22,12 @@ class ClientRequest(BaseModel):
             return self.client_name
         raise UserError("Invalid client name provided")
 
-    def get_scopes(self) -> List[str]:
-        return self.scopes
+    def get_permissions(self) -> List[str]:
+        return self.permissions
 
 
 class ClientResponse(BaseModel):
     client_name: str
-    scopes: List[str]
+    permissions: List[str]
     client_id: str
     client_secret: str

@@ -70,12 +70,12 @@ class CognitoAdapter:
     def _build_cognito_scopes(self, client_request):
         return [
             f"{COGNITO_RESOURCE_SERVER_ID}/{scope}"
-            for scope in client_request.get_scopes()
+            for scope in client_request.get_permissions()
         ]
 
     def _handle_client_error(self, client_request, error):
         if error.response["Error"]["Code"] == "ScopeDoesNotExistException":
-            raise UserError("One or more of the provided scopes do not exist")
+            raise UserError("One or more of the provided permissions does not exist")
         raise AWSServiceError(
             f"The client '{client_request.client_name}' could not be created"
         )

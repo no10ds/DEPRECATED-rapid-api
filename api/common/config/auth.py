@@ -8,7 +8,7 @@ from api.common.utilities import BaseEnum
 RAPID_ACCESS_TOKEN = "rat"  # nosec B105
 COOKIE_MAX_AGE_IN_SECONDS = 3600
 
-DEFAULT_SCOPE = ["READ_PUBLIC"]
+DEFAULT_PERMISSION = ["READ_PUBLIC"]
 
 COGNITO_ALLOWED_FLOWS = ["client_credentials"]
 COGNITO_RESOURCE_SERVER_ID = f"https://{DOMAIN_NAME}"

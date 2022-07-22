@@ -174,31 +174,31 @@ class TestDynamoDBAdapter:
         ):
             self.dynamo_adapter.get_db_permissions()
 
-    def test_get_existing_scopes_for_user_with_db(self):
+    def test_get_existing_permissions_for_user_with_db(self):
         test_user_permissions = ["READ_PRIVATE", "WRITE_ALL"]
         response = self.dynamo_adapter.get_validated_permission_ids(self.permissions_list, test_user_permissions)
         assert response == ["3", "2"]
 
-    def test_get_existing_scopes_for_user_with_no_permissions_from_db(self):
+    def test_get_existing_permissions_for_user_with_no_permissions_from_db(self):
         test_user_permissions = []
         response = self.dynamo_adapter.get_validated_permission_ids(self.permissions_list, test_user_permissions)
         assert response == []
 
-    def test_get_existing_scopes_for_user_with_all_invalid_permissions_from_db(self):
+    def test_get_existing_permissions_for_user_with_all_invalid_permissions_from_db(self):
         test_user_permissions = ["READ_SENSITIVE", "ACCESS_ALL", "ADMIN", "FAKE_ADMIN"]
         with pytest.raises(
                 UserError, match="One or more of the provided permissions do not exist"
         ):
             self.dynamo_adapter.get_validated_permission_ids(self.permissions_list, test_user_permissions)
 
-    def test_get_existing_scopes_for_user_with_some_invalid_permissions_from_db(self):
+    def test_get_existing_permissions_for_user_with_some_invalid_permissions_from_db(self):
         test_user_permissions = ["READ_SENSITIVE", "WRITE_ALL", "ACCESS_ALL", "ADMIN", "FAKE_ADMIN"]
         with pytest.raises(
                 UserError, match="One or more of the provided permissions do not exist"
         ):
             self.dynamo_adapter.get_validated_permission_ids(self.permissions_list, test_user_permissions)
 
-    def test_get_existing_scopes_from_db_with_user_admin_permission(self):
+    def test_get_existing_permissions_from_db_with_user_admin_permission(self):
         test_user_permissions = ["USER_ADMIN", "WRITE_ALL"]
         response = self.dynamo_adapter.get_validated_permission_ids(self.permissions_list, test_user_permissions)
         assert response == ["0", "2"]

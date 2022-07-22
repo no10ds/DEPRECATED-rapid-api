@@ -13,13 +13,13 @@ class TestClientCreation(BaseClientTest):
             client_name="my_client",
             client_id="some-client-id",
             client_secret="some-client-secret",  # pragma: allowlist secret
-            scopes=["WRITE_PUBLIC", "READ_PRIVATE"],
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
         )
 
         mock_create_client.return_value = expected_response
 
         client_request = ClientRequest(
-            client_name="my_client", scopes=["WRITE_PUBLIC", "READ_PRIVATE"]
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
 
         response = self.client.post(
@@ -27,7 +27,7 @@ class TestClientCreation(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
             json={
                 "client_name": "my_client",
-                "scopes": ["WRITE_PUBLIC", "READ_PRIVATE"],
+                "permissions": ["WRITE_PUBLIC", "READ_PRIVATE"],
             },
         )
 
@@ -37,17 +37,17 @@ class TestClientCreation(BaseClientTest):
         assert response.json() == expected_response
 
     @patch.object(ClientService, "create_client")
-    def test_accepts_empty_scopes(self, mock_create_client):
+    def test_accepts_empty_permissions(self, mock_create_client):
         expected_response = ClientResponse(
             client_name="my_client",
             client_id="some-client-id",
             client_secret="some-client-secret",  # pragma: allowlist secret
-            scopes=["READ_PUBLIC"],
+            permissions=["READ_PUBLIC"],
         )
 
         mock_create_client.return_value = expected_response
 
-        client_request = ClientRequest(client_name="my_client", scopes=["READ_PUBLIC"])
+        client_request = ClientRequest(client_name="my_client", permissions=["READ_PUBLIC"])
 
         response = self.client.post(
             "/client",
@@ -64,27 +64,27 @@ class TestClientCreation(BaseClientTest):
         response = self.client.post(
             "/client",
             headers={"Authorization": "Bearer test-token"},
-            json={"scopes": ["WRITE_PUBLIC", "READ_PRIVATE"]},
+            json={"permissions": ["WRITE_PUBLIC", "READ_PRIVATE"]},
         )
 
         assert response.status_code == 400
         assert response.json() == {"details": ["client_name -> field required"]}
 
     @patch.object(ClientService, "create_client")
-    def test_bad_request_when_invalid_scopes(self, mock_create_client):
+    def test_bad_request_when_invalid_permissions(self, mock_create_client):
         mock_create_client.side_effect = UserError(
-            "One or more of the provided scopes do not exist"
+            "One or more of the provided permissions do not exist"
         )
 
         response = self.client.post(
             "/client",
             headers={"Authorization": "Bearer test-token"},
-            json={"client_name": "my_client", "scopes": ["INVALID_SCOPE"]},
+            json={"client_name": "my_client", "permissions": ["INVALID_SCOPE"]},
         )
 
         assert response.status_code == 400
         assert response.json() == {
-            "details": "One or more of the provided scopes do not exist"
+            "details": "One or more of the provided permissions do not exist"
         }
 
     @patch.object(ClientService, "create_client")
@@ -96,7 +96,7 @@ class TestClientCreation(BaseClientTest):
         response = self.client.post(
             "/client",
             headers={"Authorization": "Bearer test-token"},
-            json={"client_name": "my_client", "scopes": ["INVALID_SCOPE"]},
+            json={"client_name": "my_client", "permissions": ["INVALID_SCOPE"]},
         )
 
         assert response.status_code == 500

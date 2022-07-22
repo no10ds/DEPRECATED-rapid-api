@@ -32,7 +32,7 @@ async def create_client(client_request: ClientRequest):
     ```json
     {
     "client_name": "department_for_education",
-    "scopes": [
+    "permissions": [
         "READ_ALL",
         "WRITE_PUBLIC"
     ]
@@ -50,7 +50,7 @@ async def create_client(client_request: ClientRequest):
 
     #### Scopes you can grant to the client
 
-    Depending on what permission you would like to grant the onboarding client, the relevant scope(s) must be assigned.
+    Depending on what permission you would like to grant the onboarding client, the relevant permission(s) must be assigned.
     Available choices are:
 
     - `READ_ALL` - allow client to read any dataset
