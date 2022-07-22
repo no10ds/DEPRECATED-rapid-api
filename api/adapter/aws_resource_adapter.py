@@ -13,10 +13,10 @@ from api.domain.storage_metadata import StorageMetaData
 
 class AWSResourceAdapter:
     def __init__(
-            self,
-            resource_client=boto3.client(
-                "resourcegroupstaggingapi", region_name=AWS_REGION
-            ),
+        self,
+        resource_client=boto3.client(
+            "resourcegroupstaggingapi", region_name=AWS_REGION
+        ),
     ):
         self.__resource_client = resource_client
 
@@ -25,7 +25,7 @@ class AWSResourceAdapter:
         tags: Optional[Dict[str, str]] = None
 
     def get_datasets_metadata(
-            self, query: DatasetFilters = DatasetFilters()
+        self, query: DatasetFilters = DatasetFilters()
     ) -> List[EnrichedDatasetMetaData]:
         try:
             aws_resources = self._get_resources(
@@ -60,7 +60,7 @@ class AWSResourceAdapter:
         )
 
     def _to_dataset_metadata(
-            self, resource_tag_mapping: Dict
+        self, resource_tag_mapping: Dict
     ) -> EnrichedDatasetMetaData:
         domain, dataset = self._infer_domain_and_dataset_from_crawler_arn(
             resource_tag_mapping["ResourceARN"]

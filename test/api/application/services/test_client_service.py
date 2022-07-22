@@ -33,7 +33,8 @@ class TestClientCreation:
         self.cognito_adapter.create_client_app.assert_called_once_with(client_request)
 
         self.dynamo_adapter.create_client_item.assert_called_once_with(
-            expected_response.client_id, client_request.permissions)
+            expected_response.client_id, client_request.permissions
+        )
 
         assert client_response == expected_response
 

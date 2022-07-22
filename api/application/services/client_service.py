@@ -4,7 +4,9 @@ from api.domain.client import ClientResponse, ClientRequest
 
 
 class ClientService:
-    def __init__(self, cognito_adapter=CognitoAdapter(), dynamodb_adapter=DynamoDBAdapter()):
+    def __init__(
+        self, cognito_adapter=CognitoAdapter(), dynamodb_adapter=DynamoDBAdapter()
+    ):
         self.cognito_adapter = cognito_adapter
         self.dynamodb_adapter = dynamodb_adapter
 
@@ -19,6 +21,8 @@ class ClientService:
             permissions=cognito_client_info["AllowedOAuthScopes"],
         )
 
-        self.dynamodb_adapter.create_client_item(client_response.client_id, client_request.permissions)
+        self.dynamodb_adapter.create_client_item(
+            client_response.client_id, client_request.permissions
+        )
 
         return client_response

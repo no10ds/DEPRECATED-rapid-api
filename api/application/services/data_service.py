@@ -34,12 +34,12 @@ from api.domain.storage_metadata import StorageMetaData
 
 class DataService:
     def __init__(
-            self,
-            persistence_adapter=S3Adapter(),
-            glue_adapter=GlueAdapter(),
-            athena_adapter=AthenaAdapter(),
-            protected_domain_service=ProtectedDomainService(),
-            cognito_adapter=CognitoAdapter(),
+        self,
+        persistence_adapter=S3Adapter(),
+        glue_adapter=GlueAdapter(),
+        athena_adapter=AthenaAdapter(),
+        protected_domain_service=ProtectedDomainService(),
+        cognito_adapter=CognitoAdapter(),
     ):
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
@@ -60,7 +60,7 @@ class DataService:
         return f'{time.strftime("%Y-%m-%dT%H:%M:%S")}-{filename}'
 
     def generate_raw_and_permanent_filenames(
-            self, schema: Schema, filename: str
+        self, schema: Schema, filename: str
     ) -> Tuple[str, str]:
         behaviour = schema.get_update_behaviour()
 
@@ -73,7 +73,12 @@ class DataService:
         return raw_filename, permanent_filename
 
     def upload_dataset(
-            self, resource_prefix: str, domain: str, dataset: str, filename: str, file_contents: bytes
+        self,
+        resource_prefix: str,
+        domain: str,
+        dataset: str,
+        filename: str,
+        file_contents: bytes,
     ) -> str:
         schema = self._get_schema(domain, dataset)
         if not schema:
@@ -111,17 +116,22 @@ class DataService:
         schema_name = self.persistence_adapter.save_schema(
             schema.get_domain(), schema.get_dataset(), schema.get_sensitivity(), schema
         )
-        self.cognito_adapter.create_user_groups(schema.get_domain(), schema.get_dataset())
+        self.cognito_adapter.create_user_groups(
+            schema.get_domain(), schema.get_dataset()
+        )
         self.glue_adapter.create_crawler(
-            RESOURCE_PREFIX, schema.get_domain(), schema.get_dataset(), schema.get_tags()
+            RESOURCE_PREFIX,
+            schema.get_domain(),
+            schema.get_dataset(),
+            schema.get_tags(),
         )
         return schema_name
 
     def check_for_protected_domain(self, schema: Schema):
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
             if (
-                    schema.get_domain().lower()
-                    not in self.protected_domain_service.list_domains()
+                schema.get_domain().lower()
+                not in self.protected_domain_service.list_domains()
             ):
                 raise ProtectedDomainDoesNotExistError(
                     f"The protected domain '{schema.get_domain()}' does not exist, please create it first."
@@ -146,7 +156,7 @@ class DataService:
         )
 
     def _upload_data(
-            self, schema: Schema, validated_dataframe: pd.DataFrame, filename: str
+        self, schema: Schema, validated_dataframe: pd.DataFrame, filename: str
     ):
         partitioned_data = generate_partitioned_data(schema, validated_dataframe)
         self.persistence_adapter.upload_partitioned_data(
@@ -160,7 +170,7 @@ class DataService:
         date_columns = schema.get_columns_by_type(DataTypes.DATE)
         date_range_queries = [
             *[f"max({column.name}) as max_{column.name}" for column in date_columns],
-            *[f"min({column.name}) as min_{column.name}" for column in date_columns]
+            *[f"min({column.name}) as min_{column.name}" for column in date_columns],
         ]
         columns_to_query = [
             "count(*) as data_size",
@@ -169,7 +179,7 @@ class DataService:
         return SQLQuery(select_columns=columns_to_query)
 
     def _enrich_metadata(
-            self, schema: Schema, statistics_dataframe: pd.DataFrame, last_updated: str
+        self, schema: Schema, statistics_dataframe: pd.DataFrame, last_updated: str
     ) -> EnrichedSchemaMetadata:
         dataset_size = statistics_dataframe.at[0, "data_size"]
         return EnrichedSchemaMetadata(
@@ -179,7 +189,9 @@ class DataService:
             last_updated=last_updated,
         )
 
-    def _enrich_columns(self, schema: Schema, statistics_dataframe: pd.DataFrame) -> List[EnrichedColumn]:
+    def _enrich_columns(
+        self, schema: Schema, statistics_dataframe: pd.DataFrame
+    ) -> List[EnrichedColumn]:
         enriched_columns = []
         date_column_names = schema.get_column_names_by_type("date")
         for column in schema.columns:
@@ -189,5 +201,7 @@ class DataService:
                     "max": statistics_dataframe.at[0, f"max_{column.name}"],
                     "min": statistics_dataframe.at[0, f"min_{column.name}"],
                 }
-            enriched_columns.append(EnrichedColumn(**column.dict(), statistics=statistics))
+            enriched_columns.append(
+                EnrichedColumn(**column.dict(), statistics=statistics)
+            )
         return enriched_columns

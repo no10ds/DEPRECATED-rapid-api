@@ -19,7 +19,10 @@ from test.api.controller.controller_test_utils import BaseClientTest
 
 class TestSchemaUpload(BaseClientTest):
     @patch.object(DataService, "upload_schema")
-    def test_calls_services_successfully(self, mock_upload_schema, ):
+    def test_calls_services_successfully(
+        self,
+        mock_upload_schema,
+    ):
         request_body, expected_schema = self._generate_schema()
 
         mock_upload_schema.return_value = "some-thing.json"
@@ -113,7 +116,7 @@ class TestSchemaUpload(BaseClientTest):
     @patch.object(DeleteService, "delete_schema")
     @patch.object(DataService, "upload_schema")
     def test_returns_500_schema_deletion_if_user_group_creation_fails(
-            self, mock_upload_schema, mock_delete_schema
+        self, mock_upload_schema, mock_delete_schema
     ):
         request_body, _ = self._generate_schema()
 

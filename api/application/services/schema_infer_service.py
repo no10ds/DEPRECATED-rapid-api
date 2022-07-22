@@ -14,11 +14,11 @@ from api.domain.schema_metadata import Owner, SchemaMetadata
 
 class SchemaInferService:
     def infer_schema(
-            self,
-            domain: str,
-            dataset: str,
-            sensitivity: str,
-            file_content: Union[bytes, str],
+        self,
+        domain: str,
+        dataset: str,
+        sensitivity: str,
+        file_content: Union[bytes, str],
     ) -> Schema:
         dataframe = self._construct_dataframe(file_content)
         schema = Schema(

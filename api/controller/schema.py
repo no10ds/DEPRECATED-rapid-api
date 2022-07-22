@@ -3,7 +3,9 @@ from fastapi import UploadFile, File, Security
 from fastapi import status as http_status
 
 from api.adapter.cognito_adapter import CognitoAdapter
-from api.application.services.authorisation.authorisation_service import protect_endpoint
+from api.application.services.authorisation.authorisation_service import (
+    protect_endpoint,
+)
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService

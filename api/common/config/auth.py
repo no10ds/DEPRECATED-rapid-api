@@ -14,15 +14,20 @@ COGNITO_ALLOWED_FLOWS = ["client_credentials"]
 COGNITO_RESOURCE_SERVER_ID = f"https://{DOMAIN_NAME}"
 COGNITO_USER_POOL_ID = os.environ["COGNITO_USER_POOL_ID"]
 
-IDENTITY_PROVIDER_TOKEN_URL = f"https://{RESOURCE_PREFIX}-auth.auth.{AWS_REGION}.amazoncognito.com/oauth2/token"
+IDENTITY_PROVIDER_TOKEN_URL = (
+    f"https://{RESOURCE_PREFIX}-auth.auth.{AWS_REGION}.amazoncognito.com/oauth2/token"
+)
 IDENTITY_PROVIDER_AUTHORIZATION_URL = f"https://{RESOURCE_PREFIX}-auth.auth.{AWS_REGION}.amazoncognito.com/oauth2/authorize"
 COGNITO_JWKS_URL = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
 
-COGNITO_EXPLICIT_AUTH_FLOWS = ["ALLOW_REFRESH_TOKEN_AUTH", "ALLOW_CUSTOM_AUTH", "ALLOW_USER_SRP_AUTH"]
+COGNITO_EXPLICIT_AUTH_FLOWS = [
+    "ALLOW_REFRESH_TOKEN_AUTH",
+    "ALLOW_CUSTOM_AUTH",
+    "ALLOW_USER_SRP_AUTH",
+]
 
 COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME = os.getenv(
-    "COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME",
-    "rapid_cognito_user_secrets"
+    "COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME", "rapid_cognito_user_secrets"
 )
 
 COGNITO_REDIRECT_URI = f"https://{DOMAIN_NAME}/oauth2/success"

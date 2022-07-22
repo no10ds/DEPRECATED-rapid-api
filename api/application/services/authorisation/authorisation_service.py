@@ -108,12 +108,12 @@ def protect_dataset_endpoint(
 
 
 def secure_dataset_endpoint(
-        security_scopes: SecurityScopes,
-        browser_request: bool = Depends(is_browser_request),
-        client_token: Optional[str] = Depends(oauth2_scheme),
-        user_token: Optional[str] = Depends(oauth2_user_scheme),
-        domain: Optional[str] = None,
-        dataset: Optional[str] = None,
+    security_scopes: SecurityScopes,
+    browser_request: bool = Depends(is_browser_request),
+    client_token: Optional[str] = Depends(oauth2_scheme),
+    user_token: Optional[str] = Depends(oauth2_user_scheme),
+    domain: Optional[str] = None,
+    dataset: Optional[str] = None,
 ):
     check_credentials_availability(browser_request, client_token, user_token)
 
@@ -125,19 +125,23 @@ def secure_dataset_endpoint(
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
 
 
-def check_credentials_availability(browser_request: bool, client_token: str, user_token: str) -> None:
+def check_credentials_availability(
+    browser_request: bool, client_token: str, user_token: str
+) -> None:
     if not have_credentials(browser_request, client_token, user_token):
         if browser_request:
             raise UserCredentialsUnavailableError()
         else:
             raise HTTPException(
                 status_code=HTTP_403_FORBIDDEN,
-                detail="You are not authorised to perform this action"
+                detail="You are not authorised to perform this action",
             )
 
 
 def have_credentials(browser_request: bool, client_token: str, user_token: str) -> bool:
-    return have_user_credentials(browser_request, user_token) or have_client_credentials(client_token)
+    return have_user_credentials(
+        browser_request, user_token
+    ) or have_client_credentials(client_token)
 
 
 def parse_token(token: str) -> Token:
@@ -145,7 +149,9 @@ def parse_token(token: str) -> Token:
     return Token(payload)
 
 
-def check_permissions(token: Token, endpoint_scopes: List[str], domain: str, dataset: str):
+def check_permissions(
+    token: Token, endpoint_scopes: List[str], domain: str, dataset: str
+):
     raise NotImplementedError()
 
 
@@ -217,10 +223,10 @@ def match_user_permissions(
             f"{permission}/{domain}/{dataset}" for permission in endpoint_scopes
         ]
         if not any(
-                [
-                    allowed_permission in token_scopes
-                    for allowed_permission in allowed_permissions
-                ]
+            [
+                allowed_permission in token_scopes
+                for allowed_permission in allowed_permissions
+            ]
         ):
             raise AuthorisationError("Not enough permissions to access endpoint")
     elif (not domain and dataset) or (domain and not dataset):
@@ -246,7 +252,7 @@ class AcceptedScopes:
 
 
 def generate_acceptable_scopes(
-        endpoint_actions: List[str], domain: str = None, dataset: str = None
+    endpoint_actions: List[str], domain: str = None, dataset: str = None
 ) -> AcceptedScopes:
     endpoint_actions = [Action.from_string(action) for action in endpoint_actions]
 

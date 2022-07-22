@@ -102,6 +102,12 @@ tasks:
       container: service-image
       command: "flake8 api test"
 
+  format:
+    description: Format the source and test code
+    run:
+      container: service-image
+      command: "black api test"
+
   generate_latest_changelog:
     description: Parse the changelog file for the release's changes
     run:

@@ -38,7 +38,10 @@ class Token:
             self.token_type = "CLIENT"
             try:
                 scopes = payload["scope"].split()
-                return [scope.split(COGNITO_RESOURCE_SERVER_ID + "/", 1)[1] for scope in scopes]
+                return [
+                    scope.split(COGNITO_RESOURCE_SERVER_ID + "/", 1)[1]
+                    for scope in scopes
+                ]
             except (AttributeError, IndexError):
                 raise ValueError("Invalid scope field")
 

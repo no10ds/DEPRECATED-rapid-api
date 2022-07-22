@@ -12,7 +12,7 @@ class DatasetFilters(BaseModel):
 
     def format_resource_query(self):
         if self.sensitivity and any(
-                [key == "sensitivity" for key, _ in self.key_value_tags.items()]
+            [key == "sensitivity" for key, _ in self.key_value_tags.items()]
         ):
             raise UserError(
                 "You cannot specify sensitivity both at the root level and in the tags"

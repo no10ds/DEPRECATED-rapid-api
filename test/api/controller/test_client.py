@@ -47,7 +47,9 @@ class TestClientCreation(BaseClientTest):
 
         mock_create_client.return_value = expected_response
 
-        client_request = ClientRequest(client_name="my_client", permissions=["READ_PUBLIC"])
+        client_request = ClientRequest(
+            client_name="my_client", permissions=["READ_PUBLIC"]
+        )
 
         response = self.client.post(
             "/client",

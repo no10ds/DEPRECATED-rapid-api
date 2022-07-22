@@ -31,7 +31,7 @@ from api.domain.token import Token
 
 class TestExtractingPermissions:
     @patch("jwt.decode")
-    @patch("api.application.services.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
     def test_extract_token_permissions_for_apps(self, mock_jwks_client, mock_decode):
         mock_signing_key = Mock()
         mock_signing_key.key = "secret"
@@ -48,7 +48,7 @@ class TestExtractingPermissions:
         assert token_scopes == ["SOME_SCOPE", "ANOTHER_SCOPE"]
 
     @patch("jwt.decode")
-    @patch("api.application.services.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
     def test_extract_token_permissions_for_users(self, mock_jwks_client, mock_decode):
         mock_signing_key = Mock()
         mock_signing_key.key = "secret"
@@ -82,7 +82,7 @@ class TestExtractingPermissions:
             extract_user_groups(token)
 
     @patch("jwt.decode")
-    @patch("api.application.services.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
     def test_extract_handles_valid_client_app_token_with_invalid_payload(
         self, mock_jwks_client, mock_decode
     ):
@@ -101,7 +101,7 @@ class TestExtractingPermissions:
             extract_client_app_scopes(None)
 
     @patch("jwt.decode")
-    @patch("api.application.services.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
     def test_extract_handles_valid_user_token_with_invalid_payload(
         self, mock_jwks_client, mock_decode
     ):
@@ -151,7 +151,7 @@ class TestSecureDatasetEndpoint:
                 dataset="mydataset",
             )
 
-    @patch("api.application.services.authorisation_service.parse_token")
+    @patch("api.application.services.authorisation.authorisation_service.parse_token")
     def test_raises_unauthorised_exception_when_invalid_token_provided(
         self, mock_parse_token
     ):
@@ -170,8 +170,10 @@ class TestSecureDatasetEndpoint:
                 dataset="mydataset",
             )
 
-    @patch("api.application.services.authorisation_service.check_permissions")
-    @patch("api.application.services.authorisation_service.parse_token")
+    @patch(
+        "api.application.services.authorisation.authorisation_service.check_permissions"
+    )
+    @patch("api.application.services.authorisation.authorisation_service.parse_token")
     def test_parses_token_and_checks_permissions_when_user_token_available(
         self, mock_parse_token, mock_check_permissions
     ):
@@ -195,8 +197,10 @@ class TestSecureDatasetEndpoint:
         )
 
     @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
-    @patch("api.application.services.authorisation_service.check_permissions")
-    @patch("api.application.services.authorisation_service.parse_token")
+    @patch(
+        "api.application.services.authorisation.authorisation_service.check_permissions"
+    )
+    @patch("api.application.services.authorisation.authorisation_service.parse_token")
     def test_parses_token_and_checks_permissions_when_client_token_available(
         self, mock_parse_token, mock_check_permissions
     ):
@@ -262,9 +266,9 @@ class TestCheckCredentialsAvailability:
 
 
 class TestParseToken:
-    @patch("api.application.services.authorisation_service.Token")
+    @patch("api.application.services.authorisation.authorisation_service.Token")
     @patch(
-        "api.application.services.authorisation_service._get_validated_token_payload"
+        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
     )
     def test_parses_user_token_with_groups(self, mock_token_payload, mock_token):
         token = "user-token"
@@ -283,9 +287,9 @@ class TestParseToken:
         mock_token.assert_called_once_with(payload)
 
     @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
-    @patch("api.application.services.authorisation_service.Token")
+    @patch("api.application.services.authorisation.authorisation_service.Token")
     @patch(
-        "api.application.services.authorisation_service._get_validated_token_payload"
+        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
     )
     def test_parses_client_token_with_scopes(self, mock_token_payload, mock_token):
         token = "client-token"
@@ -302,9 +306,9 @@ class TestParseToken:
         mock_token_payload.assert_called_once_with("client-token")
         mock_token.assert_called_once_with(payload)
 
-    @patch("api.application.services.authorisation_service.Token")
+    @patch("api.application.services.authorisation.authorisation_service.Token")
     @patch(
-        "api.application.services.authorisation_service._get_validated_token_payload"
+        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
     )
     def test_parses_user_token_with_no_permissions(
         self, mock_token_payload, mock_token
@@ -323,9 +327,9 @@ class TestParseToken:
         mock_token_payload.assert_called_once_with("user-token")
         mock_token.assert_called_once_with(payload)
 
-    @patch("api.application.services.authorisation_service.Token")
+    @patch("api.application.services.authorisation.authorisation_service.Token")
     @patch(
-        "api.application.services.authorisation_service._get_validated_token_payload"
+        "api.application.services.authorisation.authorisation_service._get_validated_token_payload"
     )
     def test_passes_errors_through(self, _mock_token_payload, mock_token):
         mock_token.side_effect = ValueError("Error detail")
@@ -335,9 +339,11 @@ class TestParseToken:
 
 
 class TestProtectEndpoint:
-    @patch("api.application.services.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
     @patch("jwt.decode")
-    @patch("api.application.services.authorisation_service.match_user_permissions")
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_user_permissions"
+    )
     def test_matches_user_permissions_when_user_token_provided_from_any_source(
         self, mock_match_user_permissions, mock_decode, _mock_jwks_client
     ):
@@ -363,7 +369,9 @@ class TestProtectEndpoint:
             "mydataset",
         )
 
-    @patch("api.application.services.authorisation_service.match_user_permissions")
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_user_permissions"
+    )
     def test_raises_error_when_browser_makes_request_and_no_user_token_provided(
         self, mock_match_user_permissions
     ):
@@ -381,10 +389,10 @@ class TestProtectEndpoint:
 
         assert not mock_match_user_permissions.called
 
-    @patch("api.application.services.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
     @patch("jwt.decode")
     @patch(
-        "api.application.services.authorisation_service.match_client_app_permissions"
+        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
     )
     def test_matches_client_permissions_when_client_token_provided_from_programmatic_client(
         self, match_client_app_permissions, mock_decode, _mock_jwks_client
@@ -407,10 +415,10 @@ class TestProtectEndpoint:
             ["READ_PUBLIC", "WRITE_PUBLIC"], ["READ"], "mydomain", "mydataset"
         )
 
-    @patch("api.application.services.authorisation_service.jwks_client")
+    @patch("api.application.services.authorisation.authorisation_service.jwks_client")
     @patch("jwt.decode")
     @patch(
-        "api.application.services.authorisation_service.match_client_app_permissions"
+        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
     )
     def test_raises_exception_when_schema_not_found_for_dataset(
         self, match_client_app_permissions, mock_decode, _mock_jwks_client
@@ -499,7 +507,7 @@ class TestAppPermissionsMatching:
     def setup_method(self):
         self.mock_s3_client = Mock()
 
-    @patch("api.application.services.authorisation_service.s3_adapter")
+    @patch("api.application.services.authorisation.authorisation_service.s3_adapter")
     @pytest.mark.parametrize(
         "domain, dataset, sensitivity, endpoint_scopes, acceptable_scopes",
         [
@@ -568,7 +576,7 @@ class TestAppPermissionsMatching:
         result = generate_acceptable_scopes(endpoint_scopes, domain, dataset)
         assert result == acceptable_scopes
 
-    @patch("api.application.services.authorisation_service.s3_adapter")
+    @patch("api.application.services.authorisation.authorisation_service.s3_adapter")
     @pytest.mark.parametrize(
         "domain, dataset, sensitivity, token_scopes, endpoint_scopes",
         [
@@ -619,7 +627,7 @@ class TestAppPermissionsMatching:
         except AuthorisationError:
             pytest.fail("Unexpected Unauthorised Error was thrown")
 
-    @patch("api.application.services.authorisation_service.s3_adapter")
+    @patch("api.application.services.authorisation.authorisation_service.s3_adapter")
     @pytest.mark.parametrize(
         "domain, dataset, sensitivity, token_scopes, endpoint_scopes",
         [

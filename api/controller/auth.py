@@ -7,7 +7,9 @@ from requests.auth import HTTPBasicAuth
 from starlette.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 
-from api.application.services.authorisation.authorisation_service import RAPID_ACCESS_TOKEN
+from api.application.services.authorisation.authorisation_service import (
+    RAPID_ACCESS_TOKEN,
+)
 from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
     IDENTITY_PROVIDER_TOKEN_URL,

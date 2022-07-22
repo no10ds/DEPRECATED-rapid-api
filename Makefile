@@ -23,17 +23,22 @@ push: 			## Run the precommit and push if there are no errors
 	@git push
 
 precommit: 		## Python precommit checks (lint, security, tests)
+	@$(MAKE) format
 	@$(MAKE) lint
 	@$(MAKE) security
 	@$(MAKE) test-coverage
 	@echo "You're good to go 🎉"
 
 check: 			## Development checks (lint, tests)
+	@$(MAKE) format
 	@$(MAKE) lint
 	@$(MAKE) test-coverage
 
 lint: 			## Lint checks with flake8
 	@./batect lint
+
+format: 		## Format code with Black
+	@./batect format
 
 ##
 test: 			## Run unit python tests

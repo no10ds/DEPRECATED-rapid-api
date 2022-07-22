@@ -2,7 +2,9 @@ from fastapi import APIRouter
 from fastapi import Security
 from fastapi import status as http_status
 
-from api.application.services.authorisation.authorisation_service import protect_endpoint
+from api.application.services.authorisation.authorisation_service import (
+    protect_endpoint,
+)
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.config.auth import Action
 
