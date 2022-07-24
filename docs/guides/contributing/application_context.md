@@ -14,7 +14,7 @@ Assuming roles for the first time:
 5) Go to the user menu in the top right corner of the AWS console
 6) Click on `Switch role`
 7) Input the AWS account number
-8) Input the role name (`resource-admin`/`resource-user`) 
+8) Input the role name (`resource-admin`/`resource-user`)
 9) Click on `Switch Role`
 
 ### Considerations

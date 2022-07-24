@@ -23,7 +23,7 @@ The schema will have the following structure:
 
 ### Sensitivity 😭
 The sensitivity level of a dataset can be described by one of three values: `PUBLIC`, `PRIVATE` and `PROTECTED`.
-These determine the access level that different clients will have to the data depending on their permissions. 
+These determine the access level that different clients will have to the data depending on their permissions.
 
 Note: If you wish to use the sensitivity level `PROTECTED` then you must first create a Protected Domain for your Dataset. See the [data access docs](data_access.md)
 
@@ -94,7 +94,7 @@ When retrieving the data the null values will be returned as an empty object '{}
 
 ### Partitions 🗂
 
-In order to make the application more efficient in terms of time and money when querying, we added an automatic [AWS glue partition](https://aws.amazon.com/blogs/big-data/work-with-partitioned-data-in-aws-glue/) 
+In order to make the application more efficient in terms of time and money when querying, we added an automatic [AWS glue partition](https://aws.amazon.com/blogs/big-data/work-with-partitioned-data-in-aws-glue/)
 maker in the rAPId service, in order to use it, just add an integer into the partition_index when creating a schema.
 
 The partition columns must:
@@ -104,7 +104,7 @@ The partition columns must:
 - Not allow null values.
 - At least one column should not be a partition.
 
-This means the partitions will always start from 0 and end with `partition_size - 1` as the last index. Let's imagine we have a dataset with 2 columns as partitions since `2 - 1 = 1`, then, the partition indexes must be 0 and 1. for a dataset with 3 partitions 
+This means the partitions will always start from 0 and end with `partition_size - 1` as the last index. Let's imagine we have a dataset with 2 columns as partitions since `2 - 1 = 1`, then, the partition indexes must be 0 and 1. for a dataset with 3 partitions
 `3 - 1 = 2`, therefore, the indexes must be 0, 1, and 2.
 
 For the hierarchy, let's imagine we have 3 columns, "year" with index=0, month with index=1 and "region" with index=2. Then, the partition hierarchy will be similar to this:

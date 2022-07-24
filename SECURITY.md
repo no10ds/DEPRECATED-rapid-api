@@ -8,11 +8,11 @@ This is the security notice for all [No10 Data Science repositories](https://git
 
 Cabinet Office and No10 are advocates of responsible vulnerability disclosure. If you’ve found a vulnerability, we would like to know so we can fix it. This notice provides details for how you can let us know about vulnerabilities, additionally you can view our [security.txt](https://vdp.cabinetoffice.gov.uk/.well-known/security.txt) file, here: <https://vdp.cabinetoffice.gov.uk/.well-known/security.txt>
 
-You can report a vulnerability through our vulnerability disclosure programme at [HackerOne](https://hackerone.com/44c348eb-e030-4273-b445-d4a2f6f83ba8/embedded_submissions/new). Alternatively, you can send an email to [disclosure@digital.cabinet-office.gov.uk](mailto:disclosure@digital.cabinet-office.gov.uk); if you do this you may get a response from Zendesk, which is our ticketing system. 
+You can report a vulnerability through our vulnerability disclosure programme at [HackerOne](https://hackerone.com/44c348eb-e030-4273-b445-d4a2f6f83ba8/embedded_submissions/new). Alternatively, you can send an email to [disclosure@digital.cabinet-office.gov.uk](mailto:disclosure@digital.cabinet-office.gov.uk); if you do this you may get a response from Zendesk, which is our ticketing system.
 
 When reporting a vulnerability to us, please include:
 - the website, page or repository where the vulnerability can be observed
-- a brief description of the vulnerability 
+- a brief description of the vulnerability
 - details of the steps we need to take to reproduce the vulnerability
 - non-destructive exploitation details
 

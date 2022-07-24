@@ -60,12 +60,12 @@ Provided you have the above prerequisites you can get started straight out of th
 ## Running locally 🏃‍♂️
 
 To run the app locally, you will need to set the following environment variables:
-- `AWS_ACCOUNT` 
-- `AWS_REGION` 
-- `AWS_DEFAULT_REGION` 
-- `COGNITO_USER_POOL_ID` 
-- `DATA_BUCKET` 
-- `DOMAIN_NAME` 
+- `AWS_ACCOUNT`
+- `AWS_REGION`
+- `AWS_DEFAULT_REGION`
+- `COGNITO_USER_POOL_ID`
+- `DATA_BUCKET`
+- `DOMAIN_NAME`
 - `RESOURCE_PREFIX`
 
 `make run` runs batect to bring up a locally running version of the application within a Docker container using the base
@@ -281,7 +281,7 @@ annotation as listed in the examples below:
 
 ```
 @app.post("/schema", dependencies=[Security(protect_endpoint, scopes=[Action.READ.value])])
-``` 
+```
 
 or
 
@@ -291,7 +291,7 @@ or
 ```
 @app.get("/{domain}/{dataset}/info",
                      dependencies=[Security(protect_dataset_endpoint, scopes=[Action.READ.value])])
-``` 
+```
 
 ### How to add security to the endpoint - Front End Layer
 

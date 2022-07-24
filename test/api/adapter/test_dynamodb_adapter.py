@@ -90,9 +90,9 @@ class TestDynamoDBAdapter:
             self.dynamo_adapter.create_client_item(client_id, client_permissions)
 
     def test_dynamo_db_create_subject_throws_error(self):
-        subject_id = '123456789'
+        subject_id = "123456789"
         permission_ids = ["0", "1"]
-        subject_type = 'CLIENT'
+        subject_type = "CLIENT"
 
         self.dynamo_boto_client.put_item.side_effect = ClientError(
             error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
@@ -100,9 +100,12 @@ class TestDynamoDBAdapter:
         )
 
         with pytest.raises(
-                AWSServiceError, match="The client could not be created, please contact system administrator"
+            AWSServiceError,
+            match="The client could not be created, please contact system administrator",
         ):
-            self.dynamo_adapter.create_subject_permission(subject_type, subject_id, permission_ids)
+            self.dynamo_adapter.create_subject_permission(
+                subject_type, subject_id, permission_ids
+            )
 
     def test_get_db_permissions_for_user_admin(self):
         self.dynamo_boto_client.scan.return_value = {

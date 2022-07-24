@@ -53,7 +53,7 @@ code. That's due to OpenAPI issues.
   - In the future, when more endpoints will be accessible by the user, this method should be extended to check the actions a user is allowed to perform the requisite operation
 - We are not handling anything other than the `WRITE` action on specific domain/dataset
   - Again, this is reasonable for the time being since this is the only action that a UI user can perform
-- Currently, we are only dynamically creating the `WRITE` group during schema upload. 
+- Currently, we are only dynamically creating the `WRITE` group during schema upload.
   - If `READ` functionality added, `READ` groups should be created here too, and handled accordingly throughout the authorisation flow
 
 ### SQL Injection

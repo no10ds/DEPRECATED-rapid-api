@@ -15,9 +15,9 @@ Overarching API functionality includes:
 
 ## Application usage overview
 
-The first step is to create a dataset by uploading a schema that describes the metadata including e.g.: data owner, tags, partition columns, data types, etc.. 
+The first step is to create a dataset by uploading a schema that describes the metadata including e.g.: data owner, tags, partition columns, data types, etc..
 
-Then the data (currently only `.csv` files are supported) can be uploaded to the dataset. During the upload process, the service checks if the data 
+Then the data (currently only `.csv` files are supported) can be uploaded to the dataset. During the upload process, the service checks if the data
 matches the previously uploaded dataset schema definition.
 
 During upload, a data 'crawler' is started which looks at the persisted data and infers some metadata about it. Once the crawler
@@ -42,15 +42,15 @@ The application can be used by both human and programmatic clients (see more bel
 ## Human Users
 
 ### Granting users permissions
-If human users are involved in the process then they should be given permission to each dataset they need to upload data to. 
+If human users are involved in the process then they should be given permission to each dataset they need to upload data to.
 
-This step is done via the AWS console in the Cognito section. 
+This step is done via the AWS console in the Cognito section.
 
 To do this:
 1. Navigate to the corresponding Cognito user pool of this application (check your config file for the user pool name)
-2. Add the desired users to the dataset user groups. 
-   1. Datasets user groups should follow the naming convention ```WRITE/<domain>/<dataset>```. 
-   2. e.g.: For the domain ```trains``` and dataset ```completed_journeys``` the user group should be ```WRITE/trains/completed_journeys```. 
+2. Add the desired users to the dataset user groups.
+   1. Datasets user groups should follow the naming convention ```WRITE/<domain>/<dataset>```.
+   2. e.g.: For the domain ```trains``` and dataset ```completed_journeys``` the user group should be ```WRITE/trains/completed_journeys```.
    3. Once a user is added to dataset user group as described above, the user will need to re-authenticate on the frontend so that their access token
    reflects the new permissions.
 
@@ -60,7 +60,7 @@ To do this:
 
 When creating a client app via the `/client` endpoint, scopes can be granted.
 
-To update these, currently an admin will need to go to Cognito user pool in the AWS console and manually grant or revoke the relevant scopes to the client app. 
+To update these, currently an admin will need to go to Cognito user pool in the AWS console and manually grant or revoke the relevant scopes to the client app.
 
 ## Authenticating and interacting with the application
 
@@ -88,7 +88,7 @@ be prompted to enter their username and password. This will grant them a tempora
 
 # Endpoint usage
 
-The following documents the usage of the available endpoints exposed by the REST API. 
+The following documents the usage of the available endpoints exposed by the REST API.
 
 ## Generate schema
 
@@ -119,7 +119,7 @@ Schema in json format in the response body:
   "metadata": {
     "domain": "land",
     "dataset": "train_journeys",
-    "sensitivity": "PUBLIC", 
+    "sensitivity": "PUBLIC",
     "key_value_tags": {},
     "key_only_tags": [],
     "owners": [

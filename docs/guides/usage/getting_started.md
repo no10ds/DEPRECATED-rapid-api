@@ -16,7 +16,7 @@ Contact your administrator of rAPId if you do not have these.
 
 ### Getting a dataset
 
-We will need a dataset to upload, this must be in the format of a csv. If you have one already then you can skip this. 
+We will need a dataset to upload, this must be in the format of a csv. If you have one already then you can skip this.
 
 If you do not then you can use the one at the link below.
 
@@ -56,11 +56,11 @@ We can take this JSON and navigate to the next API endpoint, `Upload Schema`. Ex
 
 We now need to edit a couple of values that weren't generated for us. These are `name` and `email`, every dataset needs to have an owner. Other values can be changed at this point too if you wish to alter the default behaviour. [Here](schema_creation.md) is the schema creation documentation for more info.
 
-Once you are happy with the schema, click `Execute` and it will be created! 
+Once you are happy with the schema, click `Execute` and it will be created!
 
 ### Uploading a dataset
 
-Now that the schema exists, we can upload our dataset. 
+Now that the schema exists, we can upload our dataset.
 
 Navigate to the `Upload Data` endpoint under `Datasets`. Expand this, click `Try it out`, enter `demo` for `domain` and `titanic` for `dataset`, click `Browse` to select the file and finally click `Execute` to upload the dataset.
 

@@ -19,10 +19,16 @@ class DynamoDBAdapter:
 
     def create_client_item(self, client_id: str, client_permissions: List[str]):
         db_permissions = self.get_db_permissions()
-        permission_ids = self.get_validated_permission_ids(db_permissions, client_permissions)
-        self.create_subject_permission(subject_type='CLIENT', subject_id=client_id, permission_ids=permission_ids)
+        permission_ids = self.get_validated_permission_ids(
+            db_permissions, client_permissions
+        )
+        self.create_subject_permission(
+            subject_type="CLIENT", subject_id=client_id, permission_ids=permission_ids
+        )
 
-    def create_subject_permission(self, subject_type: str, subject_id: str, permission_ids: List[str]):
+    def create_subject_permission(
+        self, subject_type: str, subject_id: str, permission_ids: List[str]
+    ):
         try:
             self.dynamodb_client.put_item(
                 TableName=self.permissions_table_name,
@@ -31,8 +37,8 @@ class DynamoDBAdapter:
                     "SK": {"S": f"USR#${subject_id}"},
                     "Id": {"S": f"${subject_id}"},
                     "Type": {"S": subject_type},
-                    "Permissions": {"SS": permission_ids}
-                }
+                    "Permissions": {"SS": permission_ids},
+                },
             )
         except ClientError:
             raise AWSServiceError(

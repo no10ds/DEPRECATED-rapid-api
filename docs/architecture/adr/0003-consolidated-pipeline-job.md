@@ -1,4 +1,4 @@
-# 0003 - Consolidated Pipeline Job 
+# 0003 - Consolidated Pipeline Job
 Date: 2022-03-13
 
 ## Status
@@ -30,10 +30,10 @@ Workflow2-JobX-Y-StepsX-Y
 ```
 
 
-Since these would all run on the same runner (for us an EC2 instance), it was possible to have the pipeline build an image 
+Since these would all run on the same runner (for us an EC2 instance), it was possible to have the pipeline build an image
 and then run tests from the next pipeline run (the newer version) before resuming the tests from the first run.
 
-Therefore, there was often uncertainty as to which version was tested, tagged and deployed.  
+Therefore, there was often uncertainty as to which version was tested, tagged and deployed.
 
 ## Decision
 

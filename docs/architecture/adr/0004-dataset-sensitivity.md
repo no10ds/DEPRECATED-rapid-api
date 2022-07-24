@@ -1,4 +1,4 @@
-# 0004 - Dataset Sensitivity 
+# 0004 - Dataset Sensitivity
 Date: 2022-02-10
 
 ## Status
@@ -17,12 +17,12 @@ We decided to add the sensitivity in several places:
 ### As part of the schema object S3 path
 e.g.: `data/schemas/PUBLIC/{domain}-{dataset}.json`
 
-This allows us to quickly list all the schemas in the directory and parse out the sensitivity without needing to 
+This allows us to quickly list all the schemas in the directory and parse out the sensitivity without needing to
 read each individual schema file to retrieve it, or to query each object separately for its tags.
 
 An example where this is used is in the authorisation flow to determine if the user has permission to view this dataset.
 
-### As a tag on the schema file object in S3 
+### As a tag on the schema file object in S3
 - i.e.: `{'sensitivity': 'PUBLIC'}`
 
 When listing available datasets, it is possible to filter them by tag.
