@@ -27,6 +27,7 @@ download from the linked sites or use Homebrew etc.
 
 - jq (use Homebrew)
 - Git
+- [pre-commit](https://pre-commit.com/)
 - [Make](https://formulae.brew.sh/formula/make)
 - [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
 - [Homebrew](https://brew.sh/)
@@ -60,6 +61,7 @@ Provided you have the above prerequisites you can get started straight out of th
 ## Running locally 🏃‍♂️
 
 To run the app locally, you will need to set the following environment variables:
+
 - `AWS_ACCOUNT`
 - `AWS_REGION`
 - `AWS_DEFAULT_REGION`
@@ -130,10 +132,18 @@ You will need to add some environment variables to your run configuration templa
 - `DOMAIN_NAME=example.com`
 - `COGNITO_USER_POOL_ID=11111111`
 
-
 ### Checking your code
 
 `make precommit` will lint source code, check for secrets and security vulnerabilities, validate config and run tests
+
+To enable automatic pre-commit checks:
+
+- Install `pre-commit`, you can follow [pre-commit](https://pre-commit.com/)
+- At root level, run `pre-commit install`
+- To test that it worked, run `pre-commit run --all-files`
+
+This will enable automatic checks before committing any files, giving an extra layer of protection to the code before
+being pushed
 
 ### Security
 
