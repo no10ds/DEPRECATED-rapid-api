@@ -17,6 +17,7 @@ from api.application.services.authorisation.authorisation_service import (
     protect_dataset_endpoint,
     secure_dataset_endpoint,
     check_credentials_availability,
+    check_permissions,
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import DOMAIN_NAME
@@ -224,6 +225,72 @@ class TestSecureDatasetEndpoint:
         mock_check_permissions.assert_called_once_with(
             token, ["READ"], "mydomain", None
         )
+
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_user_permissions"
+    )
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
+    )
+    @patch("api.application.services.authorisation.authorisation_service.Token")
+    def test_check_permission_for_user_token(
+        self, mock_token, mock_match_client_app_permissions, mock_match_user_permissions
+    ):
+        endpoint_scopes = ["READ"]
+        domain = "test-domain"
+        dataset = "test-dataset"
+        mock_token.is_user_token.return_value = True
+        mock_token.is_client_token.return_value = False
+
+        check_permissions(mock_token, endpoint_scopes, domain, dataset)
+
+        mock_match_user_permissions.assert_called_once_with(
+            mock_token, endpoint_scopes, domain, dataset
+        )
+        mock_match_client_app_permissions.assert_not_called()
+
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_user_permissions"
+    )
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
+    )
+    @patch("api.application.services.authorisation.authorisation_service.Token")
+    def test_check_permission_for_client_token(
+        self, mock_token, mock_match_client_app_permissions, mock_match_user_permissions
+    ):
+        endpoint_scopes = ["READ"]
+        domain = "test-domain"
+        dataset = "test-dataset"
+        mock_token.is_user_token.return_value = False
+        mock_token.is_client_token.return_value = True
+
+        check_permissions(mock_token, endpoint_scopes, domain, dataset)
+
+        mock_match_user_permissions.assert_not_called()
+        mock_match_client_app_permissions.assert_called_once_with(
+            mock_token, endpoint_scopes, domain, dataset
+        )
+
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_user_permissions"
+    )
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_client_app_permissions"
+    )
+    @patch("api.application.services.authorisation.authorisation_service.Token")
+    def test_check_permission_for_client_token_throws_http_exception(
+        self, mock_token, mock_match_client_app_permissions, mock_match_user_permissions
+    ):
+        endpoint_scopes = ["READ"]
+        domain = "test-domain"
+        dataset = "test-dataset"
+        mock_token.is_user_token.return_value = False
+        mock_token.is_client_token.return_value = True
+        mock_match_client_app_permissions.side_effect = SchemaNotFoundError()
+
+        with pytest.raises(HTTPException):
+            check_permissions(mock_token, endpoint_scopes, domain, dataset)
 
 
 class TestProtectEndpoint:

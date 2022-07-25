@@ -146,9 +146,22 @@ def have_credentials(browser_request: bool, client_token: str, user_token: str) 
 
 
 def check_permissions(
-    token: Token, endpoint_scopes: List[str], domain: str, dataset: str
+    token: Token,
+    endpoint_scopes: List[str],
+    domain: Optional[str],
+    dataset: Optional[str],
 ):
-    raise NotImplementedError()
+    if token.is_user_token():
+        match_user_permissions(token, endpoint_scopes, domain, dataset)
+
+    if token.is_client_token():
+        try:
+            match_client_app_permissions(token, endpoint_scopes, domain, dataset)
+        except SchemaNotFoundError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
+            )
 
 
 def have_user_credentials(browser_request: bool, user_token: Optional[str]) -> bool:
