@@ -9,7 +9,12 @@ class PermissionItem:
     type: str
     permission: str
 
-    def __init__(self, perm_id: str, sensitivity: Optional[str], perm_type: str):
+    def __init__(
+        self,
+        perm_id: str,
+        sensitivity: Optional[str],
+        perm_type: str,
+    ):
         self.id = perm_id
         self.sensitivity = sensitivity
         self.type = perm_type

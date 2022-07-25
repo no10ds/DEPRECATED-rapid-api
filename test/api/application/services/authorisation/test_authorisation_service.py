@@ -18,6 +18,7 @@ from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     check_credentials_availability,
     check_permissions,
+    retrieve_permissions,
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import DOMAIN_NAME
@@ -27,6 +28,7 @@ from api.common.custom_exceptions import (
     UserCredentialsUnavailableError,
     BaseAppException,
 )
+from api.domain.permission_item import PermissionItem
 from api.domain.token import Token
 
 
@@ -460,6 +462,64 @@ class TestCheckCredentialsAvailability:
             check_credentials_availability(
                 browser_request=False, user_token=None, client_token=None
             )
+
+
+class TestRetrievePermissions:
+    @patch("api.application.services.authorisation.authorisation_service.db_adapter")
+    def test_gets_subject_permissions_from_database_when_they_exist(
+        self, mock_db_adapter
+    ):
+        token_with_only_db_permissions = Token({"sub": "the-subject-id"})
+
+        mock_db_adapter.get_permissions_for_subject.return_value = [
+            PermissionItem("1", "ALL", "READ"),
+            PermissionItem("1", "PUBLIC", "WRITE"),
+        ]
+
+        result = retrieve_permissions(token_with_only_db_permissions)
+
+        assert result == [
+            "READ_ALL",
+            "WRITE_PUBLIC",
+        ]
+
+    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
+    @patch("api.application.services.authorisation.authorisation_service.db_adapter")
+    def test_gets_subject_permissions_from_token_when_none_in_the_database(
+        self, mock_db_adapter
+    ):
+        token_with_no_db_permissions = Token(
+            {
+                "sub": "the-subject-id",
+                "scope": "https://example.com/READ_PRIVATE https://example.com/DATA_ADMIN",
+            }
+        )
+
+        mock_db_adapter.get_permissions_for_subject.return_value = []
+
+        result = retrieve_permissions(token_with_no_db_permissions)
+
+        assert result == [
+            "READ_PRIVATE",
+            "DATA_ADMIN",
+        ]
+
+    @patch("api.application.services.authorisation.authorisation_service.db_adapter")
+    def test_return_empty_permissions_list_when_no_permissions_found(
+        self, mock_db_adapter
+    ):
+        token_with_no_permissions = Token(
+            {
+                "sub": "the-subject-id",
+                "scope": "",
+            }
+        )
+
+        mock_db_adapter.get_permissions_for_subject.return_value = []
+
+        result = retrieve_permissions(token_with_no_permissions)
+
+        assert result == []
 
 
 class TestAcceptedScopes:

@@ -9,6 +9,7 @@ from jwt import InvalidTokenError
 from starlette.requests import Request
 from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
 
+from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.authorisation.acceptable_permissions import (
     generate_acceptable_scopes,
@@ -62,6 +63,7 @@ class OAuth2UserCredentials:
 oauth2_scheme = OAuth2ClientCredentials(token_url=IDENTITY_PROVIDER_TOKEN_URL)
 oauth2_user_scheme = OAuth2UserCredentials()
 s3_adapter = S3Adapter()
+db_adapter = DynamoDBAdapter()
 
 
 def is_browser_request(request: Request) -> bool:
@@ -211,6 +213,13 @@ def extract_client_app_scopes(token: str) -> List[str]:
         raise AuthorisationError(
             "Not enough permissions or access token is missing/invalid"
         )
+
+
+def retrieve_permissions(token: Token) -> List[str]:
+    database_permissions = db_adapter.get_permissions_for_subject(token.subject)
+    if not database_permissions:
+        return token.permissions
+    return [permission.permission for permission in database_permissions]
 
 
 def match_client_app_permissions(
