@@ -121,7 +121,7 @@ class TestDynamoDBAdapter:
         expected_response = [
             PermissionItem(perm_id="0", sensitivity=None, perm_type="USER_ADMIN")
         ]
-        response = self.dynamo_adapter.get_db_permissions()
+        response = self.dynamo_adapter.get_all_permissions()
 
         self.dynamo_boto_client.scan.assert_called_once_with(
             TableName=self.test_permissions_table_name,
@@ -166,7 +166,7 @@ class TestDynamoDBAdapter:
             PermissionItem(perm_id="2", sensitivity="ALL", perm_type="WRITE"),
             PermissionItem(perm_id="3", sensitivity="PRIVATE", perm_type="READ"),
         ]
-        response = self.dynamo_adapter.get_db_permissions()
+        response = self.dynamo_adapter.get_all_permissions()
 
         self.dynamo_boto_client.scan.assert_called_once_with(
             TableName=self.test_permissions_table_name,
@@ -202,7 +202,7 @@ class TestDynamoDBAdapter:
             AWSServiceError,
             match="Internal server error, please contact system administrator",
         ):
-            self.dynamo_adapter.get_db_permissions()
+            self.dynamo_adapter.get_all_permissions()
 
     def test_get_existing_permissions_for_user_with_db(self):
         test_user_permissions = ["READ_PRIVATE", "WRITE_ALL"]

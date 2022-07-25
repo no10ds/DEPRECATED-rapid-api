@@ -27,7 +27,11 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_db_permissions(self) -> List[PermissionItem]:
+    def get_all_permissions(self) -> List[PermissionItem]:
+        pass
+
+    @abstractmethod
+    def get_permissions_for_subject(self, subject_id: str) -> List[PermissionItem]:
         pass
 
 
@@ -41,7 +45,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         self.permissions_table_name = permissions_table_name
 
     def create_client_item(self, client_id: str, client_permissions: List[str]):
-        db_permissions = self.get_db_permissions()
+        db_permissions = self.get_all_permissions()
         permission_ids = self.get_validated_permission_ids(
             db_permissions, client_permissions
         )
@@ -83,7 +87,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 raise UserError("One or more of the provided permissions do not exist")
         return valid_permission_ids
 
-    def get_db_permissions(self) -> List[PermissionItem]:
+    def get_all_permissions(self) -> List[PermissionItem]:
         try:
             table_items = self.dynamodb_client.scan(
                 TableName=self.permissions_table_name,
@@ -105,6 +109,9 @@ class DynamoDBAdapter(DatabaseAdapter):
             raise AWSServiceError(
                 "Internal server error, please contact system administrator"
             )
+
+    def get_permissions_for_subject(self, subject_id: str) -> List[PermissionItem]:
+        raise NotImplementedError()
 
     def _generate_permission_item(self, item: dict) -> PermissionItem:
         return PermissionItem(
