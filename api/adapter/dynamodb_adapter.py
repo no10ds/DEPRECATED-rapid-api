@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import List
 
 import boto3
@@ -8,7 +9,29 @@ from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.permission_item import PermissionItem
 
 
-class DynamoDBAdapter:
+class DatabaseAdapter(ABC):
+    @abstractmethod
+    def create_client_item(self, client_id: str, client_permissions: List[str]) -> None:
+        pass
+
+    @abstractmethod
+    def create_subject_permission(
+        self, subject_type: str, subject_id: str, permission_ids: List[str]
+    ) -> None:
+        pass
+
+    @abstractmethod
+    def get_validated_permission_ids(
+        self, permissions_list: List[PermissionItem], user_permissions: List[str]
+    ) -> List[str]:
+        pass
+
+    @abstractmethod
+    def get_db_permissions(self) -> List[PermissionItem]:
+        pass
+
+
+class DynamoDBAdapter(DatabaseAdapter):
     def __init__(
         self,
         dynamodb_client=boto3.client("dynamodb", region_name=AWS_REGION),
