@@ -17,11 +17,6 @@ help: 			## List targets and description
 	@fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##//'
 
 ##
-push: 			## Run the precommit and push if there are no errors
-	@git pull --rebase
-	@$(MAKE) precommit
-	@git push
-
 precommit: 		## Python precommit checks (lint, security, tests)
 	@$(MAKE) format
 	@$(MAKE) lint
