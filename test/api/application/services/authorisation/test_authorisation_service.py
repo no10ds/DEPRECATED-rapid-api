@@ -17,6 +17,7 @@ from api.application.services.authorisation.authorisation_service import (
     retrieve_permissions,
     match_permissions,
     secure_endpoint,
+    have_credentials,
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import DOMAIN_NAME
@@ -257,6 +258,27 @@ class TestCheckCredentialsAvailability:
             check_credentials_availability(
                 browser_request=False, user_token=None, client_token=None
             )
+
+    @pytest.mark.parametrize(
+        "browser_request, user_token, client_token, expected",
+        [
+            # Credentials DO exist
+            (True, "the-user-token", None, True),
+            (False, None, "the-client-token", True),
+            # Credentials do NOT exist
+            (False, None, None, False),
+            (True, None, None, False),
+        ],
+    )
+    def test_returns_expected_outcome(
+        self, browser_request, user_token, client_token, expected
+    ):
+        result = have_credentials(
+            browser_request=browser_request,
+            user_token=user_token,
+            client_token=client_token,
+        )
+        assert result is expected
 
 
 class TestRetrievePermissions:

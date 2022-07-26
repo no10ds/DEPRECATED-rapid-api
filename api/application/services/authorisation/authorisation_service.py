@@ -77,6 +77,86 @@ def user_logged_in(request: Request) -> bool:
     return token is not None
 
 
+def secure_endpoint(
+    security_scopes: SecurityScopes,
+    browser_request: bool = Depends(is_browser_request),
+    client_token: Optional[str] = Depends(oauth2_scheme),
+    user_token: Optional[str] = Depends(oauth2_user_scheme),
+):
+    secure_dataset_endpoint(security_scopes, browser_request, client_token, user_token)
+
+
+def secure_dataset_endpoint(
+    security_scopes: SecurityScopes,
+    browser_request: bool = Depends(is_browser_request),
+    client_token: Optional[str] = Depends(oauth2_scheme),
+    user_token: Optional[str] = Depends(oauth2_user_scheme),
+    domain: Optional[str] = None,
+    dataset: Optional[str] = None,
+):
+    check_credentials_availability(browser_request, user_token, client_token)
+
+    try:
+        token = user_token if user_token else client_token
+        token = parse_token(token)
+        check_permissions(token, security_scopes.scopes, domain, dataset)
+    except InvalidTokenError as error:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
+
+
+def check_credentials_availability(
+    browser_request: bool, user_token: Optional[str], client_token: Optional[str]
+) -> None:
+    if not have_credentials(browser_request, client_token, user_token):
+        if browser_request:
+            raise UserCredentialsUnavailableError()
+        else:
+            raise HTTPException(
+                status_code=HTTP_403_FORBIDDEN,
+                detail="You are not authorised to perform this action",
+            )
+
+
+def have_credentials(browser_request: bool, client_token: str, user_token: str) -> bool:
+    return bool((browser_request and user_token) or client_token)
+
+
+def check_permissions(
+    token: Token,
+    endpoint_scopes: List[str],
+    domain: Optional[str],
+    dataset: Optional[str],
+):
+    if token.is_user_token():
+        raise NotImplementedError("Not handling user permissions for now")
+
+    if token.is_client_token():
+        try:
+            subject_permissions = retrieve_permissions(token)
+            match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
+        except SchemaNotFoundError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
+            )
+
+
+def retrieve_permissions(token: Token) -> List[str]:
+    database_permissions = db_adapter.get_permissions_for_subject(token.subject)
+    if not database_permissions:
+        return token.permissions
+    return [permission.permission for permission in database_permissions]
+
+
+def match_permissions(
+    permissions: list, endpoint_scopes: list, domain: str = None, dataset: str = None
+):
+    sensitivity = s3_adapter.get_dataset_sensitivity(domain, dataset)
+    acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
+    if not acceptable_scopes.satisfied_by(permissions):
+        raise AuthorisationError("Not enough permissions to access endpoint")
+
+
 @deprecated(
     reason="Permission matching is being unified. Use `secure_endpoint` instead."
 )
@@ -115,80 +195,6 @@ def protect_dataset_endpoint(
                 raise HTTPException(
                     status_code=HTTP_401_UNAUTHORIZED, detail="Not authenticated"
                 )
-
-
-def secure_endpoint(
-    security_scopes: SecurityScopes,
-    browser_request: bool = Depends(is_browser_request),
-    client_token: Optional[str] = Depends(oauth2_scheme),
-    user_token: Optional[str] = Depends(oauth2_user_scheme),
-):
-    secure_dataset_endpoint(security_scopes, browser_request, client_token, user_token)
-
-
-def secure_dataset_endpoint(
-    security_scopes: SecurityScopes,
-    browser_request: bool = Depends(is_browser_request),
-    client_token: Optional[str] = Depends(oauth2_scheme),
-    user_token: Optional[str] = Depends(oauth2_user_scheme),
-    domain: Optional[str] = None,
-    dataset: Optional[str] = None,
-):
-    check_credentials_availability(browser_request, client_token, user_token)
-
-    try:
-        token = user_token if user_token else client_token
-        token = parse_token(token)
-        check_permissions(token, security_scopes.scopes, domain, dataset)
-    except InvalidTokenError as error:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
-
-
-def check_credentials_availability(
-    browser_request: bool, client_token: str, user_token: str
-) -> None:
-    if not have_credentials(browser_request, client_token, user_token):
-        if browser_request:
-            raise UserCredentialsUnavailableError()
-        else:
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
-                detail="You are not authorised to perform this action",
-            )
-
-
-def have_credentials(browser_request: bool, client_token: str, user_token: str) -> bool:
-    return have_user_credentials(
-        browser_request, user_token
-    ) or have_client_credentials(client_token)
-
-
-def check_permissions(
-    token: Token,
-    endpoint_scopes: List[str],
-    domain: Optional[str],
-    dataset: Optional[str],
-):
-    if token.is_user_token():
-        raise NotImplementedError("Not handling user permissions for now")
-
-    if token.is_client_token():
-        try:
-            subject_permissions = retrieve_permissions(token)
-            match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
-        except SchemaNotFoundError:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
-            )
-
-
-def have_user_credentials(browser_request: bool, user_token: Optional[str]) -> bool:
-    return bool(browser_request and user_token)
-
-
-def have_client_credentials(client_token: Optional[str]) -> bool:
-    return bool(client_token)
 
 
 @deprecated(reason="Permission matching is being unified")
@@ -234,22 +240,6 @@ def extract_client_app_scopes(token: str) -> List[str]:
         raise AuthorisationError(
             "Not enough permissions or access token is missing/invalid"
         )
-
-
-def retrieve_permissions(token: Token) -> List[str]:
-    database_permissions = db_adapter.get_permissions_for_subject(token.subject)
-    if not database_permissions:
-        return token.permissions
-    return [permission.permission for permission in database_permissions]
-
-
-def match_permissions(
-    permissions: list, endpoint_scopes: list, domain: str = None, dataset: str = None
-):
-    sensitivity = s3_adapter.get_dataset_sensitivity(domain, dataset)
-    acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
-    if not acceptable_scopes.satisfied_by(permissions):
-        raise AuthorisationError("Not enough permissions to access endpoint")
 
 
 @deprecated(reason="Permission matching is being unified")
