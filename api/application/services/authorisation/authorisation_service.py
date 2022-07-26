@@ -1,5 +1,6 @@
 from typing import Optional, List
 
+from deprecated import deprecated
 from fastapi import Depends, HTTPException
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
@@ -76,6 +77,9 @@ def user_logged_in(request: Request) -> bool:
     return token is not None
 
 
+@deprecated(
+    reason="Permission matching is being unified. Use `secure_endpoint` instead."
+)
 def protect_endpoint(
     security_scopes: SecurityScopes,
     browser_request: bool = Depends(is_browser_request),
@@ -85,6 +89,9 @@ def protect_endpoint(
     protect_dataset_endpoint(security_scopes, browser_request, client_token, user_token)
 
 
+@deprecated(
+    reason="Permission matching is being unified. Use `secure_dataset_endpoint` instead."
+)
 def protect_dataset_endpoint(
     security_scopes: SecurityScopes,
     browser_request: bool = Depends(is_browser_request),
@@ -108,6 +115,15 @@ def protect_dataset_endpoint(
                 raise HTTPException(
                     status_code=HTTP_401_UNAUTHORIZED, detail="Not authenticated"
                 )
+
+
+def secure_endpoint(
+    security_scopes: SecurityScopes,
+    browser_request: bool = Depends(is_browser_request),
+    client_token: str = Depends(oauth2_scheme),
+    user_token: str = Depends(oauth2_user_scheme),
+):
+    secure_dataset_endpoint(security_scopes, browser_request, client_token, user_token)
 
 
 def secure_dataset_endpoint(
@@ -154,11 +170,12 @@ def check_permissions(
     dataset: Optional[str],
 ):
     if token.is_user_token():
-        match_user_permissions(token, endpoint_scopes, domain, dataset)
+        raise NotImplementedError("Not handling user permissions for now")
 
     if token.is_client_token():
         try:
-            match_client_app_permissions(token, endpoint_scopes, domain, dataset)
+            subject_permissions = retrieve_permissions(token)
+            match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
         except SchemaNotFoundError:
             raise HTTPException(
                 status_code=400,
@@ -174,11 +191,12 @@ def have_client_credentials(client_token: Optional[str]) -> bool:
     return bool(client_token)
 
 
+@deprecated(reason="Permission matching is being unified")
 def check_client_app_permissions(client_token, dataset, domain, security_scopes):
     try:
         token_scopes = extract_client_app_scopes(client_token)
         endpoint_scopes = security_scopes.scopes
-        match_client_app_permissions(token_scopes, endpoint_scopes, domain, dataset)
+        match_permissions(token_scopes, endpoint_scopes, domain, dataset)
     except SchemaNotFoundError:
         raise HTTPException(
             status_code=400,
@@ -186,12 +204,14 @@ def check_client_app_permissions(client_token, dataset, domain, security_scopes)
         )
 
 
+@deprecated(reason="Permission matching is being unified")
 def check_user_permissions(dataset, domain, security_scopes, user_token):
     token_scopes = extract_user_groups(user_token)
     endpoint_scopes = security_scopes.scopes
     match_user_permissions(token_scopes, endpoint_scopes, domain, dataset)
 
 
+@deprecated(reason="Permission matching is being unified")
 def extract_user_groups(token: str) -> List[str]:
     try:
         payload = get_validated_token_payload(token)
@@ -203,6 +223,7 @@ def extract_user_groups(token: str) -> List[str]:
         )
 
 
+@deprecated(reason="Permission matching is being unified")
 def extract_client_app_scopes(token: str) -> List[str]:
     try:
         payload = get_validated_token_payload(token)
@@ -222,15 +243,16 @@ def retrieve_permissions(token: Token) -> List[str]:
     return [permission.permission for permission in database_permissions]
 
 
-def match_client_app_permissions(
-    token_scopes: list, endpoint_scopes: list, domain: str = None, dataset: str = None
+def match_permissions(
+    permissions: list, endpoint_scopes: list, domain: str = None, dataset: str = None
 ):
     sensitivity = s3_adapter.get_dataset_sensitivity(domain, dataset)
     acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
-    if not acceptable_scopes.satisfied_by(token_scopes):
+    if not acceptable_scopes.satisfied_by(permissions):
         raise AuthorisationError("Not enough permissions to access endpoint")
 
 
+@deprecated(reason="Permission matching is being unified")
 def match_user_permissions(
     token_scopes: list,
     endpoint_scopes: list,
