@@ -120,8 +120,8 @@ def protect_dataset_endpoint(
 def secure_endpoint(
     security_scopes: SecurityScopes,
     browser_request: bool = Depends(is_browser_request),
-    client_token: str = Depends(oauth2_scheme),
-    user_token: str = Depends(oauth2_user_scheme),
+    client_token: Optional[str] = Depends(oauth2_scheme),
+    user_token: Optional[str] = Depends(oauth2_user_scheme),
 ):
     secure_dataset_endpoint(security_scopes, browser_request, client_token, user_token)
 

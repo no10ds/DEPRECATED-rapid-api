@@ -16,6 +16,7 @@ from api.application.services.authorisation.authorisation_service import (
     check_permissions,
     retrieve_permissions,
     match_permissions,
+    secure_endpoint,
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import DOMAIN_NAME
@@ -27,6 +28,30 @@ from api.common.custom_exceptions import (
 )
 from api.domain.permission_item import PermissionItem
 from api.domain.token import Token
+
+
+class TestSecureEndpoint:
+    @patch(
+        "api.application.services.authorisation.authorisation_service.secure_dataset_endpoint"
+    )
+    def test_calls_secure_dataset_endpoint_function_without_domain_and_dataset(
+        self, mock_secure_dataset_endpoint
+    ):
+        endpoint_scopes = SecurityScopes(scopes=["READ"])
+        browser_request = False
+        client_token = "the-client-token"
+        user_token = None
+
+        secure_endpoint(
+            security_scopes=endpoint_scopes,
+            browser_request=browser_request,
+            client_token=client_token,
+            user_token=user_token,
+        )
+
+        mock_secure_dataset_endpoint.assert_called_once_with(
+            endpoint_scopes, browser_request, client_token, user_token
+        )
 
 
 class TestSecureDatasetEndpoint:
@@ -292,7 +317,7 @@ class TestRetrievePermissions:
         assert result == []
 
 
-class TestAppPermissionsMatching:
+class TestPermissionsMatching:
     def setup_method(self):
         self.mock_s3_client = Mock()
 
