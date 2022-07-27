@@ -60,7 +60,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                     "SK": subject_id,
                     "Id": subject_id,
                     "Type": subject_type,
-                    "Permissions": permissions,
+                    "Permissions": set(permissions),
                 },
             )
         except ClientError:

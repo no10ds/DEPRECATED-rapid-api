@@ -46,6 +46,12 @@ class TestDynamoDBAdapter:
     def test_create_client_item(self):
         client_id = "123456789"
         client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
+        expected_client_permissions = {
+            "READ_ALL",
+            "WRITE_ALL",
+            "READ_PRIVATE",
+            "USER_ADMIN",
+        }
         self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
         self.dynamo_adapter.create_client_item(client_id, client_permissions)
 
@@ -55,7 +61,7 @@ class TestDynamoDBAdapter:
                 "SK": client_id,
                 "Id": client_id,
                 "Type": "CLIENT",
-                "Permissions": client_permissions,
+                "Permissions": expected_client_permissions,
             },
         )
 
@@ -104,6 +110,12 @@ class TestDynamoDBAdapter:
     def test_create_subject(self):
         client_id = "123456789"
         client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
+        expected_client_permissions = {
+            "READ_ALL",
+            "WRITE_ALL",
+            "READ_PRIVATE",
+            "USER_ADMIN",
+        }
         self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
 
         self.dynamo_adapter.create_subject_permission(
@@ -116,7 +128,7 @@ class TestDynamoDBAdapter:
                 "SK": client_id,
                 "Id": client_id,
                 "Type": "CLIENT",
-                "Permissions": client_permissions,
+                "Permissions": expected_client_permissions,
             },
         )
 
