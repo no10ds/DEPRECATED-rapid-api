@@ -1,4 +1,4 @@
-# 0005 - Self-Managed Authorisation
+# 0006 - Dynamo DB for authorisation
 
 Date: 2022-07-26
 
