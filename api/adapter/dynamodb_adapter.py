@@ -23,7 +23,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def validate_permission(self, subject_permissions: List[str]):
+    def validate_permissions(self, subject_permissions: List[str]):
         pass
 
     @abstractmethod
@@ -67,7 +67,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 "The client could not be created, please contact your system administrator"
             )
 
-    def validate_permission(self, subject_permissions: List[str]):
+    def validate_permissions(self, subject_permissions: List[str]):
         permissions_response = self._get_permissions(subject_permissions)
         if not permissions_response["Count"] == len(subject_permissions):
             raise UserError("One or more of the provided permissions do not exist")

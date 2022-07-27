@@ -137,7 +137,7 @@ class TestDynamoDBAdapter:
             AWSServiceError,
             match="The client could not be created, please contact your system administrator",
         ):
-            self.dynamo_adapter.validate_permission(permissions)
+            self.dynamo_adapter.validate_permissions(permissions)
 
     def test_validates_permissions(self):
         test_user_permissions = ["READ_PRIVATE", "WRITE_ALL"]
@@ -161,7 +161,7 @@ class TestDynamoDBAdapter:
             "Count": 2,
         }
 
-        self.dynamo_adapter.validate_permission(test_user_permissions)
+        self.dynamo_adapter.validate_permissions(test_user_permissions)
         self.dynamo_boto_resource.query.assert_called_once_with(
             KeyConditionExpression=Key("PK").eq("PERMISSION"),
             FilterExpression=Or(
@@ -194,7 +194,7 @@ class TestDynamoDBAdapter:
         with pytest.raises(
             UserError, match="One or more of the provided permissions do not exist"
         ):
-            self.dynamo_adapter.validate_permission(test_user_permissions)
+            self.dynamo_adapter.validate_permissions(test_user_permissions)
 
     def test_get_permissions_for_subject(self):
         subject_id = "test-subject-id"

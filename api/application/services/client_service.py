@@ -11,6 +11,7 @@ class ClientService:
         self.dynamodb_adapter = dynamodb_adapter
 
     def create_client(self, client_request: ClientRequest):
+        self.dynamodb_adapter.validate_permissions(client_request.permissions)
         cognito_response = self.cognito_adapter.create_client_app(client_request)
         cognito_client_info = cognito_response["UserPoolClient"]
 

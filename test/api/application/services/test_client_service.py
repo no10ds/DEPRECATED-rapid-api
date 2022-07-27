@@ -1,7 +1,10 @@
 from unittest.mock import Mock
 
+import pytest
+
 from api.application.services.client_service import ClientService
 from api.common.config.aws import DOMAIN_NAME
+from api.common.custom_exceptions import AWSServiceError, UserError
 from api.domain.client import ClientRequest, ClientResponse
 
 
@@ -28,6 +31,10 @@ class TestClientCreation:
         client_response = self.client_service.create_client(client_request)
 
         self.cognito_adapter.create_client_app.assert_called_once_with(client_request)
+
+        self.dynamo_adapter.validate_permissions.assert_called_once_with(
+            client_request.permissions
+        )
 
         self.dynamo_adapter.create_client_item.assert_called_once_with(
             expected_response.client_id, client_request.permissions
@@ -71,3 +78,37 @@ class TestClientCreation:
             "RetryAttempts": 0,
         },
     }
+
+    def test_do_not_create_client_when_validate_permissions_fails(self):
+        client_request = ClientRequest(
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
+        )
+        self.dynamo_adapter.validate_permissions.side_effect = AWSServiceError(
+            "The client could not be created, please contact your system administrator"
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="The client could not be created, please contact your system administrator",
+        ):
+            self.client_service.create_client(client_request)
+
+        self.dynamo_adapter.create_client_item.assert_not_called()
+        self.cognito_adapter.create_client_app.assert_not_called()
+
+    def test_do_not_create_client_when_invalid_permissions(self):
+        client_request = ClientRequest(
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
+        )
+        self.dynamo_adapter.validate_permissions.side_effect = UserError(
+            "One or more of the provided permissions do not exist"
+        )
+
+        with pytest.raises(
+            UserError,
+            match="One or more of the provided permissions do not exist",
+        ):
+            self.client_service.create_client(client_request)
+
+        self.dynamo_adapter.create_client_item.assert_not_called()
+        self.cognito_adapter.create_client_app.assert_not_called()
