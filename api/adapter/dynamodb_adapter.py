@@ -53,7 +53,6 @@ class DynamoDBAdapter(DatabaseAdapter):
         self, subject_type: str, subject_id: str, permissions: List[str]
     ):
         try:
-            self.validate_permission(permissions)
             self.dynamodb_resource.put_item(
                 Item={
                     "PK": "SUBJECT",
@@ -90,9 +89,14 @@ class DynamoDBAdapter(DatabaseAdapter):
             )
 
     def _get_permissions(self, subject_permissions):
-        return self.dynamodb_resource.query(
-            KeyConditionExpression=Key("PK").eq("PERMISSION"),
-            FilterExpression=reduce(
-                Or, ([Attr("Id").eq(value) for value in subject_permissions])
-            ),
-        )
+        try:
+            return self.dynamodb_resource.query(
+                KeyConditionExpression=Key("PK").eq("PERMISSION"),
+                FilterExpression=reduce(
+                    Or, ([Attr("Id").eq(value) for value in subject_permissions])
+                ),
+            )
+        except ClientError:
+            raise AWSServiceError(
+                "The client could not be created, please contact your system administrator"
+            )

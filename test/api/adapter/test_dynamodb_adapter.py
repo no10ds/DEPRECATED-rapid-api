@@ -81,32 +81,6 @@ class TestDynamoDBAdapter:
         ):
             self.dynamo_adapter.create_client_item(client_id, client_permissions)
 
-    def test_create_client_throws_error_when_query_fails(self):
-        client_id = "123456789"
-        client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
-        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
-
-        self.dynamo_boto_resource.query.side_effect = ClientError(
-            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
-            operation_name="PutItem",
-        )
-
-        with pytest.raises(
-            AWSServiceError,
-            match="The client could not be created, please contact your system administrator",
-        ):
-            self.dynamo_adapter.create_client_item(client_id, client_permissions)
-
-    def test_create_client_throws_error_when_invalid_permissions(self):
-        client_id = "123456789"
-        client_permissions = ["READ_ALL", "WRITE_ALL"]
-        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
-
-        with pytest.raises(
-            UserError, match="One or more of the provided permissions do not exist"
-        ):
-            self.dynamo_adapter.create_client_item(client_id, client_permissions)
-
     def test_create_subject(self):
         client_id = "123456789"
         client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
@@ -151,11 +125,8 @@ class TestDynamoDBAdapter:
                 subject_type, subject_id, permissions
             )
 
-    def test_create_subject_throws_error_when_query_fails(self):
-        subject_id = "123456789"
+    def test_validate_permission_throws_error_when_query_fails(self):
         permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
-        subject_type = "CLIENT"
-        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
 
         self.dynamo_boto_resource.query.side_effect = ClientError(
             error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
@@ -166,22 +137,7 @@ class TestDynamoDBAdapter:
             AWSServiceError,
             match="The client could not be created, please contact your system administrator",
         ):
-            self.dynamo_adapter.create_subject_permission(
-                subject_type, subject_id, permissions
-            )
-
-    def test_create_subject_throws_error_when_invalid_permissions(self):
-        subject_type = "CLIENT"
-        subject_id = "123456789"
-        permissions = ["READ_ALL", "WRITE_ALL"]
-        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
-
-        with pytest.raises(
-            UserError, match="One or more of the provided permissions do not exist"
-        ):
-            self.dynamo_adapter.create_subject_permission(
-                subject_type, subject_id, permissions
-            )
+            self.dynamo_adapter.validate_permission(permissions)
 
     def test_validates_permissions(self):
         test_user_permissions = ["READ_PRIVATE", "WRITE_ALL"]
