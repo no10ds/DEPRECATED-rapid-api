@@ -52,7 +52,6 @@ class DynamoDBAdapter(DatabaseAdapter):
     def create_subject_permission(
         self, subject_type: str, subject_id: str, permissions: List[str]
     ):
-        print(subject_id)
         try:
             self.validate_permission(permissions)
             self.dynamodb_resource.put_item(
@@ -64,8 +63,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                     "Permissions": permissions,
                 },
             )
-        except ClientError as error:
-            print(error)
+        except ClientError:
             raise AWSServiceError(
                 "The client could not be created, please contact your system administrator"
             )
