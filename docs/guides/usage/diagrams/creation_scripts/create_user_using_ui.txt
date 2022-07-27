@@ -1,0 +1,11 @@
+title Create User (UI)
+
+User Admin->UI: GET /user
+UI->rAPId API: POST /user
+rAPId API->Cognito: Create user
+Cognito->rAPId API: New user credentials
+rAPId API->DB: Add user with permissions
+rAPId API->UI: New user credentials
+UI->User Admin: Redirect to new user success page
+
+#https://www.websequencediagrams.com/
