@@ -16,10 +16,7 @@ class TestClientCreation:
             client_name="my_client",
             client_id="some-client-id",
             client_secret="some-client-secret",  # pragma: allowlist secret
-            permissions=[
-                f"https://{DOMAIN_NAME}/WRITE_PUBLIC",
-                f"https://{DOMAIN_NAME}/READ_PRIVATE",
-            ],
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
         )
 
         client_request = ClientRequest(

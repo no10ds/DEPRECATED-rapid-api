@@ -18,7 +18,7 @@ class ClientService:
             client_name=client_request.client_name,
             client_id=cognito_client_info["ClientId"],
             client_secret=cognito_client_info["ClientSecret"],
-            permissions=cognito_client_info["AllowedOAuthScopes"],
+            permissions=client_request.permissions,
         )
 
         self.dynamodb_adapter.create_client_item(
