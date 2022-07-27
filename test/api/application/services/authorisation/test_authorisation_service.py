@@ -27,7 +27,6 @@ from api.common.custom_exceptions import (
     UserCredentialsUnavailableError,
     BaseAppException,
 )
-from api.domain.permission_item import PermissionItem
 from api.domain.token import Token
 
 
@@ -289,8 +288,8 @@ class TestRetrievePermissions:
         token_with_only_db_permissions = Token({"sub": "the-subject-id"})
 
         mock_db_adapter.get_permissions_for_subject.return_value = [
-            PermissionItem("1", "ALL", "READ"),
-            PermissionItem("1", "PUBLIC", "WRITE"),
+            "READ_ALL",
+            "WRITE_PUBLIC",
         ]
 
         result = retrieve_permissions(token_with_only_db_permissions)

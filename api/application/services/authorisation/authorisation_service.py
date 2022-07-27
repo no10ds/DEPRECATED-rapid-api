@@ -145,7 +145,7 @@ def retrieve_permissions(token: Token) -> List[str]:
     database_permissions = db_adapter.get_permissions_for_subject(token.subject)
     if not database_permissions:
         return token.permissions
-    return [permission.permission for permission in database_permissions]
+    return database_permissions
 
 
 def match_permissions(

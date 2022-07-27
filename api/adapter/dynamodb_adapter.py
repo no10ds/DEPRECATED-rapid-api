@@ -76,8 +76,18 @@ class DynamoDBAdapter(DatabaseAdapter):
     def get_all_permissions(self) -> List[PermissionItem]:
         raise NotImplementedError()
 
-    def get_permissions_for_subject(self, subject_id: str) -> List[PermissionItem]:
-        raise NotImplementedError()
+    def get_permissions_for_subject(self, subject_id: str) -> List[str]:
+        try:
+            return list(
+                self.dynamodb_resource.query(
+                    KeyConditionExpression=Key("PK").eq("SUBJECT"),
+                    FilterExpression=Attr("Id").eq(subject_id),
+                )["Items"][0]["Permissions"]
+            )
+        except ClientError:
+            raise AWSServiceError(
+                "Error fetching permissions, please contact your system administrator"
+            )
 
     def _get_permissions(self, subject_permissions):
         return self.dynamodb_resource.query(

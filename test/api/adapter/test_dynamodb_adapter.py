@@ -239,3 +239,46 @@ class TestDynamoDBAdapter:
             UserError, match="One or more of the provided permissions do not exist"
         ):
             self.dynamo_adapter.validate_permission(test_user_permissions)
+
+    def test_get_permissions_for_subject(self):
+        subject_id = "test-subject-id"
+        self.dynamo_boto_resource.query.return_value = {
+            "Items": [
+                {
+                    "PK": {"S": "SUBJECT"},
+                    "SK": {"S": subject_id},
+                    "Id": {"S": subject_id},
+                    "Type": {"S": "CLIENT"},
+                    "Permissions": {
+                        "DATA_ADMIN",
+                        "READ_ALL",
+                        "USER_ADMIN",
+                        "WRITE_ALL",
+                    },
+                }
+            ],
+            "Count": 1,
+        }
+
+        response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
+
+        assert set(response).issubset(
+            {"DATA_ADMIN", "READ_ALL", "USER_ADMIN", "WRITE_ALL"}
+        )
+        self.dynamo_boto_resource.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("SUBJECT"),
+            FilterExpression=Attr("Id").eq(subject_id),
+        )
+
+    def test_get_permissions_for_subject_throws_aws_service_error(self):
+        subject_id = "test-subject-id"
+        self.dynamo_boto_resource.query.side_effect = ClientError(
+            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
+            operation_name="Query",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error fetching permissions, please contact your system administrator",
+        ):
+            self.dynamo_adapter.get_permissions_for_subject(subject_id)
