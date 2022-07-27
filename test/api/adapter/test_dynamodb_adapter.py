@@ -53,7 +53,7 @@ class TestDynamoDBAdapter:
             "USER_ADMIN",
         }
         self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
-        self.dynamo_adapter.create_client_item(client_id, client_permissions)
+        self.dynamo_adapter.store_client_permissions(client_id, client_permissions)
 
         self.dynamo_boto_resource.put_item.assert_called_once_with(
             Item={
@@ -79,7 +79,7 @@ class TestDynamoDBAdapter:
             AWSServiceError,
             match="The client could not be created, please contact your system administrator",
         ):
-            self.dynamo_adapter.create_client_item(client_id, client_permissions)
+            self.dynamo_adapter.store_client_permissions(client_id, client_permissions)
 
     def test_create_subject(self):
         client_id = "123456789"
@@ -92,7 +92,7 @@ class TestDynamoDBAdapter:
         }
         self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
 
-        self.dynamo_adapter.create_subject_permission(
+        self.dynamo_adapter.store_subject_permissions(
             "CLIENT", client_id, client_permissions
         )
 
@@ -121,7 +121,7 @@ class TestDynamoDBAdapter:
             AWSServiceError,
             match="The client could not be created, please contact your system administrator",
         ):
-            self.dynamo_adapter.create_subject_permission(
+            self.dynamo_adapter.store_subject_permissions(
                 subject_type, subject_id, permissions
             )
 

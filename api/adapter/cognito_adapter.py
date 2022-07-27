@@ -103,3 +103,6 @@ class CognitoAdapter:
             raise AWSServiceError(
                 f'The scopes "{additional_scopes}" could not be added, please contact system administrator'
             )
+
+    def delete_client_app(self, client_id):
+        pass

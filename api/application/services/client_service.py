@@ -12,18 +12,28 @@ class ClientService:
 
     def create_client(self, client_request: ClientRequest):
         self.dynamodb_adapter.validate_permissions(client_request.permissions)
+        client_response = self._create_client_response(client_request)
+
+        self._store_client_permissions(client_request, client_response)
+
+        return client_response
+
+    def _create_client_response(self, client_request):
         cognito_response = self.cognito_adapter.create_client_app(client_request)
         cognito_client_info = cognito_response["UserPoolClient"]
-
         client_response = ClientResponse(
             client_name=client_request.client_name,
             client_id=cognito_client_info["ClientId"],
             client_secret=cognito_client_info["ClientSecret"],
             permissions=client_request.permissions,
         )
-
-        self.dynamodb_adapter.create_client_item(
-            client_response.client_id, client_request.permissions
-        )
-
         return client_response
+
+    def _store_client_permissions(self, client_request, client_response):
+        try:
+            self.dynamodb_adapter.store_client_permissions(
+                client_response.client_id, client_request.permissions
+            )
+        except Exception as error:
+            self.cognito_adapter.delete_client_app(client_response.client_id)
+            raise error

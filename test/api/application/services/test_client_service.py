@@ -36,7 +36,7 @@ class TestClientCreation:
             client_request.permissions
         )
 
-        self.dynamo_adapter.create_client_item.assert_called_once_with(
+        self.dynamo_adapter.store_client_permissions.assert_called_once_with(
             expected_response.client_id, client_request.permissions
         )
 
@@ -93,7 +93,7 @@ class TestClientCreation:
         ):
             self.client_service.create_client(client_request)
 
-        self.dynamo_adapter.create_client_item.assert_not_called()
+        self.dynamo_adapter.store_client_permissions.assert_not_called()
         self.cognito_adapter.create_client_app.assert_not_called()
 
     def test_do_not_create_client_when_invalid_permissions(self):
@@ -110,5 +110,30 @@ class TestClientCreation:
         ):
             self.client_service.create_client(client_request)
 
-        self.dynamo_adapter.create_client_item.assert_not_called()
+        self.dynamo_adapter.store_client_permissions.assert_not_called()
         self.cognito_adapter.create_client_app.assert_not_called()
+
+    def test_delete_existing_client_when_db_fails(self):
+        cognito_response = {
+            "UserPoolClient": {
+                "ClientId": "some-client-id",
+                "ClientSecret": "some-client-secret",  # pragma: allowlist secret
+            }
+        }
+
+        client_request = ClientRequest(
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
+        )
+        self.cognito_adapter.create_client_app.return_value = cognito_response
+        self.dynamo_adapter.store_client_permissions.side_effect = AWSServiceError(
+            "The client could not be created, please contact your system administrator"
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="The client could not be created, please contact your system administrator",
+        ):
+            self.client_service.create_client(client_request)
+
+        self.cognito_adapter.create_client_app.assert_called_once_with(client_request)
+        self.cognito_adapter.delete_client_app.assert_called_once_with("some-client-id")

@@ -13,11 +13,13 @@ from api.domain.permission_item import PermissionItem
 
 class DatabaseAdapter(ABC):
     @abstractmethod
-    def create_client_item(self, client_id: str, client_permissions: List[str]) -> None:
+    def store_client_permissions(
+        self, client_id: str, client_permissions: List[str]
+    ) -> None:
         pass
 
     @abstractmethod
-    def create_subject_permission(
+    def store_subject_permissions(
         self, subject_type: str, subject_id: str, permissions: List[str]
     ) -> None:
         pass
@@ -44,12 +46,12 @@ class DynamoDBAdapter(DatabaseAdapter):
     ):
         self.dynamodb_resource = dynamodb_table
 
-    def create_client_item(self, client_id: str, client_permissions: List[str]):
-        self.create_subject_permission(
+    def store_client_permissions(self, client_id: str, client_permissions: List[str]):
+        self.store_subject_permissions(
             subject_type="CLIENT", subject_id=client_id, permissions=client_permissions
         )
 
-    def create_subject_permission(
+    def store_subject_permissions(
         self, subject_type: str, subject_id: str, permissions: List[str]
     ):
         try:
