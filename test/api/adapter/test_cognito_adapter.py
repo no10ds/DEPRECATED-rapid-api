@@ -85,6 +85,12 @@ class TestCognitoAdapterClientMethods:
         )
         assert actual_response == expected_response
 
+    def test_delete_client_app(self):
+        self.cognito_adapter.delete_client_app("client_id")
+        self.cognito_boto_client.delete_user_pool_client.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID, ClientId="client_id"
+        )
+
     def test_raises_error_when_scope_does_not_exist_in_aws(self):
         client_request = ClientRequest(
             client_name="my_client", permissions=["NOT_VALID"]
@@ -244,7 +250,6 @@ class TestCognitoAdapterClientMethods:
         )
 
     def test_add_resource_server_scopes_fails(self):
-
         self.cognito_adapter.get_resource_server = Mock(return_value={"Scopes": []})
 
         self.cognito_boto_client.update_resource_server = Mock(

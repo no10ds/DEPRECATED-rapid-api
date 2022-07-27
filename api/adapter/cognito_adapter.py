@@ -105,4 +105,6 @@ class CognitoAdapter:
             )
 
     def delete_client_app(self, client_id):
-        pass
+        self.cognito_client.delete_user_pool_client(
+            UserPoolId=COGNITO_USER_POOL_ID, ClientId=client_id
+        )
