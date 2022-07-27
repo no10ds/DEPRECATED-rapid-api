@@ -31,7 +31,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_permissions_for_subject(self, subject_id: str) -> List[dict]:
+    def get_permissions_for_subject(self, subject_id: str) -> List[str]:
         pass
 
 
@@ -83,7 +83,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
             )
-        except ClientError:
+        except (ClientError, IndexError):
             raise AWSServiceError(
                 "Error fetching permissions, please contact your system administrator"
             )

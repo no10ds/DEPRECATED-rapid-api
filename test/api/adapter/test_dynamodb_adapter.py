@@ -226,6 +226,38 @@ class TestDynamoDBAdapter:
             FilterExpression=Attr("Id").eq(subject_id),
         )
 
+    def test_get_permissions_for_non_existent_subject(self):
+        subject_id = "fake-subject-id"
+        self.dynamo_boto_resource.query.return_value = {
+            "Items": [],
+            "Count": 0,
+        }
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error fetching permissions, please contact your system administrator",
+        ):
+            self.dynamo_adapter.get_permissions_for_subject(subject_id)
+
+    def test_get_permissions_for_subject_with_no_permissions(self):
+        subject_id = "test-subject-id"
+        self.dynamo_boto_resource.query.return_value = {
+            "Items": [
+                {
+                    "PK": {"S": "SUBJECT"},
+                    "SK": {"S": subject_id},
+                    "Id": {"S": subject_id},
+                    "Type": {"S": "CLIENT"},
+                    "Permissions": {},
+                }
+            ],
+            "Count": 1,
+        }
+
+        response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
+
+        assert len(response) == 0
+
     def test_get_permissions_for_subject_throws_aws_service_error(self):
         subject_id = "test-subject-id"
         self.dynamo_boto_resource.query.side_effect = ClientError(
