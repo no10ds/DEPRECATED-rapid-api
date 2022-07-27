@@ -2,9 +2,7 @@ from fastapi import APIRouter
 from fastapi import Security
 from fastapi import status as http_status
 
-from api.application.services.authorisation.authorisation_service import (
-    protect_endpoint,
-)
+from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.config.auth import Action
 
@@ -21,7 +19,7 @@ protected_domain_router = APIRouter(
 @protected_domain_router.post(
     "/{domain}",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(protect_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
 def create_protected_domain(domain: str):
     """
@@ -58,7 +56,7 @@ def create_protected_domain(domain: str):
 
 @protected_domain_router.get(
     "",
-    dependencies=[Security(protect_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
 def list_protected_domains():
     """

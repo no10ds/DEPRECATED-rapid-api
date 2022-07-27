@@ -14,7 +14,7 @@ class SSMAdapter:
             response = self._ssm_client.get_parameter(Name=name)
         except ClientError:
             raise AWSServiceError(
-                f"There was an unexpected error when retrieving the paramter '{name}'"
+                f"There was an unexpected error when retrieving the parameter '{name}'"
             )
         return response["Parameter"]["Value"]
 

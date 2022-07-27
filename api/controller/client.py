@@ -2,9 +2,7 @@ from fastapi import APIRouter
 from fastapi import Security
 from fastapi import status as http_status
 
-from api.application.services.authorisation.authorisation_service import (
-    protect_endpoint,
-)
+from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.client_service import ClientService
 from api.common.config.auth import Action
 from api.domain.client import ClientRequest
@@ -21,7 +19,7 @@ client_router = APIRouter(
 @client_router.post(
     "",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(protect_endpoint, scopes=[Action.USER_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 async def create_client(client_request: ClientRequest):
     """

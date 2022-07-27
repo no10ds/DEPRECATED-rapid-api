@@ -1,6 +1,5 @@
 from typing import Optional, List
 
-from deprecated import deprecated
 from fastapi import Depends, HTTPException
 from fastapi.openapi.models import OAuthFlows as OAuthFlowsModel
 from fastapi.security import OAuth2
@@ -15,13 +14,9 @@ from api.adapter.s3_adapter import S3Adapter
 from api.application.services.authorisation.acceptable_permissions import (
     generate_acceptable_scopes,
 )
-from api.application.services.authorisation.token_utils import (
-    parse_token,
-    get_validated_token_payload,
-)
+from api.application.services.authorisation.token_utils import parse_token
 from api.common.config.auth import (
     IDENTITY_PROVIDER_TOKEN_URL,
-    COGNITO_RESOURCE_SERVER_ID,
     RAPID_ACCESS_TOKEN,
 )
 from api.common.custom_exceptions import (
@@ -29,7 +24,6 @@ from api.common.custom_exceptions import (
     AuthorisationError,
     UserCredentialsUnavailableError,
 )
-from api.common.logger import AppLogger
 from api.domain.token import Token
 
 
@@ -154,111 +148,4 @@ def match_permissions(
     sensitivity = s3_adapter.get_dataset_sensitivity(domain, dataset)
     acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
     if not acceptable_scopes.satisfied_by(permissions):
-        raise AuthorisationError("Not enough permissions to access endpoint")
-
-
-@deprecated(
-    reason="Permission matching is being unified. Use `secure_endpoint` instead."
-)
-def protect_endpoint(
-    security_scopes: SecurityScopes,
-    browser_request: bool = Depends(is_browser_request),
-    client_token: str = Depends(oauth2_scheme),
-    user_token: str = Depends(oauth2_user_scheme),
-):
-    protect_dataset_endpoint(security_scopes, browser_request, client_token, user_token)
-
-
-@deprecated(
-    reason="Permission matching is being unified. Use `secure_dataset_endpoint` instead."
-)
-def protect_dataset_endpoint(
-    security_scopes: SecurityScopes,
-    browser_request: bool = Depends(is_browser_request),
-    client_token: str = Depends(oauth2_scheme),
-    user_token: str = Depends(oauth2_user_scheme),
-    domain: Optional[str] = None,
-    dataset: Optional[str] = None,
-):
-    if user_token is not None:
-        check_user_permissions(dataset, domain, security_scopes, user_token)
-    else:
-        if browser_request:
-            raise UserCredentialsUnavailableError()
-
-        else:
-            if client_token:
-                check_client_app_permissions(
-                    client_token, dataset, domain, security_scopes
-                )
-            else:
-                raise HTTPException(
-                    status_code=HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-                )
-
-
-@deprecated(reason="Permission matching is being unified")
-def check_client_app_permissions(client_token, dataset, domain, security_scopes):
-    try:
-        token_scopes = extract_client_app_scopes(client_token)
-        endpoint_scopes = security_scopes.scopes
-        match_permissions(token_scopes, endpoint_scopes, domain, dataset)
-    except SchemaNotFoundError:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
-        )
-
-
-@deprecated(reason="Permission matching is being unified")
-def check_user_permissions(dataset, domain, security_scopes, user_token):
-    token_scopes = extract_user_groups(user_token)
-    endpoint_scopes = security_scopes.scopes
-    match_user_permissions(token_scopes, endpoint_scopes, domain, dataset)
-
-
-@deprecated(reason="Permission matching is being unified")
-def extract_user_groups(token: str) -> List[str]:
-    try:
-        payload = get_validated_token_payload(token)
-        return payload["cognito:groups"]
-    except (InvalidTokenError, KeyError):
-        AppLogger.warning(f"Invalid token format token={token}")
-        raise AuthorisationError(
-            "Not enough permissions or access token is missing/invalid"
-        )
-
-
-@deprecated(reason="Permission matching is being unified")
-def extract_client_app_scopes(token: str) -> List[str]:
-    try:
-        payload = get_validated_token_payload(token)
-        scopes = payload["scope"].split()
-        return [scope.split(COGNITO_RESOURCE_SERVER_ID + "/", 1)[1] for scope in scopes]
-    except (InvalidTokenError, KeyError):
-        AppLogger.warning(f"Invalid token format token={token}")
-        raise AuthorisationError(
-            "Not enough permissions or access token is missing/invalid"
-        )
-
-
-@deprecated(reason="Permission matching is being unified")
-def match_user_permissions(
-    token_scopes: list,
-    endpoint_scopes: list,
-    domain: Optional[str] = None,
-    dataset: Optional[str] = None,
-):
-    if domain and dataset:
-        allowed_permissions = [
-            f"{permission}/{domain}/{dataset}" for permission in endpoint_scopes
-        ]
-        if not any(
-            [
-                allowed_permission in token_scopes
-                for allowed_permission in allowed_permissions
-            ]
-        ):
-            raise AuthorisationError("Not enough permissions to access endpoint")
-    elif (not domain and dataset) or (domain and not dataset):
         raise AuthorisationError("Not enough permissions to access endpoint")

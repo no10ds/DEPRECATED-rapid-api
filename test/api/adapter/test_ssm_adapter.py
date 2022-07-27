@@ -34,7 +34,7 @@ class TestSSMAdapter:
         )
         with pytest.raises(
             AWSServiceError,
-            match="There was an unexpected error when retrieving the paramter 'name'",
+            match="There was an unexpected error when retrieving the parameter 'name'",
         ):
             self.ssm_adapter.get_parameter("name")
 

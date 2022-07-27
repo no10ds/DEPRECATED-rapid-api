@@ -42,18 +42,11 @@ class TestLoginPage(BaseClientTest):
 
 
 class TestUploadPage(BaseClientTest):
-    @patch("api.entry.extract_user_groups")
     @patch.object(Jinja2Templates, "TemplateResponse")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_templates_response, mock_extract_users
+        self, mock_templates_response
     ):
         login_template_filename = "upload.html"
-        mock_extract_users.return_value = [
-            "WRITE/domain1/dataset1",
-            "WRITE/domain2/dataset2",
-            "USER_ADMIN",
-            "READ/domain2/dataset2",
-        ]
 
         response = self.client.get("/upload", cookies={"rat": "some_token"})
 
@@ -61,7 +54,7 @@ class TestUploadPage(BaseClientTest):
             name=login_template_filename,
             context={
                 "request": ANY,
-                "datasets": ["domain1/dataset1", "domain2/dataset2"],
+                "datasets": None,
             },
         )
 

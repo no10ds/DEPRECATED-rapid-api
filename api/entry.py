@@ -8,10 +8,9 @@ from starlette.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 
 from api.application.services.authorisation.authorisation_service import (
-    protect_dataset_endpoint,
     user_logged_in,
     RAPID_ACCESS_TOKEN,
-    extract_user_groups,
+    secure_dataset_endpoint,
 )
 from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
@@ -77,12 +76,11 @@ def login(request: Request):
 
 
 @app.get(
-    "/upload", include_in_schema=False, dependencies=[Depends(protect_dataset_endpoint)]
+    "/upload", include_in_schema=False, dependencies=[Depends(secure_dataset_endpoint)]
 )
 def upload(request: Request):
-    datasets = _get_authorised_datasets(request)
     return templates.TemplateResponse(
-        name="upload.html", context={"request": request, "datasets": datasets}
+        name="upload.html", context={"request": request, "datasets": None}
     )
 
 
@@ -91,19 +89,3 @@ def logout():
     redirect_response = RedirectResponse(url="/login", status_code=HTTP_302_FOUND)
     redirect_response.delete_cookie(RAPID_ACCESS_TOKEN)
     return redirect_response
-
-
-def _get_authorised_datasets(request):
-    scope_prefix = "WRITE/"
-    user_groups = extract_user_groups(request.cookies.get(RAPID_ACCESS_TOKEN))
-    datasets = _build_list_of_datasets_from_write_permissions(scope_prefix, user_groups)
-    datasets.sort()
-    return datasets
-
-
-def _build_list_of_datasets_from_write_permissions(scope_prefix, user_groups):
-    return [
-        user_group.replace(scope_prefix, "")
-        for user_group in user_groups
-        if scope_prefix in user_group
-    ]

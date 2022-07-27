@@ -52,19 +52,19 @@ def mock_list_schemas_response(
     }
 
 
-def mock_protect_dataset_endpoint():
+def mock_secure_dataset_endpoint():
     """Naming is very important with dependency overrides; unfortunately we cannot just return a Mock object"""
 
-    def protect_dataset_endpoint():
+    def secure_dataset_endpoint():
         pass
 
-    return protect_dataset_endpoint
+    return secure_dataset_endpoint
 
 
-def mock_protect_endpoint():
+def mock_secure_endpoint():
     """Naming is very important with dependency overrides; unfortunately we cannot just return a Mock object"""
 
-    def protect_endpoint():
+    def secure_endpoint():
         pass
 
-    return protect_endpoint
+    return secure_endpoint

@@ -9,8 +9,8 @@ from starlette.responses import PlainTextResponse
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.authorisation.authorisation_service import (
-    protect_dataset_endpoint,
-    protect_endpoint,
+    secure_dataset_endpoint,
+    secure_endpoint,
 )
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
@@ -45,7 +45,7 @@ datasets_router = APIRouter(
 
 @datasets_router.post(
     "",
-    dependencies=[Security(protect_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_200_OK,
 )
 async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
@@ -76,7 +76,7 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
 
 @datasets_router.get(
     "/{domain}/{dataset}/info",
-    dependencies=[Security(protect_dataset_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
 async def get_dataset_info(domain: str, dataset: str):
     """
@@ -116,7 +116,7 @@ async def get_dataset_info(domain: str, dataset: str):
 
 @datasets_router.get(
     "/{domain}/{dataset}/files",
-    dependencies=[Security(protect_dataset_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
 async def list_raw_files(domain: str, dataset: str):
     """
@@ -159,7 +159,7 @@ async def list_raw_files(domain: str, dataset: str):
 
 @datasets_router.delete(
     "/{domain}/{dataset}/{filename}",
-    dependencies=[Security(protect_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 async def delete_data_file(
     domain: str, dataset: str, filename: str, response: Response
@@ -209,7 +209,7 @@ async def delete_data_file(
 @datasets_router.post(
     "/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(protect_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 async def upload_data(
     domain: str, dataset: str, response: Response, file: UploadFile = File(...)
@@ -273,7 +273,7 @@ async def upload_data(
 
 @datasets_router.post(
     "/{domain}/{dataset}/query",
-    dependencies=[Security(protect_dataset_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
     responses={
         200: {
             "content": {
