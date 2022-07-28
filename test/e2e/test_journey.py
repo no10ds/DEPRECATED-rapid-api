@@ -42,7 +42,7 @@ class BaseJourneyTest(ABC):
 
 class TestUnauthenticatedJourneys(BaseJourneyTest):
     def test_http_request_is_redirected_to_https(self):
-        response = requests.get(f"https://{DOMAIN_NAME}status")
+        response = requests.get(f"https://{DOMAIN_NAME}/status")
         assert f"https://{DOMAIN_NAME}" in response.url
 
     def test_status_always_accessible(self):
@@ -50,20 +50,20 @@ class TestUnauthenticatedJourneys(BaseJourneyTest):
         response = requests.get(api_url)
         assert response.status_code == 200
 
-    def test_query_is_unauthorised_when_no_token_provided(self):
+    def test_query_is_forbidden_when_no_token_provided(self):
         url = self.query_dataset_url("mydomain", "unknowndataset")
         response = requests.post(url)
-        assert response.status_code == 401
+        assert response.status_code == 403
 
-    def test_upload_is_unauthorised_when_no_token_provided(self):
+    def test_upload_is_forbidden_when_no_token_provided(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
         url = self.upload_dataset_url("test_e2e", "upload")
         response = requests.post(url, files=files)
-        assert response.status_code == 401
+        assert response.status_code == 403
 
-    def test_list_is_unauthorised_when_no_token_provided(self):
+    def test_list_is_forbidden_when_no_token_provided(self):
         response = requests.post(self.datasets_url)
-        assert response.status_code == 401
+        assert response.status_code == 403
 
 
 class TestUnauthorisedJourney(BaseJourneyTest):
