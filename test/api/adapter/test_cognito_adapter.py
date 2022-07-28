@@ -77,10 +77,7 @@ class TestCognitoAdapterClientMethods:
                 "ALLOW_USER_SRP_AUTH",
             ],
             AllowedOAuthFlows=["client_credentials"],
-            AllowedOAuthScopes=[
-                f"https://{DOMAIN_NAME}/WRITE_PUBLIC",
-                f"https://{DOMAIN_NAME}/READ_PRIVATE",
-            ],
+            AllowedOAuthScopes=[f"https://{DOMAIN_NAME}/CLIENT_APP"],
             AllowedOAuthFlowsUserPoolClient=True,
         )
         assert actual_response == expected_response

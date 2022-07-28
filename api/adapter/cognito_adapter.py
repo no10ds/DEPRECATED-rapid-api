@@ -26,7 +26,7 @@ class CognitoAdapter:
 
     def create_client_app(self, client_request: ClientRequest):
         try:
-            cognito_scopes = self._build_cognito_scopes(client_request)
+            cognito_scopes = self._build_default_scopes()
 
             cognito_response = self.cognito_client.create_user_pool_client(
                 UserPoolId=COGNITO_USER_POOL_ID,
@@ -67,11 +67,8 @@ class CognitoAdapter:
     def _generate_user_group(self, domain: str, dataset: str) -> str:
         return f"WRITE/{domain}/{dataset}"
 
-    def _build_cognito_scopes(self, client_request):
-        return [
-            f"{COGNITO_RESOURCE_SERVER_ID}/{scope}"
-            for scope in client_request.get_permissions()
-        ]
+    def _build_default_scopes(self):
+        return [f"{COGNITO_RESOURCE_SERVER_ID}/CLIENT_APP"]
 
     def _handle_client_error(self, client_request, error):
         if error.response["Error"]["Code"] == "ScopeDoesNotExistException":
