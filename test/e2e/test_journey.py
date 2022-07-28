@@ -3,6 +3,7 @@ from abc import ABC
 from http import HTTPStatus
 
 import boto3
+import pytest
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -40,14 +41,17 @@ class BaseJourneyTest(ABC):
     def delete_data_url(self, domain: str, dataset: str, filename: str) -> str:
         return f"{self.datasets_url}/{domain}/{dataset}/{filename}"
 
+    def status_url(self) -> str:
+        return f"{self.base_url}/status"
+
 
 class TestUnauthenticatedJourneys(BaseJourneyTest):
     def test_http_request_is_redirected_to_https(self):
-        response = requests.get(f"https://{DOMAIN_NAME}/status")
+        response = requests.get(self.status_url())
         assert f"https://{DOMAIN_NAME}" in response.url
 
     def test_status_always_accessible(self):
-        api_url = f"{self.base_url}/status"
+        api_url = self.status_url()
         response = requests.get(api_url)
         assert response.status_code == HTTPStatus.OK
 
@@ -105,17 +109,22 @@ class TestUnauthorisedJourney(BaseJourneyTest):
     def test_query_existing_dataset_when_not_authorised_to_read(self):
         url = self.query_dataset_url("test_e2e", "query")
         response = requests.post(url, headers=self.generate_auth_headers())
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
 
     def test_existing_dataset_info_when_not_authorised_to_read(self):
         url = self.info_dataset_url("test_e2e", "query")
         response = requests.get(url, headers=self.generate_auth_headers())
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
 
+    @pytest.mark.skip(
+        "This behaviour has now changed. the WRITE_ALL permission would now allow the user to delete ANY dataset"
+    )
     def test_delete_file_when_not_authorised_to_delete(self):
-        url = self.delete_data_url("test_e2e", "delete", "test_journey_file.csv")
+        url = self.delete_data_url(
+            domain="test_e2e", dataset="delete", filename="test_journey_file.csv"
+        )
         response = requests.delete(url, headers=self.generate_auth_headers())
-        assert response.status_code == 401
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
 
 
 class TestAuthenticatedJourneys(BaseJourneyTest):
@@ -143,7 +152,7 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
             self.token_url, auth=auth, headers=headers, json=payload
         )
 
-        if response.status_code != 200:
+        if response.status_code != HTTPStatus.OK:
             raise AuthenticationFailedError(f"{response.status_code}")
 
         self.token = json.loads(response.content.decode(CONTENT_ENCODING))[
@@ -192,13 +201,13 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
     def test_query_non_existing_dataset_when_authorised(self):
         url = self.query_dataset_url("mydomain", "unknowndataset")
         response = requests.post(url, headers=self.generate_auth_headers())
-        assert response.status_code == 400
+        assert response.status_code == HTTPStatus.BAD_REQUEST
 
     def test_upload_when_authorised(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
         url = self.upload_dataset_url("test_e2e", "upload")
         response = requests.post(url, headers=self.generate_auth_headers(), files=files)
-        assert response.status_code == 201
+        assert response.status_code == HTTPStatus.CREATED
 
     def test_list_when_authorised(self):
         response = requests.post(
@@ -206,12 +215,12 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
             headers=self.generate_auth_headers(),
             json={"tags": {"test": "e2e"}},
         )
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
 
     def test_query_existing_dataset_when_authorised(self):
         url = self.query_dataset_url(domain="test_e2e", dataset="query")
         response = requests.post(url, headers=(self.generate_auth_headers()))
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
 
     def test_query_existing_dataset_as_csv_when_authorised(self):
         url = self.query_dataset_url(domain="test_e2e", dataset="query")
@@ -220,37 +229,41 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
             "Authorization": "Bearer " + self.token,
         }
         response = requests.post(url, headers=headers)
-        assert response.status_code == 200
-
+        assert response.status_code == HTTPStatus.OK
         assert (
             response.text
-            == '"","year","month","case_type","region","offence_group","remand_status","value","source"\n'
-            + '0,"2017","7","3. Committed for sentence","North West","05: Criminal damage and arson","bail","89","XHIBIT"\n'
-            + '1,"2017","7","3. Committed for sentence","North West","04: Theft offences","unknown","167","XHIBIT"\n'
+            == '"","year","month","destination","arrival","type","status"\n'
+            + '0,"2017","7","Leeds","London","regular","completed"\n'
+            + '1,"2017","7","Darlington","Durham","regular","completed"\n'
         )
 
     def test_get_existing_dataset_info_when_authorised(self):
         url = self.info_dataset_url(domain="test_e2e", dataset="query")
         response = requests.get(url, headers=(self.generate_auth_headers()))
-        assert response.status_code == 200
+        assert response.status_code == HTTPStatus.OK
 
     def test_fails_to_query_when_authorised_and_sql_injection_attempted(self):
         url = self.query_dataset_url(domain="test_e2e", dataset="query")
         body = {"filter": "';DROP TABLE test_e2e--"}
         response = requests.post(url, headers=(self.generate_auth_headers()), json=body)
-        assert response.status_code == 403
+        assert response.status_code == HTTPStatus.FORBIDDEN
 
     def test_delete_existing_data_when_authorised(self):
+        # Get available datasets
         url = self.list_dataset_files_url(domain="test_e2e", dataset="delete")
-        response1 = requests.get(url, headers=(self.generate_auth_headers()))
-        assert response1.status_code == 200
+        available_datasets_response = requests.get(
+            url, headers=(self.generate_auth_headers())
+        )
+        assert available_datasets_response.status_code == HTTPStatus.OK
 
-        response_list = json.loads(response1.text)
+        response_list = json.loads(available_datasets_response.text)
         assert self.filename in response_list
 
+        # Delete chosen dataset
+        first_dataset_file = response_list[0]
         url2 = self.delete_data_url(
-            domain="test_e2e", dataset="delete", filename=response_list[0]
+            domain="test_e2e", dataset="delete", filename=first_dataset_file
         )
         response2 = requests.delete(url2, headers=(self.generate_auth_headers()))
 
-        assert response2.status_code == 204
+        assert response2.status_code == HTTPStatus.NO_CONTENT
