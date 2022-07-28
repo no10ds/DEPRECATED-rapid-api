@@ -82,6 +82,26 @@ class TestCognitoAdapterClientMethods:
         )
         assert actual_response == expected_response
 
+    def test_create_client_app_with_default_allowed_oauth_scope(self):
+        client_request = ClientRequest(
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
+        )
+        self.cognito_adapter.create_client_app(client_request)
+
+        self.cognito_boto_client.create_user_pool_client.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID,
+            ClientName="my_client",
+            GenerateSecret=True,
+            ExplicitAuthFlows=[
+                "ALLOW_REFRESH_TOKEN_AUTH",
+                "ALLOW_CUSTOM_AUTH",
+                "ALLOW_USER_SRP_AUTH",
+            ],
+            AllowedOAuthFlows=["client_credentials"],
+            AllowedOAuthScopes=[f"https://{DOMAIN_NAME}/CLIENT_APP"],
+            AllowedOAuthFlowsUserPoolClient=True,
+        )
+
     def test_delete_client_app(self):
         self.cognito_adapter.delete_client_app("client_id")
         self.cognito_boto_client.delete_user_pool_client.assert_called_once_with(
