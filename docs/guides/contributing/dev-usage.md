@@ -47,7 +47,7 @@ extend this in the future.
 | Flow       | Token        | Auth method | Permission example                                 | Notes                                                             |
 |------------|--------------|-------------|----------------------------------------------------|-------------------------------------------------------------------|
 | User       | User Token   | User groups | `WRITE/domain1/dataset1`, `WRITE/domain2/dataset1` | No specificity at the sensitivity level, only domain and dataset  |
-| Client app | Client Token | Scopes      | `WRITE_PUBLIC`, `READ_PRIVATE`                   | No specificity at the domain or dataset level, only sensitivity   |
+| Client app | Client Token | Permissions | `WRITE_PUBLIC`, `READ_PRIVATE`                   | No specificity at the domain or dataset level, only sensitivity   |
 
 The "action" component of a permission (`READ`, `WRITE`, etc.) is used only in the matching logic when a request is made
 and compared to the specified scope assigned to the endpoint being accessed.

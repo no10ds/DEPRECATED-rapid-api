@@ -58,9 +58,10 @@ To do this:
 
 ### Granting client apps permissions
 
-When creating a client app via the `/client` endpoint, scopes can be granted.
+When creating a client app via the `/client` endpoint, permissions can be granted.
 
-To update these, currently an admin will need to go to Cognito user pool in the AWS console and manually grant or revoke the relevant scopes to the client app.
+To update these, currently an admin will need to go to Cognito user pool in the AWS console and manually grant or revoke
+the relevant scopes to the client app.
 
 ## Authenticating and interacting with the application
 
@@ -147,7 +148,7 @@ Schema in json format in the response body:
 }
 ```
 
-### Accepted scopes
+### Accepted permissions
 
 In order to use this endpoint you don't need any scope.
 
@@ -220,7 +221,7 @@ Example schema JSON body:
 
 None
 
-### Accepted scopes
+### Accepted permissions
 
 In order to use this endpoint you need the `DATA_ADMIN` scope.
 
@@ -252,9 +253,9 @@ If successful returns file name with a timestamp included, e.g.:
 }
 ```
 
-### Accepted scopes
+### Accepted permissions
 
-In order to use this endpoint you need a relevant `WRITE` scope that matches the dataset sensitivity level,
+In order to use this endpoint you need a relevant `WRITE` permission that matches the dataset sensitivity level,
 e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
 
 ### Examples
@@ -352,7 +353,7 @@ If no dataset exists or none that matches the query, you will get an empty respo
 []
 ```
 
-### Accepted scopes
+### Accepted permissions
 
 You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
 a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
@@ -490,7 +491,7 @@ Schema in json format in the response body:
 }
 ```
 
-### Accepted scopes
+### Accepted permissions
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
 a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
@@ -530,7 +531,7 @@ List of raw files in json format in the response body:
 ]
 ```
 
-### Accepted scopes
+### Accepted permissions
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
 a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
@@ -560,8 +561,7 @@ When a valid file in the domain/dataset is deleted success message will be displ
 | `dataset`  | URL parameter                           | `train_journeys`                | dataset title                 |
 | `filename` | URL parameter                           | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
 
-
-### Accepted scopes
+### Accepted permissions
 
 In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
@@ -680,7 +680,7 @@ To get a CSV response, the `Accept` Header has to be set to `text/csv`. The resp
 3,"value5","value6"
 ```
 
-### Accepted scopes
+### Accepted permissions
 
 In order to use this endpoint you need a `READ` scope with appropriate sensitivity level permission,
 e.g.: `READ_PRIVATE`.
@@ -747,14 +747,14 @@ Use this endpoint to add a new client and generate their client credentials.
 
 ### Inputs
 
-| Parameters       | Usage               | Example values   | Definition                                                           |
-|------------------|---------------------|------------------|----------------------------------------------------------------------|
-| `client details` | JSON Request Body   | See below        | The name of the client application to onboard and the granted scopes |
+| Parameters       | Usage               | Example values   | Definition                                                                |
+|------------------|---------------------|------------------|---------------------------------------------------------------------------|
+| `client details` | JSON Request Body   | See below        | The name of the client application to onboard and the granted permissions |
 
 ```json
 {
   "client_name": "department_for_education",
-  "scopes": [
+  "permissions": [
     "READ_ALL",
     "WRITE_PUBLIC"
   ]
@@ -770,9 +770,9 @@ The client name must adhere to the following conditions:
 - Can contain any symbol of `. - _ @`
 - Must be between 3 and 128 characters
 
-#### Scopes you can grant to the client
+#### Permissions you can grant to the client
 
-Depending on what permission you would like to grant the onboarding client, the relevant scope(s) must be assigned.
+Depending on what permission you would like to grant the onboarding client, the relevant permission(s) must be assigned.
 Available choices are:
 
 - `READ_ALL` - allow client to read any dataset
@@ -795,7 +795,7 @@ Once the new client has been created, the following information is returned in t
 ```json
 {
   "client_name": "department_for_education",
-  "scopes": [
+  "permissions": [
     "READ_ALL",
     "WRITE_PUBLIC"
   ],
@@ -804,16 +804,17 @@ Once the new client has been created, the following information is returned in t
 }
 ```
 
-### Accepted scopes
+### Accepted permissions
 
-In order to use this endpoint you need the `USER_ADMIN` scope
+In order to use this endpoint you need the `USER_ADMIN` permission
 
 
 ## Create protected domain
 
 Protected domains can be created to restrict access permissions to specific domains
 
-Use this endpoint to create a new protected domain. After this you can create clients with the scope for this domain and create `PROTECTED` datasets within this domain.
+Use this endpoint to create a new protected domain. After this you can create clients with the permission for this
+domain and create `PROTECTED` datasets within this domain.
 
 ### General structure
 
@@ -838,7 +839,7 @@ The domain name must adhere to the following conditions:
 
 None
 
-### Accepted scopes
+### Accepted permission
 
 In order to use this endpoint you need the `DATA_ADMIN` scope
 
@@ -851,7 +852,6 @@ Use this endpoint to list the protected domains that currently exist.
 
 `GET /protected_domains`
 
-
 ### Outputs
 
 List of protected scopes in json format in the response body:
@@ -862,10 +862,10 @@ List of protected scopes in json format in the response body:
   "department"
 ]
 ```
-### Accepted scopes
+
+### Accepted permissions
 
 In order to use this endpoint you need the `DATA_ADMIN` scope
-
 
 # UI usage
 

@@ -269,7 +269,7 @@ Now the release pipeline will run automatically, build the image off that versio
 ### How to add security to an endpoint
 
 We are using the FastApi Security package. Security takes dependencies and scopes as arguments. In our case the
-dependency are the ```protect_endpoint```, ```protect_dataset_endpoint``` methods, and one or more of the following
+dependency are the ```secure_endpoint```, ```secure_dataset_endpoint``` methods, and one or more of the following
 action scopes:
 
 - `READ`
@@ -278,43 +278,44 @@ action scopes:
 - `USER_ADMIN`
 
 For instance, if `WRITE` scope is used, that means that whoever is trying to access the endpoint needs to have any
-of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE/<domain>/<dataset>` scopes listed in their permissions or be part of
+of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE/<domain>/<dataset>` listed in their permissions or be part of
 that user group, where sensitivity level is the sensitivity level of the dataset being modified. Otherwise, the requests
 fails.
 
 > ⚠️ ️NOTE: Higher sensitivity levels imply lower sensitivity levels.
 
-To add security to the endpoint, add specify the `dependencies=` keyword argument and specify the scopes in the endpoint
+To add security to the endpoint, add specify the `dependencies=` keyword argument and specify the permissions in the
+endpoint
 annotation as listed in the examples below:
 
-* For endpoints **without** ```domain``` and ```dataset``` in the url path, use the dependency ```protected_endpoint```:
+* For endpoints **without** ```domain``` and ```dataset``` in the url path, use the dependency ```secure_endpoint```:
 
 ```
-@app.post("/schema", dependencies=[Security(protect_endpoint, scopes=[Action.READ.value])])
+@app.post("/schema", dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])])
 ```
 
 or
 
 * For endpoints **with** ```domain``` and ```dataset``` as part of the url path, use the
-  dependency ```protected_dataset_endpoint```:
+  dependency ```secure_dataset_endpoint```:
 
 ```
 @app.get("/{domain}/{dataset}/info",
-                     dependencies=[Security(protect_dataset_endpoint, scopes=[Action.READ.value])])
+                     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])])
 ```
 
 ### How to add security to the endpoint - Front End Layer
 
 Some pages in the frontend layer are only accessible after the user has authenticated, e.g.: the `/upload` page. In
-order to protect them, the dependency functions ```protect_endpoint``` and ```protect_dataset_endpoint``` should be
+order to protect them, the dependency functions ```secure_endpoint``` and ```secure_dataset_endpoint``` should be
 included in the Fast API endpoint annotation as described in the example below:
 
 ```
 @app.get("/upload", include_in_schema=False,
-         dependencies=[Depends(protect_dataset_endpoint)])
+         dependencies=[Depends(secure_dataset_endpoint)])
 ```
 
-Note that ```protect_dataset_endpoint``` dependency function must be used when ```domain``` and ```dataset``` from is
+Note that ```secure_dataset_endpoint``` dependency function must be used when ```domain``` and ```dataset``` is
 present in the url path and should be taken in consideration to determine the permission to access.
 
 When using the frontend layer instead of the client app token, the user token is used. This token contains Cognito user
