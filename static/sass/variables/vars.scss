@@ -1,23 +1,23 @@
 :root {
-    --success-text: #0dc988;
-    --error-text: #c90d4e;
+// Colors
+  --success-text: #0dc988;
+  --error-text: #c90d4e;
 
-    --pink: #eb2f64;
-    --light-pink: #FF3366;
-    --dark-pink: #BA265D;
+  --pink: #eb2f64;
+  --light-pink: #FF3366;
+  --dark-pink: #BA265D;
 
-    --light-grey-1: #faf9f9;
-    --light-grey-2: #f4f2f2;
-    --light-grey-3: #f0eeee;
-    --light-grey-4: #ccc;
+  --light-grey-1: #faf9f9;
+  --light-grey-2: #f4f2f2;
+  --light-grey-3: #f0eeee;
+  --light-grey-4: #ccc;
 
-    --dark-grey-1: #333;
-    --dark-grey-2: #777;
-    --dark-grey-3: #999;
+  --dark-grey-1: #333;
+  --dark-grey-2: #777;
+  --dark-grey-3: #999;
 
-    --dark-shadow: 0 1rem 1rem rgba(0,0,0,.3);
-    --light-shadow: 0 1rem 1rem rgba(0,0,0,0.1);
-
-
-    --grey-border-bottom-1: 1px solid var(--light-grey-2);
+// Border shadows
+  --dark-shadow: 0 1rem 1rem rgba(0,0,0,.3);
+  --light-shadow: 0 1rem 1rem rgba(0,0,0,.1);
+  --grey-border-bottom-1: 1px solid var(--light-grey-2);
 }
