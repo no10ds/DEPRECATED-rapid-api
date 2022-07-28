@@ -112,15 +112,6 @@ Example:
 }
 ```
 
-*User Permissions*
-
-User groups should be comprised of the domain, dataset and permission, which is already implemented. Versions should not
-be included to avoid an explosion of user groups and reaching
-the [limit of groups](https://docs.aws.amazon.com/cognito/latest/developerguide/limits.html) per user in AWS Cognito.
-
-**Example:** All versions of the `land/train_journeys` will be accessed by a user with `WRITE/land/train_journeys`
-permission
-
 ## Infrastructure Versioning
 
 Currently, we are only versioning the service by making releases on Github and tagging the image in ECR accordingly.

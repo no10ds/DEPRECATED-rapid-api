@@ -25,9 +25,9 @@ async def create_client(client_request: ClientRequest):
     """
     ### Inputs
 
-    | Parameters       | Usage               | Example values   | Definition                                                           |
-    |------------------|---------------------|------------------|----------------------------------------------------------------------|
-    | `client details` | JSON Request Body   | See below        | The name of the client application to onboard and the granted scopes |
+    | Parameters       | Usage               | Example values   | Definition                                                                |
+    |------------------|---------------------|------------------|---------------------------------------------------------------------------|
+    | `client details` | JSON Request Body   | See below        | The name of the client application to onboard and the granted permissions |
 
     ```json
     {
@@ -48,7 +48,7 @@ async def create_client(client_request: ClientRequest):
     - Can contain any symbol of `. - _ @`
     - Must be between 3 and 128 characters
 
-    #### Scopes you can grant to the client
+    #### Permissions you can grant to the client
 
     Depending on what permission you would like to grant the onboarding client, the relevant permission(s) must be assigned.
     Available choices are:

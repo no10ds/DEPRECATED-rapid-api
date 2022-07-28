@@ -21,7 +21,7 @@ to clarify the overarching structure and where to look when things go wrong.
 1. Application service spins-up
     1. No domains or datasets exist
     2. No user groups exist
-2. Client app registered and given desired scopes
+2. Client app registered and given desired permissions
 3. Client app uploads schema to define the first dataset
     1. _User_ group created in Cognito, in anticipation of granting users access to upload data to the dataset
 4. User registered and assigned to the desired user groups

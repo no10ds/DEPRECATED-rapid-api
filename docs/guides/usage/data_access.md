@@ -2,8 +2,6 @@
 
 There are various access levels that restrict permissions to datasets.
 
-> ⚠️ Note: This just covers the programatic 'client' access. For UI users access is granted per dataset.
-
 ## Sensitivity
 
 This is the mechanism by which we assign an access level to a dataset. It must be specified when the schema is created.

@@ -15,16 +15,20 @@ Overarching API functionality includes:
 
 ## Application usage overview
 
-The first step is to create a dataset by uploading a schema that describes the metadata including e.g.: data owner, tags, partition columns, data types, etc..
+The first step is to create a dataset by uploading a schema that describes the metadata including e.g.: data owner,
+tags, partition columns, data types, etc..
 
-Then the data (currently only `.csv` files are supported) can be uploaded to the dataset. During the upload process, the service checks if the data
-matches the previously uploaded dataset schema definition.
+Then the data (currently only `.csv` files are supported) can be uploaded to the dataset. During the upload process, the
+service checks if the data matches the previously uploaded dataset schema definition.
 
-During upload, a data 'crawler' is started which looks at the persisted data and infers some metadata about it. Once the crawler
-has finished running (usually around 4-5 minutes) the data can be queried.
+During upload, a data 'crawler' is started which looks at the persisted data and infers some metadata about it. Once the
+crawler has finished running (usually around 4-5 minutes) the data can be queried.
 
 The application can be used by both human and programmatic clients (see more below)
-- When accessing the REST API as a client application, different actions require the client to have different permissions e.g.:`READ`, `WRITE`, `DATA_ADMIN`, etc., and different dataset sensitivity level permissions e.g.: `PUBLIC`, `PRIVATE`, etc.
+
+- When accessing the REST API as a client application, different actions require the client to have different
+  permissions e.g.:`READ`, `WRITE`, `DATA_ADMIN`, etc., and different dataset sensitivity level permissions
+  e.g.: `PUBLIC`, `PRIVATE`, etc.
 - When accessing the UI as a human user, permissions are granted by user groups e.g.: `WRITE/trains/completed_journeys`
 
 ## Data upload and query flows
@@ -42,17 +46,21 @@ The application can be used by both human and programmatic clients (see more bel
 ## Human Users
 
 ### Granting users permissions
-If human users are involved in the process then they should be given permission to each dataset they need to upload data to.
+
+If human users are involved in the process then they should be given permission to each dataset they need to upload data
+to.
 
 This step is done via the AWS console in the Cognito section.
 
 To do this:
+
 1. Navigate to the corresponding Cognito user pool of this application (check your config file for the user pool name)
 2. Add the desired users to the dataset user groups.
-   1. Datasets user groups should follow the naming convention ```WRITE/<domain>/<dataset>```.
-   2. e.g.: For the domain ```trains``` and dataset ```completed_journeys``` the user group should be ```WRITE/trains/completed_journeys```.
-   3. Once a user is added to dataset user group as described above, the user will need to re-authenticate on the frontend so that their access token
-   reflects the new permissions.
+    1. Datasets user groups should follow the naming convention ```WRITE/<domain>/<dataset>```.
+    2. e.g.: For the domain ```trains``` and dataset ```completed_journeys``` the user group should
+       be ```WRITE/trains/completed_journeys```.
+    3. Once a user is added to dataset user group as described above, the user will need to re-authenticate on the
+       frontend so that their access token reflects the new permissions.
 
 ## Programmatic clients
 
@@ -60,8 +68,8 @@ To do this:
 
 When creating a client app via the `/client` endpoint, permissions can be granted.
 
-To update these, currently an admin will need to go to Cognito user pool in the AWS console and manually grant or revoke
-the relevant scopes to the client app.
+To update these, currently an admin will need to go to DynamoDB in the AWS console and manually grant or revoke the
+relevant permission to the client app (see [Adding/Deleting permissions](../contributing/application_context.md))
 
 ## Authenticating and interacting with the application
 
@@ -84,8 +92,8 @@ token.
 
 #### Via the UI
 
-Clicking 'Login' on the `/login` page will redirect the user to Cognito, whereupon they will
-be prompted to enter their username and password. This will grant them a temporary access token and redirect them to the `/upload` page.
+Clicking 'Login' on the `/login` page will redirect the user to Cognito, whereupon they will be prompted to enter their
+username and password. This will grant them a temporary access token and redirect them to the `/upload` page.
 
 # Endpoint usage
 
@@ -190,8 +198,12 @@ Example schema JSON body:
     "domain": "land",
     "dataset": "train_journeys",
     "sensitivity": "PUBLIC",
-    "key_value_tags": {"train": "passenger"},
-    "key_only_tags": ["land"],
+    "key_value_tags": {
+      "train": "passenger"
+    },
+    "key_only_tags": [
+      "land"
+    ],
     "owners": [
       {
         "name": "Stanley Shunpike",
@@ -289,7 +301,8 @@ This will return all datasets which have this associated tag, regardless of the 
 - dataset2 -> `school_type=public`
 - dataset3 -> `school_type=home_school`
 
-You can achieve the same by using `"key_value_tags"` property with null as a value: ` "key_value_tags": {"school_type": null}`
+You can achieve the same by using `"key_value_tags"` property with null as a
+value: ` "key_value_tags": {"school_type": null}`
 
 #### Filter by the tag key AND value e.g.: `"key_value_tags": {"school_type": "private"}`
 
@@ -418,7 +431,9 @@ Here we retrieve all datasets that have a tag with key `tag1` with any value, an
   "key_value_tags": {
     "tag2": "value2"
   },
-  "key_only_tags": ["tag1"]
+  "key_only_tags": [
+    "tag1"
+  ]
 }
 
 ```
@@ -563,7 +578,8 @@ When a valid file in the domain/dataset is deleted success message will be displ
 
 ### Accepted permissions
 
-In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
+In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level,
+e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -808,7 +824,6 @@ Once the new client has been created, the following information is returned in t
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
-
 ## Create protected domain
 
 Protected domains can be created to restrict access permissions to specific domains
@@ -826,7 +841,6 @@ domain and create `PROTECTED` datasets within this domain.
 |------------------|---------------------|------------------|----------------------------------------------------------------------|
 | `domain` | URL Parameter  | `land`        | The name of the protected domain |
 
-
 ### Domain
 
 The domain name must adhere to the following conditions:
@@ -842,7 +856,6 @@ None
 ### Accepted permission
 
 In order to use this endpoint you need the `DATA_ADMIN` scope
-
 
 ## List protected domains
 
@@ -890,7 +903,6 @@ None
 5) Click on "Log in"
 6) Wait to be redirected to ```/upload```
 
-
 ## Logout
 
 This endpoint is used to remove the user's credentials
@@ -924,13 +936,14 @@ This page is used to upload datasets into the rAPId service by authenticated use
 
 ### Needed credentials
 
-The user must be logged in as a Cognito user with WRITE permissions in order to use this page. The credentials will be read from the
-cookie "rat" that stands for "Rapid Access Token".
+The user must be logged in as a Cognito user with WRITE permissions in order to use this page. The credentials will be
+read from the cookie "rat" that stands for "Rapid Access Token".
 
-Note that the page will only show the dataset to which the user has "WRITE" permissions,
-regardless of the current status of these datasets.
+Note that the page will only show the dataset to which the user has "WRITE" permissions, regardless of the current
+status of these datasets.
 
-For example, if the user belongs to the groups "READ/dot/bikes", "WRITE/dot/cars" and "WRITE/dot/trucks" then they will be able to see the datasets "dot/cars" and "dot/trucks".
+For example, if the user belongs to the groups "READ/dot/bikes", "WRITE/dot/cars" and "WRITE/dot/trucks" then they will
+be able to see the datasets "dot/cars" and "dot/trucks".
 
 If the user is missing any permissions, they can be added via Cognito.
 
@@ -947,5 +960,6 @@ To upload dataset just follow these simple steps.
 ### Response
 
 When uploading the datasets there are 2 possible responses:
+
 - Success: A message with the uploaded filename will be shown to the user
 - Failure: An error message will be shown to the user
