@@ -78,5 +78,9 @@ class UserGroupDeletionError(Exception):
     pass
 
 
+class SubjectNotFoundError(Exception):
+    pass
+
+
 class ProtectedDomainDoesNotExistError(Exception):
     pass

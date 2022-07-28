@@ -7,7 +7,11 @@ from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
 from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
-from api.common.custom_exceptions import UserError, AWSServiceError
+from api.common.custom_exceptions import (
+    UserError,
+    AWSServiceError,
+    SubjectNotFoundError,
+)
 from api.domain.permission_item import PermissionItem
 
 
@@ -87,10 +91,12 @@ class DynamoDBAdapter(DatabaseAdapter):
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
             )
-        except (ClientError, IndexError):
+        except ClientError:
             raise AWSServiceError(
                 "Error fetching permissions, please contact your system administrator"
             )
+        except IndexError:
+            raise SubjectNotFoundError("Subject not found in database")
 
     def _get_permissions(self, subject_permissions: List[str]) -> Dict[str, Any]:
         try:

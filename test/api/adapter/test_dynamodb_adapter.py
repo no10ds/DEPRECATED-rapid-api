@@ -5,7 +5,11 @@ from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.common.custom_exceptions import AWSServiceError, UserError
+from api.common.custom_exceptions import (
+    AWSServiceError,
+    UserError,
+    SubjectNotFoundError,
+)
 
 
 class TestDynamoDBAdapter:
@@ -234,8 +238,8 @@ class TestDynamoDBAdapter:
         }
 
         with pytest.raises(
-            AWSServiceError,
-            match="Error fetching permissions, please contact your system administrator",
+            SubjectNotFoundError,
+            match="Subject not found in database",
         ):
             self.dynamo_adapter.get_permissions_for_subject(subject_id)
 
