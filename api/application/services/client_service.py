@@ -10,7 +10,7 @@ class ClientService:
         self.cognito_adapter = cognito_adapter
         self.dynamodb_adapter = dynamodb_adapter
 
-    def create_client(self, client_request: ClientRequest):
+    def create_client(self, client_request: ClientRequest) -> ClientResponse:
         self.dynamodb_adapter.validate_permissions(client_request.permissions)
         client_response = self._create_cognito_client(client_request)
 
@@ -18,7 +18,7 @@ class ClientService:
 
         return client_response
 
-    def _create_cognito_client(self, client_request):
+    def _create_cognito_client(self, client_request: ClientRequest) -> ClientResponse:
         cognito_response = self.cognito_adapter.create_client_app(client_request)
         cognito_client_info = cognito_response["UserPoolClient"]
         client_response = ClientResponse(
@@ -29,7 +29,9 @@ class ClientService:
         )
         return client_response
 
-    def _store_client_permissions(self, client_request, client_response):
+    def _store_client_permissions(
+        self, client_request: ClientRequest, client_response: ClientResponse
+    ):
         try:
             self.dynamodb_adapter.store_client_permissions(
                 client_response.client_id, client_request.permissions

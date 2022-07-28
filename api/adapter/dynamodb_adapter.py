@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import List
+from typing import List, Dict, Any
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
@@ -46,14 +46,16 @@ class DynamoDBAdapter(DatabaseAdapter):
     ):
         self.dynamodb_resource = dynamodb_table
 
-    def store_client_permissions(self, client_id: str, client_permissions: List[str]):
+    def store_client_permissions(
+        self, client_id: str, client_permissions: List[str]
+    ) -> None:
         self.store_subject_permissions(
             subject_type="CLIENT", subject_id=client_id, permissions=client_permissions
         )
 
     def store_subject_permissions(
         self, subject_type: str, subject_id: str, permissions: List[str]
-    ):
+    ) -> None:
         try:
             self.dynamodb_resource.put_item(
                 Item={
@@ -69,7 +71,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 "The client could not be created, please contact your system administrator"
             )
 
-    def validate_permissions(self, subject_permissions: List[str]):
+    def validate_permissions(self, subject_permissions: List[str]) -> None:
         permissions_response = self._get_permissions(subject_permissions)
         if not permissions_response["Count"] == len(subject_permissions):
             raise UserError("One or more of the provided permissions do not exist")
@@ -90,7 +92,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 "Error fetching permissions, please contact your system administrator"
             )
 
-    def _get_permissions(self, subject_permissions):
+    def _get_permissions(self, subject_permissions: List[str]) -> Dict[str, Any]:
         try:
             return self.dynamodb_resource.query(
                 KeyConditionExpression=Key("PK").eq("PERMISSION"),
