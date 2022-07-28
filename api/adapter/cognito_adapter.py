@@ -11,7 +11,6 @@ from api.common.config.auth import (
 from api.common.config.aws import AWS_REGION
 from api.common.custom_exceptions import (
     AWSServiceError,
-    UserError,
     UserGroupCreationError,
     UserGroupDeletionError,
 )
@@ -71,8 +70,6 @@ class CognitoAdapter:
         return [f"{COGNITO_RESOURCE_SERVER_ID}/CLIENT_APP"]
 
     def _handle_client_error(self, client_request, error):
-        if error.response["Error"]["Code"] == "ScopeDoesNotExistException":
-            raise UserError("One or more of the provided permissions does not exist")
         raise AWSServiceError(
             f"The client '{client_request.client_name}' could not be created"
         )

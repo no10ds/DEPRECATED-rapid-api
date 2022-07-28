@@ -59,3 +59,13 @@ class SensitivityLevel(BaseEnum):
     PUBLIC = "PUBLIC"
     PRIVATE = "PRIVATE"
     PROTECTED = "PROTECTED"
+
+
+class SubjectType(BaseEnum):
+    CLIENT = "CLIENT"
+    USER = "USER"
+
+
+class DatabaseItem(BaseEnum):
+    SUBJECT = "SUBJECT"
+    PERMISSION = "PERMISSION"

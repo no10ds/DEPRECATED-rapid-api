@@ -6,6 +6,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
+from api.common.config.auth import DatabaseItem, SubjectType
 from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
 from api.common.custom_exceptions import (
     UserError,
@@ -13,6 +14,7 @@ from api.common.custom_exceptions import (
     SubjectNotFoundError,
 )
 from api.domain.permission_item import PermissionItem
+from api.common.logger import AppLogger
 
 
 class DatabaseAdapter(ABC):
@@ -54,7 +56,9 @@ class DynamoDBAdapter(DatabaseAdapter):
         self, client_id: str, client_permissions: List[str]
     ) -> None:
         self.store_subject_permissions(
-            subject_type="CLIENT", subject_id=client_id, permissions=client_permissions
+            subject_type=SubjectType.CLIENT.value,
+            subject_id=client_id,
+            permissions=client_permissions,
         )
 
     def store_subject_permissions(
@@ -63,7 +67,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         try:
             self.dynamodb_resource.put_item(
                 Item={
-                    "PK": "SUBJECT",
+                    "PK": DatabaseItem.SUBJECT.value,
                     "SK": subject_id,
                     "Id": subject_id,
                     "Type": subject_type,
@@ -71,14 +75,15 @@ class DynamoDBAdapter(DatabaseAdapter):
                 },
             )
         except ClientError:
-            raise AWSServiceError(
-                "The client could not be created, please contact your system administrator"
-            )
+            self._handle_client_error("Error storing the client")
 
     def validate_permissions(self, subject_permissions: List[str]) -> None:
         permissions_response = self._get_permissions(subject_permissions)
         if not permissions_response["Count"] == len(subject_permissions):
-            raise UserError("One or more of the provided permissions do not exist")
+            AppLogger.info(f"Invalid permission in {subject_permissions}")
+            raise UserError(
+                "One or more of the provided permissions is invalid or duplicated"
+            )
 
     def get_all_permissions(self) -> List[PermissionItem]:
         raise NotImplementedError()
@@ -87,26 +92,33 @@ class DynamoDBAdapter(DatabaseAdapter):
         try:
             return list(
                 self.dynamodb_resource.query(
-                    KeyConditionExpression=Key("PK").eq("SUBJECT"),
+                    KeyConditionExpression=Key("PK").eq(DatabaseItem.SUBJECT.value),
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
             )
         except ClientError:
+            AppLogger.info(f"Error retrieving permissions for subject {subject_id}")
             raise AWSServiceError(
                 "Error fetching permissions, please contact your system administrator"
             )
         except IndexError:
+            AppLogger.info(f"Subject {subject_id} not found")
             raise SubjectNotFoundError("Subject not found in database")
 
     def _get_permissions(self, subject_permissions: List[str]) -> Dict[str, Any]:
         try:
             return self.dynamodb_resource.query(
-                KeyConditionExpression=Key("PK").eq("PERMISSION"),
+                KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
                 FilterExpression=reduce(
                     Or, ([Attr("Id").eq(value) for value in subject_permissions])
                 ),
             )
         except ClientError:
-            raise AWSServiceError(
-                "The client could not be created, please contact your system administrator"
-            )
+            self._handle_client_error("Error fetching permissions from the database")
+
+    @staticmethod
+    def _handle_client_error(message: str):
+        AppLogger.info(message)
+        raise AWSServiceError(
+            "The client could not be created, please contact your system administrator"
+        )

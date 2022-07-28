@@ -8,7 +8,6 @@ from api.common.config.auth import COGNITO_USER_POOL_ID
 from api.common.config.aws import DOMAIN_NAME
 from api.common.custom_exceptions import (
     AWSServiceError,
-    UserError,
     UserGroupCreationError,
     UserGroupDeletionError,
 )
@@ -107,21 +106,6 @@ class TestCognitoAdapterClientMethods:
         self.cognito_boto_client.delete_user_pool_client.assert_called_once_with(
             UserPoolId=COGNITO_USER_POOL_ID, ClientId="client_id"
         )
-
-    def test_raises_error_when_scope_does_not_exist_in_aws(self):
-        client_request = ClientRequest(
-            client_name="my_client", permissions=["NOT_VALID"]
-        )
-
-        self.cognito_boto_client.create_user_pool_client.side_effect = ClientError(
-            error_response={"Error": {"Code": "ScopeDoesNotExistException"}},
-            operation_name="CreateUserPoolClient",
-        )
-
-        with pytest.raises(
-            UserError, match="One or more of the provided permissions does not exist"
-        ):
-            self.cognito_adapter.create_client_app(client_request)
 
     def test_raises_error_when_the_client_fails_to_create_in_aws(self):
         client_request = ClientRequest(

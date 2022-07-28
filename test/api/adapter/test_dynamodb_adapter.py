@@ -196,7 +196,8 @@ class TestDynamoDBAdapter:
             "FAKE_ADMIN",
         ]
         with pytest.raises(
-            UserError, match="One or more of the provided permissions do not exist"
+            UserError,
+            match="One or more of the provided permissions is invalid or duplicated",
         ):
             self.dynamo_adapter.validate_permissions(test_user_permissions)
 
