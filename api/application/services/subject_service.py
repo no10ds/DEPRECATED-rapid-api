@@ -31,13 +31,12 @@ class SubjectService:
     def _create_cognito_client(self, client_request: ClientRequest) -> ClientResponse:
         cognito_response = self.cognito_adapter.create_client_app(client_request)
         cognito_client_info = cognito_response["UserPoolClient"]
-        client_response = ClientResponse(
+        return ClientResponse(
             client_name=client_request.client_name,
             client_id=cognito_client_info["ClientId"],
             client_secret=cognito_client_info["ClientSecret"],
             permissions=client_request.permissions,
         )
-        return client_response
 
     def _store_client_permissions(
         self, client_request: ClientRequest, client_response: ClientResponse

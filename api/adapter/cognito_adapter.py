@@ -1,6 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
-from typing import List
+from typing import List, Dict, Any
 
 from api.common.config.auth import (
     COGNITO_RESOURCE_SERVER_ID,
@@ -24,11 +24,11 @@ class CognitoAdapter:
     ):
         self.cognito_client = cognito_client
 
-    def create_client_app(self, client_request: ClientRequest):
+    def create_client_app(self, client_request: ClientRequest) -> Dict[str, Any]:
         try:
             cognito_scopes = self._build_default_scopes()
 
-            cognito_response = self.cognito_client.create_user_pool_client(
+            return self.cognito_client.create_user_pool_client(
                 UserPoolId=COGNITO_USER_POOL_ID,
                 ClientName=client_request.get_validated_client_name(),
                 GenerateSecret=True,
@@ -37,8 +37,6 @@ class CognitoAdapter:
                 AllowedOAuthScopes=cognito_scopes,
                 AllowedOAuthFlowsUserPoolClient=True,
             )
-
-            return cognito_response
         except ClientError as error:
             self._handle_client_error(client_request, error)
 
@@ -56,7 +54,7 @@ class CognitoAdapter:
         )
         return self._create_user_response(cognito_response, user_request.permissions)
 
-    def create_user_groups(self, domain: str, dataset: str):
+    def create_user_groups(self, domain: str, dataset: str) -> None:
         try:
             self.cognito_client.create_group(
                 GroupName=self._generate_user_group(domain, dataset),
@@ -67,7 +65,7 @@ class CognitoAdapter:
                 f"User group creation failed for domain=[{domain}] dataset=[{dataset}]"
             )
 
-    def delete_user_groups(self, domain: str, dataset: str):
+    def delete_user_groups(self, domain: str, dataset: str) -> None:
         try:
             self.cognito_client.delete_group(
                 GroupName=self._generate_user_group(domain, dataset),

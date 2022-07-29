@@ -6,7 +6,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
-from api.common.config.auth import DatabaseItem
+from api.common.config.auth import DatabaseItem, SubjectType
 from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
 from api.common.custom_exceptions import (
     UserError,
@@ -20,7 +20,7 @@ from api.common.logger import AppLogger
 class DatabaseAdapter(ABC):
     @abstractmethod
     def store_subject_permissions(
-        self, subject_type: str, subject_id: str, permissions: List[str]
+        self, subject_type: SubjectType, subject_id: str, permissions: List[str]
     ) -> None:
         pass
 
@@ -47,7 +47,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         self.dynamodb_resource = dynamodb_table
 
     def store_subject_permissions(
-        self, subject_type: str, subject_id: str, permissions: List[str]
+        self, subject_type: SubjectType, subject_id: str, permissions: List[str]
     ) -> None:
         try:
             self.dynamodb_resource.put_item(
@@ -55,7 +55,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                     "PK": DatabaseItem.SUBJECT.value,
                     "SK": subject_id,
                     "Id": subject_id,
-                    "Type": subject_type,
+                    "Type": subject_type.value,
                     "Permissions": set(permissions),
                 },
             )
@@ -90,19 +90,19 @@ class DynamoDBAdapter(DatabaseAdapter):
             AppLogger.info(f"Subject {subject_id} not found")
             raise SubjectNotFoundError("Subject not found in database")
 
-    def _get_permissions(self, subject_permissions: List[str]) -> Dict[str, Any]:
+    def _get_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:
             return self.dynamodb_resource.query(
                 KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
                 FilterExpression=reduce(
-                    Or, ([Attr("Id").eq(value) for value in subject_permissions])
+                    Or, ([Attr("Id").eq(value) for value in permissions])
                 ),
             )
         except ClientError:
             self._handle_client_error("Error fetching permissions from the database")
 
     @staticmethod
-    def _handle_client_error(message: str):
+    def _handle_client_error(message: str) -> None:
         AppLogger.info(message)
         raise AWSServiceError(
             "The client could not be created, please contact your system administrator"

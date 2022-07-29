@@ -5,6 +5,7 @@ from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
+from api.common.config.auth import SubjectType
 from api.common.custom_exceptions import (
     AWSServiceError,
     UserError,
@@ -47,7 +48,7 @@ class TestDynamoDBAdapter:
         self.test_permissions_table_name = "TEST PERMISSIONS"
         self.dynamo_adapter = DynamoDBAdapter(self.dynamo_boto_resource)
 
-    def test_create_subject(self):
+    def test_store_subject_permissions(self):
         client_id = "123456789"
         client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
         expected_client_permissions = {
@@ -59,7 +60,7 @@ class TestDynamoDBAdapter:
         self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
 
         self.dynamo_adapter.store_subject_permissions(
-            "CLIENT", client_id, client_permissions
+            SubjectType.CLIENT, client_id, client_permissions
         )
 
         self.dynamo_boto_resource.put_item.assert_called_once_with(
@@ -72,10 +73,10 @@ class TestDynamoDBAdapter:
             },
         )
 
-    def test_create_subject_throws_error(self):
+    def test_store_subject_permissions_throws_error_when_database_call_fails(self):
         subject_id = "123456789"
         permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
-        subject_type = "CLIENT"
+        subject_type = SubjectType.CLIENT
         self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
 
         self.dynamo_boto_resource.put_item.side_effect = ClientError(
@@ -105,7 +106,7 @@ class TestDynamoDBAdapter:
         ):
             self.dynamo_adapter.validate_permissions(permissions)
 
-    def test_validates_permissions(self):
+    def test_validates_permissions_exist_in_the_database(self):
         test_user_permissions = ["READ_PRIVATE", "WRITE_ALL"]
         self.dynamo_boto_resource.query.return_value = {
             "Items": [
@@ -127,7 +128,11 @@ class TestDynamoDBAdapter:
             "Count": 2,
         }
 
-        self.dynamo_adapter.validate_permissions(test_user_permissions)
+        try:
+            self.dynamo_adapter.validate_permissions(test_user_permissions)
+        except UserError:
+            pytest.fail("Unexpected UserError was thrown")
+
         self.dynamo_boto_resource.query.assert_called_once_with(
             KeyConditionExpression=Key("PK").eq("PERMISSION"),
             FilterExpression=Or(
@@ -135,7 +140,7 @@ class TestDynamoDBAdapter:
             ),
         )
 
-    def test_invalid_permissions(
+    def test_raises_error_when_attempting_to_validate_at_least_one_invalid_permission(
         self,
     ):
         self.dynamo_boto_resource.query.return_value = {
@@ -150,13 +155,9 @@ class TestDynamoDBAdapter:
             "Count": 1,
         }
 
-        test_user_permissions = [
-            "READ_SENSITIVE",
-            "WRITE_ALL",
-            "ACCESS_ALL",
-            "ADMIN",
-            "FAKE_ADMIN",
-        ]
+        invalid_permissions = ["READ_SENSITIVE", "ACCESS_ALL", "ADMIN", "FAKE_ADMIN"]
+        test_user_permissions = ["WRITE_ALL", *invalid_permissions]
+
         with pytest.raises(
             UserError,
             match="One or more of the provided permissions is invalid or duplicated",
@@ -183,11 +184,12 @@ class TestDynamoDBAdapter:
             "Count": 1,
         }
 
+        expected_permissions = ["DATA_ADMIN", "READ_ALL", "USER_ADMIN", "WRITE_ALL"]
+
         response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
 
-        assert set(response).issubset(
-            {"DATA_ADMIN", "READ_ALL", "USER_ADMIN", "WRITE_ALL"}
-        )
+        assert sorted(response) == sorted(expected_permissions)
+
         self.dynamo_boto_resource.query.assert_called_once_with(
             KeyConditionExpression=Key("PK").eq("SUBJECT"),
             FilterExpression=Attr("Id").eq(subject_id),
