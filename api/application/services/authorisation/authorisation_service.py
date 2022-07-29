@@ -122,18 +122,14 @@ def check_permissions(
     domain: Optional[str],
     dataset: Optional[str],
 ):
-    if token.is_user_token():
-        raise NotImplementedError("Not handling user permissions for now")
-
-    if token.is_client_token():
-        try:
-            subject_permissions = retrieve_permissions(token)
-            match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
-        except SchemaNotFoundError:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
-            )
+    try:
+        subject_permissions = retrieve_permissions(token)
+        match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
+    except SchemaNotFoundError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
+        )
 
 
 def retrieve_permissions(token: Token) -> List[str]:

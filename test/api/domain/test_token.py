@@ -46,29 +46,13 @@ class TestPermissionsExtraction:
         token = Token(valid_client_token_payload)
 
         assert token.permissions == ["scope1", "scope2"]
-        assert token.is_client_token() is True
-        assert token.is_user_token() is False
 
     def test_extracts_user_groups_when_available_and_valid(
         self, valid_user_token_payload
     ):
         token = Token(valid_user_token_payload)
 
-        assert token.permissions == ["group1", "group2"]
-        assert token.is_client_token() is False
-        assert token.is_user_token() is True
-
-    def test_favours_client_scopes_over_user_groups_if_both_available(self):
-        payload = {
-            "sub": "the-client-subject",
-            "scope": "phone email",
-            "cognito:groups": ["group1", "group2"],
-        }
-        token = Token(payload)
-
-        assert token.permissions == ["group1", "group2"]
-        assert token.is_client_token() is False
-        assert token.is_user_token() is True
+        assert token.permissions == []
 
     def test_returns_empty_permissions_when_neither_scopes_or_groups_exist(self):
         payload = {"sub": "the-subject"}

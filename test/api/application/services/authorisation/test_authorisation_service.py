@@ -157,19 +157,29 @@ class TestSecureDatasetEndpoint:
             token, ["READ"], "mydomain", None
         )
 
-    def test_check_permission_for_user_token(self):
-        mock_token = Mock()
-        mock_token.is_user_token.return_value = True
-        mock_token.is_client_token.return_value = False
+    @patch(
+        "api.application.services.authorisation.authorisation_service.match_permissions"
+    )
+    @patch(
+        "api.application.services.authorisation.authorisation_service.retrieve_permissions"
+    )
+    @patch("api.application.services.authorisation.authorisation_service.Token")
+    def test_check_permission_for_user_token(
+        self, mock_token, mock_retrieve_permissions, mock_match_permissions
+    ):
+        endpoint_scopes = ["READ"]
+        domain = "test-domain"
+        dataset = "test-dataset"
 
-        endpoint_scopes = []
-        domain = None
-        dataset = None
+        subject_permissions = ["Permission1", "Permission2"]
 
-        with pytest.raises(
-            NotImplementedError, match="Not handling user permissions for now"
-        ):
-            check_permissions(mock_token, endpoint_scopes, domain, dataset)
+        mock_retrieve_permissions.return_value = subject_permissions
+
+        check_permissions(mock_token, endpoint_scopes, domain, dataset)
+
+        mock_match_permissions.assert_called_once_with(
+            subject_permissions, endpoint_scopes, domain, dataset
+        )
 
     @patch(
         "api.application.services.authorisation.authorisation_service.match_permissions"
@@ -184,8 +194,6 @@ class TestSecureDatasetEndpoint:
         endpoint_scopes = ["READ"]
         domain = "test-domain"
         dataset = "test-dataset"
-        mock_token.is_user_token.return_value = False
-        mock_token.is_client_token.return_value = True
 
         subject_permissions = ["Permission1", "Permission2"]
         mock_retrieve_permissions.return_value = subject_permissions
@@ -209,8 +217,6 @@ class TestSecureDatasetEndpoint:
         endpoint_scopes = ["READ"]
         domain = "test-domain"
         dataset = "test-dataset"
-        mock_token.is_user_token.return_value = False
-        mock_token.is_client_token.return_value = True
         mock_retrieve_permissions.return_value = ["Permission1", "Permission2"]
         mock_match_permissions.side_effect = SchemaNotFoundError()
 
