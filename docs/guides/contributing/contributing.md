@@ -250,6 +250,11 @@ The product of the rAPId team is the service image that departments can pull and
 Performing a release fundamentally involves tagging the image of a version of the service with a specific version number
 so that departments can reference the version they want when pulling from ECR.
 
+⚠️ When releasing a new version of the service, you must also release a version of
+the [infrastructure](https://github.com/no10ds/rapid-infrastructure) and vice versa. Both versions should be the same (
+i.e.: both vX.Y.Z). If there are no changes in one or the other repo, it should still be released along with the other
+and a tag added to the same commit as the previous release. This ensures that the version numbers signal the compatibility between the two elements.
+
 ### Prerequisites
 
 - Download the GitHub CLI with `brew install gh`
@@ -269,8 +274,8 @@ Now the release pipeline will run automatically, build the image off that versio
 ### How to add security to an endpoint
 
 We are using the FastApi Security package. Security takes dependencies and scopes as arguments. In our case the
-dependency are the ```secure_endpoint```, ```secure_dataset_endpoint``` methods, and one or more of the following
-action scopes:
+dependency are the ```secure_endpoint```, ```secure_dataset_endpoint``` methods, and one or more of the following action
+scopes:
 
 - `READ`
 - `WRITE`
@@ -278,15 +283,14 @@ action scopes:
 - `USER_ADMIN`
 
 For instance, if `WRITE` scope is used, that means that whoever is trying to access the endpoint needs to have any
-of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE/<domain>/<dataset>` listed in their permissions or be part of
-that user group, where sensitivity level is the sensitivity level of the dataset being modified. Otherwise, the requests
+of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE/<domain>/<dataset>` listed in their permissions or be part of that
+user group, where sensitivity level is the sensitivity level of the dataset being modified. Otherwise, the requests
 fails.
 
 > ⚠️ ️NOTE: Higher sensitivity levels imply lower sensitivity levels.
 
 To add security to the endpoint, add specify the `dependencies=` keyword argument and specify the permissions in the
-endpoint
-annotation as listed in the examples below:
+endpoint annotation as listed in the examples below:
 
 * For endpoints **without** ```domain``` and ```dataset``` in the url path, use the dependency ```secure_endpoint```:
 
@@ -315,8 +319,8 @@ included in the Fast API endpoint annotation as described in the example below:
          dependencies=[Depends(secure_dataset_endpoint)])
 ```
 
-Note that ```secure_dataset_endpoint``` dependency function must be used when ```domain``` and ```dataset``` is
-present in the url path and should be taken in consideration to determine the permission to access.
+Note that ```secure_dataset_endpoint``` dependency function must be used when ```domain``` and ```dataset``` is present
+in the url path and should be taken in consideration to determine the permission to access.
 
 When using the frontend layer instead of the client app token, the user token is used. This token contains Cognito user
 groups to describe the permission access level for that particular user. The cognito follows a naming convention
