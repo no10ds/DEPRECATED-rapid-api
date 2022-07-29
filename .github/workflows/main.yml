@@ -53,7 +53,7 @@ jobs:
       - name: Deploy new image to Prod
         run: make app-live-in-prod
 
-      # Prevent check-app-is-running below to time out by adding extra time
+      # Prevent check-app-is-running below from timing out by adding extra time
       - name: Allow time for the application to start
         run: sleep 120
 
@@ -61,13 +61,12 @@ jobs:
         id: await-running-app
         run: make check-app-is-running
 
-      # TODO: Run these manually for the moment
-      # - name: Run journey tests
-      #   id: journey-tests
-      #   run: make test-e2e
+      - name: Run E2E tests
+        id: e2e-tests
+        run: make test-e2e
 
       - name: Tag image as failure
-        if: always() && steps.await-running-app.conclusion == 'failure' || steps.journey-tests.conclusion == 'failure'
+        if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure'
         run: make tag-prod-failure
 
       - name: Clean Docker context
