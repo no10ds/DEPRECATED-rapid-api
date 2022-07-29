@@ -11,7 +11,7 @@ from api.common.custom_exceptions import (
     UserGroupCreationError,
     UserGroupDeletionError,
 )
-from api.domain.client import ClientRequest
+from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserResponse, UserRequest
 
 
@@ -26,8 +26,14 @@ class TestCognitoAdapterClientMethods:
         client_request = ClientRequest(
             client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
+        expected_response = ClientResponse(
+            client_name="my_client",
+            client_id="some_client",
+            client_secret="some_secret",  # pragma: allowlist secret
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
+        )
 
-        expected_response = {
+        cognito_response = {
             "UserPoolClient": {
                 "UserPoolId": COGNITO_USER_POOL_ID,
                 "ClientName": "my_client",
@@ -61,9 +67,7 @@ class TestCognitoAdapterClientMethods:
             },
         }
 
-        self.cognito_boto_client.create_user_pool_client.return_value = (
-            expected_response
-        )
+        self.cognito_boto_client.create_user_pool_client.return_value = cognito_response
 
         actual_response = self.cognito_adapter.create_client_app(client_request)
 
@@ -129,6 +133,15 @@ class TestCognitoAdapterClientMethods:
         client_request = ClientRequest(
             client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
+        self.cognito_boto_client.create_user_pool_client.return_value = {
+            "UserPoolClient": {
+                "UserPoolId": COGNITO_USER_POOL_ID,
+                "ClientName": "my_client",
+                "ClientId": "some_client",
+                "ClientSecret": "some_secret",  # pragma: allowlist secret
+            }
+        }
+
         self.cognito_adapter.create_client_app(client_request)
 
         self.cognito_boto_client.create_user_pool_client.assert_called_once_with(

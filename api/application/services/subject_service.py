@@ -14,7 +14,7 @@ class SubjectService:
 
     def create_client(self, client_request: ClientRequest) -> ClientResponse:
         self.dynamodb_adapter.validate_permissions(client_request.permissions)
-        client_response = self._create_cognito_client(client_request)
+        client_response = self.cognito_adapter.create_client_app(client_request)
         self._store_client_permissions(client_request, client_response)
 
         return client_response
@@ -27,16 +27,6 @@ class SubjectService:
         )
 
         return user_response
-
-    def _create_cognito_client(self, client_request: ClientRequest) -> ClientResponse:
-        cognito_response = self.cognito_adapter.create_client_app(client_request)
-        cognito_client_info = cognito_response["UserPoolClient"]
-        return ClientResponse(
-            client_name=client_request.client_name,
-            client_id=cognito_client_info["ClientId"],
-            client_secret=cognito_client_info["ClientSecret"],
-            permissions=client_request.permissions,
-        )
 
     def _store_client_permissions(
         self, client_request: ClientRequest, client_response: ClientResponse

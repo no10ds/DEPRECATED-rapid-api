@@ -14,7 +14,7 @@ from api.common.custom_exceptions import (
     UserGroupCreationError,
     UserGroupDeletionError,
 )
-from api.domain.client import ClientRequest
+from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserRequest, UserResponse
 
 
@@ -24,11 +24,11 @@ class CognitoAdapter:
     ):
         self.cognito_client = cognito_client
 
-    def create_client_app(self, client_request: ClientRequest) -> Dict[str, Any]:
+    def create_client_app(self, client_request: ClientRequest) -> ClientResponse:
         try:
             cognito_scopes = self._build_default_scopes()
 
-            return self.cognito_client.create_user_pool_client(
+            cognito_response = self.cognito_client.create_user_pool_client(
                 UserPoolId=COGNITO_USER_POOL_ID,
                 ClientName=client_request.get_validated_client_name(),
                 GenerateSecret=True,
@@ -36,6 +36,10 @@ class CognitoAdapter:
                 AllowedOAuthFlows=COGNITO_ALLOWED_FLOWS,
                 AllowedOAuthScopes=cognito_scopes,
                 AllowedOAuthFlowsUserPoolClient=True,
+            )
+
+            return self._create_client_response(
+                client_request, cognito_response["UserPoolClient"]
             )
         except ClientError as error:
             self._handle_client_error(client_request, error)
@@ -86,6 +90,17 @@ class CognitoAdapter:
             permissions=permissions,
             user_id=self._get_attribute_value("sub", cognito_user["Attributes"]),
         )
+
+    def _create_client_response(
+        self, client_request: ClientRequest, cognito_client_info: dict
+    ) -> ClientResponse:
+        client_response = ClientResponse(
+            client_name=client_request.client_name,
+            client_id=cognito_client_info["ClientId"],
+            client_secret=cognito_client_info["ClientSecret"],
+            permissions=client_request.permissions,
+        )
+        return client_response
 
     @staticmethod
     def _get_attribute_value(attribute_name: str, attributes: List[dict]):
