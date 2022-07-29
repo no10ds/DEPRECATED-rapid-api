@@ -127,6 +127,15 @@ class TestAcceptablePermissionsGeneration:
                     required={"USER_ADMIN"}, optional=set()
                 ),  # noqa: E126
             ),
+            (
+                # TODO: Current protected domain auth functionality - tbc
+                "domain",
+                SensitivityLevel.PROTECTED,
+                ["WRITE"],
+                AcceptablePermissions(
+                    required=set(), optional={"WRITE_ALL", "WRITE_PROTECTED_DOMAIN"}
+                ),  # noqa: E126
+            ),
         ],
     )
     def test_generate_acceptable_permissions(
