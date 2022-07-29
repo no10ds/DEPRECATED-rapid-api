@@ -1,6 +1,6 @@
 import boto3
 from botocore.exceptions import ClientError
-from typing import List, Dict, Any
+from typing import List
 
 from api.common.config.auth import (
     COGNITO_RESOURCE_SERVER_ID,
