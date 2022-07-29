@@ -164,31 +164,7 @@ class TestSecureDatasetEndpoint:
         "api.application.services.authorisation.authorisation_service.retrieve_permissions"
     )
     @patch("api.application.services.authorisation.authorisation_service.Token")
-    def test_check_permission_for_user_token(
-        self, mock_token, mock_retrieve_permissions, mock_match_permissions
-    ):
-        endpoint_scopes = ["READ"]
-        domain = "test-domain"
-        dataset = "test-dataset"
-
-        subject_permissions = ["Permission1", "Permission2"]
-
-        mock_retrieve_permissions.return_value = subject_permissions
-
-        check_permissions(mock_token, endpoint_scopes, domain, dataset)
-
-        mock_match_permissions.assert_called_once_with(
-            subject_permissions, endpoint_scopes, domain, dataset
-        )
-
-    @patch(
-        "api.application.services.authorisation.authorisation_service.match_permissions"
-    )
-    @patch(
-        "api.application.services.authorisation.authorisation_service.retrieve_permissions"
-    )
-    @patch("api.application.services.authorisation.authorisation_service.Token")
-    def test_check_permission_for_client_token(
+    def test_check_permission_for_subject_token(
         self, mock_token, mock_retrieve_permissions, mock_match_permissions
     ):
         endpoint_scopes = ["READ"]
