@@ -3,6 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from api.application.services.subject_service import SubjectService
+from api.common.config.auth import SubjectType
 from api.common.custom_exceptions import AWSServiceError, UserError
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserResponse, UserRequest
@@ -37,7 +38,7 @@ class TestClientCreation:
         )
 
         self.dynamo_adapter.store_subject_permissions.assert_called_once_with(
-            "CLIENT", expected_response.client_id, client_request.permissions
+            SubjectType.CLIENT, expected_response.client_id, client_request.permissions
         )
 
         assert client_response == expected_response
@@ -133,7 +134,7 @@ class TestUserCreation:
         self.cognito_adapter.create_user.assert_called_once_with(subject_request)
 
         self.dynamo_adapter.store_subject_permissions.assert_called_once_with(
-            "USER", expected_response.user_id, subject_request.permissions
+            SubjectType.USER, expected_response.user_id, subject_request.permissions
         )
 
         assert actual_response == expected_response

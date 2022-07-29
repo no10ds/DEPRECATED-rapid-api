@@ -23,7 +23,7 @@ class SubjectService:
         self.dynamodb_adapter.validate_permissions(user_request.permissions)
         user_response = self.cognito_adapter.create_user(user_request)
         self.dynamodb_adapter.store_subject_permissions(
-            SubjectType.USER.value, user_response.user_id, user_request.permissions
+            SubjectType.USER, user_response.user_id, user_request.permissions
         )
 
         return user_response
@@ -33,7 +33,7 @@ class SubjectService:
     ):
         try:
             self.dynamodb_adapter.store_subject_permissions(
-                SubjectType.CLIENT.value,
+                SubjectType.CLIENT,
                 client_response.client_id,
                 client_request.permissions,
             )
