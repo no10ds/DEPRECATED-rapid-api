@@ -61,9 +61,10 @@ jobs:
         id: await-running-app
         run: make check-app-is-running
 
-      - name: Run E2E tests
-        id: e2e-tests
-        run: make test-e2e
+       # Skipped while the tests are re-implemented (story 348)
+#      - name: Run E2E tests
+#        id: e2e-tests
+#        run: make test-e2e
 
       - name: Tag image as failure
         if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure'

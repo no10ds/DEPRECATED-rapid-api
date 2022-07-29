@@ -19,3 +19,7 @@ To run them locally against the live instance, use:
 ```bash
 make test-e2e
 ```
+
+## Gotchas
+If some tests return an HTTP status of 429, this is due to crawlers still running (or in their stopping phase).
+This generally happens when the E2E tests are run multiple times in quick succession. Wait for the crawlers to finish and re-run the tests.
