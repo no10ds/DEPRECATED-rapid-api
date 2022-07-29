@@ -1,0 +1,61 @@
+{
+  "metadata": {
+    "domain": "test_e2e",
+    "dataset": "delete",
+    "sensitivity": "PUBLIC",
+    "tags": {
+      "test_e2e": "delete",
+      "test": "e2e"
+    },
+    "owners": [
+      {
+        "name": "delete",
+        "email": "delete@test.com"
+      }
+    ]
+  },
+  "columns": [
+    {
+      "name": "year",
+      "partition_index": null,
+      "data_type": "Int64",
+      "allow_null": true,
+      "format": null
+    },
+    {
+      "name": "month",
+      "partition_index": null,
+      "data_type": "Int64",
+      "allow_null": true,
+      "format": null
+    },
+    {
+      "name": "destination",
+      "partition_index": null,
+      "data_type": "object",
+      "allow_null": true,
+      "format": null
+    },
+    {
+      "name": "arrival",
+      "partition_index": null,
+      "data_type": "object",
+      "allow_null": true,
+      "format": null
+    },
+    {
+      "name": "type",
+      "partition_index": null,
+      "data_type": "object",
+      "allow_null": true,
+      "format": null
+    },
+    {
+      "name": "status",
+      "partition_index": null,
+      "data_type": "object",
+      "allow_null": true,
+      "format": null
+    }
+  ]
+}
