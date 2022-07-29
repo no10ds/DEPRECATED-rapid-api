@@ -12,7 +12,7 @@ class UserRequest(BaseModel):
     email: str
     permissions: Optional[List[str]] = DEFAULT_PERMISSION
 
-    def get_validated_user_name(self):
+    def get_validated_username(self):
         """
         We restrict further beyond Cognito limits:
         https://docs.aws.amazon.com/cognito/latest/developerguide/limits.html

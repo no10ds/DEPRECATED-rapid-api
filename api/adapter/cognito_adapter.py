@@ -45,7 +45,7 @@ class CognitoAdapter:
     def create_user(self, user_request: UserRequest) -> UserResponse:
         cognito_response = self.cognito_client.admin_create_user(
             UserPoolId=COGNITO_USER_POOL_ID,
-            Username=user_request.username,
+            Username=user_request.get_validated_username(),
             UserAttributes=[
                 {"Name": "email", "Value": user_request.email},
                 {"Name": "email_verified", "Value": "True"},
