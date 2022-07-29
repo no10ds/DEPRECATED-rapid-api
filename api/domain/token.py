@@ -1,6 +1,6 @@
 from typing import List
 
-from api.common.config.auth import COGNITO_RESOURCE_SERVER_ID, SubjectType
+from api.common.config.auth import COGNITO_RESOURCE_SERVER_ID
 
 
 class Token:
@@ -21,9 +21,9 @@ class Token:
 
     def _extract_permissions(self, payload: dict) -> List[str]:
         permission_scopes = payload.get("scope", None)
+        is_user = payload.get("username", None)
 
-        if permission_scopes:
-            self.token_type = SubjectType.CLIENT.value
+        if permission_scopes and not is_user:
             try:
                 scopes = payload["scope"].split()
                 return [

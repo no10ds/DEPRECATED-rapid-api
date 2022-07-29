@@ -54,6 +54,16 @@ class TestPermissionsExtraction:
 
         assert token.permissions == []
 
+    def test_favours_client_scopes_over_user_groups_if_both_available(self):
+        payload = {
+            "sub": "the-client-subject",
+            "scope": "phone email",
+            "username": "test_user",
+        }
+        token = Token(payload)
+
+        assert token.permissions == []
+
     def test_returns_empty_permissions_when_neither_scopes_or_groups_exist(self):
         payload = {"sub": "the-subject"}
 
