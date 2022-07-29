@@ -47,44 +47,6 @@ class TestDynamoDBAdapter:
         self.test_permissions_table_name = "TEST PERMISSIONS"
         self.dynamo_adapter = DynamoDBAdapter(self.dynamo_boto_resource)
 
-    def test_create_client_item(self):
-        client_id = "123456789"
-        client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
-        expected_client_permissions = {
-            "READ_ALL",
-            "WRITE_ALL",
-            "READ_PRIVATE",
-            "USER_ADMIN",
-        }
-        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
-        self.dynamo_adapter.store_client_permissions(client_id, client_permissions)
-
-        self.dynamo_boto_resource.put_item.assert_called_once_with(
-            Item={
-                "PK": "SUBJECT",
-                "SK": client_id,
-                "Id": client_id,
-                "Type": "CLIENT",
-                "Permissions": expected_client_permissions,
-            },
-        )
-
-    def test_create_client_throws_error_when_db_fails(self):
-        client_id = "123456789"
-        client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
-        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
-
-        self.dynamo_boto_resource.put_item.side_effect = ClientError(
-            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
-            operation_name="PutItem",
-        )
-
-        with pytest.raises(
-            AWSServiceError,
-            match="The client could not be created, please contact your system administrator",
-        ):
-            self.dynamo_adapter.store_client_permissions(client_id, client_permissions)
-
     def test_create_subject(self):
         client_id = "123456789"
         client_permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]

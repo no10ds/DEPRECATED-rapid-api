@@ -3,11 +3,11 @@ from fastapi import Security
 from fastapi import status as http_status
 
 from api.application.services.authorisation.authorisation_service import secure_endpoint
-from api.application.services.client_service import ClientService
+from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
 from api.domain.client import ClientRequest
 
-client_service = ClientService()
+client_service = SubjectService()
 
 client_router = APIRouter(
     prefix="/client",

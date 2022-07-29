@@ -1,13 +1,13 @@
 from unittest.mock import patch
 
-from api.application.services.client_service import ClientService
+from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.client import ClientResponse, ClientRequest
 from test.api.controller.controller_test_utils import BaseClientTest
 
 
 class TestClientCreation(BaseClientTest):
-    @patch.object(ClientService, "create_client")
+    @patch.object(SubjectService, "create_client")
     def test_returns_client_information_when_valid_request(self, mock_create_client):
         expected_response = ClientResponse(
             client_name="my_client",
@@ -36,7 +36,7 @@ class TestClientCreation(BaseClientTest):
         assert response.status_code == 201
         assert response.json() == expected_response
 
-    @patch.object(ClientService, "create_client")
+    @patch.object(SubjectService, "create_client")
     def test_accepts_empty_permissions(self, mock_create_client):
         expected_response = ClientResponse(
             client_name="my_client",
@@ -72,7 +72,7 @@ class TestClientCreation(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {"details": ["client_name -> field required"]}
 
-    @patch.object(ClientService, "create_client")
+    @patch.object(SubjectService, "create_client")
     def test_bad_request_when_invalid_permissions(self, mock_create_client):
         mock_create_client.side_effect = UserError(
             "One or more of the provided permissions do not exist"
@@ -89,7 +89,7 @@ class TestClientCreation(BaseClientTest):
             "details": "One or more of the provided permissions do not exist"
         }
 
-    @patch.object(ClientService, "create_client")
+    @patch.object(SubjectService, "create_client")
     def test_internal_error_when_client_creation_fails(self, mock_create_client):
         mock_create_client.side_effect = AWSServiceError(
             "The client 'my_client' could not be created"

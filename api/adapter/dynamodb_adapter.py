@@ -6,7 +6,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
-from api.common.config.auth import DatabaseItem, SubjectType
+from api.common.config.auth import DatabaseItem
 from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
 from api.common.custom_exceptions import (
     UserError,
@@ -18,12 +18,6 @@ from api.common.logger import AppLogger
 
 
 class DatabaseAdapter(ABC):
-    @abstractmethod
-    def store_client_permissions(
-        self, client_id: str, client_permissions: List[str]
-    ) -> None:
-        pass
-
     @abstractmethod
     def store_subject_permissions(
         self, subject_type: str, subject_id: str, permissions: List[str]
@@ -51,15 +45,6 @@ class DynamoDBAdapter(DatabaseAdapter):
         ),
     ):
         self.dynamodb_resource = dynamodb_table
-
-    def store_client_permissions(
-        self, client_id: str, client_permissions: List[str]
-    ) -> None:
-        self.store_subject_permissions(
-            subject_type=SubjectType.CLIENT.value,
-            subject_id=client_id,
-            permissions=client_permissions,
-        )
 
     def store_subject_permissions(
         self, subject_type: str, subject_id: str, permissions: List[str]
