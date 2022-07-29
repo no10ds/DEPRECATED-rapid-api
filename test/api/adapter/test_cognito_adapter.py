@@ -12,6 +12,7 @@ from api.common.custom_exceptions import (
     UserGroupDeletionError,
 )
 from api.domain.client import ClientRequest
+from api.domain.user import UserResponse, UserRequest
 
 
 class TestCognitoAdapterClientMethods:
@@ -79,6 +80,49 @@ class TestCognitoAdapterClientMethods:
             AllowedOAuthScopes=[f"https://{DOMAIN_NAME}/CLIENT_APP"],
             AllowedOAuthFlowsUserPoolClient=True,
         )
+        assert actual_response == expected_response
+
+    def test_create_user(self):
+        cognito_response = {
+            "User": {
+                "Username": "user-name",
+                "Attributes": [
+                    {"Name": "sub", "Value": "some-uu-id-b226-e5fd18c59b85"},
+                    {"Name": "email_verified", "Value": "True"},
+                    {"Name": "email", "Value": "user-name@some-email.com"},
+                ],
+            },
+            "ResponseMetadata": {
+                "RequestId": "the-request-id-b368-fae5cebb746f",
+                "HTTPStatusCode": 200,
+            },
+        }
+        expected_response = UserResponse(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
+            user_id="some-uu-id-b226-e5fd18c59b85",
+        )
+        request = UserRequest(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
+        )
+        self.cognito_boto_client.admin_create_user.return_value = cognito_response
+
+        actual_response = self.cognito_adapter.create_user(request)
+        self.cognito_boto_client.admin_create_user.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID,
+            Username="user-name",
+            UserAttributes=[
+                {"Name": "email", "Value": "user-name@some-email.com"},
+                {"Name": "email_verified", "Value": "True"},
+            ],
+            DesiredDeliveryMediums=[
+                "EMAIL",
+            ],
+        )
+
         assert actual_response == expected_response
 
     def test_create_client_app_with_default_allowed_oauth_scope(self):

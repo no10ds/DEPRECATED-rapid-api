@@ -15,6 +15,7 @@ from api.common.custom_exceptions import (
     UserGroupDeletionError,
 )
 from api.domain.client import ClientRequest
+from api.domain.user import UserRequest, UserResponse
 
 
 class CognitoAdapter:
@@ -41,6 +42,20 @@ class CognitoAdapter:
         except ClientError as error:
             self._handle_client_error(client_request, error)
 
+    def create_user(self, user_request: UserRequest) -> UserResponse:
+        cognito_response = self.cognito_client.admin_create_user(
+            UserPoolId=COGNITO_USER_POOL_ID,
+            Username=user_request.username,
+            UserAttributes=[
+                {"Name": "email", "Value": user_request.email},
+                {"Name": "email_verified", "Value": "True"},
+            ],
+            DesiredDeliveryMediums=[
+                "EMAIL",
+            ],
+        )
+        return self._create_user_response(cognito_response, user_request.permissions)
+
     def create_user_groups(self, domain: str, dataset: str):
         try:
             self.cognito_client.create_group(
@@ -62,6 +77,22 @@ class CognitoAdapter:
             raise UserGroupDeletionError(
                 f"User group deletion failed for domain=[{domain}] dataset=[{dataset}]"
             )
+
+    def _create_user_response(
+        self, cognito_response: dict, permissions: List[str]
+    ) -> UserResponse:
+        cognito_user = cognito_response["User"]
+        return UserResponse(
+            username=cognito_user["Username"],
+            email=self._get_attribute_value("email", cognito_user["Attributes"]),
+            permissions=permissions,
+            user_id=self._get_attribute_value("sub", cognito_user["Attributes"]),
+        )
+
+    @staticmethod
+    def _get_attribute_value(attribute_name: str, attributes: List[dict]):
+        response_list = [attr for attr in attributes if attr["Name"] == attribute_name]
+        return response_list[0]["Value"]
 
     def _generate_user_group(self, domain: str, dataset: str) -> str:
         return f"WRITE/{domain}/{dataset}"
