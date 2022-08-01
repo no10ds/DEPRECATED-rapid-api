@@ -6,8 +6,9 @@ from api.application.services.authorisation.authorisation_service import secure_
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
 from api.domain.client import ClientRequest
+from api.domain.subject_permissions import SubjectPermissions
 
-client_service = SubjectService()
+subject_service = SubjectService()
 
 client_router = APIRouter(
     prefix="/client",
@@ -69,5 +70,14 @@ async def create_client(client_request: ClientRequest):
     ### Click  `Try it out` to use the endpoint
 
     """
-    client_response = client_service.create_client(client_request)
+    client_response = subject_service.create_client(client_request)
     return client_response
+
+
+@client_router.put(
+    path="/permissions",
+    status_code=http_status.HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+)
+async def update_client_permissions(subject_permissions: SubjectPermissions):
+    subject_service.set_subject_permissions(subject_permissions)

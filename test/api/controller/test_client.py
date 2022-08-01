@@ -1,8 +1,11 @@
 from unittest.mock import patch
 
+import pytest
+
 from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.client import ClientResponse, ClientRequest
+from api.domain.subject_permissions import SubjectPermissions
 from test.api.controller.controller_test_utils import BaseClientTest
 
 
@@ -105,3 +108,28 @@ class TestClientCreation(BaseClientTest):
         assert response.json() == {
             "details": "The client 'my_client' could not be created"
         }
+
+
+class TestClientPermissions(BaseClientTest):
+    @patch.object(SubjectService, "set_subject_permissions")
+    def test_update_client_permissions(self, mock_set_subject_permissions):
+        subject_permissions = SubjectPermissions(
+            subject_id="asdf1243kj456", permissions=["READ_ALL", "WRITE_ALL"]
+        )
+
+        response = self.client.put(
+            "/client/permissions",
+            headers={"Authorization": "Bearer test-token"},
+            json={
+                "subject_id": subject_permissions.subject_id,
+                "permissions": subject_permissions.permissions,
+            },
+        )
+
+        assert response.status_code == 200
+        mock_set_subject_permissions.assert_called_once_with(subject_permissions)
+
+    @pytest.mark.skip("Not implemented yet")
+    @patch.object(SubjectService, "set_subject_permissions")
+    def test_update_client_permissions_for_non_user_admin(self, mock_subject_service):
+        pass
