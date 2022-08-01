@@ -14,6 +14,8 @@ COGNITO_ALLOWED_FLOWS = ["client_credentials"]
 COGNITO_RESOURCE_SERVER_ID = f"https://{DOMAIN_NAME}"
 COGNITO_USER_POOL_ID = os.environ["COGNITO_USER_POOL_ID"]
 
+ALLOWED_EMAIL_DOMAINS = os.environ["ALLOWED_EMAIL_DOMAINS"]
+
 IDENTITY_PROVIDER_TOKEN_URL = (
     f"https://{RESOURCE_PREFIX}-auth.auth.{AWS_REGION}.amazoncognito.com/oauth2/token"
 )

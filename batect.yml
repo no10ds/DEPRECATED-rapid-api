@@ -19,6 +19,7 @@ containers:
       COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:-}
       DATA_BUCKET: ${DATA_BUCKET:-}
       DOMAIN_NAME: ${DOMAIN_NAME:-}
+      ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
       RESOURCE_PREFIX: ${RESOURCE_PREFIX:-rapid}
       # Optional use when working locally
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}

@@ -9,3 +9,10 @@ TAG_VALUES_REGEX = BASE_REGEX + "{0,256}$"
 COLUMN_NAME_REGEX = "[^a-z0-9_]+"
 
 DATE_FORMAT_REGEX = "(%[Ymd][/-]%[Ymd][/-]%[Ymd]|%[Ym][/-]%[Ym])"
+
+EMAIL_REGEX = (
+    r"([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\"([]!#-[^-~ \t]|"
+    r"(\\[\t -~]))+\")@([-!#-'*+/-9=?A-Z^-~]+(\.[-!#-'*+/-9=?A-Z^-~]+)*|\[[\t -Z^-~]*])"
+)
+
+USERNAME_REGEX = "[a-zA-Z][a-zA-Z0-9@._-]{2,127}"

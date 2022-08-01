@@ -50,7 +50,7 @@ class CognitoAdapter:
                 UserPoolId=COGNITO_USER_POOL_ID,
                 Username=user_request.get_validated_username(),
                 UserAttributes=[
-                    {"Name": "email", "Value": user_request.email},
+                    {"Name": "email", "Value": user_request.get_validated_email()},
                     {"Name": "email_verified", "Value": "True"},
                 ],
                 DesiredDeliveryMediums=[
@@ -58,7 +58,7 @@ class CognitoAdapter:
                 ],
             )
             return self._create_user_response(
-                cognito_response, user_request.permissions
+                cognito_response, user_request.get_permissions()
             )
         except ClientError as error:
             self._handle_user_error(user_request, error)
@@ -81,7 +81,7 @@ class CognitoAdapter:
             client_name=client_request.client_name,
             client_id=cognito_client_info["ClientId"],
             client_secret=cognito_client_info["ClientSecret"],
-            permissions=client_request.permissions,
+            permissions=client_request.get_permissions(),
         )
         return client_response
 

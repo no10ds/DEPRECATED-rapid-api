@@ -142,7 +142,7 @@ class TestCognitoAdapterClientMethods:
                 "Attributes": [
                     {"Name": "sub", "Value": "some-uu-id-b226-e5fd18c59b85"},
                     {"Name": "email_verified", "Value": "True"},
-                    {"Name": "email", "Value": "user-name@some-email.com"},
+                    {"Name": "email", "Value": "user-name@example1.com"},
                 ],
             },
             "ResponseMetadata": {
@@ -152,13 +152,13 @@ class TestCognitoAdapterClientMethods:
         }
         expected_response = UserResponse(
             username="user-name",
-            email="user-name@some-email.com",
+            email="user-name@example1.com",
             permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
             user_id="some-uu-id-b226-e5fd18c59b85",
         )
         request = UserRequest(
             username="user-name",
-            email="user-name@some-email.com",
+            email="user-name@example1.com",
             permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
         )
         self.cognito_boto_client.admin_create_user.return_value = cognito_response
@@ -168,7 +168,7 @@ class TestCognitoAdapterClientMethods:
             UserPoolId=COGNITO_USER_POOL_ID,
             Username="user-name",
             UserAttributes=[
-                {"Name": "email", "Value": "user-name@some-email.com"},
+                {"Name": "email", "Value": "user-name@example1.com"},
                 {"Name": "email_verified", "Value": "True"},
             ],
             DesiredDeliveryMediums=[
@@ -187,7 +187,7 @@ class TestCognitoAdapterClientMethods:
     def test_create_user_fails_in_aws(self):
         request = UserRequest(
             username="user-name",
-            email="user-name@some-email.com",
+            email="user-name@example1.com",
             permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
         )
 
@@ -204,7 +204,7 @@ class TestCognitoAdapterClientMethods:
     def test_create_user_fails_when_the_user_already_exist(self):
         request = UserRequest(
             username="user-name",
-            email="user-name@some-email.com",
+            email="user-name@example1.com",
             permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
         )
 

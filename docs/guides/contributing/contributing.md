@@ -69,6 +69,7 @@ To run the app locally, you will need to set the following environment variables
 - `DATA_BUCKET`
 - `DOMAIN_NAME`
 - `RESOURCE_PREFIX`
+- `ALLOWED_EMAIL_DOMAINS`
 
 `make run` runs batect to bring up a locally running version of the application within a Docker container using the base
 image.
@@ -131,6 +132,7 @@ You will need to add some environment variables to your run configuration templa
 - `RESOURCE_PREFIX=rapid`
 - `DOMAIN_NAME=example.com`
 - `COGNITO_USER_POOL_ID=11111111`
+- `ALLOWED_EMAIL_DOMAINS=example1.com,example2.com`
 
 ### Checking your code
 
