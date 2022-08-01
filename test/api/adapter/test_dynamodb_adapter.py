@@ -11,6 +11,7 @@ from api.common.custom_exceptions import (
     UserError,
     SubjectNotFoundError,
 )
+from api.domain.subject_permissions import SubjectPermissions
 
 
 class TestDynamoDBAdapter:
@@ -86,7 +87,7 @@ class TestDynamoDBAdapter:
 
         with pytest.raises(
             AWSServiceError,
-            match="The subject could not be created, please contact your system administrator",
+            match=f"Error storing the {subject_type.value}: {subject_id}",
         ):
             self.dynamo_adapter.store_subject_permissions(
                 subject_type, subject_id, permissions
@@ -102,7 +103,7 @@ class TestDynamoDBAdapter:
 
         with pytest.raises(
             AWSServiceError,
-            match="The subject could not be created, please contact your system administrator",
+            match="Error fetching permissions from the database",
         ):
             self.dynamo_adapter.validate_permissions(permissions)
 
@@ -239,3 +240,32 @@ class TestDynamoDBAdapter:
             match="Error fetching permissions, please contact your system administrator",
         ):
             self.dynamo_adapter.get_permissions_for_subject(subject_id)
+
+    def test_update_subject_permissions(self):
+        subject_permissions = SubjectPermissions(
+            subject_id="asdf1234678sd", permissions=["READ_ALL"]
+        )
+
+        self.dynamo_adapter.update_subject_permissions(subject_permissions)
+
+        self.dynamo_boto_resource.update_item.assert_called_once_with(
+            Key={"PK": "SUBJECT", "SK": subject_permissions.subject_id},
+            UpdateExpression="set #P = :r",
+            ExpressionAttributeValues={":r": set(subject_permissions.permissions)},
+            ExpressionAttributeNames={"#P": "Permissions"},
+        )
+
+    def test_update_subject_permissions_on_error(self):
+        subject_permissions = SubjectPermissions(
+            subject_id="asdf1234678sd", permissions=["READ_ALL"]
+        )
+        self.dynamo_boto_resource.update_item.side_effect = ClientError(
+            error_response={},
+            operation_name="update_item",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match=f"Error updating permissions for {subject_permissions.subject_id}",
+        ):
+            self.dynamo_adapter.update_subject_permissions(subject_permissions)

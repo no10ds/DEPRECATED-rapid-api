@@ -13,8 +13,9 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     SubjectNotFoundError,
 )
-from api.domain.permission_item import PermissionItem
 from api.common.logger import AppLogger
+from api.domain.permission_item import PermissionItem
+from api.domain.subject_permissions import SubjectPermissions
 
 
 class DatabaseAdapter(ABC):
@@ -36,6 +37,12 @@ class DatabaseAdapter(ABC):
     def get_permissions_for_subject(self, subject_id: str) -> List[str]:
         pass
 
+    @abstractmethod
+    def update_subject_permissions(
+        self, subject_permissions: SubjectPermissions
+    ) -> None:
+        pass
+
 
 class DynamoDBAdapter(DatabaseAdapter):
     def __init__(
@@ -44,13 +51,13 @@ class DynamoDBAdapter(DatabaseAdapter):
             DYNAMO_PERMISSIONS_TABLE_NAME
         ),
     ):
-        self.dynamodb_resource = dynamodb_table
+        self.dynamodb_table = dynamodb_table
 
     def store_subject_permissions(
         self, subject_type: SubjectType, subject_id: str, permissions: List[str]
     ) -> None:
         try:
-            self.dynamodb_resource.put_item(
+            self.dynamodb_table.put_item(
                 Item={
                     "PK": DatabaseItem.SUBJECT.value,
                     "SK": subject_id,
@@ -78,7 +85,7 @@ class DynamoDBAdapter(DatabaseAdapter):
     def get_permissions_for_subject(self, subject_id: str) -> List[str]:
         try:
             return list(
-                self.dynamodb_resource.query(
+                self.dynamodb_table.query(
                     KeyConditionExpression=Key("PK").eq(DatabaseItem.SUBJECT.value),
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
@@ -94,7 +101,7 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def _get_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:
-            return self.dynamodb_resource.query(
+            return self.dynamodb_table.query(
                 KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
                 FilterExpression=reduce(
                     Or, ([Attr("Id").eq(value) for value in permissions])
@@ -103,9 +110,25 @@ class DynamoDBAdapter(DatabaseAdapter):
         except ClientError:
             self._handle_client_error("Error fetching permissions from the database")
 
+    def update_subject_permissions(
+        self, subject_permissions: SubjectPermissions
+    ) -> None:
+        try:
+            self.dynamodb_table.update_item(
+                Key={
+                    "PK": DatabaseItem.SUBJECT.value,
+                    "SK": subject_permissions.subject_id,
+                },
+                UpdateExpression="set #P = :r",
+                ExpressionAttributeValues={":r": set(subject_permissions.permissions)},
+                ExpressionAttributeNames={"#P": "Permissions"},
+            )
+        except ClientError:
+            self._handle_client_error(
+                f"Error updating permissions for {subject_permissions.subject_id}"
+            )
+
     @staticmethod
     def _handle_client_error(message: str) -> None:
-        AppLogger.info(message)
-        raise AWSServiceError(
-            "The subject could not be created, please contact your system administrator"
-        )
+        AppLogger.error(message)
+        raise AWSServiceError(message)
