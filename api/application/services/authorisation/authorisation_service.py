@@ -26,6 +26,7 @@ from api.common.custom_exceptions import (
     SubjectNotFoundError,
     ClientCredentialsUnavailableError,
 )
+from api.common.logger import AppLogger
 from api.domain.token import Token
 
 
@@ -105,8 +106,12 @@ def check_credentials_availability(
 ) -> None:
     if not have_credentials(browser_request, client_token, user_token):
         if browser_request:
+            AppLogger.info("Cannot retrieve user credentials if no user token provided")
             raise UserCredentialsUnavailableError()
         else:
+            AppLogger.info(
+                "Cannot retrieve client credentials if no client token provided"
+            )
             raise ClientCredentialsUnavailableError(
                 message="You are not authorised to perform this action", status_code=403
             )
@@ -126,6 +131,7 @@ def check_permissions(
         subject_permissions = retrieve_permissions(token)
         match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
     except SchemaNotFoundError:
+        AppLogger.info(f"Dataset [{dataset}] in domain [{domain}] does not exist")
         raise HTTPException(
             status_code=400,
             detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
@@ -146,4 +152,7 @@ def match_permissions(
     sensitivity = s3_adapter.get_dataset_sensitivity(domain, dataset)
     acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
     if not acceptable_scopes.satisfied_by(permissions):
+        AppLogger.info(
+            f"Users list of permissions: {permissions} do not match endpoint permissions: {acceptable_scopes}."
+        )
         raise AuthorisationError("Not enough permissions to access endpoint")

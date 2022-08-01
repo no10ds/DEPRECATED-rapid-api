@@ -1,6 +1,7 @@
 from typing import List
 
 from api.common.config.auth import COGNITO_RESOURCE_SERVER_ID
+from api.common.logger import AppLogger
 
 
 class Token:
@@ -12,9 +13,11 @@ class Token:
         try:
             subject = payload["sub"]
         except KeyError:
+            AppLogger.info("No subject field defined in the payload.")
             raise ValueError("No Subject key")
 
         if not subject:
+            AppLogger.info("No value for subject in the payload.")
             raise ValueError("Invalid Subject field")
 
         return subject
@@ -31,6 +34,7 @@ class Token:
                     for scope in scopes
                 ]
             except (AttributeError, IndexError):
+                AppLogger.info("Invalid scope field")
                 raise ValueError("Invalid scope field")
 
         return []
