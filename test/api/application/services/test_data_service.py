@@ -74,7 +74,6 @@ class TestUploadSchema:
         self.s3_adapter.save_schema.assert_called_once_with(
             "some", "other", "PUBLIC", self.valid_schema
         )
-        self.cognito_adapter.create_user_groups.assert_called_once_with("some", "other")
         self.glue_adapter.create_crawler.assert_called_once_with(
             RESOURCE_PREFIX, "some", "other", {"sensitivity": "PUBLIC"}
         )

@@ -74,14 +74,6 @@ class CrawlerIsNotReadyError(Exception):
     pass
 
 
-class UserGroupCreationError(Exception):
-    pass
-
-
-class UserGroupDeletionError(Exception):
-    pass
-
-
 class SubjectNotFoundError(Exception):
     pass
 

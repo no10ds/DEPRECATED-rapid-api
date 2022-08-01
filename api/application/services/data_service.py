@@ -116,9 +116,6 @@ class DataService:
         schema_name = self.persistence_adapter.save_schema(
             schema.get_domain(), schema.get_dataset(), schema.get_sensitivity(), schema
         )
-        self.cognito_adapter.create_user_groups(
-            schema.get_domain(), schema.get_dataset()
-        )
         self.glue_adapter.create_crawler(
             RESOURCE_PREFIX,
             schema.get_domain(),

@@ -8,9 +8,7 @@ from api.common.config.auth import COGNITO_USER_POOL_ID
 from api.common.config.aws import DOMAIN_NAME
 from api.common.custom_exceptions import (
     AWSServiceError,
-    UserGroupCreationError,
-    UserGroupDeletionError,
-    UserError,
+    UserError
 )
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserResponse, UserRequest
@@ -217,52 +215,6 @@ class TestCognitoAdapterClientMethods:
 
         with pytest.raises(UserError, match="The user 'user-name' already exist"):
             self.cognito_adapter.create_user(request)
-
-    def test_create_user_group_with_domain_and_dataset(self):
-        self.cognito_adapter.create_user_groups("my_domain", "my_dataset")
-
-        self.cognito_boto_client.create_group.assert_called_once_with(
-            GroupName="WRITE/my_domain/my_dataset", UserPoolId=COGNITO_USER_POOL_ID
-        )
-
-    def test_raises_error_when_create_user_group_fails(self):
-        self.cognito_boto_client.create_group.side_effect = ClientError(
-            error_response={"Error": {"Code": "SomeException"}},
-            operation_name="CreateGroup",
-        )
-
-        with pytest.raises(
-            UserGroupCreationError,
-            match="User group creation failed for domain=\\[my_domain\\] dataset=\\[my_dataset\\]",
-        ):
-            self.cognito_adapter.create_user_groups("my_domain", "my_dataset")
-
-        self.cognito_boto_client.create_group.assert_called_once_with(
-            GroupName="WRITE/my_domain/my_dataset", UserPoolId=COGNITO_USER_POOL_ID
-        )
-
-    def test_delete_user_group_with_domain_and_dataset(self):
-        self.cognito_adapter.delete_user_groups("my_domain", "my_dataset")
-
-        self.cognito_boto_client.delete_group.assert_called_once_with(
-            GroupName="WRITE/my_domain/my_dataset", UserPoolId=COGNITO_USER_POOL_ID
-        )
-
-    def test_raises_error_when_delete_user_group_fails(self):
-        self.cognito_boto_client.delete_group.side_effect = ClientError(
-            error_response={"Error": {"Code": "SomeException"}},
-            operation_name="DeleteGroup",
-        )
-
-        with pytest.raises(
-            UserGroupDeletionError,
-            match="User group deletion failed for domain=\\[my_domain\\] dataset=\\[my_dataset\\]",
-        ):
-            self.cognito_adapter.delete_user_groups("my_domain", "my_dataset")
-
-        self.cognito_boto_client.delete_group.assert_called_once_with(
-            GroupName="WRITE/my_domain/my_dataset", UserPoolId=COGNITO_USER_POOL_ID
-        )
 
     def test_get_resource_server_success(self):
         expected_response = {

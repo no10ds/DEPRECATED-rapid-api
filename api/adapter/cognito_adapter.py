@@ -1,6 +1,7 @@
+from typing import List
+
 import boto3
 from botocore.exceptions import ClientError
-from typing import List
 
 from api.common.config.auth import (
     COGNITO_RESOURCE_SERVER_ID,
@@ -11,9 +12,7 @@ from api.common.config.auth import (
 from api.common.config.aws import AWS_REGION
 from api.common.custom_exceptions import (
     AWSServiceError,
-    UserGroupCreationError,
-    UserGroupDeletionError,
-    UserError,
+    UserError
 )
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserRequest, UserResponse
@@ -64,28 +63,6 @@ class CognitoAdapter:
         except ClientError as error:
             self._handle_user_error(user_request, error)
 
-    def create_user_groups(self, domain: str, dataset: str) -> None:
-        try:
-            self.cognito_client.create_group(
-                GroupName=self._generate_user_group(domain, dataset),
-                UserPoolId=COGNITO_USER_POOL_ID,
-            )
-        except ClientError:
-            raise UserGroupCreationError(
-                f"User group creation failed for domain=[{domain}] dataset=[{dataset}]"
-            )
-
-    def delete_user_groups(self, domain: str, dataset: str) -> None:
-        try:
-            self.cognito_client.delete_group(
-                GroupName=self._generate_user_group(domain, dataset),
-                UserPoolId=COGNITO_USER_POOL_ID,
-            )
-        except ClientError:
-            raise UserGroupDeletionError(
-                f"User group deletion failed for domain=[{domain}] dataset=[{dataset}]"
-            )
-
     def _create_user_response(
         self, cognito_response: dict, permissions: List[str]
     ) -> UserResponse:
@@ -112,9 +89,6 @@ class CognitoAdapter:
     def _get_attribute_value(attribute_name: str, attributes: List[dict]):
         response_list = [attr for attr in attributes if attr["Name"] == attribute_name]
         return response_list[0]["Value"]
-
-    def _generate_user_group(self, domain: str, dataset: str) -> str:
-        return f"WRITE/{domain}/{dataset}"
 
     def _build_default_scopes(self):
         return [f"{COGNITO_RESOURCE_SERVER_ID}/CLIENT_APP"]

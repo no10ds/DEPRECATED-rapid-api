@@ -11,7 +11,6 @@ from api.common.config.auth import Action
 from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerCreateFailsError,
-    UserGroupCreationError,
     ProtectedDomainDoesNotExistError,
 )
 from api.common.logger import AppLogger
@@ -90,11 +89,8 @@ async def upload_schema(schema: Schema):
         return _response_body(schema_file_name)
     except ProtectedDomainDoesNotExistError as error:
         _log_and_raise_error("Protected domain error", error.args[0])
-    except UserGroupCreationError as error:
-        _delete_uploaded_schema(schema)
-        _log_and_raise_error("User group creation error", error.args[0])
     except CrawlerCreateFailsError as error:
-        _delete_created_groups_and_schema(schema)
+        _delete_created_schema(schema)
         _log_and_raise_error("Failed to create crawler", error.args[0])
 
 
@@ -104,8 +100,7 @@ def _delete_uploaded_schema(schema: Schema):
     )
 
 
-def _delete_created_groups_and_schema(schema: Schema):
-    cognito_adapter.delete_user_groups(schema.get_domain(), schema.get_dataset())
+def _delete_created_schema(schema: Schema):
     _delete_uploaded_schema(schema)
 
 

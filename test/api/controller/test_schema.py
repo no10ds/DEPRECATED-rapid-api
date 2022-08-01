@@ -1,16 +1,14 @@
 from typing import Tuple, Dict
 from unittest.mock import patch
 
-from api.adapter.cognito_adapter import CognitoAdapter
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
 from api.common.custom_exceptions import (
     SchemaError,
     ConflictError,
-    CrawlerCreateFailsError,
-    UserGroupCreationError,
     ProtectedDomainDoesNotExistError,
+    CrawlerCreateFailsError,
 )
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -84,21 +82,14 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(CognitoAdapter, "delete_user_groups")
-    @patch.object(CognitoAdapter, "create_user_groups")
     @patch.object(DeleteService, "delete_schema")
     @patch.object(DataService, "upload_schema")
     def test_returns_500_schema_deletion_if_crawler_creation_fails(
-        self,
-        mock_upload_schema,
-        mock_delete_schema,
-        mock_create_user_groups,
-        mock_delete_user_groups,
+        self, mock_upload_schema, mock_delete_schema
     ):
         request_body, _ = self._generate_schema()
 
         mock_upload_schema.return_value = "some-thing.json"
-        mock_create_user_groups.return_value = None
         mock_upload_schema.side_effect = CrawlerCreateFailsError(
             "Crawler creation error"
         )
@@ -109,27 +100,6 @@ class TestSchemaUpload(BaseClientTest):
 
         assert response.status_code == 500
         assert response.json() == {"details": "Crawler creation error"}
-
-        mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC")
-        mock_delete_user_groups.assert_called_once_with("some", "thing")
-
-    @patch.object(DeleteService, "delete_schema")
-    @patch.object(DataService, "upload_schema")
-    def test_returns_500_schema_deletion_if_user_group_creation_fails(
-        self, mock_upload_schema, mock_delete_schema
-    ):
-        request_body, _ = self._generate_schema()
-
-        mock_upload_schema.side_effect = UserGroupCreationError(
-            "User group creation error"
-        )
-
-        response = self.client.post(
-            "/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
-        )
-
-        assert response.status_code == 500
-        assert response.json() == {"details": "User group creation error"}
 
         mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC")
 
