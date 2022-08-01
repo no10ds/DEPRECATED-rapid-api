@@ -13,6 +13,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     UserGroupCreationError,
     UserGroupDeletionError,
+    UserError,
 )
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserRequest, UserResponse
@@ -45,18 +46,23 @@ class CognitoAdapter:
             self._handle_client_error(client_request, error)
 
     def create_user(self, user_request: UserRequest) -> UserResponse:
-        cognito_response = self.cognito_client.admin_create_user(
-            UserPoolId=COGNITO_USER_POOL_ID,
-            Username=user_request.get_validated_username(),
-            UserAttributes=[
-                {"Name": "email", "Value": user_request.email},
-                {"Name": "email_verified", "Value": "True"},
-            ],
-            DesiredDeliveryMediums=[
-                "EMAIL",
-            ],
-        )
-        return self._create_user_response(cognito_response, user_request.permissions)
+        try:
+            cognito_response = self.cognito_client.admin_create_user(
+                UserPoolId=COGNITO_USER_POOL_ID,
+                Username=user_request.get_validated_username(),
+                UserAttributes=[
+                    {"Name": "email", "Value": user_request.email},
+                    {"Name": "email_verified", "Value": "True"},
+                ],
+                DesiredDeliveryMediums=[
+                    "EMAIL",
+                ],
+            )
+            return self._create_user_response(
+                cognito_response, user_request.permissions
+            )
+        except ClientError as error:
+            self._handle_user_error(user_request, error)
 
     def create_user_groups(self, domain: str, dataset: str) -> None:
         try:
@@ -113,9 +119,16 @@ class CognitoAdapter:
     def _build_default_scopes(self):
         return [f"{COGNITO_RESOURCE_SERVER_ID}/CLIENT_APP"]
 
-    def _handle_client_error(self, client_request, error):
+    def _handle_client_error(self, client_request: ClientRequest, error):
         raise AWSServiceError(
             f"The client '{client_request.client_name}' could not be created"
+        )
+
+    def _handle_user_error(self, user_request: UserRequest, error: ClientError):
+        if error.response["Error"]["Code"] == "UsernameExistsException":
+            raise UserError(f"The user '{user_request.username}' already exist")
+        raise AWSServiceError(
+            f"The user '{user_request.username}' could not be created"
         )
 
     def get_resource_server(self, user_pool_id: str, identifier: str):

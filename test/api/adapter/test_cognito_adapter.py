@@ -10,6 +10,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     UserGroupCreationError,
     UserGroupDeletionError,
+    UserError,
 )
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserResponse, UserRequest
@@ -121,6 +122,21 @@ class TestCognitoAdapterClientMethods:
             UserPoolId=COGNITO_USER_POOL_ID, ClientId="client_id"
         )
 
+    def test_raises_error_when_the_client_fails_to_create_in_aws(self):
+        client_request = ClientRequest(
+            client_name="my_client", permissions=["NOT_VALID"]
+        )
+
+        self.cognito_boto_client.create_user_pool_client.side_effect = ClientError(
+            error_response={"Error": {"Code": "InvalidParameterException"}},
+            operation_name="CreateUserPoolClient",
+        )
+
+        with pytest.raises(
+            AWSServiceError, match="The client 'my_client' could not be created"
+        ):
+            self.cognito_adapter.create_client_app(client_request)
+
     def test_create_user(self):
         cognito_response = {
             "User": {
@@ -170,20 +186,37 @@ class TestCognitoAdapterClientMethods:
             UserPoolId=COGNITO_USER_POOL_ID, Username="username"
         )
 
-    def test_raises_error_when_the_client_fails_to_create_in_aws(self):
-        client_request = ClientRequest(
-            client_name="my_client", permissions=["NOT_VALID"]
+    def test_create_user_fails_in_aws(self):
+        request = UserRequest(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
         )
 
-        self.cognito_boto_client.create_user_pool_client.side_effect = ClientError(
+        self.cognito_boto_client.admin_create_user.side_effect = ClientError(
             error_response={"Error": {"Code": "InvalidParameterException"}},
-            operation_name="CreateUserPoolClient",
+            operation_name="AdminCreateUser",
         )
 
         with pytest.raises(
-            AWSServiceError, match="The client 'my_client' could not be created"
+            AWSServiceError, match="The user 'user-name' could not be created"
         ):
-            self.cognito_adapter.create_client_app(client_request)
+            self.cognito_adapter.create_user(request)
+
+    def test_create_user_fails_when_the_user_already_exist(self):
+        request = UserRequest(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
+        )
+
+        self.cognito_boto_client.admin_create_user.side_effect = ClientError(
+            error_response={"Error": {"Code": "UsernameExistsException"}},
+            operation_name="AdminCreateUser",
+        )
+
+        with pytest.raises(UserError, match="The user 'user-name' already exist"):
+            self.cognito_adapter.create_user(request)
 
     def test_create_user_group_with_domain_and_dataset(self):
         self.cognito_adapter.create_user_groups("my_domain", "my_dataset")
