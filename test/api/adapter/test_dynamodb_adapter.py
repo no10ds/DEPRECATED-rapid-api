@@ -86,7 +86,7 @@ class TestDynamoDBAdapter:
 
         with pytest.raises(
             AWSServiceError,
-            match="The client could not be created, please contact your system administrator",
+            match="The subject could not be created, please contact your system administrator",
         ):
             self.dynamo_adapter.store_subject_permissions(
                 subject_type, subject_id, permissions
@@ -102,7 +102,7 @@ class TestDynamoDBAdapter:
 
         with pytest.raises(
             AWSServiceError,
-            match="The client could not be created, please contact your system administrator",
+            match="The subject could not be created, please contact your system administrator",
         ):
             self.dynamo_adapter.validate_permissions(permissions)
 

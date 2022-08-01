@@ -60,7 +60,9 @@ class DynamoDBAdapter(DatabaseAdapter):
                 },
             )
         except ClientError:
-            self._handle_client_error("Error storing the client")
+            self._handle_client_error(
+                f"Error storing the {subject_type.value}: {subject_id}"
+            )
 
     def validate_permissions(self, subject_permissions: List[str]) -> None:
         permissions_response = self._get_permissions(subject_permissions)
@@ -105,5 +107,5 @@ class DynamoDBAdapter(DatabaseAdapter):
     def _handle_client_error(message: str) -> None:
         AppLogger.info(message)
         raise AWSServiceError(
-            "The client could not be created, please contact your system administrator"
+            "The subject could not be created, please contact your system administrator"
         )
