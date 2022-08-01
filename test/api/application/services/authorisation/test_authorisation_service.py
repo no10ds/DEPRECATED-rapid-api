@@ -21,6 +21,7 @@ from api.common.custom_exceptions import (
     SchemaNotFoundError,
     UserCredentialsUnavailableError,
     SubjectNotFoundError,
+    ClientCredentialsUnavailableError,
 )
 from api.domain.token import Token
 
@@ -70,7 +71,7 @@ class TestSecureDatasetEndpoint:
         client_token = None
         browser_request = False
 
-        with pytest.raises(HTTPException):
+        with pytest.raises(ClientCredentialsUnavailableError):
             secure_dataset_endpoint(
                 security_scopes=SecurityScopes(scopes=["READ"]),
                 browser_request=browser_request,
@@ -230,7 +231,7 @@ class TestCheckCredentialsAvailability:
             )
 
     def test_raises_http_error_when_is_not_browser_request_with_no_credentials(self):
-        with pytest.raises(HTTPException):
+        with pytest.raises(ClientCredentialsUnavailableError):
             check_credentials_availability(
                 browser_request=False, user_token=None, client_token=None
             )

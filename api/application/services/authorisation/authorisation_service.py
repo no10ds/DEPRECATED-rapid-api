@@ -7,7 +7,7 @@ from fastapi.security import SecurityScopes
 from fastapi.security.utils import get_authorization_scheme_param
 from jwt import InvalidTokenError
 from starlette.requests import Request
-from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.adapter.s3_adapter import S3Adapter
@@ -24,6 +24,7 @@ from api.common.custom_exceptions import (
     AuthorisationError,
     UserCredentialsUnavailableError,
     SubjectNotFoundError,
+    ClientCredentialsUnavailableError,
 )
 from api.domain.token import Token
 
@@ -106,9 +107,8 @@ def check_credentials_availability(
         if browser_request:
             raise UserCredentialsUnavailableError()
         else:
-            raise HTTPException(
-                status_code=HTTP_403_FORBIDDEN,
-                detail="You are not authorised to perform this action",
+            raise ClientCredentialsUnavailableError(
+                message="You are not authorised to perform this action", status_code=403
             )
 
 

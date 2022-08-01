@@ -34,6 +34,10 @@ class DatasetError(UserError):
         super().__init__(message)
 
 
+class ClientCredentialsUnavailableError(BaseAppException):
+    pass
+
+
 class UserCredentialsUnavailableError(Exception):
     pass
 
