@@ -10,10 +10,8 @@ from api.common.config.auth import (
     COGNITO_ALLOWED_FLOWS,
 )
 from api.common.config.aws import AWS_REGION
-from api.common.custom_exceptions import (
-    AWSServiceError,
-    UserError
-)
+from api.common.custom_exceptions import AWSServiceError, UserError
+from api.common.logger import AppLogger
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserRequest, UserResponse
 
@@ -26,6 +24,9 @@ class CognitoAdapter:
 
     def create_client_app(self, client_request: ClientRequest) -> ClientResponse:
         try:
+            AppLogger.info(
+                f"Creating Client App with name: {client_request.client_name}"
+            )
             cognito_scopes = self._build_default_scopes()
 
             cognito_response = self.cognito_client.create_user_pool_client(
@@ -94,11 +95,17 @@ class CognitoAdapter:
         return [f"{COGNITO_RESOURCE_SERVER_ID}/CLIENT_APP"]
 
     def _handle_client_error(self, client_request: ClientRequest, error):
+        AppLogger.info(
+            f"The client '{client_request.client_name}' could not be created with error: {error}"
+        )
         raise AWSServiceError(
             f"The client '{client_request.client_name}' could not be created"
         )
 
     def _handle_user_error(self, user_request: UserRequest, error: ClientError):
+        AppLogger.info(
+            f"The user '{user_request.username}' could not be created with error: {error}"
+        )
         if error.response["Error"]["Code"] == "UsernameExistsException":
             raise UserError(f"The user '{user_request.username}' already exist")
         raise AWSServiceError(
@@ -130,11 +137,13 @@ class CognitoAdapter:
             )
 
     def delete_client_app(self, client_id: str):
+        AppLogger.info(f"Deleting client {client_id}")
         self.cognito_client.delete_user_pool_client(
             UserPoolId=COGNITO_USER_POOL_ID, ClientId=client_id
         )
 
     def delete_user(self, username: str):
+        AppLogger.info(f"Deleting user {username}")
         self.cognito_client.admin_delete_user(
             UserPoolId=COGNITO_USER_POOL_ID,
             Username=username,
