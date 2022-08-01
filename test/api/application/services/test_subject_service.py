@@ -138,3 +138,67 @@ class TestUserCreation:
         )
 
         assert actual_response == expected_response
+
+    def test_do_not_create_user_when_validate_permissions_fails(self):
+        subject_request = UserRequest(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
+        )
+        self.dynamo_adapter.validate_permissions.side_effect = AWSServiceError(
+            "The user could not be created, please contact your system administrator"
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="The user could not be created, please contact your system administrator",
+        ):
+            self.subject_service.create_user(subject_request)
+
+        self.dynamo_adapter.store_subject_permissions.assert_not_called()
+        self.cognito_adapter.create_user.assert_not_called()
+
+    def test_do_not_create_user_when_invalid_permissions(self):
+        subject_request = UserRequest(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["FAKE_NAME"],
+        )
+        self.dynamo_adapter.validate_permissions.side_effect = UserError(
+            "One or more of the provided permissions do not exist"
+        )
+
+        with pytest.raises(
+            UserError,
+            match="One or more of the provided permissions do not exist",
+        ):
+            self.subject_service.create_user(subject_request)
+
+        self.dynamo_adapter.store_subject_permissions.assert_not_called()
+        self.cognito_adapter.create_user.assert_not_called()
+
+    def test_delete_existing_user_when_update_fails(self):
+        subject_response = UserResponse(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
+            user_id="some-uu-id-b226-e5fd18c59b85",
+        )
+        subject_request = UserRequest(
+            username="user-name",
+            email="user-name@some-email.com",
+            permissions=["WRITE_PUBLIC", "READ_PRIVATE"],
+        )
+        self.cognito_adapter.create_user.return_value = subject_response
+        self.dynamo_adapter.store_subject_permissions.side_effect = AWSServiceError(
+            "The user could not be created, please contact your system administrator"
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="The user could not be created, please contact your system administrator",
+        ):
+            self.subject_service.create_user(subject_request)
+
+        self.cognito_adapter.create_user.assert_called_once_with(subject_request)
+        self.cognito_adapter.delete_user.assert_called_once_with("user-name")

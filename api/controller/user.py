@@ -27,11 +27,12 @@ async def create_user(user_request: UserRequest):
 
     | Parameters       | Usage               | Example values   | Definition                                                                |
     |------------------|---------------------|------------------|---------------------------------------------------------------------------|
-    | `client details` | JSON Request Body   | See below        | The name of the client application to onboard and the granted permissions |
+    | `User details`   | JSON Request Body   | See below        | The name of the user application to onboard and the granted permissions   |
 
     ```json
     {
-    "client_name": "department_for_education",
+    "username": "jhon_doe",
+    "email": "jhon.doe@email.com",
     "permissions": [
         "READ_ALL",
         "WRITE_PUBLIC"
@@ -39,30 +40,30 @@ async def create_user(user_request: UserRequest):
     }
     ```
 
-    ### Client Name
+    ### User Name
 
-    The client name must adhere to the following conditions:
+    The user name must adhere to the following conditions:
 
     - Alphanumeric
     - Start with an alphabetic character
     - Can contain any symbol of `. - _ @`
     - Must be between 3 and 128 characters
 
-    #### Permissions you can grant to the client
+    #### Permissions you can grant to the user
 
-    Depending on what permission you would like to grant the onboarding client, the relevant permission(s) must be assigned.
+    Depending on what permission you would like to grant the onboarding user, the relevant permission(s) must be assigned.
     Available choices are:
 
-    - `READ_ALL` - allow client to read any dataset
-    - `READ_PUBLIC` - allow client to read any public dataset
-    - `READ_PRIVATE` - allow client to read any dataset with sensitivity private or public
-    - `READ_PROTECTED_{DOMAIN}` - allow client to read datasets within a specific protected domain
-    - `WRITE_ALL` - allow client to write any dataset
-    - `WRITE_PUBLIC` - allow client to write any public dataset
-    - `WRITE_PRIVATE` - allow client to write any dataset with sensitivity private or public
-    - `WRITE_PROTECTED_{DOMAIN}` - allow client to write datasets within a specific protected domain
-    - `DATA_ADMIN` - allow client to add a schema for a dataset of any sensitivity
-    - `USER_ADMIN` - allow client to add a new client
+    - `READ_ALL` - allow user to read any dataset
+    - `READ_PUBLIC` - allow user to read any public dataset
+    - `READ_PRIVATE` - allow user to read any dataset with sensitivity private or public
+    - `READ_PROTECTED_{DOMAIN}` - allow user to read datasets within a specific protected domain
+    - `WRITE_ALL` - allow user to write any dataset
+    - `WRITE_PUBLIC` - allow user to write any public dataset
+    - `WRITE_PRIVATE` - allow user to write any dataset with sensitivity private or public
+    - `WRITE_PROTECTED_{DOMAIN}` - allow user to write datasets within a specific protected domain
+    - `DATA_ADMIN` - allow user to add a schema for a dataset of any sensitivity
+    - `USER_ADMIN` - allow user to add a new user
 
     The protected domains can be listed [here](#Protected%20Domains/list_protected_domains_protected_domains_get) or created [here](#Protected%20Domains/create_protected_domain_protected_domains__domain__post).
 

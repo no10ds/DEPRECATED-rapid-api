@@ -86,6 +86,41 @@ class TestCognitoAdapterClientMethods:
         )
         assert actual_response == expected_response
 
+    def test_create_client_app_with_default_allowed_oauth_scope(self):
+        client_request = ClientRequest(
+            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
+        )
+        self.cognito_boto_client.create_user_pool_client.return_value = {
+            "UserPoolClient": {
+                "UserPoolId": COGNITO_USER_POOL_ID,
+                "ClientName": "my_client",
+                "ClientId": "some_client",
+                "ClientSecret": "some_secret",  # pragma: allowlist secret
+            }
+        }
+
+        self.cognito_adapter.create_client_app(client_request)
+
+        self.cognito_boto_client.create_user_pool_client.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID,
+            ClientName="my_client",
+            GenerateSecret=True,
+            ExplicitAuthFlows=[
+                "ALLOW_REFRESH_TOKEN_AUTH",
+                "ALLOW_CUSTOM_AUTH",
+                "ALLOW_USER_SRP_AUTH",
+            ],
+            AllowedOAuthFlows=["client_credentials"],
+            AllowedOAuthScopes=[f"https://{DOMAIN_NAME}/CLIENT_APP"],
+            AllowedOAuthFlowsUserPoolClient=True,
+        )
+
+    def test_delete_client_app(self):
+        self.cognito_adapter.delete_client_app("client_id")
+        self.cognito_boto_client.delete_user_pool_client.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID, ClientId="client_id"
+        )
+
     def test_create_user(self):
         cognito_response = {
             "User": {
@@ -129,39 +164,10 @@ class TestCognitoAdapterClientMethods:
 
         assert actual_response == expected_response
 
-    def test_create_client_app_with_default_allowed_oauth_scope(self):
-        client_request = ClientRequest(
-            client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
-        )
-        self.cognito_boto_client.create_user_pool_client.return_value = {
-            "UserPoolClient": {
-                "UserPoolId": COGNITO_USER_POOL_ID,
-                "ClientName": "my_client",
-                "ClientId": "some_client",
-                "ClientSecret": "some_secret",  # pragma: allowlist secret
-            }
-        }
-
-        self.cognito_adapter.create_client_app(client_request)
-
-        self.cognito_boto_client.create_user_pool_client.assert_called_once_with(
-            UserPoolId=COGNITO_USER_POOL_ID,
-            ClientName="my_client",
-            GenerateSecret=True,
-            ExplicitAuthFlows=[
-                "ALLOW_REFRESH_TOKEN_AUTH",
-                "ALLOW_CUSTOM_AUTH",
-                "ALLOW_USER_SRP_AUTH",
-            ],
-            AllowedOAuthFlows=["client_credentials"],
-            AllowedOAuthScopes=[f"https://{DOMAIN_NAME}/CLIENT_APP"],
-            AllowedOAuthFlowsUserPoolClient=True,
-        )
-
-    def test_delete_client_app(self):
-        self.cognito_adapter.delete_client_app("client_id")
-        self.cognito_boto_client.delete_user_pool_client.assert_called_once_with(
-            UserPoolId=COGNITO_USER_POOL_ID, ClientId="client_id"
+    def test_delete_user(self):
+        self.cognito_adapter.delete_user("username")
+        self.cognito_boto_client.admin_delete_user.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID, Username="username"
         )
 
     def test_raises_error_when_the_client_fails_to_create_in_aws(self):

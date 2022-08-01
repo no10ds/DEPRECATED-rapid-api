@@ -22,9 +22,7 @@ class SubjectService:
     def create_user(self, user_request: UserRequest) -> UserResponse:
         self.dynamodb_adapter.validate_permissions(user_request.permissions)
         user_response = self.cognito_adapter.create_user(user_request)
-        self.dynamodb_adapter.store_subject_permissions(
-            SubjectType.USER, user_response.user_id, user_request.permissions
-        )
+        self._store_user_permissions(user_request, user_response)
 
         return user_response
 
@@ -39,4 +37,15 @@ class SubjectService:
             )
         except Exception as error:
             self.cognito_adapter.delete_client_app(client_response.client_id)
+            raise error
+
+    def _store_user_permissions(
+        self, user_request: UserRequest, user_response: UserResponse
+    ):
+        try:
+            self.dynamodb_adapter.store_subject_permissions(
+                SubjectType.USER, user_response.user_id, user_request.permissions
+            )
+        except Exception as error:
+            self.cognito_adapter.delete_user(user_response.username)
             raise error

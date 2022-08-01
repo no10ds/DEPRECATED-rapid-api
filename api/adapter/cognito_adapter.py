@@ -142,7 +142,13 @@ class CognitoAdapter:
                 f'The scopes "{additional_scopes}" could not be added, please contact system administrator'
             )
 
-    def delete_client_app(self, client_id):
+    def delete_client_app(self, client_id: str):
         self.cognito_client.delete_user_pool_client(
             UserPoolId=COGNITO_USER_POOL_ID, ClientId=client_id
+        )
+
+    def delete_user(self, username: str):
+        self.cognito_client.admin_delete_user(
+            UserPoolId=COGNITO_USER_POOL_ID,
+            Username=username,
         )
