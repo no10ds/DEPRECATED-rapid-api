@@ -20,15 +20,12 @@ to clarify the overarching structure and where to look when things go wrong.
 
 1. Application service spins-up
     1. No domains or datasets exist
-    2. No user groups exist
-2. Client app registered and given desired permissions
-3. Client app uploads schema to define the first dataset
-    1. _User_ group created in Cognito, in anticipation of granting users access to upload data to the dataset
-4. User registered and assigned to the desired user groups
-5. User logs in to the UI
-6. User uploads dataset file
-7. AWS Glue Crawler runs to look at the data a construct a metadata schema in the Glue Catalog
-8. The data is available to be queried by a client app via the `/docs` page or via a programmatic client
+2. Client app/user registered and given desired permissions
+3. Client app/user uploads schema to define the first dataset
+4. User logs in to the UI
+5. User uploads dataset file
+6. AWS Glue Crawler runs to look at the data a construct a metadata schema in the Glue Catalog
+7. The data is available to be queried by a client app via the `/docs` page or via a programmatic client
 
 ## Authorisation flows
 
@@ -44,10 +41,10 @@ Postman, etc.)
 The user is a human element that uses the custom UI. Currently, the UI only supports file upload but the intention is to
 extend this in the future.
 
-| Flow       | Token        | Auth method | Permission example                                 | Notes                                                             |
-|------------|--------------|-------------|----------------------------------------------------|-------------------------------------------------------------------|
-| User       | User Token   | User groups | `WRITE/domain1/dataset1`, `WRITE/domain2/dataset1` | No specificity at the sensitivity level, only domain and dataset  |
-| Client app | Client Token | Permissions | `WRITE_PUBLIC`, `READ_PRIVATE`                   | No specificity at the domain or dataset level, only sensitivity   |
+| Flow       | Token        | Auth method | Permission example             | Notes                                                            |
+|------------|--------------|-------------|--------------------------------|------------------------------------------------------------------|
+| User       | User Token   | Permissions | `WRITE_PUBLIC`, `READ_PRIVATE` | No specificity at the domain or dataset level, only sensitivity  |
+| Client app | Client Token | Permissions | `WRITE_PUBLIC`, `READ_PRIVATE` | No specificity at the domain or dataset level, only sensitivity  |
 
 The "action" component of a permission (`READ`, `WRITE`, etc.) is used only in the matching logic when a request is made
 and compared to the specified scope assigned to the endpoint being accessed.

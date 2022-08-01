@@ -45,9 +45,9 @@ In order to grant a client app one or more of these permissions, you need to:
   to `api/common/config/auth.py`
 - Check if you need handle the permission in `api/application/services/authorisation/acceptable_permissions.py`
 
-### Permissions for existing client apps
+### Permissions for existing client apps and users
 
-Once the new permission has been created, you can add it to a client app.
+Once the new permission has been created, you can add it to a client app/user.
 In DynamoDB:
 
 1. Open the permissions table: `{prefix}_users_permissions`

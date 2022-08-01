@@ -283,8 +283,7 @@ scopes:
 - `USER_ADMIN`
 
 For instance, if `WRITE` scope is used, that means that whoever is trying to access the endpoint needs to have any
-of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE/<domain>/<dataset>` listed in their permissions or be part of that
-user group, where sensitivity level is the sensitivity level of the dataset being modified. Otherwise, the requests
+of `WRITE_ALL`, `WRITE_<sensitivity_level>` listed in their permissions, where sensitivity level is the sensitivity level of the dataset being modified. Otherwise, the requests
 fails.
 
 > ⚠️ ️NOTE: Higher sensitivity levels imply lower sensitivity levels.
@@ -323,11 +322,9 @@ Note that ```secure_dataset_endpoint``` dependency function must be used when ``
 in the url path and should be taken in consideration to determine the permission to access.
 
 When using the frontend layer instead of the client app token, the user token is used. This token contains Cognito user
-groups to describe the permission access level for that particular user. The cognito follows a naming convention
-of ```WRITE/<domain>/<dataset>``` such as ```WRITE/trains/completed_journeys```.
+subject id which can be looked up in the permissions database to describe the permission access level for that particular user. The database follows a naming convention
+of ```WRITE_PUBLIC```.
 
-Note: The system expects the user group naming to follow the convention above otherwise it will fail to determine the
-permission level.
 
 ## Gotchas 🤯
 

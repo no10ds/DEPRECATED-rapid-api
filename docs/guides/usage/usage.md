@@ -29,7 +29,7 @@ The application can be used by both human and programmatic clients (see more bel
 - When accessing the REST API as a client application, different actions require the client to have different
   permissions e.g.:`READ`, `WRITE`, `DATA_ADMIN`, etc., and different dataset sensitivity level permissions
   e.g.: `PUBLIC`, `PRIVATE`, etc.
-- When accessing the UI as a human user, permissions are granted by user groups e.g.: `WRITE/trains/completed_journeys`
+- When accessing the UI as a human user, permissions are granted by the permissions database, e.g.: `WRITE_PUBLIC`
 
 ## Data upload and query flows
 
@@ -43,54 +43,45 @@ The application can be used by both human and programmatic clients (see more bel
 
 # How to authorise
 
-## Human Users
+## Granting users permissions
 
-### Granting users permissions
+For human users to access a certain dataset they need permission based on sensitivity levels.
 
-If human users are involved in the process then they should be given permission to each dataset they need to upload data
-to.
+This step is done via the permissions database.
 
-This step is done via the AWS console in the Cognito section.
+When creating a user app via the `/user` endpoint, permissions can be granted.
 
-To do this:
+To update these, currently an admin will need to go to DynamoDB in the AWS console and manually grant or revoke the
+relevant permission to the user (see [Adding/Deleting permissions](../contributing/application_context.md))
 
-1. Navigate to the corresponding Cognito user pool of this application (check your config file for the user pool name)
-2. Add the desired users to the dataset user groups.
-    1. Datasets user groups should follow the naming convention ```WRITE/<domain>/<dataset>```.
-    2. e.g.: For the domain ```trains``` and dataset ```completed_journeys``` the user group should
-       be ```WRITE/trains/completed_journeys```.
-    3. Once a user is added to dataset user group as described above, the user will need to re-authenticate on the
-       frontend so that their access token reflects the new permissions.
 
-## Programmatic clients
-
-### Granting client apps permissions
+## Granting client apps permissions
 
 When creating a client app via the `/client` endpoint, permissions can be granted.
 
 To update these, currently an admin will need to go to DynamoDB in the AWS console and manually grant or revoke the
 relevant permission to the client app (see [Adding/Deleting permissions](../contributing/application_context.md))
 
-## Authenticating and interacting with the application
+# Authenticating and interacting with the application
 
-### Client app
+## Client app
 
-#### Using the OpenApi docs at `/docs`:
+### Using the OpenApi docs at `/docs`:
 
 1. Hit Authorise button
 2. Pass `client id` and `client secret`
 3. Access the endpoints
 
-#### Via programmatic access:
+### Via programmatic access:
 
 See the [scripts](./scripts/) section for examples of programmatic client interaction.
 
 The general concept is to retrieve an access token using client credentials and making subsequent requests passing that
 token.
 
-### Human user
+## Human user
 
-#### Via the UI
+### Via the UI
 
 Clicking 'Login' on the `/login` page will redirect the user to Cognito, whereupon they will be prompted to enter their
 username and password. This will grant them a temporary access token and redirect them to the `/upload` page.
@@ -936,16 +927,13 @@ This page is used to upload datasets into the rAPId service by authenticated use
 
 ### Needed credentials
 
-The user must be logged in as a Cognito user with WRITE permissions in order to use this page. The credentials will be
+The user must be logged in as a Cognito user to use this page. The credentials will be
 read from the cookie "rat" that stands for "Rapid Access Token".
 
-Note that the page will only show the dataset to which the user has "WRITE" permissions, regardless of the current
-status of these datasets.
+For example, if the user has permission "READ_PRIVATE", "WRITE_PRIVATE" and "dot/trucks" dataset has the sensitivity of PRIVATE (or PUBLIC) then they will
+be able to see and write to the datasets "dot/trucks".
 
-For example, if the user belongs to the groups "READ/dot/bikes", "WRITE/dot/cars" and "WRITE/dot/trucks" then they will
-be able to see the datasets "dot/cars" and "dot/trucks".
-
-If the user is missing any permissions, they can be added via Cognito.
+If the user is missing any permissions, they can be added in the permissions database.
 
 ### Steps
 
