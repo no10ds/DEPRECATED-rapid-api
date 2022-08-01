@@ -2,7 +2,7 @@
 
 This guide will walk you through getting started with rAPId.
 
-This walkthrough is for the `/docs` endpoint, everything done here can also be done programatically.
+This walkthrough is for the `/docs` endpoint, everything done here can also be done programmatically.
 
 ## Authorising
 

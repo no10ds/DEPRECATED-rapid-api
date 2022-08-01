@@ -40,9 +40,9 @@ async def create_user(user_request: UserRequest):
     }
     ```
 
-    ### User Name
+    ### Username
 
-    The user name must adhere to the following conditions:
+    The username must adhere to the following conditions:
 
     - Alphanumeric
     - Start with an alphabetic character

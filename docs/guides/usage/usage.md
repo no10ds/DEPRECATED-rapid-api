@@ -47,13 +47,12 @@ The application can be used by both human and programmatic clients (see more bel
 
 For human users to access a certain dataset they need permission based on sensitivity levels.
 
-This step is done via the permissions database.
+This step is done via the permissions' database.
 
 When creating a user app via the `/user` endpoint, permissions can be granted.
 
 To update these, currently an admin will need to go to DynamoDB in the AWS console and manually grant or revoke the
 relevant permission to the user (see [Adding/Deleting permissions](../contributing/application_context.md))
-
 
 ## Granting client apps permissions
 
@@ -815,6 +814,88 @@ Once the new client has been created, the following information is returned in t
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
+## Create user
+
+As a maintainer of a rAPId instance you may want to allow new users to interact with the UI to upload or query data.
+
+Use this endpoint to add a new users, generate their credentials and add permissions to them.
+
+### General structure
+
+`POST /user`
+
+### Inputs
+
+| Parameters       | Usage               | Example values   | Definition                                                                |
+  |------------------|---------------------|------------------|---------------------------------------------------------------------------|
+| `User details`   | JSON Request Body   | See below        | The name of the user application to onboard and the granted permissions   |
+
+  ```json
+  {
+  "username": "jhon_doe",
+  "email": "jhon.doe@email.com",
+  "permissions": [
+    "READ_ALL",
+    "WRITE_PUBLIC"
+  ]
+}
+  ```
+
+### Username
+
+The username must adhere to the following conditions:
+
+- Alphanumeric
+- Start with an alphabetic character
+- Can contain any symbol of `. - _ @`
+- Must be between 3 and 128 characters
+
+### Email address
+
+The email must adhere to the following conditions:
+
+- The domain must be included on the `ALLOWED_EMAIL_DOMAINS` environment
+- Must satisfy the Email Standard Structure `RFC5322` (
+  see [Email Address in Wikipedia](https://en.wikipedia.org/wiki/Email_address))
+
+#### Permissions you can grant to the client
+
+Depending on what permission you would like to grant the on-boarding user, the relevant permission(s) must be assigned.
+Available choices are:
+
+- `READ_ALL` - allow user to read any dataset
+- `READ_PUBLIC` - allow user to read any public dataset
+- `READ_PRIVATE` - allow user to read any dataset with sensitivity private or public
+- `READ_PROTECTED_{DOMAIN}` - allow user to read datasets within a specific protected domain
+- `WRITE_ALL` - allow user to write any dataset
+- `WRITE_PUBLIC` - allow user to write any public dataset
+- `WRITE_PRIVATE` - allow user to write any dataset with sensitivity private or public
+- `WRITE_PROTECTED_{DOMAIN}` - allow user to write datasets within a specific protected domain
+- `DATA_ADMIN` - allow user to add a schema for a dataset of any sensitivity
+- `USER_ADMIN` - allow user to add a new user
+
+  The protected domains can be listed [here](#Protected%20Domains/list_protected_domains_protected_domains_get) or created [here](#Protected%20Domains/create_protected_domain_protected_domains__domain__post).
+
+### Outputs
+
+Once the new user has been created, the following information will be shown in the response:
+
+```json
+{
+  "username": "jhon_doe",
+  "email": "jhon.doe@email.com",
+  "permissions": [
+    "READ_ALL",
+    "WRITE_PUBLIC"
+  ],
+  "user_id": "some-generated-id-eq2e3q-eqwe32-12eqwe214q"
+}
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `USER_ADMIN` permission
+
 ## Create protected domain
 
 Protected domains can be created to restrict access permissions to specific domains
@@ -927,11 +1008,11 @@ This page is used to upload datasets into the rAPId service by authenticated use
 
 ### Needed credentials
 
-The user must be logged in as a Cognito user to use this page. The credentials will be
-read from the cookie "rat" that stands for "Rapid Access Token".
+The user must be logged in as a Cognito user to use this page. The credentials will be read from the cookie "rat" that
+stands for "Rapid Access Token".
 
-For example, if the user has permission "READ_PRIVATE", "WRITE_PRIVATE" and "dot/trucks" dataset has the sensitivity of PRIVATE (or PUBLIC) then they will
-be able to see and write to the datasets "dot/trucks".
+For example, if the user has permission "READ_PRIVATE", "WRITE_PRIVATE" and "dot/trucks" dataset has the sensitivity of
+PRIVATE (or PUBLIC) then they will be able to see and write to the datasets "dot/trucks".
 
 If the user is missing any permissions, they can be added in the permissions database.
 
