@@ -6,6 +6,7 @@ from api.application.services.subject_service import SubjectService
 from api.common.config.auth import SubjectType
 from api.common.custom_exceptions import AWSServiceError, UserError
 from api.domain.client import ClientRequest, ClientResponse
+from api.domain.subject_permissions import SubjectPermissions
 from api.domain.user import UserResponse, UserRequest
 
 
@@ -202,3 +203,24 @@ class TestUserCreation:
 
         self.cognito_adapter.create_user.assert_called_once_with(subject_request)
         self.cognito_adapter.delete_user.assert_called_once_with("user-name")
+
+
+class TestSetSubjectPermissions:
+    def setup_method(self):
+        self.cognito_adapter = Mock()
+        self.dynamo_adapter = Mock()
+        self.subject_service = SubjectService(self.cognito_adapter, self.dynamo_adapter)
+
+    def test_set_subject_permissions(self):
+        subject_permissions = SubjectPermissions(
+            subject_id="123asdf67gd", permissions=["READ_ALL", "WRITE_PUBLIC"]
+        )
+
+        self.subject_service.set_subject_permissions(subject_permissions)
+
+        self.dynamo_adapter.validate_permissions.assert_called_once_with(
+            subject_permissions.permissions
+        )
+        self.dynamo_adapter.update_subject_permissions.assert_called_once_with(
+            subject_permissions
+        )

@@ -2,6 +2,7 @@ from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.common.config.auth import SubjectType
 from api.domain.client import ClientResponse, ClientRequest
+from api.domain.subject_permissions import SubjectPermissions
 from api.domain.user import UserRequest, UserResponse
 
 
@@ -49,3 +50,7 @@ class SubjectService:
         except Exception as error:
             self.cognito_adapter.delete_user(user_response.username)
             raise error
+
+    def set_subject_permissions(self, subject_permissions: SubjectPermissions) -> None:
+        self.dynamodb_adapter.validate_permissions(subject_permissions.permissions)
+        self.dynamodb_adapter.update_subject_permissions(subject_permissions)
