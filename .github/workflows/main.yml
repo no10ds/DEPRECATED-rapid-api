@@ -21,19 +21,11 @@ jobs:
         run:
           cp ./.github/.github.env .env
 
-      # Adding the new line as a safety method, if the .github.env file does not have one it would append the DOMAIN_NAME
+      # Make sure to have a new line in .github.env. Otherwise, it would append the DOMAIN_NAME
       # to the last item
       - name: Export DOMAIN_NAME
         run:
-          echo '\n' >> .env
-
-      - name: Export DOMAIN_NAME
-        run:
-          echo '%s\n' >> .env
-
-      - name: Export DOMAIN_NAME
-        run:
-          echo "\nDOMAIN_NAME=${{ secrets.DOMAIN_NAME }}" >> .env
+          echo DOMAIN_NAME=${{ secrets.DOMAIN_NAME }} >> .env
 
       - name: Export DATA_BUCKET
         run:
