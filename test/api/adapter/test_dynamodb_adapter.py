@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from boto3.dynamodb.conditions import Key, Attr, Or
@@ -72,6 +72,40 @@ class TestDynamoDBAdapter:
                 "Type": "CLIENT",
                 "Permissions": expected_client_permissions,
             },
+        )
+
+    def test_store_protected_permission(self):
+        domain = "TRAIN"
+        mock_batch_writer = Mock()
+        mock_batch_writer.__enter__ = Mock(return_value=mock_batch_writer)
+        mock_batch_writer.__exit__ = Mock(return_value=None)
+        self.dynamo_boto_resource.batch_writer.return_value = mock_batch_writer
+
+        self.dynamo_adapter.store_protected_permission(domain)
+
+        mock_batch_writer.put_item.assert_has_calls(
+            [
+                call(
+                    Item={
+                        "PK": "PERMISSION",
+                        "SK": "WRITE_PROTECTED_TRAIN",
+                        "Id": "WRITE_PROTECTED_TRAIN",
+                        "Type": "WRITE",
+                        "Sensitivity": "PROTECTED",
+                        "Domain": "TRAIN",
+                    }
+                ),
+                call(
+                    Item={
+                        "PK": "PERMISSION",
+                        "SK": "READ_PROTECTED_TRAIN",
+                        "Id": "READ_PROTECTED_TRAIN",
+                        "Type": "READ",
+                        "Sensitivity": "PROTECTED",
+                        "Domain": "TRAIN",
+                    }
+                ),
+            ]
         )
 
     def test_store_subject_permissions_throws_error_when_database_call_fails(self):
