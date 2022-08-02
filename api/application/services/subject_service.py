@@ -51,6 +51,9 @@ class SubjectService:
             self.cognito_adapter.delete_user(user_response.username)
             raise error
 
-    def set_subject_permissions(self, subject_permissions: SubjectPermissions) -> None:
+    def set_subject_permissions(
+        self, subject_permissions: SubjectPermissions
+    ) -> SubjectPermissions:
         self.dynamodb_adapter.validate_permissions(subject_permissions.permissions)
         self.dynamodb_adapter.update_subject_permissions(subject_permissions)
+        return subject_permissions

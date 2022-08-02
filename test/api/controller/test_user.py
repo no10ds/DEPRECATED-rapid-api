@@ -127,8 +127,16 @@ class TestUserCreation(BaseClientTest):
 class TestModifyUserPermissions(BaseClientTest):
     @patch.object(SubjectService, "set_subject_permissions")
     def test_update_user_permissions(self, mock_set_subject_permissions):
+        subject_id = "asdf1243kj456"
+        new_permissions = ["READ_ALL", "WRITE_ALL"]
+
+        mock_set_subject_permissions.return_value = {
+            "subject_id": subject_id,
+            "permissions": new_permissions,
+        }
+
         subject_permissions = SubjectPermissions(
-            subject_id="asdf1243kj456", permissions=["READ_ALL", "WRITE_ALL"]
+            subject_id=subject_id, permissions=new_permissions
         )
 
         response = self.client.put(
@@ -141,6 +149,10 @@ class TestModifyUserPermissions(BaseClientTest):
         )
 
         assert response.status_code == 200
+        assert response.json() == {
+            "subject_id": subject_id,
+            "permissions": new_permissions,
+        }
         mock_set_subject_permissions.assert_called_once_with(subject_permissions)
 
     @patch.object(SubjectService, "set_subject_permissions")

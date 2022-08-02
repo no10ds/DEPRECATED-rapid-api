@@ -113,8 +113,9 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def update_subject_permissions(
         self, subject_permissions: SubjectPermissions
-    ) -> None:
+    ) -> SubjectPermissions:
         try:
+            unique_permissions = set(subject_permissions.permissions)
             self.dynamodb_table.update_item(
                 Key={
                     "PK": DatabaseItem.SUBJECT.value,
@@ -124,9 +125,13 @@ class DynamoDBAdapter(DatabaseAdapter):
                 UpdateExpression="set #P = :r",
                 ExpressionAttributeNames={"#P": "Permissions"},
                 ExpressionAttributeValues={
-                    ":r": set(subject_permissions.permissions),
+                    ":r": unique_permissions,
                     ":sid": subject_permissions.subject_id,
                 },
+            )
+            return SubjectPermissions(
+                subject_id=subject_permissions.subject_id,
+                permissions=list(unique_permissions),
             )
         except ClientError as error:
             if self._failed_conditions(error):

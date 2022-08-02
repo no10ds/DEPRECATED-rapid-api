@@ -117,4 +117,4 @@ async def update_client_permissions(subject_permissions: SubjectPermissions):
     ### Click  `Try it out` to use the endpoint
 
     """
-    subject_service.set_subject_permissions(subject_permissions)
+    return subject_service.set_subject_permissions(subject_permissions)
