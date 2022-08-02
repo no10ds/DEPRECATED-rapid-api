@@ -1,0 +1,9 @@
+name: Check status
+on:
+  workflow_dispatch:
+jobs:
+  check-status:
+    runs-on: self-hosted
+    steps:
+    - name: Check Status
+      run: curl --verbose https://getrapid.link/status
