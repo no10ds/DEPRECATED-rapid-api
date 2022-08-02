@@ -224,3 +224,37 @@ class TestSetSubjectPermissions:
         self.dynamo_adapter.update_subject_permissions.assert_called_once_with(
             subject_permissions
         )
+
+    def test_set_subject_permissions_when_validation_raises_errors(self):
+        subject_permissions = SubjectPermissions(
+            subject_id="123asdf67gd", permissions=["READ_ALL", "WRITE_PUBLIC"]
+        )
+        self.dynamo_adapter.validate_permissions.side_effect = UserError(
+            "One or more of the provided permissions is invalid or duplicated"
+        )
+
+        with pytest.raises(
+            UserError,
+            match="One or more of the provided permissions is invalid or duplicated",
+        ):
+            self.subject_service.set_subject_permissions(subject_permissions)
+
+        self.dynamo_adapter.update_subject_permissions.assert_not_called()
+
+    def test_set_subject_permissions_when_db_update_raises_error(self):
+        subject_permissions = SubjectPermissions(
+            subject_id="123asdf67gd", permissions=["READ_ALL", "WRITE_PUBLIC"]
+        )
+        self.dynamo_adapter.update_subject_permissions.side_effect = AWSServiceError(
+            f"Error updating permissions for {subject_permissions.subject_id}"
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match=f"Error updating permissions for {subject_permissions.subject_id}",
+        ):
+            self.subject_service.set_subject_permissions(subject_permissions)
+
+        self.dynamo_adapter.validate_permissions.assert_called_once_with(
+            subject_permissions.permissions
+        )
