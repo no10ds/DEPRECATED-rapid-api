@@ -1,7 +1,5 @@
 from unittest.mock import patch
 
-import pytest
-
 from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.client import ClientResponse, ClientRequest
@@ -129,7 +127,36 @@ class TestClientPermissions(BaseClientTest):
         assert response.status_code == 200
         mock_set_subject_permissions.assert_called_once_with(subject_permissions)
 
-    @pytest.mark.skip("Not implemented yet")
     @patch.object(SubjectService, "set_subject_permissions")
-    def test_update_client_permissions_for_non_user_admin(self, mock_subject_service):
-        pass
+    def test_bad_request_when_invalid_permissions(self, mock_set_subject_permissions):
+        mock_set_subject_permissions.side_effect = UserError("Invalid permissions")
+
+        response = self.client.put(
+            "/client/permissions",
+            headers={"Authorization": "Bearer test-token"},
+            json={
+                "subject_id": "1234",
+                "permissions": ["permission1", "permission2"],
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {"details": "Invalid permissions"}
+
+    @patch.object(SubjectService, "set_subject_permissions")
+    def test_internal_error_when_invalid_permissions(
+        self, mock_set_subject_permissions
+    ):
+        mock_set_subject_permissions.side_effect = AWSServiceError("Database error")
+
+        response = self.client.put(
+            "/client/permissions",
+            headers={"Authorization": "Bearer test-token"},
+            json={
+                "subject_id": "1234",
+                "permissions": ["permission1", "permission2"],
+            },
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {"details": "Database error"}
