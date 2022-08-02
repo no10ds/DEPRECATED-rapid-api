@@ -25,7 +25,7 @@ jobs:
       # to the last item
       - name: Export DOMAIN_NAME
         run:
-          echo $"\n" >> .env
+          echo "\n" >> .env
 
       - name: Export DOMAIN_NAME
         run:
