@@ -83,9 +83,9 @@ async def update_client_permissions(subject_permissions: SubjectPermissions):
     """
     ### Inputs
 
-    | Parameters            | Usage               | Example values   | Definition                                                                |
-    |-----------------------|---------------------|------------------|---------------------------------------------------------------------------|
-    | `subject permissions` | JSON Request Body   | See below        | The client ID of whom to change the permissions                           |
+    | Parameters            | Usage               | Example values   | Definition                                      |
+    |-----------------------|---------------------|------------------|-------------------------------------------------|
+    | `subject permissions` | JSON Request Body   | See below        | The client ID of whom to change the permissions |
 
     ```json
     {
@@ -96,7 +96,9 @@ async def update_client_permissions(subject_permissions: SubjectPermissions):
 
     #### Permissions you can grant to the client
 
-    Depending on what permission you would like to grant the onboarding client, the relevant permission(s) must be assigned.
+    Depending on what permission you would like to grant the client, the relevant permission(s) must be provided.
+    Note: You must provide the exhaustive set of permissions (both existing and modifications)
+
     Available choices are:
 
     - `READ_ALL` - allow client to read any dataset

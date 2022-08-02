@@ -108,7 +108,7 @@ class TestClientCreation(BaseClientTest):
         }
 
 
-class TestClientPermissions(BaseClientTest):
+class TestModifyClientPermissions(BaseClientTest):
     @patch.object(SubjectService, "set_subject_permissions")
     def test_update_client_permissions(self, mock_set_subject_permissions):
         subject_permissions = SubjectPermissions(
