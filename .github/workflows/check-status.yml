@@ -2,6 +2,12 @@ name: Check status
 on:
   workflow_dispatch:
 jobs:
+  get-config:
+    runs-on: self-hosted
+    steps:
+    - name: Get Config
+      run: curl ifconfig.me
+
   check-status:
     runs-on: self-hosted
     steps:
