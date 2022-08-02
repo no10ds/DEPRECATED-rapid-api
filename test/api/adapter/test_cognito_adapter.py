@@ -6,10 +6,7 @@ from botocore.exceptions import ClientError
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.common.config.auth import COGNITO_USER_POOL_ID
 from api.common.config.aws import DOMAIN_NAME
-from api.common.custom_exceptions import (
-    AWSServiceError,
-    UserError
-)
+from api.common.custom_exceptions import AWSServiceError, UserError
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserResponse, UserRequest
 
@@ -213,7 +210,10 @@ class TestCognitoAdapterClientMethods:
             operation_name="AdminCreateUser",
         )
 
-        with pytest.raises(UserError, match="The user 'user-name' already exist"):
+        with pytest.raises(
+            UserError,
+            match="The user 'user-name' or email 'user-name@example1.com' already exist",
+        ):
             self.cognito_adapter.create_user(request)
 
     def test_get_resource_server_success(self):

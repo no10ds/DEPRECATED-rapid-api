@@ -107,7 +107,9 @@ class CognitoAdapter:
             f"The user '{user_request.username}' could not be created with error: {error}"
         )
         if error.response["Error"]["Code"] == "UsernameExistsException":
-            raise UserError(f"The user '{user_request.username}' already exist")
+            raise UserError(
+                f"The user '{user_request.username}' or email '{user_request.email}' already exist"
+            )
         raise AWSServiceError(
             f"The user '{user_request.username}' could not be created"
         )
