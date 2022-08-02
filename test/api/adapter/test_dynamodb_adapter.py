@@ -284,22 +284,40 @@ class TestDynamoDBAdapter:
 
         self.dynamo_boto_resource.update_item.assert_called_once_with(
             Key={"PK": "SUBJECT", "SK": subject_permissions.subject_id},
+            ConditionExpression="SK = :sid",
             UpdateExpression="set #P = :r",
-            ExpressionAttributeValues={":r": set(subject_permissions.permissions)},
+            ExpressionAttributeValues={
+                ":r": set(subject_permissions.permissions),
+                ":sid": subject_permissions.subject_id,
+            },
             ExpressionAttributeNames={"#P": "Permissions"},
         )
 
-    def test_update_subject_permissions_on_error(self):
+    def test_update_subject_permissions_on_service_error(self):
         subject_permissions = SubjectPermissions(
             subject_id="asdf1234678sd", permissions=["READ_ALL"]
         )
         self.dynamo_boto_resource.update_item.side_effect = ClientError(
-            error_response={},
-            operation_name="update_item",
+            error_response={"Error": {"Code": "SomeOtherError"}},
+            operation_name="UpdateItem",
         )
 
         with pytest.raises(
             AWSServiceError,
             match=f"Error updating permissions for {subject_permissions.subject_id}",
+        ):
+            self.dynamo_adapter.update_subject_permissions(subject_permissions)
+
+    def test_user_error_when_user_does_not_exist_in_database(self):
+        subject_permissions = SubjectPermissions(
+            subject_id="asdf1234678sd", permissions=["READ_ALL"]
+        )
+        self.dynamo_boto_resource.update_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
+            operation_name="UpdateItem",
+        )
+
+        with pytest.raises(
+            UserError, match="Subject with ID asdf1234678sd does not exist"
         ):
             self.dynamo_adapter.update_subject_permissions(subject_permissions)

@@ -120,14 +120,29 @@ class DynamoDBAdapter(DatabaseAdapter):
                     "PK": DatabaseItem.SUBJECT.value,
                     "SK": subject_permissions.subject_id,
                 },
+                ConditionExpression="SK = :sid",
                 UpdateExpression="set #P = :r",
-                ExpressionAttributeValues={":r": set(subject_permissions.permissions)},
                 ExpressionAttributeNames={"#P": "Permissions"},
+                ExpressionAttributeValues={
+                    ":r": set(subject_permissions.permissions),
+                    ":sid": subject_permissions.subject_id,
+                },
             )
-        except ClientError:
+        except ClientError as error:
+            if self._failed_conditions(error):
+                message = (
+                    f"Subject with ID {subject_permissions.subject_id} does not exist"
+                )
+                AppLogger.error(message)
+                raise UserError(message)
             self._handle_client_error(
                 f"Error updating permissions for {subject_permissions.subject_id}"
             )
+
+    def _failed_conditions(self, error):
+        return (
+            error.response.get("Error").get("Code") == "ConditionalCheckFailedException"
+        )
 
     @staticmethod
     def _handle_client_error(message: str) -> None:
