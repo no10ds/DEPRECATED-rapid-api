@@ -21,8 +21,11 @@ jobs:
         run:
           cp ./.github/.github.env .env
 
+      # Adding the new line as a safety method, if the .github.env file does not have one it would append the DOMAIN_NAME
+      # to the last item
       - name: Export DOMAIN_NAME
-        run:
+        run: |
+          echo "\n" >> .env
           echo DOMAIN_NAME=${{ secrets.DOMAIN_NAME }} >> .env
 
       - name: Export DATA_BUCKET
@@ -36,9 +39,6 @@ jobs:
       - name: Export AWS_REGION
         run:
           echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
-
-      - name: Read .env
-        run: cat .env
 
       - name: Build Image
         run: make create-runtime-env
