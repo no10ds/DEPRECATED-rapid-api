@@ -47,10 +47,6 @@ jobs:
         run:
           echo AWS_DEFAULT_REGION=${{ secrets.AWS_REGION }} >> .env
 
-      - name: cat env
-        run:
-          cat .env
-
       - name: Build Image
         run: make create-runtime-env
 
