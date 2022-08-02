@@ -21,14 +21,6 @@ jobs:
         run:
           cp ./.github/.github.env .env
 
-      - name: Export AWS_ACCOUNT
-        run:
-          echo AWS_ACCOUNT=${{ secrets.AWS_ACCOUNT }} >> .env
-
-      - name: Export AWS_REGION
-        run:
-          echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
-
       - name: Export DOMAIN_NAME
         run:
           echo DOMAIN_NAME=${{ secrets.DOMAIN_NAME }} >> .env
@@ -36,6 +28,14 @@ jobs:
       - name: Export DATA_BUCKET
         run:
           echo DATA_BUCKET=${{ secrets.DATA_BUCKET }} >> .env
+
+      - name: Export AWS_ACCOUNT
+        run:
+          echo AWS_ACCOUNT=${{ secrets.AWS_ACCOUNT }} >> .env
+
+      - name: Export AWS_REGION
+        run:
+          echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
 
       - name: Build Image
         run: make create-runtime-env

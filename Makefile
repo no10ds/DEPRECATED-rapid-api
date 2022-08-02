@@ -84,12 +84,15 @@ shell: 			## Run the application environment and drop me into a shell
 ##
 
 tag-image:	        ## Tag the image with the latest commit hash
+	echo $(ACCOUNT_ECR_URI)/$(IMAGE_NAME):$(LATEST_COMMIT_HASH)
+	echo $AWS_ACCOUNT
 	@docker tag rapid-api-service-image:latest $(ACCOUNT_ECR_URI)/$(IMAGE_NAME):$(LATEST_COMMIT_HASH)
 
 upload-to-registry: 	## Upload the tagged image to the image registry
 	@aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(ACCOUNT_ECR_URI) && docker push $(ACCOUNT_ECR_URI)/$(IMAGE_NAME):$(LATEST_COMMIT_HASH)
 
 tag-and-upload:		## Tag and upload the latest image
+	echo $AWS_ACCOUNT
 	@$(MAKE) tag-image
 	@$(MAKE) upload-to-registry
 
