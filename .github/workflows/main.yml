@@ -98,6 +98,9 @@ jobs:
           AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+          COGNITO_USER_POOL_ID: rapid-pool
+          RESOURCE_PREFIX: rapid
+          ALLOWED_EMAIL_DOMAINS: example1.com,example2.com
         run: |
           pip install -r requirements.txt
           pytest test/e2e -v
