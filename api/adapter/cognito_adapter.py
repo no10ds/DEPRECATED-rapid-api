@@ -21,6 +21,7 @@ class CognitoAdapter:
         self, cognito_client=boto3.client("cognito-idp", region_name=AWS_REGION)
     ):
         self.cognito_client = cognito_client
+        self.placeholder_client_name = "string"
 
     def create_client_app(self, client_request: ClientRequest) -> ClientResponse:
 
@@ -49,6 +50,9 @@ class CognitoAdapter:
             self._handle_client_error(client_request, error)
 
     def _validate_client_name(self, client_name: str) -> None:
+        if client_name == self.placeholder_client_name:
+            raise UserError("You must specify a valid client name")
+
         existing_clients = self.cognito_client.list_user_pool_clients(
             UserPoolId=COGNITO_USER_POOL_ID
         )

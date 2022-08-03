@@ -164,6 +164,22 @@ class TestCognitoAdapterClientApps:
         ):
             self.cognito_adapter.create_client_app(client_request)
 
+    def test_throws_error_when_client_app_name_has_not_been_changed_from_placeholder_value(
+        self,
+    ):
+        placeholder_client_name = "string"
+
+        client_request = ClientRequest(
+            client_name=placeholder_client_name, permissions=["VALID"]
+        )
+
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": []
+        }
+
+        with pytest.raises(UserError, match="You must specify a valid client name"):
+            self.cognito_adapter.create_client_app(client_request)
+
 
 class TestCognitoAdapterUsers:
     cognito_boto_client = None
