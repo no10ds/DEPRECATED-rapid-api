@@ -51,6 +51,14 @@ jobs:
         run:
           cat .env
 
+      - name: Source .env
+        run:
+          source .env
+
+      - name: Sense check
+        run:
+          echo $DATA_BUCKET
+
       - name: Build Image
         run: make create-runtime-env
 
