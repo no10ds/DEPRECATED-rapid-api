@@ -13,6 +13,7 @@ class AuthenticationFailedError(Exception):
 
 
 def get_secret(secret_name: str) -> Dict:
+    print(boto3.session.Session().get_credentials())
     client = boto3.client(service_name="secretsmanager", region_name=AWS_REGION)
 
     try:

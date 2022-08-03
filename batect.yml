@@ -21,10 +21,6 @@ containers:
       DOMAIN_NAME: ${DOMAIN_NAME:-}
       ALLOWED_EMAIL_DOMAINS: ${ALLOWED_EMAIL_DOMAINS:-}
       RESOURCE_PREFIX: ${RESOURCE_PREFIX:-rapid}
-      # Optional use when working locally
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
 
 tasks:
   runtime-environment:
