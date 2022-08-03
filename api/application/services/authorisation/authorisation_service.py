@@ -94,7 +94,7 @@ def secure_dataset_endpoint(
     check_credentials_availability(browser_request, user_token, client_token)
 
     try:
-        token = user_token if user_token else client_token
+        token = client_token if client_token else user_token
         token = parse_token(token)
         check_permissions(token, security_scopes.scopes, domain, dataset)
     except InvalidTokenError as error:

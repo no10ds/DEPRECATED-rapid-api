@@ -131,6 +131,39 @@ class TestSecureDatasetEndpoint:
         "api.application.services.authorisation.authorisation_service.check_permissions"
     )
     @patch("api.application.services.authorisation.authorisation_service.parse_token")
+    def test_favours_client_token_when_both_tokens_available(
+        self, mock_parse_token, mock_check_permissions
+    ):
+        user_token = "user-token"
+        client_token = "client-token"
+        token = Token(
+            {
+                "sub": "the-client-id",
+                "scope": "https://example.com/scope1 https://example.com/scope2",
+            }
+        )
+
+        mock_parse_token.return_value = token
+
+        secure_dataset_endpoint(
+            security_scopes=SecurityScopes(scopes=["READ"]),
+            browser_request=False,
+            client_token=client_token,
+            user_token=user_token,
+            domain="mydomain",
+            dataset=None,
+        )
+
+        mock_parse_token.assert_called_once_with("client-token")
+        mock_check_permissions.assert_called_once_with(
+            token, ["READ"], "mydomain", None
+        )
+
+    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
+    @patch(
+        "api.application.services.authorisation.authorisation_service.check_permissions"
+    )
+    @patch("api.application.services.authorisation.authorisation_service.parse_token")
     def test_parses_token_and_checks_permissions_when_client_token_available(
         self, mock_parse_token, mock_check_permissions
     ):
