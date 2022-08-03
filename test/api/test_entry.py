@@ -54,7 +54,7 @@ class TestUploadPage(BaseClientTest):
             name=login_template_filename,
             context={
                 "request": ANY,
-                "datasets": None,
+                "datasets": [],
             },
         )
 
