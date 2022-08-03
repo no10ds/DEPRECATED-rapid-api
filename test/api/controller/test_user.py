@@ -41,7 +41,9 @@ class TestUserCreation(BaseClientTest):
         assert response.json() == expected_response
 
     @patch.object(SubjectService, "create_user")
-    def test_accepts_empty_permissions(self, mock_create_user):
+    def test_accepts_empty_permissions_and_uses_default_permissions(
+        self, mock_create_user
+    ):
         expected_response = UserResponse(
             username="user-name",
             email="user-name@some-email.com",
@@ -95,7 +97,7 @@ class TestUserCreation(BaseClientTest):
             json={
                 "username": "my_user",
                 "email": "email@email.com",
-                "permissions": ["INVALID_SCOPE"],
+                "permissions": ["INVALID_PERMISSION"],
             },
         )
 

@@ -71,8 +71,7 @@ async def create_user(user_request: UserRequest):
     ### Click  `Try it out` to use the endpoint
 
     """
-    user_response = subject_service.create_user(user_request)
-    return user_response
+    return subject_service.create_user(user_request)
 
 
 @user_router.put(

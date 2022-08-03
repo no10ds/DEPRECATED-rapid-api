@@ -56,20 +56,20 @@ class DynamoDBAdapter(DatabaseAdapter):
     def store_subject_permissions(
         self, subject_type: SubjectType, subject_id: str, permissions: List[str]
     ) -> None:
-        s_type = subject_type.value
+        subject_type = subject_type.value
         try:
-            AppLogger.info(f"Storing permissions for {s_type}: {subject_id}")
+            AppLogger.info(f"Storing permissions for {subject_type}: {subject_id}")
             self.dynamodb_table.put_item(
                 Item={
                     "PK": DatabaseItem.SUBJECT.value,
                     "SK": subject_id,
                     "Id": subject_id,
-                    "Type": s_type,
+                    "Type": subject_type,
                     "Permissions": set(permissions),
                 },
             )
         except ClientError:
-            self._handle_client_error(f"Error storing the {s_type}: {subject_id}")
+            self._handle_client_error(f"Error storing the {subject_type}: {subject_id}")
 
     def validate_permissions(self, subject_permissions: List[str]) -> None:
         permissions_response = self._get_permissions(subject_permissions)
