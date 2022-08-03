@@ -82,7 +82,7 @@ def login(request: Request):
 )
 def upload(request: Request):
     return templates.TemplateResponse(
-        name="upload.html", context={"request": request, "datasets": None}
+        name="upload.html", context={"request": request, "datasets": []}
     )
 
 
