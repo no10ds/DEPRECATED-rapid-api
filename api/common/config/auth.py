@@ -34,6 +34,9 @@ COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME = os.getenv(
 
 COGNITO_REDIRECT_URI = f"https://{DOMAIN_NAME}/oauth2/success"
 PROTECTED_DOMAIN_SCOPES_PARAMETER_NAME = f"{RESOURCE_PREFIX}_protected_domain_scopes"
+PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME = (
+    f"{RESOURCE_PREFIX}_protected_domain_permissions"
+)
 
 
 def construct_user_auth_url(client_id: str):

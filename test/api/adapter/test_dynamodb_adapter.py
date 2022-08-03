@@ -5,12 +5,13 @@ from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.common.config.auth import SubjectType
+from api.common.config.auth import SubjectType, SensitivityLevel, Action
 from api.common.custom_exceptions import (
     AWSServiceError,
     UserError,
     SubjectNotFoundError,
 )
+from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
 
 
@@ -81,7 +82,22 @@ class TestDynamoDBAdapter:
         mock_batch_writer.__exit__ = Mock(return_value=None)
         self.dynamo_boto_resource.batch_writer.return_value = mock_batch_writer
 
-        self.dynamo_adapter.store_protected_permission(domain)
+        permissions = [
+            PermissionItem(
+                id=f"{Action.READ.value}_{SensitivityLevel.PROTECTED.value}_{domain}",
+                type=Action.READ.value,
+                sensitivity=SensitivityLevel.PROTECTED.value,
+                domain=domain,
+            ),
+            PermissionItem(
+                id=f"{Action.WRITE.value}_{SensitivityLevel.PROTECTED.value}_{domain}",
+                type=Action.WRITE.value,
+                sensitivity=SensitivityLevel.PROTECTED.value,
+                domain=domain,
+            ),
+        ]
+
+        self.dynamo_adapter.store_protected_permission(permissions, "domain")
 
         mock_batch_writer.put_item.assert_has_calls(
             [
@@ -105,7 +121,8 @@ class TestDynamoDBAdapter:
                         "Domain": "TRAIN",
                     }
                 ),
-            ]
+            ],
+            any_order=True,
         )
 
     def test_store_subject_permissions_throws_error_when_database_call_fails(self):

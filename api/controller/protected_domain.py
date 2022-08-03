@@ -8,7 +8,6 @@ from api.common.config.auth import Action
 
 protected_domain_service = ProtectedDomainService()
 
-
 protected_domain_router = APIRouter(
     prefix="/protected_domains",
     tags=["Protected Domains"],
@@ -50,7 +49,7 @@ def create_protected_domain(domain: str):
 
     ### Click  `Try it out` to use the endpoint
     """
-    protected_domain_service.create_scopes(domain)
+    protected_domain_service.create_protected_domain_permission(domain)
     return f"Successfully created protected domain for {domain}"
 
 

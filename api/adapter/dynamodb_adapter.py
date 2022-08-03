@@ -6,7 +6,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
-from api.common.config.auth import DatabaseItem, SubjectType, Action, SensitivityLevel
+from api.common.config.auth import DatabaseItem, SubjectType
 from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
 from api.common.custom_exceptions import (
     UserError,
@@ -154,23 +154,23 @@ class DynamoDBAdapter(DatabaseAdapter):
         AppLogger.error(message)
         raise AWSServiceError(message)
 
-    def store_protected_permission(self, domain):
-        items = [Action.WRITE.value, Action.READ.value]
+    def store_protected_permission(
+        self, permissions: List[PermissionItem], domain: str
+    ):
         try:
             AppLogger.info(f"Storing protected permissions for {domain}")
             with self.dynamodb_table.batch_writer() as batch:
-                for item in items:
+                for permission in permissions:
                     batch.put_item(
                         Item={
                             "PK": DatabaseItem.PERMISSION.value,
-                            "SK": f"{item}_{SensitivityLevel.PROTECTED.value}_{domain}",
-                            "Id": f"{item}_{SensitivityLevel.PROTECTED.value}_{domain}",
-                            "Type": item,
-                            "Sensitivity": SensitivityLevel.PROTECTED.value,
-                            "Domain": domain,
+                            "SK": permission.id,
+                            "Id": permission.id,
+                            "Type": permission.type,
+                            "Sensitivity": permission.sensitivity,
+                            "Domain": permission.domain,
                         }
                     )
-
         except ClientError:
             self._handle_client_error(
                 f"Error storing the protected domain permission for {domain}"
