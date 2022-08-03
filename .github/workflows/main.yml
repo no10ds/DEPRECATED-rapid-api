@@ -45,10 +45,7 @@ jobs:
 
       - name: Export AWS_KEY_ID
         run: |
-          aws configure list
           aws configure get aws_access_key_id
-          echo "::add-mask::$(aws configure get aws_access_key_id)"
-          echo AWS_ACCESS_KEY_ID=$(aws configure get aws_access_key_id) >> .env
 
       - name: Check .env
         run:
