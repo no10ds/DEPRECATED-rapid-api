@@ -6,7 +6,7 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
-from api.common.config.auth import DatabaseItem, SubjectType
+from api.common.config.auth import DatabaseItem, SubjectType, SensitivityLevel
 from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
 from api.common.custom_exceptions import (
     UserError,
@@ -81,6 +81,15 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def get_all_permissions(self) -> List[PermissionItem]:
         raise NotImplementedError()
+
+    def get_all_protected_permissions(self) -> List[PermissionItem]:
+        list_of_items = self.dynamodb_table.query(
+            KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
+            FilterExpression=Attr("Sensitivity").eq(SensitivityLevel.PROTECTED.value),
+        )["Items"]
+        return [
+            self._generate_protected_permission_item(item) for item in list_of_items
+        ]
 
     def get_permissions_for_subject(self, subject_id: str) -> List[str]:
         AppLogger.info(f"Getting permissions for: {subject_id}")
@@ -175,3 +184,11 @@ class DynamoDBAdapter(DatabaseAdapter):
             self._handle_client_error(
                 f"Error storing the protected domain permission for {domain}"
             )
+
+    def _generate_protected_permission_item(self, item: dict) -> PermissionItem:
+        return PermissionItem(
+            id=item["Id"],
+            sensitivity=item["Sensitivity"],
+            type=item["Type"],
+            domain=item["Domain"],
+        )

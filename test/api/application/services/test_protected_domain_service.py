@@ -1,13 +1,8 @@
 import json
-from typing import List
 from unittest.mock import Mock
-
-import pytest
 
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.config.auth import (
-    COGNITO_USER_POOL_ID,
-    COGNITO_RESOURCE_SERVER_ID,
     PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
 )
 from api.domain.permission_item import PermissionItem
@@ -97,37 +92,39 @@ class TestProtectedDomainService:
             json.dumps(existing_and_new_permissions),
         )
 
-    @pytest.mark.parametrize(
-        "mock_scopes, expected_response",
-        [
-            (
-                [
-                    "READ_PROTECTED_DOMAIN",
-                    "WRITE_PROTECTED_DOMAIN",
-                    "WRITE_PROTECTED_OTHER",
-                    "WRITE_ALL",
-                    "DATA_ADMIN",
-                    "READ_PUBLIC",
-                ],
-                ["other", "domain"],
+    def test_protected_domain_list(self):
+        expected_response = ["other", "domain"]
+        domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
             ),
-            (["WRITE_ALL", "DATA_ADMIN", "READ_PUBLIC"], []),
-        ],
-    )
-    def test_protected_domain_list(
-        self, mock_scopes: List[str], expected_response: List[str]
-    ):
-        mock_response = {
-            "Scopes": [
-                {"ScopeName": scope, "ScopeDescription": "Description"}
-                for scope in mock_scopes
-            ]
-        }
+            PermissionItem(
+                id="WRITE_PROTECTED_OTHER",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="READ_PROTECTED_DOMAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_DOMAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+            ),
+        ]
 
-        self.cognito_adapter.get_resource_server = Mock(return_value=mock_response)
-
-        res = self.protected_domain_service.list_domains()
-        assert res == sorted(expected_response)
-        self.cognito_adapter.get_resource_server.assert_called_once_with(
-            COGNITO_USER_POOL_ID, COGNITO_RESOURCE_SERVER_ID
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            domain_permissions
         )
+
+        domains = self.protected_domain_service.list_domains()
+        assert domains == set(sorted(expected_response))
+        self.dynamodb_adapter.get_all_protected_permissions.assert_called_once()

@@ -5,7 +5,7 @@ from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.common.config.auth import SubjectType, SensitivityLevel, Action
+from api.common.config.auth import SubjectType
 from api.common.custom_exceptions import (
     AWSServiceError,
     UserError,
@@ -19,27 +19,31 @@ class TestDynamoDBAdapter:
     expected_db_query_response = {
         "Items": [
             {
-                "PK": {"S": "PERMISSION"},
-                "SK": {"S": "USER_ADMIN"},
-                "Type": {"S": "USER_ADMIN"},
+                "PK": "PERMISSION",
+                "SK": "USER_ADMIN",
+                "Id": "USER_ADMIN",
+                "Type": "USER_ADMIN",
             },
             {
-                "PK": {"S": "PERMISSION"},
-                "SK": {"S": "READ_ALL"},
-                "Sensitivity": {"S": "ALL"},
-                "Type": {"S": "READ"},
+                "PK": "PERMISSION",
+                "SK": "READ_ALL",
+                "Id": "READ_ALL",
+                "Sensitivity": "ALL",
+                "Type": "READ",
             },
             {
-                "PK": {"S": "PERMISSION"},
-                "SK": {"S": "WRITE_ALL"},
-                "Sensitivity": {"S": "ALL"},
-                "Type": {"S": "WRITE"},
+                "PK": "PERMISSION",
+                "SK": "WRITE_ALL",
+                "Id": "WRITE_ALL",
+                "Sensitivity": "ALL",
+                "Type": "WRITE",
             },
             {
-                "PK": {"S": "PERMISSION"},
-                "SK": {"S": "READ_PRIVATE"},
-                "Sensitivity": {"S": "PRIVATE"},
-                "Type": {"S": "READ"},
+                "PK": "PERMISSION",
+                "SK": "READ_PRIVATE",
+                "Id": "READ_PRIVATE",
+                "Sensitivity": "PRIVATE",
+                "Type": "READ",
             },
         ],
         "Count": 4,
@@ -84,23 +88,23 @@ class TestDynamoDBAdapter:
 
         permissions = [
             PermissionItem(
-                id=f"{Action.READ.value}_{SensitivityLevel.PROTECTED.value}_{domain}",
-                type=Action.READ.value,
-                sensitivity=SensitivityLevel.PROTECTED.value,
+                id="READ_PROTECTED_TRAIN",
+                type="READ",
+                sensitivity="PROTECTED",
                 domain=domain,
             ),
             PermissionItem(
-                id=f"{Action.WRITE.value}_{SensitivityLevel.PROTECTED.value}_{domain}",
-                type=Action.WRITE.value,
-                sensitivity=SensitivityLevel.PROTECTED.value,
+                id="WRITE_PROTECTED_TRAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
                 domain=domain,
             ),
         ]
 
-        self.dynamo_adapter.store_protected_permission(permissions, "domain")
+        self.dynamo_adapter.store_protected_permission(permissions, domain)
 
         mock_batch_writer.put_item.assert_has_calls(
-            [
+            (
                 call(
                     Item={
                         "PK": "PERMISSION",
@@ -121,7 +125,7 @@ class TestDynamoDBAdapter:
                         "Domain": "TRAIN",
                     }
                 ),
-            ],
+            ),
             any_order=True,
         )
 
@@ -163,18 +167,18 @@ class TestDynamoDBAdapter:
         self.dynamo_boto_resource.query.return_value = {
             "Items": [
                 {
-                    "PK": {"S": "PERMISSION"},
-                    "SK": {"S": "WRITE_ALL"},
-                    "Id": {"S": "WRITE_ALL"},
-                    "Sensitivity": {"S": "ALL"},
-                    "Type": {"S": "WRITE"},
+                    "PK": "PERMISSION",
+                    "SK": "WRITE_ALL",
+                    "Id": "WRITE_ALL",
+                    "Sensitivity": "ALL",
+                    "Type": "WRITE",
                 },
                 {
-                    "PK": {"S": "PERMISSION"},
-                    "SK": {"S": "READ_PRIVATE"},
-                    "Id": {"S": "READ_PRIVATE"},
-                    "Sensitivity": {"S": "PRIVATE"},
-                    "Type": {"S": "READ"},
+                    "PK": "PERMISSION",
+                    "SK": "READ_PRIVATE",
+                    "Id": "READ_PRIVATE",
+                    "Sensitivity": "PRIVATE",
+                    "Type": "READ",
                 },
             ],
             "Count": 2,
@@ -198,10 +202,11 @@ class TestDynamoDBAdapter:
         self.dynamo_boto_resource.query.return_value = {
             "Items": [
                 {
-                    "PK": {"S": "PERMISSION"},
-                    "SK": {"S": "WRITE_ALL"},
-                    "Sensitivity": {"S": "ALL"},
-                    "Type": {"S": "WRITE"},
+                    "PK": "PERMISSION",
+                    "SK": "WRITE_ALL",
+                    "Id": "WRITE_ALL",
+                    "Sensitivity": "ALL",
+                    "Type": "WRITE",
                 }
             ],
             "Count": 1,
@@ -221,10 +226,10 @@ class TestDynamoDBAdapter:
         self.dynamo_boto_resource.query.return_value = {
             "Items": [
                 {
-                    "PK": {"S": "SUBJECT"},
-                    "SK": {"S": subject_id},
-                    "Id": {"S": subject_id},
-                    "Type": {"S": "CLIENT"},
+                    "PK": "SUBJECT",
+                    "SK": subject_id,
+                    "Id": subject_id,
+                    "Type": "CLIENT",
                     "Permissions": {
                         "DATA_ADMIN",
                         "READ_ALL",
@@ -265,11 +270,11 @@ class TestDynamoDBAdapter:
         self.dynamo_boto_resource.query.return_value = {
             "Items": [
                 {
-                    "PK": {"S": "SUBJECT"},
-                    "SK": {"S": subject_id},
-                    "Id": {"S": subject_id},
-                    "Type": {"S": "CLIENT"},
-                    "Permissions": {},
+                    "PK": "SUBJECT",
+                    "SK": subject_id,
+                    "Id": subject_id,
+                    "Type": "CLIENT",
+                    "Permissions": "",
                 }
             ],
             "Count": 1,
@@ -291,6 +296,54 @@ class TestDynamoDBAdapter:
             match="Error fetching permissions, please contact your system administrator",
         ):
             self.dynamo_adapter.get_permissions_for_subject(subject_id)
+
+    def test_get_all_protected_permissions(self):
+        expected_db_query_response = {
+            "Items": [
+                {
+                    "PK": "PERMISSION",
+                    "SK": "WRITE_PROTECTED_DOMAIN",
+                    "Id": "WRITE_PROTECTED_DOMAIN",
+                    "Sensitivity": "PROTECTED",
+                    "Type": "WRITE",
+                    "Domain": "DOMAIN",
+                },
+                {
+                    "PK": "PERMISSION",
+                    "SK": "READ_PROTECTED_DOMAIN",
+                    "Id": "READ_PROTECTED_DOMAIN",
+                    "Sensitivity": "PROTECTED",
+                    "Type": "READ",
+                    "Domain": "DOMAIN",
+                },
+            ],
+            "Count": 2,
+        }
+
+        expected_permission_item_list = [
+            PermissionItem(
+                id="WRITE_PROTECTED_DOMAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+            ),
+            PermissionItem(
+                id="READ_PROTECTED_DOMAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+            ),
+        ]
+
+        self.dynamo_boto_resource.query.return_value = expected_db_query_response
+        response = self.dynamo_adapter.get_all_protected_permissions()
+        assert len(response) == 2
+        self.dynamo_boto_resource.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("PERMISSION"),
+            FilterExpression=Attr("Sensitivity").eq("PROTECTED"),
+        )
+
+        assert response == expected_permission_item_list
 
     def test_update_subject_permissions(self):
         subject_permissions = SubjectPermissions(
