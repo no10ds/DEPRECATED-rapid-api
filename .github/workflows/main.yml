@@ -14,9 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Log aws role
-        run: aws configure list
-
       - name: Log commit SHA
         run: echo $GITHUB_SHA
 
@@ -82,13 +79,10 @@ jobs:
         id: await-running-app
         run: make check-app-is-running
 
-      - name: Log aws role
-        run: aws configure list
-
 #     Skip E2E tests while they are being fixed
       - name: Run E2E tests
         id: e2e-tests
-        run: pytest test/e2e -v
+        run: make test-e2e
 
       - name: Tag image as failure
         if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure'
