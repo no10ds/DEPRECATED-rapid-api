@@ -12,7 +12,7 @@ jobs:
     - name: Run E2E tests
       run: |
         pip install -r requirements.txt
-        pytest test/e2e -v
+        pytest -v
 
     - name: Check connection
       run: curl --verbose https://getrapid.link/status
