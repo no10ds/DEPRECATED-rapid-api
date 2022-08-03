@@ -23,10 +23,13 @@ class CognitoAdapter:
         self.cognito_client = cognito_client
 
     def create_client_app(self, client_request: ClientRequest) -> ClientResponse:
+
         try:
             AppLogger.info(
                 f"Creating Client App with name: {client_request.client_name}"
             )
+            self._validate_client_name(client_request.client_name)
+
             cognito_scopes = self._build_default_scopes()
 
             cognito_response = self.cognito_client.create_user_pool_client(
@@ -44,6 +47,17 @@ class CognitoAdapter:
             )
         except ClientError as error:
             self._handle_client_error(client_request, error)
+
+    def _validate_client_name(self, client_name: str) -> None:
+        existing_clients = self.cognito_client.list_user_pool_clients(
+            UserPoolId=COGNITO_USER_POOL_ID
+        )
+        existing_client_names = [
+            client.get("ClientName")
+            for client in existing_clients.get("UserPoolClients", [])
+        ]
+        if client_name in existing_client_names:
+            raise UserError(f"Client name '{client_name}' already exists")
 
     def create_user(self, user_request: UserRequest) -> UserResponse:
         try:

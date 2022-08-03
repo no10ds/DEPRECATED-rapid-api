@@ -70,8 +70,7 @@ async def create_client(client_request: ClientRequest):
     ### Click  `Try it out` to use the endpoint
 
     """
-    client_response = subject_service.create_client(client_request)
-    return client_response
+    return subject_service.create_client(client_request)
 
 
 @client_router.put(

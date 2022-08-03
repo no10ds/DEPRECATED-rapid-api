@@ -11,14 +11,20 @@ from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserResponse, UserRequest
 
 
-class TestCognitoAdapterClientMethods:
+class TestCognitoAdapterClientApps:
     cognito_boto_client = None
+    cognito_adapter = None
 
     def setup_method(self):
         self.cognito_boto_client = Mock()
         self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
 
     def test_create_client_app(self):
+
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": []
+        }
+
         client_request = ClientRequest(
             client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
@@ -82,10 +88,15 @@ class TestCognitoAdapterClientMethods:
         )
         assert actual_response == expected_response
 
-    def test_create_client_app_with_default_allowed_oauth_scope(self):
+    def test_creates_client_app_with_default_allowed_oauth_scope(self):
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": []
+        }
+
         client_request = ClientRequest(
             client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
+
         self.cognito_boto_client.create_user_pool_client.return_value = {
             "UserPoolClient": {
                 "UserPoolId": COGNITO_USER_POOL_ID,
@@ -118,6 +129,10 @@ class TestCognitoAdapterClientMethods:
         )
 
     def test_raises_error_when_the_client_fails_to_create_in_aws(self):
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": []
+        }
+
         client_request = ClientRequest(
             client_name="my_client", permissions=["NOT_VALID"]
         )
@@ -131,6 +146,32 @@ class TestCognitoAdapterClientMethods:
             AWSServiceError, match="The client 'my_client' could not be created"
         ):
             self.cognito_adapter.create_client_app(client_request)
+
+    def test_throws_error_when_client_app_has_duplicate_name(self):
+        client_request = ClientRequest(
+            client_name="existing_name_2", permissions=["VALID"]
+        )
+
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": [
+                {"ClientName": "existing_name_1"},
+                {"ClientName": "existing_name_2"},
+            ]
+        }
+
+        with pytest.raises(
+            UserError, match="Client name 'existing_name_2' already exists"
+        ):
+            self.cognito_adapter.create_client_app(client_request)
+
+
+class TestCognitoAdapterUsers:
+    cognito_boto_client = None
+    cognito_adapter = None
+
+    def setup_method(self):
+        self.cognito_boto_client = Mock()
+        self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
 
     def test_create_user(self):
         cognito_response = {
@@ -215,6 +256,15 @@ class TestCognitoAdapterClientMethods:
             match="The user 'user-name' or email 'user-name@example1.com' already exist",
         ):
             self.cognito_adapter.create_user(request)
+
+
+class TestCognitoResourceServer:
+    cognito_boto_client = None
+    cognito_adapter = None
+
+    def setup_method(self):
+        self.cognito_boto_client = Mock()
+        self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
 
     def test_get_resource_server_success(self):
         expected_response = {
