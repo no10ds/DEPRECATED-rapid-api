@@ -86,9 +86,9 @@ jobs:
         run: aws configure list
 
 #     Skip E2E tests while they are being fixed
-#      - name: Run E2E tests
-#        id: e2e-tests
-#        run: make test-e2e
+      - name: Run E2E tests
+        id: e2e-tests
+        run: make test-e2e
 
       - name: Tag image as failure
         if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure'
