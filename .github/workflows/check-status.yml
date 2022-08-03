@@ -13,3 +13,12 @@ jobs:
     steps:
     - name: Check Status
       run: curl --verbose https://getrapid.link/status
+
+    - name: Check python
+      run: python --version
+
+    - name: Which python
+      run: which python
+
+    - name: Install pytest
+      run: pip install -r requirements.txt
