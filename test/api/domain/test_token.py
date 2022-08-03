@@ -15,7 +15,12 @@ def valid_client_token_payload():
 
 @pytest.fixture
 def valid_user_token_payload():
-    yield {"sub": "the-user-subject", "cognito:groups": ["group1", "group2"]}
+    yield {
+        "sub": "the-user-subject",
+        "username": "username123",
+        "scope": "phone email",
+        "cognito:groups": ["group1", "group2"],
+    }
 
 
 class TestSubjectExtraction:
@@ -47,20 +52,10 @@ class TestPermissionsExtraction:
 
         assert token.permissions == ["scope1", "scope2"]
 
-    def test_extracts_user_groups_when_available_and_valid(
+    def test_skips_extracting_user_groups_from_token_when_it_is_a_user_token(
         self, valid_user_token_payload
     ):
         token = Token(valid_user_token_payload)
-
-        assert token.permissions == []
-
-    def test_favours_client_scopes_over_user_groups_if_both_available(self):
-        payload = {
-            "sub": "the-client-subject",
-            "scope": "phone email",
-            "username": "test_user",
-        }
-        token = Token(payload)
 
         assert token.permissions == []
 

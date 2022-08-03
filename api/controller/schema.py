@@ -90,7 +90,7 @@ async def upload_schema(schema: Schema):
     except ProtectedDomainDoesNotExistError as error:
         _log_and_raise_error("Protected domain error", error.args[0])
     except CrawlerCreateFailsError as error:
-        _delete_created_schema(schema)
+        _delete_uploaded_schema(schema)
         _log_and_raise_error("Failed to create crawler", error.args[0])
 
 
@@ -98,10 +98,6 @@ def _delete_uploaded_schema(schema: Schema):
     delete_service.delete_schema(
         schema.get_domain(), schema.get_dataset(), schema.get_sensitivity()
     )
-
-
-def _delete_created_schema(schema: Schema):
-    _delete_uploaded_schema(schema)
 
 
 def _log_and_raise_error(log_message: str, error_message: str):
