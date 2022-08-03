@@ -10,6 +10,7 @@ containers:
       enabled: true
       home_directory: /home/batect-container-user
     volumes:
+      - ~/.aws/:/root/.aws:ro
       - local: .
         container: /app
     environment:
