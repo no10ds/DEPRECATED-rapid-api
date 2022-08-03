@@ -5,6 +5,9 @@ jobs:
   check-status:
     runs-on: self-hosted
     steps:
+    - name: Export env vars
+      run: export DATA_BUCKET="rapid-data-ingest-raw-data"
+
     - uses: actions/setup-python@v4
       with:
         python-version: '3.10'
@@ -14,5 +17,5 @@ jobs:
         pip install -r requirements.txt
         pytest -v
 
-    - name: Check connection
+    - name: Check Status
       run: curl --verbose https://getrapid.link/status
