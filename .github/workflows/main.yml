@@ -10,12 +10,6 @@ jobs:
 
   deploy:
     runs-on: self-hosted
-    env:
-      DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-      DATA_BUCKET: ${{ secrets.DATA_BUCKET }}
-      AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
 
     steps:
       - uses: actions/checkout@v2
@@ -33,33 +27,29 @@ jobs:
 
 #      # Make sure to have a new line in .github.env. Otherwise, it would append the DOMAIN_NAME
 #      # to the last item
-#      - name: Export DOMAIN_NAME
-#        run:
-#          echo DOMAIN_NAME=${{ secrets.DOMAIN_NAME }} >> .env
-#
-#      - name: Export DATA_BUCKET
-#        run:
-#          echo DATA_BUCKET=${{ secrets.DATA_BUCKET }} >> .env
-#
-#      - name: Export AWS_ACCOUNT
-#        run:
-#          echo AWS_ACCOUNT=${{ secrets.AWS_ACCOUNT }} >> .env
-#
-#      - name: Export AWS_REGION
-#        run:
-#          echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
-#
-#      - name: Export AWS_DEFAULT_REGION
-#        run:
-#          echo AWS_DEFAULT_REGION=${{ secrets.AWS_REGION }} >> .env
+      - name: Export DOMAIN_NAME
+        run:
+          echo DOMAIN_NAME=${{ secrets.DOMAIN_NAME }} >> .env
 
-#      - name: Check .env
-#        run:
-#          cat .env
-#
-#      - name: Source .env
-#        run:
-#          source .env
+      - name: Export DATA_BUCKET
+        run:
+          echo DATA_BUCKET=${{ secrets.DATA_BUCKET }} >> .env
+
+      - name: Export AWS_ACCOUNT
+        run:
+          echo AWS_ACCOUNT=${{ secrets.AWS_ACCOUNT }} >> .env
+
+      - name: Export AWS_REGION
+        run:
+          echo AWS_REGION=${{ secrets.AWS_REGION }} >> .env
+
+      - name: Export AWS_DEFAULT_REGION
+        run:
+          echo AWS_DEFAULT_REGION=${{ secrets.AWS_REGION }} >> .env
+
+      - name: Check .env
+        run:
+          cat .env
 
       - name: Sense check
         run:
@@ -102,8 +92,13 @@ jobs:
         run: make check-app-is-running
 
       - name: Run E2E Tests
+        env:
+          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+          DATA_BUCKET: ${{ secrets.DATA_BUCKET }}
+          AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
         run: |
-
           pip install -r requirements.txt
           pytest test/e2e -v
 
