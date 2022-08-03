@@ -75,7 +75,7 @@ tasks:
     description: Run e2e tests
     run:
       container: service-image
-      command: "aws configure list; pytest test/e2e -v"
+      command: "pytest test/e2e -v"
 
   test-coverage:
     description: Run all tests with coverage report for source code only
