@@ -1,6 +1,7 @@
 import json
 from typing import List, Set
 
+from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.adapter.ssm_adapter import SSMAdapter
@@ -9,6 +10,7 @@ from api.common.config.auth import (
     Action,
     PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
 )
+from api.common.custom_exceptions import UserError
 from api.domain.permission_item import PermissionItem
 
 
@@ -17,14 +19,20 @@ class ProtectedDomainService:
         self,
         cognito_adapter=CognitoAdapter(),
         dynamodb_adapter=DynamoDBAdapter(),
+        resource_adapter=AWSResourceAdapter(),
         ssm_adapter=SSMAdapter(),
     ):
         self.cognito_adapter = cognito_adapter
-        self.ssm_adapter = ssm_adapter
         self.dynamodb_adapter = dynamodb_adapter
+        self.resource_adapter = resource_adapter
+        self.ssm_adapter = ssm_adapter
 
     def create_protected_domain_permission(self, domain: str) -> None:
         domain = domain.upper().strip()
+        existing_domains = self.resource_adapter.get_existing_domains()
+
+        if domain not in existing_domains:
+            raise UserError(f"The domain [{domain.lower()}] does not exist")
 
         generated_permissions = self._generate_protected_permission_items(domain)
 
