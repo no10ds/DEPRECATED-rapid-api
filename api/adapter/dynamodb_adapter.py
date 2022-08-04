@@ -107,10 +107,17 @@ class DynamoDBAdapter(DatabaseAdapter):
             )
 
     def get_all_permissions(self) -> List[str]:
-        permissions = self.dynamodb_table.query(
-            KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
-        )
-        return [permission["SK"] for permission in permissions["Items"]]
+        try:
+            permissions = self.dynamodb_table.query(
+                KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
+            )
+            return [permission["SK"] for permission in permissions["Items"]]
+
+        except ClientError as error:
+            AppLogger.info(f"Error retrieving all permissions: {error}")
+            raise AWSServiceError(
+                "Error fetching permissions, please contact your system administrator"
+            )
 
     def get_all_protected_permissions(self) -> List[PermissionItem]:
         list_of_items = self.dynamodb_table.query(

@@ -231,6 +231,21 @@ class TestDynamoDBAdapter:
         )
         assert actual_response == expected_response
 
+    def test_get_all_permissions_raises_error_if_database_call_fails(self):
+        self.dynamo_boto_resource.query.side_effect = ClientError(
+            error_response={
+                "Error": {"Code": "QueryFailedException"},
+                "Message": "Failed to execute query: The error message",
+            },
+            operation_name="Query",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error fetching permissions, please contact your system administrator",
+        ):
+            self.dynamo_adapter.get_all_permissions()
+
     def test_get_permissions_for_subject(self):
         subject_id = "test-subject-id"
         self.dynamo_boto_resource.query.return_value = {
