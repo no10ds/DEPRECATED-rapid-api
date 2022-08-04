@@ -814,6 +814,28 @@ Once the new client has been created, the following information is returned in t
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
+## Delete Client
+
+Use this endpoint to list all available permissions that can be granted to users and clients.
+
+### General structure
+
+`DELETE /client/{client_id}`
+
+### Outputs
+
+Confirmation Message:
+
+```json
+{
+  "message": "The client '{client_id}' has been deleted"
+}
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `USER_ADMIN` scope
+
 ## Create user
 
 As a maintainer of a rAPId instance you may want to allow new users to interact with the UI to upload or query data.
@@ -895,6 +917,42 @@ Once the new user has been created, the following information will be shown in t
 ### Accepted permissions
 
 In order to use this endpoint you need the `USER_ADMIN` permission
+
+## Delete User
+
+Use this endpoint to list all available permissions that can be granted to users and clients.
+
+### General structure
+
+`DELETE /user`
+
+### Inputs
+
+| Parameters       | Usage               | Example values   | Definition                            |
+|------------------|---------------------|------------------|---------------------------------------|
+| `user details`   | JSON Request Body   | See below        | The name and id of the user to delete |
+
+```json
+{
+  "username": "John Doe",
+  "user_id": "some-uuid-generated-string-asdasd0-2133"
+}
+```
+
+### Outputs
+
+Confirmation Message:
+
+```json
+{
+  "message": "The user '{username}' has been deleted"
+}
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `USER_ADMIN` scope
+
 
 ## Create protected domain
 

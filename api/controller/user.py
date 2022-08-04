@@ -129,6 +129,19 @@ async def delete_user(delete_request: UserDeleteRequest):
     """
     Use this endpoint to delete an existing user.
 
+    ### Inputs
+
+    | Parameters       | Usage               | Example values   | Definition                            |
+    |------------------|---------------------|------------------|---------------------------------------|
+    | `user details`   | JSON Request Body   | See below        | The name and id of the user to delete |
+
+    ```json
+    {
+      "username": "John Doe",
+      "user_id": "some-uuid-generated-string-asdasd0-2133"
+    }
+    ```
+
     ### Accepted permissions
 
     In order to use this endpoint you need the `USER_ADMIN` permission
