@@ -74,21 +74,18 @@ class TestUnauthorisedJourney(BaseJourneyTest):
     def setup_class(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
 
-        credentials = get_secret(
-            secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
-        )
-        cognito_client_id = credentials["CLIENT_ID"]
-        cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
+        write_all_credentials = get_secret(secret_name="E2E_TEST_CLIENT_WRITE_ALL")
+
+        cognito_client_id = write_all_credentials["CLIENT_ID"]
+        cognito_client_secret = write_all_credentials[
+            "CLIENT_SECRET"
+        ]  # pragma: allowlist secret
 
         auth = HTTPBasicAuth(cognito_client_id, cognito_client_secret)
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-        payload = {
-            "grant_type": "client_credentials",
-            "client_id": cognito_client_id,
-            "scope": f"https://{DOMAIN_NAME}/WRITE_ALL",
-        }
+        payload = {"grant_type": "client_credentials", "client_id": cognito_client_id}
 
         response = requests.post(token_url, auth=auth, headers=headers, json=payload)
 
@@ -123,13 +120,14 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
     def setup_class(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
 
-        credentials = get_secret(
-            secret_name="E2E_TEST_COGNITO_APP_CLIENT_ID_AND_SECRET"  # pragma: allowlist secret
+        read_and_write_credentials = get_secret(
+            secret_name="E2E_TEST_CLIENT_READ_ALL_WRITE_ALL"  # pragma: allowlist secret
         )
 
-        cognito_client_id = credentials["CLIENT_ID"]
-
-        cognito_client_secret = credentials["CLIENT_SECRET"]  # pragma: allowlist secret
+        cognito_client_id = read_and_write_credentials["CLIENT_ID"]
+        cognito_client_secret = read_and_write_credentials[
+            "CLIENT_SECRET"
+        ]  # pragma: allowlist secret
 
         auth = HTTPBasicAuth(cognito_client_id, cognito_client_secret)
 
@@ -138,7 +136,6 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
         payload = {
             "grant_type": "client_credentials",
             "client_id": cognito_client_id,
-            "scope": f"https://{DOMAIN_NAME}/READ_ALL https://{DOMAIN_NAME}/WRITE_ALL",
         }
 
         response = requests.post(token_url, auth=auth, headers=headers, json=payload)
