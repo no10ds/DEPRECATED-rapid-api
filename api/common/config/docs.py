@@ -29,7 +29,15 @@ RAPID_TAGS = [
     },
     {
         "name": "Client",
-        "description": "Manage client creation.",
+        "description": "Manage clients.",
+    },
+    {
+        "name": "User",
+        "description": "Manage users.",
+    },
+    {
+        "name": "Permissions",
+        "description": "Manage permissions.",
     },
     {
         "name": "Protected Domains",

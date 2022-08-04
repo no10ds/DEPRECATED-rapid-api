@@ -21,6 +21,7 @@ from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VE
 from api.common.logger import AppLogger, init_logger
 from api.controller.auth import auth_router
 from api.controller.client import client_router
+from api.controller.permissions import permissions_router
 from api.controller.user import user_router
 from api.controller.datasets import datasets_router
 from api.controller.protected_domain import protected_domain_router
@@ -36,6 +37,7 @@ add_exception_handlers(app)
 templates = Jinja2Templates(directory=(os.path.abspath("templates")))
 
 app.include_router(auth_router)
+app.include_router(permissions_router)
 app.include_router(datasets_router)
 app.include_router(schema_router)
 app.include_router(client_router)

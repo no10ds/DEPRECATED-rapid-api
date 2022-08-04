@@ -221,6 +221,16 @@ class TestDynamoDBAdapter:
         ):
             self.dynamo_adapter.validate_permissions(test_user_permissions)
 
+    def test_get_all_permissions(self):
+        expected_response = ["USER_ADMIN", "READ_ALL", "WRITE_ALL", "READ_PRIVATE"]
+        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
+        actual_response = self.dynamo_adapter.get_all_permissions()
+
+        self.dynamo_boto_resource.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("PERMISSION"),
+        )
+        assert actual_response == expected_response
+
     def test_get_permissions_for_subject(self):
         subject_id = "test-subject-id"
         self.dynamo_boto_resource.query.return_value = {
