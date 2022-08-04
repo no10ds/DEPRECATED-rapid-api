@@ -7,11 +7,13 @@ from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 from starlette.status import HTTP_302_FOUND
 
+from api.application.services.UploadService import UploadService
 from api.application.services.authorisation.authorisation_service import (
     user_logged_in,
     RAPID_ACCESS_TOKEN,
     secure_dataset_endpoint,
 )
+from api.application.services.authorisation.token_utils import parse_token
 from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
     COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME,
@@ -21,11 +23,11 @@ from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VE
 from api.common.logger import AppLogger, init_logger
 from api.controller.auth import auth_router
 from api.controller.client import client_router
-from api.controller.permissions import permissions_router
-from api.controller.user import user_router
 from api.controller.datasets import datasets_router
+from api.controller.permissions import permissions_router
 from api.controller.protected_domain import protected_domain_router
 from api.controller.schema import schema_router
+from api.controller.user import user_router
 from api.exception_handler import add_exception_handlers
 
 app = FastAPI()
@@ -43,6 +45,8 @@ app.include_router(schema_router)
 app.include_router(client_router)
 app.include_router(user_router)
 app.include_router(protected_domain_router)
+
+upload_service = UploadService()
 
 
 @app.on_event("startup")
@@ -83,8 +87,10 @@ def login(request: Request):
     "/upload", include_in_schema=False, dependencies=[Depends(secure_dataset_endpoint)]
 )
 def upload(request: Request):
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    datasets = upload_service.get_authorised_datasets(subject_id)
     return templates.TemplateResponse(
-        name="upload.html", context={"request": request, "datasets": []}
+        name="upload.html", context={"request": request, "datasets": datasets}
     )
 
 
