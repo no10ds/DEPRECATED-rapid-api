@@ -330,7 +330,6 @@ class TestDynamoDBAdapter:
                     "SK": subject_id,
                     "Id": subject_id,
                     "Type": "CLIENT",
-                    "Permissions": "",
                 }
             ],
             "Count": 1,
@@ -338,7 +337,26 @@ class TestDynamoDBAdapter:
 
         response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
 
-        assert len(response) == 0
+        assert response == []
+
+    def test_get_permissions_for_subject_with_blank_permission(self):
+        subject_id = "test-subject-id"
+        self.dynamo_boto_resource.query.return_value = {
+            "Items": [
+                {
+                    "PK": "SUBJECT",
+                    "SK": subject_id,
+                    "Id": subject_id,
+                    "Type": "CLIENT",
+                    "Permissions": {""},
+                }
+            ],
+            "Count": 1,
+        }
+
+        response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
+
+        assert response == []
 
     def test_get_permissions_for_subject_throws_aws_service_error(self):
         subject_id = "test-subject-id"

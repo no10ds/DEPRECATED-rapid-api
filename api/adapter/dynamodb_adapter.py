@@ -135,12 +135,16 @@ class DynamoDBAdapter(DatabaseAdapter):
     def get_permissions_for_subject(self, subject_id: str) -> List[str]:
         AppLogger.info(f"Getting permissions for: {subject_id}")
         try:
-            return list(
-                self.dynamodb_table.query(
+            return [
+                permission
+                for permission in self.dynamodb_table.query(
                     KeyConditionExpression=Key("PK").eq(DatabaseItem.SUBJECT.value),
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
-            )
+                if permission is not None and permission != ""
+            ]
+        except KeyError:
+            return []
         except ClientError:
             AppLogger.info(f"Error retrieving permissions for subject {subject_id}")
             raise AWSServiceError(

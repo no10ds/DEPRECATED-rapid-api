@@ -279,6 +279,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
 
 class TestAuthenticatedUserJourneys(BaseJourneyTest):
     s3_client = boto3.client("s3")
+    cognito_client_id = None
 
     def setup_class(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
@@ -287,18 +288,18 @@ class TestAuthenticatedUserJourneys(BaseJourneyTest):
             secret_name="E2E_TEST_CLIENT_USER_ADMIN"  # pragma: allowlist secret
         )
 
-        cognito_client_id = read_and_write_credentials["CLIENT_ID"]
+        self.cognito_client_id = read_and_write_credentials["CLIENT_ID"]
         cognito_client_secret = read_and_write_credentials[
             "CLIENT_SECRET"
         ]  # pragma: allowlist secret
 
-        auth = HTTPBasicAuth(cognito_client_id, cognito_client_secret)
+        auth = HTTPBasicAuth(self.cognito_client_id, cognito_client_secret)
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         payload = {
             "grant_type": "client_credentials",
-            "client_id": cognito_client_id,
+            "client_id": self.cognito_client_id,
         }
 
         response = requests.post(token_url, auth=auth, headers=headers, json=payload)
@@ -335,3 +336,12 @@ class TestAuthenticatedUserJourneys(BaseJourneyTest):
 
         assert response.status_code == HTTPStatus.OK
         assert all((permission in response_json for permission in expected_permissions))
+
+    def test_lists_subject_permissions(self):
+        response = requests.get(
+            f"{self.permissions_url()}/{self.cognito_client_id}",
+            headers=self.generate_auth_headers(),
+        )
+
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == ["USER_ADMIN"]
