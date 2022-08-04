@@ -43,7 +43,7 @@ def create_protected_domain(domain: str):
     - Start with an alphabetic character
     - Can contain any symbol of `- _`
 
-    ### Accepted scopes
+    ### Accepted permissions
 
     In order to use this endpoint you need the `DATA_ADMIN` scope
 
@@ -73,9 +73,9 @@ def list_protected_domains():
     "department"
     ]
     ```
-    ### Accepted scopes
+    ### Accepted permissions
 
-    In order to use this endpoint you need the `DATA_ADMIN` scope
+    In order to use this endpoint you need the `DATA_ADMIN` permission
 
     ### Click  `Try it out` to use the endpoint
     """

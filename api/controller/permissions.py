@@ -20,4 +20,13 @@ permissions_router = APIRouter(
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 async def get_permissions():
+    """
+    Use this endpoint to list all available permissions that can be granted to users and clients.
+
+    ### Accepted permissions
+
+    In order to use this endpoint you need the `USER_ADMIN` permission
+
+    ### Click  `Try it out` to use the endpoint
+    """
     return permissions_service.get_permissions()

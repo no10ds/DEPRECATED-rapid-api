@@ -78,7 +78,7 @@ async def upload_schema(schema: Schema):
     |---------------|-----------------------------------------|------------------------------|-----------------------|
     | schema        | JSON request body                       | see below                    | the schema definition |
 
-    ### Accepted scopes
+    ### Accepted permissions
 
     In order to use this endpoint you need the `DATA_ADMIN` scope.
 

@@ -62,7 +62,7 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     |---------------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
     | query         | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
 
-    ### Accepted scopes
+    ### Accepted permissions
 
     You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
     a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
@@ -97,7 +97,7 @@ async def get_dataset_info(domain: str, dataset: str):
     | `domain`      | URL parameter                           | `land`                       | domain of the dataset |
     | `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
 
-    ### Accepted scopes
+    ### Accepted permissions
 
     You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
     a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
@@ -144,7 +144,7 @@ async def list_raw_files(domain: str, dataset: str):
     ]
     ```
 
-    ### Accepted scopes
+    ### Accepted permissions
 
     You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
     a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
@@ -184,7 +184,7 @@ async def delete_data_file(
     | `filename` | URL parameter                           | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
 
 
-    ### Accepted scopes
+    ### Accepted permissions
     In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level,
     e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
@@ -238,7 +238,7 @@ async def upload_data(
     }
     ```
 
-    ### Accepted scopes
+    ### Accepted permissions
 
     In order to use this endpoint you need a relevant `WRITE` scope that matches the dataset sensitivity level,
     e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
@@ -332,7 +332,7 @@ async def query_dataset(
     ...
     ```
 
-    ### Accepted scopes
+    ### Accepted permissions
 
     In order to use this endpoint you need a `READ` scope with appropriate sensitivity level permission,
     e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`

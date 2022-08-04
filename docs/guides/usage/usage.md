@@ -952,6 +952,32 @@ List of protected scopes in json format in the response body:
 
 In order to use this endpoint you need the `DATA_ADMIN` scope
 
+## List permissions
+
+Use this endpoint to list all available permissions that can be granted to users and clients.
+
+### General structure
+
+`GET /permissions`
+
+### Outputs
+
+List of permissions:
+
+```json
+[
+  "DATA_ADMIN",
+  "USER_ADMIN",
+  "WRITE_ALL",
+  "READ_PROTECTED_<domain>",
+  "..."
+]
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `USER_ADMIN` scope
+
 # UI usage
 
 ## Login
