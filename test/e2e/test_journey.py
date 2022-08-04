@@ -38,6 +38,9 @@ class BaseJourneyTest(ABC):
     def delete_data_url(self, domain: str, dataset: str, filename: str) -> str:
         return f"{self.datasets_endpoint}/{domain}/{dataset}/{filename}"
 
+    def permissions_url(self) -> str:
+        return f"{self.base_url}/permissions"
+
     def status_url(self) -> str:
         return f"{self.base_url}/status"
 
@@ -67,6 +70,10 @@ class TestUnauthenticatedJourneys(BaseJourneyTest):
 
     def test_list_is_forbidden_when_no_token_provided(self):
         response = requests.post(self.datasets_endpoint)
+        assert response.status_code == HTTPStatus.FORBIDDEN
+
+    def test_list_permissions_is_forbidden_when_no_token_provided(self):
+        response = requests.get(self.permissions_url())
         assert response.status_code == HTTPStatus.FORBIDDEN
 
 
@@ -113,8 +120,14 @@ class TestUnauthorisedJourney(BaseJourneyTest):
         response = requests.get(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
+    def test_list_permissions_when_not_user_admin(self):
+        response = requests.get(
+            self.permissions_url(), headers=self.generate_auth_headers()
+        )
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-class TestAuthenticatedJourneys(BaseJourneyTest):
+
+class TestAuthenticatedDataJourneys(BaseJourneyTest):
     s3_client = boto3.client("s3")
 
     def setup_class(self):
@@ -262,3 +275,63 @@ class TestAuthenticatedJourneys(BaseJourneyTest):
         response2 = requests.delete(url2, headers=(self.generate_auth_headers()))
 
         assert response2.status_code == HTTPStatus.NO_CONTENT
+
+
+class TestAuthenticatedUserJourneys(BaseJourneyTest):
+    s3_client = boto3.client("s3")
+
+    def setup_class(self):
+        token_url = f"https://{DOMAIN_NAME}/oauth2/token"
+
+        read_and_write_credentials = get_secret(
+            secret_name="E2E_TEST_CLIENT_USER_ADMIN"  # pragma: allowlist secret
+        )
+
+        cognito_client_id = read_and_write_credentials["CLIENT_ID"]
+        cognito_client_secret = read_and_write_credentials[
+            "CLIENT_SECRET"
+        ]  # pragma: allowlist secret
+
+        auth = HTTPBasicAuth(cognito_client_id, cognito_client_secret)
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        payload = {
+            "grant_type": "client_credentials",
+            "client_id": cognito_client_id,
+        }
+
+        response = requests.post(token_url, auth=auth, headers=headers, json=payload)
+
+        if response.status_code != HTTPStatus.OK:
+            raise AuthenticationFailedError(f"{response.status_code}")
+
+        self.token = json.loads(response.content.decode(CONTENT_ENCODING))[
+            "access_token"
+        ]
+
+    # Utils -------------
+
+    def generate_auth_headers(self):
+        return {"Authorization": f"Bearer {self.token}"}
+
+    def test_lists_all_permissions_contains_all_default_permissions(self):
+        response = requests.get(
+            self.permissions_url(), headers=self.generate_auth_headers()
+        )
+
+        expected_permissions = [
+            "READ_ALL",
+            "WRITE_ALL",
+            "READ_PUBLIC",
+            "WRITE_PUBLIC",
+            "READ_PRIVATE",
+            "WRITE_PRIVATE",
+            "DATA_ADMIN",
+            "USER_ADMIN",
+        ]
+
+        response_json = response.json()
+
+        assert response.status_code == HTTPStatus.OK
+        assert all((permission in response_json for permission in expected_permissions))
