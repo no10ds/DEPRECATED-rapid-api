@@ -237,6 +237,30 @@ class TestCognitoAdapterUsers:
             UserPoolId=COGNITO_USER_POOL_ID, Username="username"
         )
 
+    def test_delete_user_fails(self):
+        self.cognito_boto_client.admin_delete_user.side_effect = ClientError(
+            error_response={"Error": {"Code": "ResourceNotFoundException"}},
+            operation_name="AdminDeleteUser",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Something went wrong. Please Contact your administrator.",
+        ):
+            self.cognito_adapter.delete_user("username")
+
+    def test_delete_user_fails_when_user_does_not_exist(self):
+        self.cognito_boto_client.admin_delete_user.side_effect = ClientError(
+            error_response={"Error": {"Code": "UserNotFoundException"}},
+            operation_name="AdminDeleteUser",
+        )
+
+        with pytest.raises(
+            UserError,
+            match="The user 'my_user' does not exist cognito",
+        ):
+            self.cognito_adapter.delete_user("my_user")
+
     def test_create_user_fails_in_aws(self):
         request = UserRequest(
             username="user-name",

@@ -50,3 +50,8 @@ class UserResponse(BaseModel):
     email: str
     permissions: List[str]
     user_id: str
+
+
+class UserDeleteRequest(BaseModel):
+    username: str
+    user_id: str

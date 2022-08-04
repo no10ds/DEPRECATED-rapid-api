@@ -7,7 +7,7 @@ from api.common.config.auth import SubjectType
 from api.common.custom_exceptions import AWSServiceError, UserError
 from api.domain.client import ClientRequest, ClientResponse
 from api.domain.subject_permissions import SubjectPermissions
-from api.domain.user import UserResponse, UserRequest
+from api.domain.user import UserResponse, UserRequest, UserDeleteRequest
 
 
 class TestClientCreation:
@@ -257,4 +257,22 @@ class TestSetSubjectPermissions:
 
         self.dynamo_adapter.validate_permissions.assert_called_once_with(
             subject_permissions.permissions
+        )
+
+
+class TestUserDeletion:
+    def setup_method(self):
+        self.cognito_adapter = Mock()
+        self.dynamo_adapter = Mock()
+        self.subject_service = SubjectService(self.cognito_adapter, self.dynamo_adapter)
+
+    def test_delete_user(self):
+        delete_request = UserDeleteRequest(
+            username="my_user", user_id="some-uu-id-b226-e5fd18c59b85"
+        )
+        self.subject_service.delete_user(delete_request)
+
+        self.cognito_adapter.delete_user.assert_called_once_with("my_user")
+        self.dynamo_adapter.delete_subject.assert_called_once_with(
+            "some-uu-id-b226-e5fd18c59b85"
         )

@@ -44,6 +44,10 @@ class DatabaseAdapter(ABC):
     ) -> None:
         pass
 
+    @abstractmethod
+    def delete_subject(self, subject_id: str) -> None:
+        pass
+
 
 class DynamoDBAdapter(DatabaseAdapter):
     def __init__(
@@ -186,6 +190,9 @@ class DynamoDBAdapter(DatabaseAdapter):
             self._handle_client_error(
                 f"Error updating permissions for {subject_permissions.subject_id}"
             )
+
+    def delete_subject(self, subject_id: str) -> None:
+        self.dynamodb_table.delete_item(Key={"PK": "SUBJECT", "SK": subject_id})
 
     def _find_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:

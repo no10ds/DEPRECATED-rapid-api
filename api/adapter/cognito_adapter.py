@@ -156,8 +156,16 @@ class CognitoAdapter:
         )
 
     def delete_user(self, username: str):
-        AppLogger.info(f"Deleting user {username}")
-        self.cognito_client.admin_delete_user(
-            UserPoolId=COGNITO_USER_POOL_ID,
-            Username=username,
-        )
+        try:
+            AppLogger.info(f"Deleting user {username}")
+            self.cognito_client.admin_delete_user(
+                UserPoolId=COGNITO_USER_POOL_ID,
+                Username=username,
+            )
+        except ClientError as error:
+            AppLogger.info(f"Deleting user {username} failed")
+            if error.response["Error"]["Code"] == "UserNotFoundException":
+                raise UserError(f"The user '{username}' does not exist cognito")
+            raise AWSServiceError(
+                "Something went wrong. Please Contact your administrator."
+            )

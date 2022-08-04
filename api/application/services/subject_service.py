@@ -3,7 +3,7 @@ from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.common.config.auth import SubjectType
 from api.domain.client import ClientResponse, ClientRequest
 from api.domain.subject_permissions import SubjectPermissions
-from api.domain.user import UserRequest, UserResponse
+from api.domain.user import UserRequest, UserResponse, UserDeleteRequest
 
 
 class SubjectService:
@@ -26,6 +26,10 @@ class SubjectService:
         self._store_user_permissions(user_request, user_response)
 
         return user_response
+
+    def delete_user(self, delete_request: UserDeleteRequest) -> None:
+        self.dynamodb_adapter.delete_subject(delete_request.user_id)
+        self.cognito_adapter.delete_user(delete_request.username)
 
     def _store_client_permissions(
         self, client_request: ClientRequest, client_response: ClientResponse

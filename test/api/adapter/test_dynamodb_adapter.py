@@ -476,3 +476,9 @@ class TestDynamoDBAdapter:
             UserError, match="Subject with ID asdf1234678sd does not exist"
         ):
             self.dynamo_adapter.update_subject_permissions(subject_permissions)
+
+    def test_delete_subject(self):
+        self.dynamo_adapter.delete_subject("some_id")
+        self.dynamo_boto_resource.delete_item.assert_called_once_with(
+            Key={"PK": "SUBJECT", "SK": "some_id"}
+        )

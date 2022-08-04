@@ -3,7 +3,7 @@ from unittest.mock import patch
 from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.subject_permissions import SubjectPermissions
-from api.domain.user import UserResponse, UserRequest
+from api.domain.user import UserResponse, UserRequest, UserDeleteRequest
 from test.api.controller.controller_test_utils import BaseClientTest
 
 
@@ -190,3 +190,66 @@ class TestModifyUserPermissions(BaseClientTest):
 
         assert response.status_code == 500
         assert response.json() == {"details": "Database error"}
+
+
+class TestUserDeletion(BaseClientTest):
+    @patch.object(SubjectService, "delete_user")
+    def test_returns_user_information_when_valid_request(self, mock_create_user):
+        expected_response = {"message": "The user 'my_user' has been deleted"}
+        delete_request = UserDeleteRequest(
+            username="my_user", user_id="some-uu-id-b226-e5fd18c59b85"
+        )
+
+        response = self.client.delete(
+            "/user",
+            headers={"Authorization": "Bearer test-token"},
+            json={
+                "username": "my_user",
+                "user_id": "some-uu-id-b226-e5fd18c59b85",
+            },
+        )
+
+        mock_create_user.assert_called_once_with(delete_request)
+
+        assert response.status_code == 200
+        assert response.json() == expected_response
+
+    @patch.object(SubjectService, "delete_user")
+    def test_bad_request_when_user_does_not_exist(self, mock_delete_user):
+        mock_delete_user.side_effect = UserError(
+            "The user 'my_user' does not exist cognito"
+        )
+
+        response = self.client.delete(
+            "/user",
+            headers={"Authorization": "Bearer test-token"},
+            json={
+                "username": "my_user",
+                "user_id": "some-uu-id-b226-e5fd18c59b85",
+            },
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": "The user 'my_user' does not exist cognito"
+        }
+
+    @patch.object(SubjectService, "delete_user")
+    def test_internal_error_when_user_deletion_fails(self, mock_delete_user):
+        mock_delete_user.side_effect = AWSServiceError(
+            "Something went wrong. Please Contact your administrator."
+        )
+
+        response = self.client.delete(
+            "/user",
+            headers={"Authorization": "Bearer test-token"},
+            json={
+                "username": "my_user",
+                "user_id": "some-uu-id-b226-e5fd18c59b85",
+            },
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {
+            "details": "Something went wrong. Please Contact your administrator."
+        }

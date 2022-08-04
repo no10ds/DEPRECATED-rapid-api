@@ -6,7 +6,7 @@ from api.application.services.authorisation.authorisation_service import secure_
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
 from api.domain.subject_permissions import SubjectPermissions
-from api.domain.user import UserRequest
+from api.domain.user import UserRequest, UserDeleteRequest
 
 subject_service = SubjectService()
 
@@ -118,3 +118,23 @@ async def update_user_permissions(subject_permissions: SubjectPermissions):
 
     """
     return subject_service.set_subject_permissions(subject_permissions)
+
+
+@user_router.delete(
+    "",
+    status_code=http_status.HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+)
+async def delete_user(delete_request: UserDeleteRequest):
+    """
+    Use this endpoint to delete an existing user.
+
+    ### Accepted permissions
+
+    In order to use this endpoint you need the `USER_ADMIN` permission
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
+    subject_service.delete_user(delete_request)
+    return {"message": f"The user '{delete_request.username}' has been deleted"}
