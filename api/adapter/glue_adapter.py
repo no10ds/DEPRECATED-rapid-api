@@ -15,6 +15,7 @@ from api.common.config.aws import (
     GLUE_CSV_SERIALISATION_LIBRARY,
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     GLUE_TABLE_PRESENCE_CHECK_INTERVAL,
+    RESOURCE_PREFIX,
 )
 from api.common.custom_exceptions import (
     CrawlerCreateFailsError,
@@ -42,13 +43,11 @@ class GlueAdapter:
         self.glue_crawler_role = glue_crawler_role
         self.glue_connection_name = glue_connection_name
 
-    def create_crawler(
-        self, resource_prefix: str, domain: str, dataset: str, tags: Dict[str, str]
-    ):
+    def create_crawler(self, domain: str, dataset: str, tags: Dict[str, str]):
         data_store = StorageMetaData(domain, dataset)
         try:
             self.glue_client.create_crawler(
-                Name=self._generate_crawler_name(resource_prefix, domain, dataset),
+                Name=self._generate_crawler_name(domain, dataset),
                 Role=self.glue_crawler_role,
                 DatabaseName=self.glue_catalogue_db_name,
                 TablePrefix=data_store.glue_table_prefix(),
@@ -68,26 +67,26 @@ class GlueAdapter:
         except ClientError as error:
             self._handle_crawler_create_error(error)
 
-    def start_crawler(self, resource_prefix: str, domain: str, dataset: str):
+    def start_crawler(self, domain: str, dataset: str):
         try:
             self.glue_client.start_crawler(
-                Name=self._generate_crawler_name(resource_prefix, domain, dataset)
+                Name=self._generate_crawler_name(domain, dataset)
             )
         except ClientError:
             raise CrawlerStartFailsError("Failed to start crawler")
 
-    def delete_crawler(self, resource_prefix: str, domain: str, dataset: str):
+    def delete_crawler(self, domain: str, dataset: str):
         try:
             self.glue_client.delete_crawler(
-                self._generate_crawler_name(resource_prefix, domain, dataset)
+                self._generate_crawler_name(domain, dataset)
             )
         except ClientError:
             raise CrawlerDeleteFailsError("Failed to delete crawler")
 
-    def check_crawler_is_ready(self, resource_prefix: str, domain: str, dataset: str):
-        if self._get_crawler_state(resource_prefix, domain, dataset) != "READY":
+    def check_crawler_is_ready(self, domain: str, dataset: str):
+        if self._get_crawler_state(domain, dataset) != "READY":
             raise CrawlerIsNotReadyError(
-                f"Crawler is not ready for resource_prefix={resource_prefix}, domain={domain} and dataset={dataset}"
+                f"Crawler is not ready for resource_prefix={RESOURCE_PREFIX}, domain={domain} and dataset={dataset}"
             )
 
     def update_catalog_table_config(self, domain: str, dataset: str):
@@ -143,23 +142,19 @@ class GlueAdapter:
             "StorageDescriptor": table_storage_desc,
         }
 
-    def _get_crawler_state(
-        self, resource_prefix: str, domain: str, dataset: str
-    ) -> str:
+    def _get_crawler_state(self, domain: str, dataset: str) -> str:
         try:
             response = self.glue_client.get_crawler(
-                Name=self._generate_crawler_name(resource_prefix, domain, dataset)
+                Name=self._generate_crawler_name(domain, dataset)
             )
             return response["Crawler"]["State"]
         except ClientError:
             raise GetCrawlerError(
-                f"Failed to get crawler state resource_prefix={resource_prefix}, domain = {domain} dataset = {dataset}"
+                f"Failed to get crawler state resource_prefix={RESOURCE_PREFIX}, domain = {domain} dataset = {dataset}"
             )
 
-    def _generate_crawler_name(
-        self, resource_prefix: str, domain: str, dataset: str
-    ) -> str:
-        return resource_prefix + "_crawler/" + domain + "/" + dataset
+    def _generate_crawler_name(self, domain: str, dataset: str) -> str:
+        return f"{RESOURCE_PREFIX}_crawler/{domain}/{dataset}"
 
     def _handle_crawler_create_error(self, error: ClientError):
         if error.response["Error"]["Code"] == "AlreadyExistsException":

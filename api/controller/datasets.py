@@ -16,7 +16,6 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
 from api.common.config.auth import Action
-from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
@@ -193,7 +192,7 @@ async def delete_data_file(
 
     """
     try:
-        delete_service.delete_dataset_file(RESOURCE_PREFIX, domain, dataset, filename)
+        delete_service.delete_dataset_file(domain, dataset, filename)
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
     except CrawlerIsNotReadyError as error:
         AppLogger.warning("File deletion did not occur: %s", error.args[0])
@@ -250,7 +249,7 @@ async def upload_data(
     try:
         file_contents = await file.read()
         filename = data_service.upload_dataset(
-            RESOURCE_PREFIX, domain, dataset, file.filename, file_contents
+            domain, dataset, file.filename, file_contents
         )
         return _response_body(filename)
     except SchemaNotFoundError as error:

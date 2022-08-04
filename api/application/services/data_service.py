@@ -12,7 +12,6 @@ from api.application.services.partitioning_service import generate_partitioned_d
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
 from api.common.config.auth import SensitivityLevel
-from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
@@ -74,7 +73,6 @@ class DataService:
 
     def upload_dataset(
         self,
-        resource_prefix: str,
         domain: str,
         dataset: str,
         filename: str,
@@ -86,19 +84,20 @@ class DataService:
                 f"Could not find schema related to the dataset [{dataset}]"
             )
         else:
-            self.glue_adapter.check_crawler_is_ready(resource_prefix, domain, dataset)
+            self.glue_adapter.check_crawler_is_ready(domain, dataset)
             validated_dataframe = get_validated_dataframe(schema, file_contents)
-            raw_filname, permanent_filename = self.generate_raw_and_permanent_filenames(
-                schema, filename
-            )
+            (
+                raw_filename,
+                permanent_filename,
+            ) = self.generate_raw_and_permanent_filenames(schema, filename)
             self.persistence_adapter.upload_raw_data(
                 schema.get_domain(),
                 schema.get_dataset(),
-                raw_filname,
+                raw_filename,
                 file_contents,
             )
             self._upload_data(schema, validated_dataframe, permanent_filename)
-            self.glue_adapter.start_crawler(resource_prefix, domain, dataset)
+            self.glue_adapter.start_crawler(domain, dataset)
             self.glue_adapter.update_catalog_table_config(domain, dataset)
             return permanent_filename
 
@@ -117,7 +116,6 @@ class DataService:
             schema.get_domain(), schema.get_dataset(), schema.get_sensitivity(), schema
         )
         self.glue_adapter.create_crawler(
-            RESOURCE_PREFIX,
             schema.get_domain(),
             schema.get_dataset(),
             schema.get_tags(),

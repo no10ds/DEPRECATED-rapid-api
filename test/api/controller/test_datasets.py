@@ -7,7 +7,6 @@ from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
-from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
     UserError,
     DatasetError,
@@ -39,7 +38,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
+            "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 201
@@ -61,7 +60,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
+            "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 400
@@ -85,7 +84,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
+            "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 202
@@ -138,7 +137,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
+            "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 429
@@ -160,7 +159,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            RESOURCE_PREFIX, "domain", "dataset", file_name, file_content
+            "domain", "dataset", file_name, file_content
         )
 
         assert response.status_code == 500
@@ -515,7 +514,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 204
@@ -534,7 +533,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 429
@@ -556,7 +555,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 202
@@ -572,7 +571,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            RESOURCE_PREFIX, "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 400
