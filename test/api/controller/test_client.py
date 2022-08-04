@@ -172,3 +172,51 @@ class TestModifyClientPermissions(BaseClientTest):
 
         assert response.status_code == 500
         assert response.json() == {"details": "Database error"}
+
+
+class TestClientDeletion(BaseClientTest):
+    @patch.object(SubjectService, "delete_client")
+    def test_returns_client_information_when_valid_request(self, mock_delete_client):
+        expected_response = {"message": "The client 'my-client-id' has been deleted"}
+
+        response = self.client.delete(
+            "/client/my-client-id",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        mock_delete_client.assert_called_once_with("my-client-id")
+
+        assert response.status_code == 200
+        assert response.json() == expected_response
+
+    @patch.object(SubjectService, "delete_client")
+    def test_bad_request_when_client_does_not_exist(self, mock_delete_client):
+        mock_delete_client.side_effect = UserError(
+            "The client 'my-client-id' does not exist cognito"
+        )
+
+        response = self.client.delete(
+            "/client/my-client-id",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": "The client 'my-client-id' does not exist cognito"
+        }
+
+    @patch.object(SubjectService, "delete_client")
+    def test_internal_error_when_client_deletion_fails(self, mock_delete_client):
+        mock_delete_client.side_effect = AWSServiceError(
+            "Something went wrong. Please Contact your administrator."
+        )
+
+        response = self.client.delete(
+            "/client/my-client-id",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {
+            "details": "Something went wrong. Please Contact your administrator."
+        }

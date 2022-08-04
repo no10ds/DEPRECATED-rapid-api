@@ -150,10 +150,18 @@ class CognitoAdapter:
             )
 
     def delete_client_app(self, client_id: str):
-        AppLogger.info(f"Deleting client {client_id}")
-        self.cognito_client.delete_user_pool_client(
-            UserPoolId=COGNITO_USER_POOL_ID, ClientId=client_id
-        )
+        try:
+            AppLogger.info(f"Deleting client {client_id}")
+            self.cognito_client.delete_user_pool_client(
+                UserPoolId=COGNITO_USER_POOL_ID, ClientId=client_id
+            )
+        except ClientError as error:
+            AppLogger.info(f"Deleting client {client_id} failed with: {error.response}")
+            if error.response["Error"]["Code"] == "ResourceNotFoundException":
+                raise UserError(f"The client '{client_id}' does not exist cognito")
+            raise AWSServiceError(
+                "Something went wrong. Please Contact your administrator."
+            )
 
     def delete_user(self, username: str):
         try:
@@ -163,7 +171,7 @@ class CognitoAdapter:
                 Username=username,
             )
         except ClientError as error:
-            AppLogger.info(f"Deleting user {username} failed")
+            AppLogger.info(f"Deleting user {username} failed with: {error.response}")
             if error.response["Error"]["Code"] == "UserNotFoundException":
                 raise UserError(f"The user '{username}' does not exist cognito")
             raise AWSServiceError(

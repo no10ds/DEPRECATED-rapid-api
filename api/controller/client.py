@@ -117,3 +117,23 @@ async def update_client_permissions(subject_permissions: SubjectPermissions):
 
     """
     return subject_service.set_subject_permissions(subject_permissions)
+
+
+@client_router.delete(
+    "/{client_id}",
+    status_code=http_status.HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+)
+async def delete_client(client_id: str):
+    """
+    Use this endpoint to delete an existing client.
+
+    ### Accepted permissions
+
+    In order to use this endpoint you need the `USER_ADMIN` permission
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
+    subject_service.delete_client(client_id)
+    return {"message": f"The client '{client_id}' has been deleted"}

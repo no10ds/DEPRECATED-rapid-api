@@ -260,7 +260,7 @@ class TestSetSubjectPermissions:
         )
 
 
-class TestUserDeletion:
+class TestSubjectDeletion:
     def setup_method(self):
         self.cognito_adapter = Mock()
         self.dynamo_adapter = Mock()
@@ -276,3 +276,9 @@ class TestUserDeletion:
         self.dynamo_adapter.delete_subject.assert_called_once_with(
             "some-uu-id-b226-e5fd18c59b85"
         )
+
+    def test_delete_client(self):
+        self.subject_service.delete_client("my_client_id")
+
+        self.cognito_adapter.delete_client_app.assert_called_once_with("my_client_id")
+        self.dynamo_adapter.delete_subject.assert_called_once_with("my_client_id")

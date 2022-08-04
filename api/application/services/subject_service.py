@@ -31,6 +31,10 @@ class SubjectService:
         self.dynamodb_adapter.delete_subject(delete_request.user_id)
         self.cognito_adapter.delete_user(delete_request.username)
 
+    def delete_client(self, client_id: str) -> None:
+        self.dynamodb_adapter.delete_subject(client_id)
+        self.cognito_adapter.delete_client_app(client_id)
+
     def _store_client_permissions(
         self, client_request: ClientRequest, client_response: ClientResponse
     ):

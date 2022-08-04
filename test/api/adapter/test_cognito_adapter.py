@@ -127,6 +127,30 @@ class TestCognitoAdapterClientApps:
             UserPoolId=COGNITO_USER_POOL_ID, ClientId="client_id"
         )
 
+    def test_delete_client_app_fails(self):
+        self.cognito_boto_client.delete_user_pool_client.side_effect = ClientError(
+            error_response={"Error": {"Code": "InvalidParameterException"}},
+            operation_name="AdminDeleteUser",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Something went wrong. Please Contact your administrator.",
+        ):
+            self.cognito_adapter.delete_client_app("my_client")
+
+    def test_delete_client_app_fails_when_client_does_not_exist(self):
+        self.cognito_boto_client.delete_user_pool_client.side_effect = ClientError(
+            error_response={"Error": {"Code": "ResourceNotFoundException"}},
+            operation_name="AdminDeleteUser",
+        )
+
+        with pytest.raises(
+            UserError,
+            match="The client 'my_client' does not exist cognito",
+        ):
+            self.cognito_adapter.delete_client_app("my_client")
+
     def test_raises_error_when_the_client_fails_to_create_in_aws(self):
         self.cognito_boto_client.list_user_pool_clients.return_value = {
             "UserPoolClients": []
