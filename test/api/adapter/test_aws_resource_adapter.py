@@ -4,7 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.common.config.aws import AWS_REGION
+from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.dataset_filters import DatasetFilters
 
@@ -19,20 +19,34 @@ class TestAWSResourceAdapterClientMethods:
         self.aws_return_value = {
             "ResourceTagMappingList": [
                 {
-                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/rapid_crawler/domain1/dataset1",
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain1/dataset1",
                     "Tags": [{"Key": "sensitivity", "Value": "PUBLIC"}],
                 },
                 {
-                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/rapid_crawler/domain2/dataset2",
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain2/dataset2",
                     "Tags": [
                         {"Key": "tag1", "Value": ""},
                         {"Key": "sensitivity", "Value": "PUBLIC"},
                     ],
                 },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_PREFIX_crawler/domain3/dataset3",
+                    "Tags": [
+                        {"Key": "tag5", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PUBLIC"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_{RESOURCE_PREFIX}_crawler/domain2/dataset6",
+                    "Tags": [
+                        {"Key": "tag2", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PRIVATE"},
+                    ],
+                },
             ]
         }
 
-    def test_gets_all_datasets_metadata_when_query_is_empty(self):
+    def test_gets_all_datasets_metadata_for_specific_resource_when_query_is_empty(self):
         query = DatasetFilters()
 
         expected_metadatas = [
