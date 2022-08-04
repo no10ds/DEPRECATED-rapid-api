@@ -79,7 +79,7 @@ async def create_user(user_request: UserRequest):
     status_code=http_status.HTTP_200_OK,
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
-async def update_client_permissions(subject_permissions: SubjectPermissions):
+async def update_user_permissions(subject_permissions: SubjectPermissions):
     """
     ### Inputs
 
