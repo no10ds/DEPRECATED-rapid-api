@@ -8,11 +8,7 @@ from botocore.exceptions import ClientError
 
 from api.common.config.auth import DatabaseItem, SubjectType, SensitivityLevel
 from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
-from api.common.custom_exceptions import (
-    UserError,
-    AWSServiceError,
-    SubjectNotFoundError,
-)
+from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -152,7 +148,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             )
         except IndexError:
             AppLogger.info(f"Subject {subject_id} not found")
-            raise SubjectNotFoundError("Subject not found in database")
+            raise UserError(f"Subject {subject_id} not found in database")
 
     def update_subject_permissions(
         self, subject_permissions: SubjectPermissions

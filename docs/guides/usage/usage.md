@@ -978,6 +978,35 @@ List of permissions:
 
 In order to use this endpoint you need the `USER_ADMIN` scope
 
+
+## List subject permissions
+
+Use this endpoint to list all permissions that are assigned to a subject.
+
+### General structure
+
+`GET /permissions/{subject_id}`
+
+### Outputs
+
+List of permissions:
+
+```json
+[
+  "DATA_ADMIN",
+  "USER_ADMIN",
+  "WRITE_ALL",
+  "READ_PROTECTED_<domain>",
+  "..."
+]
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `USER_ADMIN` permission
+
+
+
 # UI usage
 
 ## Login

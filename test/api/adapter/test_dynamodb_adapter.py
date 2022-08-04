@@ -9,7 +9,6 @@ from api.common.config.auth import SubjectType
 from api.common.custom_exceptions import (
     AWSServiceError,
     UserError,
-    SubjectNotFoundError,
 )
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -317,8 +316,8 @@ class TestDynamoDBAdapter:
         }
 
         with pytest.raises(
-            SubjectNotFoundError,
-            match="Subject not found in database",
+            UserError,
+            match="Subject fake-subject-id not found in database",
         ):
             self.dynamo_adapter.get_permissions_for_subject(subject_id)
 

@@ -20,8 +20,8 @@ from api.common.custom_exceptions import (
     AuthorisationError,
     SchemaNotFoundError,
     UserCredentialsUnavailableError,
-    SubjectNotFoundError,
     ClientCredentialsUnavailableError,
+    UserError,
 )
 from api.domain.token import Token
 
@@ -341,7 +341,9 @@ class TestRetrievePermissions:
             }
         )
 
-        mock_db_adapter.get_permissions_for_subject.side_effect = SubjectNotFoundError()
+        mock_db_adapter.get_permissions_for_subject.side_effect = UserError(
+            message="the message"
+        )
 
         result = retrieve_permissions(token_with_no_db_permissions)
 

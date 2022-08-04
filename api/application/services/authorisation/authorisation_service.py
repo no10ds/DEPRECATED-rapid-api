@@ -23,8 +23,8 @@ from api.common.custom_exceptions import (
     SchemaNotFoundError,
     AuthorisationError,
     UserCredentialsUnavailableError,
-    SubjectNotFoundError,
     ClientCredentialsUnavailableError,
+    UserError,
 )
 from api.common.logger import AppLogger
 from api.domain.token import Token
@@ -143,7 +143,7 @@ def retrieve_permissions(token: Token) -> List[str]:
     try:
         database_permissions = db_adapter.get_permissions_for_subject(token.subject)
         return database_permissions if database_permissions else token.permissions
-    except SubjectNotFoundError:
+    except UserError:
         return token.permissions
 
 
