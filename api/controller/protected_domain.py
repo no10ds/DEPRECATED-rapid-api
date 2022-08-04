@@ -79,4 +79,4 @@ def list_protected_domains():
 
     ### Click  `Try it out` to use the endpoint
     """
-    return protected_domain_service.list_domains()
+    return protected_domain_service.list_protected_domains()

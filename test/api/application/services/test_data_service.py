@@ -107,13 +107,13 @@ class TestUploadSchema:
                 ),
             ],
         )
-        self.protected_domain_service.list_domains = Mock(
+        self.protected_domain_service.list_protected_domains = Mock(
             return_value=["domain", "other"]
         )
 
         result = self.data_service.check_for_protected_domain(schema)
 
-        self.protected_domain_service.list_domains.assert_called_once()
+        self.protected_domain_service.list_protected_domains.assert_called_once()
         assert result == "domain"
 
     def test_check_for_protected_domain_fails(self):
@@ -133,7 +133,9 @@ class TestUploadSchema:
                 ),
             ],
         )
-        self.protected_domain_service.list_domains = Mock(return_value=["other"])
+        self.protected_domain_service.list_protected_domains = Mock(
+            return_value=["other"]
+        )
 
         with pytest.raises(ProtectedDomainDoesNotExistError):
             self.data_service.check_for_protected_domain(schema)

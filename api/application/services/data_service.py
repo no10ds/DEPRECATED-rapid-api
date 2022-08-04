@@ -126,7 +126,7 @@ class DataService:
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
             if (
                 schema.get_domain().lower()
-                not in self.protected_domain_service.list_domains()
+                not in self.protected_domain_service.list_protected_domains()
             ):
                 raise ProtectedDomainDoesNotExistError(
                     f"The protected domain '{schema.get_domain()}' does not exist, please create it first."

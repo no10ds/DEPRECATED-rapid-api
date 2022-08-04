@@ -31,14 +31,25 @@ class ProtectedDomainService:
         domain = domain.upper().strip()
         existing_domains = self.resource_adapter.get_existing_domains()
 
-        if domain not in existing_domains:
-            raise UserError(f"The domain [{domain.lower()}] does not exist")
+        if domain.lower() not in existing_domains:
+            raise UserError(f"The domain [{domain}] does not exist")
 
         generated_permissions = self._generate_protected_permission_items(domain)
 
         self.dynamodb_adapter.store_protected_permission(generated_permissions, domain)
 
         self._append_protected_permission_to_parameter(generated_permissions)
+
+    def list_protected_domains(self) -> Set[str]:
+        protected_scopes = self.cognito_adapter.get_protected_scopes()
+        cognito_protected_domains = set(
+            scope.split(f"{SensitivityLevel.PROTECTED.value}_")[-1].lower()
+            for scope in protected_scopes
+        )
+
+        permission_items = self.dynamodb_adapter.get_all_protected_permissions()
+        db_protected_domains = set([item.domain.lower() for item in permission_items])
+        return cognito_protected_domains.union(db_protected_domains)
 
     def _append_protected_permission_to_parameter(
         self, permissions: List[PermissionItem]
@@ -56,10 +67,6 @@ class ProtectedDomainService:
             PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
             json.dumps(existing_permissions),
         )
-
-    def list_domains(self) -> Set[str]:
-        permission_items = self.dynamodb_adapter.get_all_protected_permissions()
-        return set([item.domain.lower() for item in permission_items])
 
     def _generate_protected_permission_items(self, domain) -> List[PermissionItem]:
         read_permission_item = PermissionItem(

@@ -8,6 +8,7 @@ from api.common.config.auth import (
     COGNITO_USER_POOL_ID,
     COGNITO_EXPLICIT_AUTH_FLOWS,
     COGNITO_ALLOWED_FLOWS,
+    SensitivityLevel,
 )
 from api.common.config.aws import AWS_REGION
 from api.common.custom_exceptions import AWSServiceError, UserError
@@ -132,28 +133,20 @@ class CognitoAdapter:
             f"The user '{user_request.username}' could not be created"
         )
 
-    def get_resource_server(self, user_pool_id: str, identifier: str):
+    def get_protected_scopes(self):
         try:
             response = self.cognito_client.describe_resource_server(
-                UserPoolId=user_pool_id, Identifier=identifier
-            )
-        except ClientError:
+                UserPoolId=COGNITO_USER_POOL_ID, Identifier=COGNITO_RESOURCE_SERVER_ID
+            )["ResourceServer"]["Scopes"]
+            return [
+                item["ScopeName"]
+                for item in response
+                if SensitivityLevel.PROTECTED.value in item["ScopeName"]
+            ]
+        except ClientError as error:
+            AppLogger.error(f"Unable to retrieve resource server information {error})")
             raise AWSServiceError(
-                "The resource server could not be found, please contact system administrator"
-            )
-
-        return response["ResourceServer"]
-
-    def add_resource_server_scopes(
-        self, user_pool_id: str, identifier: str, additional_scopes: List[dict]
-    ):
-        resource_server = self.get_resource_server(user_pool_id, identifier)
-        resource_server["Scopes"].extend(additional_scopes)
-        try:
-            self.cognito_client.update_resource_server(**resource_server)
-        except ClientError:
-            raise AWSServiceError(
-                f'The scopes "{additional_scopes}" could not be added, please contact system administrator'
+                "Internal server error, please contact system administrator"
             )
 
     def delete_client_app(self, client_id: str):

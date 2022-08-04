@@ -17,16 +17,16 @@ class TestProtectedDomains(BaseClientTest):
         assert response.status_code == 201
         assert response.json() == "Successfully created protected domain for new"
 
-    @patch.object(ProtectedDomainService, "list_domains")
-    def test_list_domains(self, mock_list_domains: Mock):
-        mock_list_domains.return_value = ["test"]
+    @patch.object(ProtectedDomainService, "list_protected_domains")
+    def test_list_protected_domains(self, list_protected_domains: Mock):
+        list_protected_domains.return_value = ["test"]
 
         response = self.client.get(
             "/protected_domains",
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_list_domains.assert_called_once()
+        list_protected_domains.assert_called_once()
 
         assert response.status_code == 200
         assert response.json() == ["test"]

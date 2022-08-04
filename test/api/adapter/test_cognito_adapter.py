@@ -4,7 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from api.adapter.cognito_adapter import CognitoAdapter
-from api.common.config.auth import COGNITO_USER_POOL_ID
+from api.common.config.auth import COGNITO_USER_POOL_ID, COGNITO_RESOURCE_SERVER_ID
 from api.common.config.aws import DOMAIN_NAME
 from api.common.custom_exceptions import AWSServiceError, UserError
 from api.domain.client import ClientRequest, ClientResponse
@@ -20,7 +20,6 @@ class TestCognitoAdapterClientApps:
         self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
 
     def test_create_client_app(self):
-
         self.cognito_boto_client.list_user_pool_clients.return_value = {
             "UserPoolClients": []
         }
@@ -274,7 +273,7 @@ class TestCognitoAdapterUsers:
             self.cognito_adapter.create_user(request)
 
 
-class TestCognitoResourceServer:
+class TestCognitoScopes:
     cognito_boto_client = None
     cognito_adapter = None
 
@@ -282,102 +281,54 @@ class TestCognitoResourceServer:
         self.cognito_boto_client = Mock()
         self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
 
-    def test_get_resource_server_success(self):
-        expected_response = {
-            "UserPoolId": "user_pool",
-            "Identifier": "identifier",
-            "Name": "name",
-            "Scopes": [
-                {"ScopeName": "scope_name", "ScopeDescription": "scope_description"}
-            ],
-        }
-
-        mock_response = {
-            "ResourceServer": expected_response,
-            "ResponseMetadata": {"HTTPStatusCode": 200},
-        }
-
-        self.cognito_boto_client.describe_resource_server.return_value = mock_response
-
-        actual_response = self.cognito_adapter.get_resource_server(
-            "user_pool", "identifier"
-        )
-
-        self.cognito_boto_client.describe_resource_server.assert_called_once_with(
-            UserPoolId="user_pool", Identifier="identifier"
-        )
-
-        assert actual_response == expected_response
-
-    def test_get_resource_server_fails(self):
-        self.cognito_boto_client.describe_resource_server = Mock(
-            side_effect=ClientError(
-                error_response={"Error": {"Code": "SomeException"}},
-                operation_name="DescribeResourceServer",
-            )
-        )
-        with pytest.raises(
-            AWSServiceError,
-            match="The resource server could not be found, please contact system administrator",
-        ):
-            self.cognito_adapter.get_resource_server("pool", "identifier")
-
-    def test_add_resource_server_scopes_success(self):
-        new_scope = [{"ScopeName": "new_scope", "ScopeDescription": "new_scope"}]
-
-        self.cognito_boto_client.update_resource_server = Mock()
-
-        mock_describe_response = {
-            "UserPoolId": "user_pool",
-            "Identifier": "identifier",
-            "Name": "name",
-            "Scopes": [
-                {"ScopeName": "existing_scope", "ScopeDescription": "existing_scope"},
-            ],
-        }
-        self.cognito_adapter.get_resource_server = Mock(
-            return_value=mock_describe_response
-        )
-        mock_update_response = {
+    def test_get_existing_scopes(self):
+        resource_server_response = {
             "ResourceServer": {
                 "UserPoolId": "user_pool",
                 "Identifier": "identifier",
                 "Name": "name",
                 "Scopes": [
                     {
-                        "ScopeName": "existing_scope",
-                        "ScopeDescription": "existing_scope",
+                        "ScopeName": "READ_PUBLIC",
+                        "ScopeDescription": "READ_PUBLIC description",
                     },
-                    *new_scope,
+                    {
+                        "ScopeName": "USER-ADMIN",
+                        "ScopeDescription": "USER-ADMIN description",
+                    },
+                    {
+                        "ScopeName": "READ_PROTECTED_DOMAIN",
+                        "ScopeDescription": "READ_PROTECTED_DOMAIN description",
+                    },
+                    {
+                        "ScopeName": "READ_PROTECTED_TRUCK",
+                        "ScopeDescription": "READ_PROTECTED_TRUCK description",
+                    },
                 ],
-            },
-            "ResponseMetadata": {"HTTPStatusCode": 200},
+            }
         }
-        self.cognito_boto_client.update_resource_server = Mock(
-            return_value=mock_update_response
-        )
-        self.cognito_adapter.add_resource_server_scopes(
-            "user_pool", "identifier", new_scope
-        )
+        expected_response = ["READ_PROTECTED_DOMAIN", "READ_PROTECTED_TRUCK"]
 
-        self.cognito_boto_client.update_resource_server.assert_called_once_with(
-            **mock_update_response["ResourceServer"]
+        self.cognito_boto_client.describe_resource_server.return_value = (
+            resource_server_response
         )
 
-    def test_add_resource_server_scopes_fails(self):
-        self.cognito_adapter.get_resource_server = Mock(return_value={"Scopes": []})
+        actual_response = self.cognito_adapter.get_protected_scopes()
 
-        self.cognito_boto_client.update_resource_server = Mock(
-            side_effect=ClientError(
-                error_response={"Error": {"Code": "SomeException"}},
-                operation_name="UpdateResourceServer",
-            )
+        self.cognito_boto_client.describe_resource_server.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID, Identifier=COGNITO_RESOURCE_SERVER_ID
+        )
+
+        assert actual_response == expected_response
+
+    def test_get_scopes_fails(self):
+        self.cognito_boto_client.describe_resource_server.side_effect = ClientError(
+            error_response={"Error": {"Code": "SomeException"}},
+            operation_name="DescribeResourceServer",
         )
 
         with pytest.raises(
             AWSServiceError,
-            match='The scopes "scopes" could not be added, please contact system administrator',
+            match="Internal server error, please contact system administrator",
         ):
-            self.cognito_adapter.add_resource_server_scopes(
-                "pool", "identifier", "scopes"
-            )
+            self.cognito_adapter.get_protected_scopes()

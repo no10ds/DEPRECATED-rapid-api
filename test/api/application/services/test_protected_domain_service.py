@@ -40,7 +40,7 @@ class TestProtectedDomainService:
             ),
         ]
 
-        existing_domains = ["BUS", "DOMAIN"]
+        existing_domains = ["bus", "domain"]
 
         existing_parameters = json.dumps(
             [
@@ -106,14 +106,28 @@ class TestProtectedDomainService:
         )
 
     def test_create_protected_domain_permission_when_domain_already_exists(self):
-        existing_domains = ["BUS"]
+        existing_domains = ["bus"]
 
         self.resource_adapter.get_existing_domains.return_value = existing_domains
 
-        with pytest.raises(UserError, match=r"The domain \[domain\] does not exist"):
+        with pytest.raises(UserError, match=r"The domain \[DOMAIN\] does not exist"):
             self.protected_domain_service.create_protected_domain_permission("domain")
 
-    def test_protected_domain_list(self):
+    def test_list_protected_domain_from_cognito_scopes(self):
+        expected_response = {"demo", "domain"}
+        existing_scopes = ["READ_PROTECTED_DEMO", "READ_PROTECTED_DOMAIN"]
+
+        self.cognito_adapter.get_protected_scopes.return_value = existing_scopes
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = []
+
+        domains = self.protected_domain_service.list_protected_domains()
+
+        self.cognito_adapter.get_protected_scopes.assert_called_once()
+        self.dynamodb_adapter.get_all_protected_permissions.assert_called_once()
+
+        assert domains == expected_response
+
+    def test_list_protected_domains(self):
         expected_response = {"other", "domain"}
         domain_permissions = [
             PermissionItem(
@@ -142,10 +156,38 @@ class TestProtectedDomainService:
             ),
         ]
 
+        self.cognito_adapter.get_protected_scopes.return_value = []
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             domain_permissions
         )
 
-        domains = self.protected_domain_service.list_domains()
+        domains = self.protected_domain_service.list_protected_domains()
         assert domains == expected_response
+        self.dynamodb_adapter.get_all_protected_permissions.assert_called_once()
+
+    def test_list_protected_domains_from_db(self):
+        expected_response = {"other", "domain", "demo"}
+        existing_scopes = ["READ_PROTECTED_DEMO", "READ_PROTECTED_DOMAIN"]
+        domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="READ_PROTECTED_DOMAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+            ),
+        ]
+        self.cognito_adapter.get_protected_scopes.return_value = existing_scopes
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            domain_permissions
+        )
+
+        domains = self.protected_domain_service.list_protected_domains()
+        assert domains == expected_response
+        self.cognito_adapter.get_protected_scopes.assert_called_once()
         self.dynamodb_adapter.get_all_protected_permissions.assert_called_once()
