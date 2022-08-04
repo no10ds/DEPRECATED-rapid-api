@@ -30,3 +30,21 @@ async def get_permissions():
     ### Click  `Try it out` to use the endpoint
     """
     return permissions_service.get_permissions()
+
+
+@permissions_router.get(
+    "/{subject_id}",
+    status_code=http_status.HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+)
+async def get_subject_permissions(subject_id: str):
+    """
+    Use this endpoint to list all permissions that are assigned to a subject.
+
+    ### Accepted permissions
+
+    In order to use this endpoint you need the `USER_ADMIN` permission
+
+    ### Click  `Try it out` to use the endpoint
+    """
+    return permissions_service.get_subject_permissions(subject_id)

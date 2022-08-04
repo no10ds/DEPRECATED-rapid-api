@@ -7,3 +7,6 @@ class PermissionsService:
 
     def get_permissions(self):
         return self.dynamodb_adapter.get_all_permissions()
+
+    def get_subject_permissions(self, subject_id: str):
+        raise NotImplementedError()
