@@ -120,13 +120,21 @@ class DynamoDBAdapter(DatabaseAdapter):
             )
 
     def get_all_protected_permissions(self) -> List[PermissionItem]:
-        list_of_items = self.dynamodb_table.query(
-            KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
-            FilterExpression=Attr("Sensitivity").eq(SensitivityLevel.PROTECTED.value),
-        )["Items"]
-        return [
-            self._generate_protected_permission_item(item) for item in list_of_items
-        ]
+        try:
+            list_of_items = self.dynamodb_table.query(
+                KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
+                FilterExpression=Attr("Sensitivity").eq(
+                    SensitivityLevel.PROTECTED.value
+                ),
+            )["Items"]
+            return [
+                self._generate_protected_permission_item(item) for item in list_of_items
+            ]
+        except ClientError as error:
+            AppLogger.info(f"Error retrieving all protected permissions: {error}")
+            raise AWSServiceError(
+                "Error fetching protected permissions, please contact your system administrator"
+            )
 
     def get_permissions_for_subject(self, subject_id: str) -> List[str]:
         AppLogger.info(f"Getting permissions for: {subject_id}")

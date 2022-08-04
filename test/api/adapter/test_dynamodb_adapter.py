@@ -148,6 +148,38 @@ class TestDynamoDBAdapter:
                 subject_type, subject_id, permissions
             )
 
+    def test_store_protected_permission_throws_error_when_database_call_fails(self):
+        domain = "TRAIN"
+        mock_batch_writer = Mock()
+        mock_batch_writer.__enter__ = Mock(return_value=mock_batch_writer)
+        mock_batch_writer.__exit__ = Mock(return_value=None)
+        self.dynamo_boto_resource.batch_writer.return_value = mock_batch_writer
+
+        mock_batch_writer.put_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "ResourceNotFoundException"}},
+            operation_name="PutItem",
+        )
+
+        permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_TRAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain=domain,
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_TRAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain=domain,
+            ),
+        ]
+        with pytest.raises(
+            AWSServiceError,
+            match=f"Error storing the protected domain permission for {domain}",
+        ):
+            self.dynamo_adapter.store_protected_permission(permissions, domain)
+
     def test_validate_permission_throws_error_when_query_fails(self):
         permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
 
@@ -231,7 +263,7 @@ class TestDynamoDBAdapter:
         )
         assert actual_response == expected_response
 
-    def test_get_all_permissions_raises_error_if_database_call_fails(self):
+    def test_get_all_permissions_throws_aws_service_error(self):
         self.dynamo_boto_resource.query.side_effect = ClientError(
             error_response={
                 "Error": {"Code": "QueryFailedException"},
@@ -369,6 +401,17 @@ class TestDynamoDBAdapter:
         )
 
         assert response == expected_permission_item_list
+
+    def test_get_all_protected_permissions_throws_aws_service_error(self):
+        self.dynamo_boto_resource.query.side_effect = ClientError(
+            error_response={"Error": {"Code": "SomeOtherError"}},
+            operation_name="UpdateItem",
+        )
+        with pytest.raises(
+            AWSServiceError,
+            match="Error fetching protected permissions, please contact your system administrator",
+        ):
+            self.dynamo_adapter.get_all_protected_permissions()
 
     def test_update_subject_permissions(self):
         subject_permissions = SubjectPermissions(
