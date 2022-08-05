@@ -44,11 +44,11 @@ test-e2e:		## Run E2E tests
 
 test-ui:		## Run UI tests
 	@playwright install --with-deps
-	@python3 test/ui/test_ui.py -s
+	@pytest test/ui -v -s
 
 test-headed-ui:		## Run UI tests with chrome browser window
 	@playwright install --with-deps
-	BROWSER_MODE="HEADED" python3 test/ui/test_ui.py -s
+	@BROWSER_MODE="HEADED" pytest test/ui -v -s
 
 test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage
