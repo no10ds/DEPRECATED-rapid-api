@@ -70,6 +70,11 @@ def status():
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
 
 
+@app.get("/", include_in_schema=False)
+def landing(request: Request):
+    return RedirectResponse(url="/upload")
+
+
 @app.get("/login", include_in_schema=False)
 def login(request: Request):
     if user_logged_in(request):
