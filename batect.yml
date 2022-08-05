@@ -72,7 +72,7 @@ tasks:
       command: "pytest test/api -v"
 
   test-e2e:
-    description: Run e2e tests
+    description: Run E2E tests
     run:
       container: service-image
       command: "pytest test/e2e -v"

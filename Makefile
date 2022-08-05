@@ -39,8 +39,12 @@ format: 		## Format code with Black
 test: 			## Run unit python tests
 	@./batect test-unit
 
-test-e2e:		## Run e2e tests
+test-e2e:		## Run E2E tests
 	@./batect test-e2e
+
+test-ui:		## Run UI tests
+	playwright install
+	pytest test/ui -s
 
 test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage

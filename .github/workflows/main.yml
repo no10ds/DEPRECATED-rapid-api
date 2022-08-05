@@ -64,6 +64,9 @@ jobs:
         id: await-running-app
         run: make check-app-is-running
 
+      - name: Install journey requirements
+        run:  pip install -r requirements.txt
+
       - name: Run E2E Tests
         env:
           DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
@@ -74,9 +77,12 @@ jobs:
           COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
           RESOURCE_PREFIX: ${{ secrets.RESOURCE_PREFIX }}
           ALLOWED_EMAIL_DOMAINS: ${{ secrets.ALLOWED_EMAIL_DOMAINS }}
-        run: |
-          pip install -r requirements.txt
-          pytest test/e2e -v
+        run: pytest test/e2e -v
+
+      - name: Run UI Tests
+        env:
+          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+        run: make test-ui
 
       - name: Tag image as failure
         if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure'
