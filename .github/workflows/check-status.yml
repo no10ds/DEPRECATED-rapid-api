@@ -13,10 +13,18 @@ jobs:
       run: pip install -r requirements.txt
 
     - name: Run E2E tests
+      env:
+        DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+        DATA_BUCKET: ${{ secrets.DATA_BUCKET }}
+        AWS_ACCOUNT: ${{ secrets.AWS_ACCOUNT }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+        AWS_DEFAULT_REGION: ${{ secrets.AWS_REGION }}
+        COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+        RESOURCE_PREFIX: ${{ secrets.RESOURCE_PREFIX }}
+        ALLOWED_EMAIL_DOMAINS: ${{ secrets.ALLOWED_EMAIL_DOMAINS }}
       run: pytest test/e2e -v
 
     - name: Run UI Tests
+      env:
+        DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
       run: make test-ui
-
-    - name: Check Status
-      run: curl --verbose https://getrapid.link/status
