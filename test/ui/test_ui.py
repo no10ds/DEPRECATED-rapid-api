@@ -5,10 +5,13 @@ from playwright.sync_api import Playwright, sync_playwright, expect
 
 DOMAIN_NAME = os.environ["DOMAIN_NAME"]
 BASE_URL = f"https://{DOMAIN_NAME}"
+BROWSER_MODE = os.getenv("BROWSER_MODE", "HEADLESS")
 
 
 def run(playwright: Playwright) -> None:
-    browser = playwright.chromium.launch(headless=False, slow_mo=1000)
+    browser = playwright.chromium.launch(
+        headless=BROWSER_MODE == "HEADLESS", slow_mo=1000
+    )
     context = browser.new_context()
     print("--------- UI Tests ---------")
     page = context.new_page()

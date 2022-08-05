@@ -46,6 +46,10 @@ test-ui:		## Run UI tests
 	playwright install --with-deps
 	pytest test/ui -s
 
+test-headed-ui:		## Run UI tests with chrome browser window
+	playwright install --with-deps
+	BROWSER_MODE="HEADED" pytest test/ui -s
+
 test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage
 

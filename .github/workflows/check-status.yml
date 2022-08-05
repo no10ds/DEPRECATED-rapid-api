@@ -9,10 +9,14 @@ jobs:
       with:
         python-version: '3.10'
 
+    - name: Install requirements
+      run: pip install -r requirements.txt
+
     - name: Run E2E tests
-      run: |
-        pip install -r requirements.txt
-        pytest -v
+      run: pytest test/e2e -v
+
+    - name: Run UI Tests
+      run: make test-ui
 
     - name: Check Status
       run: curl --verbose https://getrapid.link/status
