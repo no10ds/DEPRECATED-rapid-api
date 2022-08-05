@@ -10,7 +10,7 @@ from api.common.config.auth import (
     Action,
     PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
 )
-from api.common.custom_exceptions import UserError
+from api.common.custom_exceptions import UserError, ConflictError
 from api.domain.permission_item import PermissionItem
 
 
@@ -29,10 +29,8 @@ class ProtectedDomainService:
 
     def create_protected_domain_permission(self, domain: str) -> None:
         domain = domain.upper().strip()
-        existing_domains = self.resource_adapter.get_existing_domains()
-
-        if domain.lower() not in existing_domains:
-            raise UserError(f"The domain [{domain}] does not exist")
+        self._check_domain_exists(domain)
+        self._check_protected_domain_exists(domain)
 
         generated_permissions = self._generate_protected_permission_items(domain)
 
@@ -47,9 +45,13 @@ class ProtectedDomainService:
             for scope in protected_scopes
         )
 
+        db_protected_domains = self._list_protected_permission_domains()
+        return cognito_protected_domains.union(db_protected_domains)
+
+    def _list_protected_permission_domains(self):
         permission_items = self.dynamodb_adapter.get_all_protected_permissions()
         db_protected_domains = set([item.domain.lower() for item in permission_items])
-        return cognito_protected_domains.union(db_protected_domains)
+        return db_protected_domains
 
     def _append_protected_permission_to_parameter(
         self, permissions: List[PermissionItem]
@@ -67,6 +69,15 @@ class ProtectedDomainService:
             PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
             json.dumps(existing_permissions),
         )
+
+    def _check_protected_domain_exists(self, domain):
+        if domain.lower() in self._list_protected_permission_domains():
+            raise ConflictError(f"The domain, [{domain}] is already a protected domain")
+
+    def _check_domain_exists(self, domain):
+        existing_domains = self.resource_adapter.get_existing_domains()
+        if domain.lower() not in existing_domains:
+            raise UserError(f"The domain [{domain}] does not exist")
 
     def _generate_protected_permission_items(self, domain) -> List[PermissionItem]:
         read_permission_item = PermissionItem(

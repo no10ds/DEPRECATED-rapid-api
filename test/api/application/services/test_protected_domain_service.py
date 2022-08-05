@@ -7,7 +7,7 @@ from api.application.services.protected_domain_service import ProtectedDomainSer
 from api.common.config.auth import (
     PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
 )
-from api.common.custom_exceptions import UserError
+from api.common.custom_exceptions import UserError, ConflictError
 from api.domain.permission_item import PermissionItem
 
 
@@ -25,6 +25,7 @@ class TestProtectedDomainService:
         )
 
     def test_create_protected_domain_permission(self):
+        domain = "domain"
         generated_permissions = [
             PermissionItem(
                 id="READ_PROTECTED_DOMAIN",
@@ -59,6 +60,21 @@ class TestProtectedDomainService:
             ]
         )
 
+        existing_domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_OTHER",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+        ]
+
         existing_and_new_permissions = [
             {
                 "PermissionName": "READ_PROTECTED_BUS",
@@ -87,9 +103,13 @@ class TestProtectedDomainService:
         ]
 
         self.resource_adapter.get_existing_domains.return_value = existing_domains
+        self.cognito_adapter.get_protected_scopes.return_value = []
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            existing_domain_permissions
+        )
         self.ssm_adapter.get_parameter.return_value = existing_parameters
 
-        self.protected_domain_service.create_protected_domain_permission("domain")
+        self.protected_domain_service.create_protected_domain_permission(domain)
 
         self.resource_adapter.get_existing_domains.assert_called_once()
 
@@ -113,6 +133,48 @@ class TestProtectedDomainService:
         with pytest.raises(UserError, match=r"The domain \[DOMAIN\] does not exist"):
             self.protected_domain_service.create_protected_domain_permission("domain")
 
+    def test_create_protected_domain_permission_when_permission_exists_in_db(self):
+        existing_domains = ["bus", "domain"]
+        existing_domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_OTHER",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="READ_PROTECTED_DOMAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_DOMAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+            ),
+        ]
+        domain = "domain"
+
+        self.resource_adapter.get_existing_domains.return_value = existing_domains
+
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            existing_domain_permissions
+        )
+        self.cognito_adapter.get_protected_scopes.return_value = []
+
+        with pytest.raises(
+            ConflictError, match=r"The domain, \[DOMAIN\] is already a protected domain"
+        ):
+            self.protected_domain_service.create_protected_domain_permission(domain)
+
     def test_list_protected_domain_from_cognito_scopes(self):
         expected_response = {"demo", "domain"}
         existing_scopes = ["READ_PROTECTED_DEMO", "READ_PROTECTED_DOMAIN"]
@@ -127,7 +189,7 @@ class TestProtectedDomainService:
 
         assert domains == expected_response
 
-    def test_list_protected_domains(self):
+    def test_list_protected_domains_from_db(self):
         expected_response = {"other", "domain"}
         domain_permissions = [
             PermissionItem(
@@ -165,7 +227,7 @@ class TestProtectedDomainService:
         assert domains == expected_response
         self.dynamodb_adapter.get_all_protected_permissions.assert_called_once()
 
-    def test_list_protected_domains_from_db(self):
+    def test_list_protected_domains(self):
         expected_response = {"other", "domain", "demo"}
         existing_scopes = ["READ_PROTECTED_DEMO", "READ_PROTECTED_DOMAIN"]
         domain_permissions = [

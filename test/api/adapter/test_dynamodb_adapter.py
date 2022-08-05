@@ -78,6 +78,25 @@ class TestDynamoDBAdapter:
             },
         )
 
+    def test_store_subject_permissions_throws_error_when_database_call_fails(self):
+        subject_id = "123456789"
+        permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
+        subject_type = SubjectType.CLIENT
+        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
+
+        self.dynamo_boto_resource.put_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
+            operation_name="PutItem",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match=f"Error storing the {subject_type.value}: {subject_id}",
+        ):
+            self.dynamo_adapter.store_subject_permissions(
+                subject_type, subject_id, permissions
+            )
+
     def test_store_protected_permission(self):
         domain = "TRAIN"
         mock_batch_writer = Mock()
@@ -127,25 +146,6 @@ class TestDynamoDBAdapter:
             ),
             any_order=True,
         )
-
-    def test_store_subject_permissions_throws_error_when_database_call_fails(self):
-        subject_id = "123456789"
-        permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]
-        subject_type = SubjectType.CLIENT
-        self.dynamo_boto_resource.query.return_value = self.expected_db_query_response
-
-        self.dynamo_boto_resource.put_item.side_effect = ClientError(
-            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
-            operation_name="PutItem",
-        )
-
-        with pytest.raises(
-            AWSServiceError,
-            match=f"Error storing the {subject_type.value}: {subject_id}",
-        ):
-            self.dynamo_adapter.store_subject_permissions(
-                subject_type, subject_id, permissions
-            )
 
     def test_store_protected_permission_throws_error_when_database_call_fails(self):
         domain = "TRAIN"
