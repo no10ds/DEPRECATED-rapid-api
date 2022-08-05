@@ -74,10 +74,20 @@ class TestUploadPage(BaseClientTest):
 
 
 class TestLogoutPage(BaseClientTest):
+    @patch("api.entry.construct_logout_url")
+    @patch("api.entry.get_secret")
     @patch("api.entry.RedirectResponse.delete_cookie")
-    def test_logs_out_the_user(self, mock_delete_cookie):
+    def test_logs_out_the_user(
+        self, mock_delete_cookie, mock_get_secret, mock_construct_logout_url
+    ):
+        mock_get_secret.return_value = {"client_id": "the-client_id"}
+        mock_construct_logout_url.return_value = "https://the-redirect-url.com"
+
         response = self.client.get("/logout", allow_redirects=False)
+
         mock_delete_cookie.assert_called_once_with(RAPID_ACCESS_TOKEN)
+        mock_construct_logout_url.assert_called_once_with("the-client_id")
+
         assert response.status_code == 302
         assert response.is_redirect
-        assert response.headers.get("location") == "/login"
+        assert response.headers.get("location") == "https://the-redirect-url.com"

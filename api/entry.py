@@ -18,6 +18,7 @@ from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
     COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME,
     construct_user_auth_url,
+    construct_logout_url,
 )
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.logger import AppLogger, init_logger
@@ -101,6 +102,10 @@ def upload(request: Request):
 
 @app.get("/logout", include_in_schema=False)
 def logout():
-    redirect_response = RedirectResponse(url="/login", status_code=HTTP_302_FOUND)
+    cognito_user_login_client_id = get_secret(
+        COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME
+    )["client_id"]
+    logout_url = construct_logout_url(cognito_user_login_client_id)
+    redirect_response = RedirectResponse(url=logout_url, status_code=HTTP_302_FOUND)
     redirect_response.delete_cookie(RAPID_ACCESS_TOKEN)
     return redirect_response

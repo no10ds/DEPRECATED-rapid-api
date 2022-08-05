@@ -16,10 +16,14 @@ COGNITO_USER_POOL_ID = os.environ["COGNITO_USER_POOL_ID"]
 
 ALLOWED_EMAIL_DOMAINS = os.environ["ALLOWED_EMAIL_DOMAINS"]
 
-IDENTITY_PROVIDER_TOKEN_URL = (
-    f"https://{RESOURCE_PREFIX}-auth.auth.{AWS_REGION}.amazoncognito.com/oauth2/token"
+IDENTITY_PROVIDER_BASE_URL = (
+    f"https://{RESOURCE_PREFIX}-auth.auth.{AWS_REGION}.amazoncognito.com"
 )
-IDENTITY_PROVIDER_AUTHORIZATION_URL = f"https://{RESOURCE_PREFIX}-auth.auth.{AWS_REGION}.amazoncognito.com/oauth2/authorize"
+
+IDENTITY_PROVIDER_TOKEN_URL = f"{IDENTITY_PROVIDER_BASE_URL}/oauth2/token"
+IDENTITY_PROVIDER_AUTHORIZATION_URL = f"{IDENTITY_PROVIDER_BASE_URL}/oauth2/authorize"
+IDENTITY_PROVIDER_LOGOUT_URL = f"{IDENTITY_PROVIDER_BASE_URL}/logout"
+
 COGNITO_JWKS_URL = f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}/.well-known/jwks.json"
 
 COGNITO_EXPLICIT_AUTH_FLOWS = [
@@ -32,6 +36,7 @@ COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME = os.getenv(
     "COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME", "rapid_user_secrets_cognito"
 )
 
+COGNITO_LOGOUT_URI = f"https://{DOMAIN_NAME}/login"
 COGNITO_REDIRECT_URI = f"https://{DOMAIN_NAME}/oauth2/success"
 PROTECTED_DOMAIN_SCOPES_PARAMETER_NAME = f"{RESOURCE_PREFIX}_protected_domain_scopes"
 PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME = (
@@ -42,6 +47,13 @@ PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME = (
 def construct_user_auth_url(client_id: str):
     redirect_uri = urllib.parse.quote_plus(COGNITO_REDIRECT_URI)
     return f"{IDENTITY_PROVIDER_AUTHORIZATION_URL}?client_id={client_id}&response_type=code&redirect_uri={redirect_uri}"
+
+
+def construct_logout_url(client_id: str):
+    logout_uri = urllib.parse.quote_plus(COGNITO_LOGOUT_URI)
+    return (
+        f"{IDENTITY_PROVIDER_LOGOUT_URL}?client_id={client_id}&logout_uri={logout_uri}"
+    )
 
 
 class Action(BaseEnum):
