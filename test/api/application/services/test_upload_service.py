@@ -1,4 +1,4 @@
-from unittest.mock import patch
+from unittest.mock import patch, call
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
@@ -15,20 +15,29 @@ class TestUploadService:
         self, mock_get_permissions_for_subject, mock_get_datasets_metadata
     ):
         subject_id = "1234adsfasd8234kj"
-        # Handle ALL and protected domains
-        permissions = ["READ_PRIVATE", "WRITE_PUBLIC"]
-        query = DatasetFilters(sensitivity="PUBLIC")
-        enriched_dataset_metadata = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_dataset", domain="test_domain"
+        permissions = ["READ_PRIVATE", "WRITE_PUBLIC", "WRITE_PRIVATE"]
+        query_public = DatasetFilters(sensitivity="PUBLIC")
+        query_private = DatasetFilters(sensitivity="PRIVATE")
+        enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
+            dataset="test_dataset_1", domain="test_domain_1"
         )
-        enriched_dataset_metadata_list = [enriched_dataset_metadata]
+        enriched_dataset_metadata_2 = AWSResourceAdapter.EnrichedDatasetMetaData(
+            dataset="test_dataset_2", domain="test_domain_2"
+        )
+        enriched_dataset_metadata_list = [
+            enriched_dataset_metadata_1,
+            enriched_dataset_metadata_2,
+        ]
 
         mock_get_permissions_for_subject.return_value = permissions
         mock_get_datasets_metadata.return_value = enriched_dataset_metadata_list
 
         result = self.upload_service.get_authorised_datasets(subject_id)
 
-        assert len(result) == 1
-        assert result.pop() == "test_dataset"
+        assert len(result) == 2
+        assert "test_dataset_2" in result
+        assert "test_dataset_1" in result
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_called_once_with(query)
+        mock_get_datasets_metadata.assert_has_calls(
+            [call(query_public), call(query_private)]
+        )

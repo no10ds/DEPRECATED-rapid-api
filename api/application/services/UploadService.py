@@ -24,8 +24,8 @@ class UploadService:
         datasets_metadata_list = []
         for sensitivity in sensitivities_and_domains:
             query = DatasetFilters(sensitivity=sensitivity)
-            datasets_metadata_list.append(
-                *self.resource_adapter.get_datasets_metadata(query)
+            datasets_metadata_list.extend(
+                self.resource_adapter.get_datasets_metadata(query)
             )
 
         for datasets_metadata in datasets_metadata_list:
