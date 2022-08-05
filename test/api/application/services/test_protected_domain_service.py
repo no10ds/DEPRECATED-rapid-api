@@ -171,7 +171,7 @@ class TestProtectedDomainService:
         self.cognito_adapter.get_protected_scopes.return_value = []
 
         with pytest.raises(
-            ConflictError, match=r"The domain, \[DOMAIN\] is already a protected domain"
+            ConflictError, match=r"The protected domain, \[DOMAIN\] already exists"
         ):
             self.protected_domain_service.create_protected_domain_permission(domain)
 
