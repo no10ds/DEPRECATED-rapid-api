@@ -65,6 +65,10 @@ class SensitivityLevel(BaseEnum):
     PRIVATE = "PRIVATE"
     PROTECTED = "PROTECTED"
 
+    @classmethod
+    def get_all_values(cls) -> List[str]:
+        return [cls.PUBLIC.value, cls.PRIVATE.value, cls.PROTECTED.value]
+
 
 class SubjectType(BaseEnum):
     CLIENT = "CLIENT"

@@ -25,8 +25,11 @@ class UploadService:
             datasets_metadata_list.extend(
                 self.resource_adapter.get_datasets_metadata(query)
             )
-        for datasets_metadata in datasets_metadata_list:
+
+        [
             authorised_datasets.add(datasets_metadata.dataset)
+            for datasets_metadata in datasets_metadata_list
+        ]
         return authorised_datasets
 
     def _extract_sensitivities_and_domains(self, subject_id) -> Set[str]:
@@ -35,8 +38,12 @@ class UploadService:
         sensitivities_and_domains = set()
         for permission in permissions:
             if permission == Action.WRITE.value + "_ALL":
+                sensitivities_and_domains.update(SensitivityLevel.get_all_values())
+            elif (
+                permission == Action.WRITE.value + "_" + SensitivityLevel.PRIVATE.value
+            ):
                 sensitivities_and_domains.update(
-                    [SensitivityLevel.PUBLIC.value, SensitivityLevel.PRIVATE.value]
+                    [SensitivityLevel.PRIVATE.value, SensitivityLevel.PUBLIC.value]
                 )
             elif permission.startswith(Action.WRITE.value):
                 sensitivities_and_domains.add(permission[start_index:])
