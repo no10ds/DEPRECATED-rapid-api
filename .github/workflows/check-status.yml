@@ -10,7 +10,9 @@ jobs:
         python-version: '3.10'
 
     - name: Install requirements
-      run: pip install -r requirements.txt
+      run: |
+        pip install -r requirements.txt
+        playwright install --with-deps
 
     - name: Run E2E tests
       env:
@@ -27,4 +29,4 @@ jobs:
     - name: Run UI Tests
       env:
         DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-      run: make test-ui
+      run: pytest test/ui -s
