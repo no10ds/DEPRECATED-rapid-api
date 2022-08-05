@@ -43,7 +43,7 @@ test-e2e:		## Run E2E tests
 	@./batect test-e2e
 
 test-ui:		## Run UI tests
-	playwright install
+	playwright install --with-deps
 	pytest test/ui -s
 
 test-coverage:  	## Run python tests with coverage report
