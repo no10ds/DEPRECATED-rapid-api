@@ -1,14 +1,11 @@
-import json
 from typing import List, Set
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.adapter.ssm_adapter import SSMAdapter
 from api.common.config.auth import (
     SensitivityLevel,
     Action,
-    PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
 )
 from api.common.custom_exceptions import ConflictError
 from api.common.logger import AppLogger
@@ -21,12 +18,10 @@ class ProtectedDomainService:
         cognito_adapter=CognitoAdapter(),
         dynamodb_adapter=DynamoDBAdapter(),
         resource_adapter=AWSResourceAdapter(),
-        ssm_adapter=SSMAdapter(),
     ):
         self.cognito_adapter = cognito_adapter
         self.dynamodb_adapter = dynamodb_adapter
         self.resource_adapter = resource_adapter
-        self.ssm_adapter = ssm_adapter
 
     def create_protected_domain_permission(self, domain: str) -> None:
         AppLogger.info(f"Creating protected domain permission {domain}")
@@ -36,8 +31,6 @@ class ProtectedDomainService:
         generated_permissions = self._generate_protected_permission_items(domain)
 
         self.dynamodb_adapter.store_protected_permission(generated_permissions, domain)
-
-        self._append_protected_permission_to_parameter(generated_permissions)
 
     def list_protected_domains(self) -> Set[str]:
         protected_scopes = self.cognito_adapter.get_protected_scopes()
@@ -53,23 +46,6 @@ class ProtectedDomainService:
         permission_items = self.dynamodb_adapter.get_all_protected_permissions()
         db_protected_domains = set([item.domain.lower() for item in permission_items])
         return db_protected_domains
-
-    def _append_protected_permission_to_parameter(
-        self, permissions: List[PermissionItem]
-    ) -> None:
-        """
-        This is to ensure that any user added permissions can be picked up by the terraform infrastructure
-        """
-        existing_permissions = json.loads(
-            self.ssm_adapter.get_parameter(PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME)
-        )
-        existing_permissions.extend(
-            [permission.to_dict() for permission in permissions]
-        )
-        self.ssm_adapter.put_parameter(
-            PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
-            json.dumps(existing_permissions),
-        )
 
     def _check_protected_domain_exists(self, domain):
         if domain.lower() in self._list_protected_permission_domains():
