@@ -39,6 +39,16 @@ class BaseTestUI(ABC):
         print(f"Typing {value} into input with ID {input_id}")
         page.locator(f"//input[@id='{input_id}']").fill(value)
 
+    def assert_dropdown_exists(self, page, dropdown_id: str):
+        print(f"Checking dropdown exists {dropdown_id}")
+        expect(page.locator(f"#{dropdown_id}")).to_have_count(1)
+
+    def assert_dataset_exists(self, page, dropdown_id: str, dataset: str):
+        print(f"Checking dataset {dataset} exists in {dropdown_id}")
+        options = page.locator(f"#{dropdown_id} option")
+        option_text = options.all_text_contents()
+        assert dataset in option_text
+
     def login_with_cognito(self, page):
         print("Logging test user in with Cognito")
 
@@ -96,5 +106,12 @@ class TestUI(BaseTestUI):
 
             self.click_link(page, "Upload Data")
             self.assert_title(page, "rAPId - Upload")
+
+            self.assert_dropdown_exists(page, "dataset")
+            self.assert_dataset_exists(page, "dataset", "gapminder_private")  # Private
+            self.assert_dataset_exists(page, "dataset", "gapminder")  # Public
+            self.assert_dataset_exists(
+                page, "dataset", "gapminder_protected"
+            )  # Protected
 
             self.logout(page)
