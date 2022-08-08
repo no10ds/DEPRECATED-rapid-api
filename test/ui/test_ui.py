@@ -71,16 +71,30 @@ class TestUI(BaseTestUI):
             page = self.set_up_base_page(playwright)
 
             # Should be redirected to log in when not authenticated
-            self.go_to(page, "/upload")
+            self.go_to(page, "/")
 
             self.assert_title(page, "rAPId - Login")
             self.click_link(page, "Log in to rAPId")
 
             self.login_with_cognito(page)
 
-            self.assert_title(page, "rAPId - Upload")
+            self.assert_title(page, "rAPId")
 
             # Should log out of Cognito session too and not redirect to /upload when logging in again
             self.logout(page)
             self.click_link(page, "Log in to rAPId")
             self.assert_on_cognito_login(page)
+
+    def test_upload_journey(self):
+        with sync_playwright() as playwright:
+            page = self.set_up_base_page(playwright)
+
+            self.go_to(page, "/login")
+            self.assert_title(page, "rAPId - Login")
+            self.click_link(page, "Log in to rAPId")
+            self.login_with_cognito(page)
+
+            self.click_link(page, "Upload Data")
+            self.assert_title(page, "rAPId - Upload")
+
+            self.logout(page)
