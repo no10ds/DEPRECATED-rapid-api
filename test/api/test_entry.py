@@ -20,6 +20,23 @@ class TestStatus(BaseClientTest):
         assert response.status_code == 200
 
 
+class TestLandingPage(BaseClientTest):
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    def test_calls_template_with_expected_arguments(self, mock_templates_response):
+        landing_template_filename = "index.html"
+
+        response = self.client.get("/", cookies={"rat": "user_token"})
+
+        mock_templates_response.assert_called_once_with(
+            name=landing_template_filename,
+            context={
+                "request": ANY,
+            },
+        )
+
+        assert response.status_code == 200
+
+
 class TestLoginPage(BaseClientTest):
     @patch("api.entry.get_secret")
     @patch.object(Jinja2Templates, "TemplateResponse")

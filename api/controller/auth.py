@@ -61,7 +61,7 @@ async def _get_client_info():
 
 
 async def _build_auth_redirection(access_token):
-    auth_response = RedirectResponse(url="/upload", status_code=HTTP_302_FOUND)
+    auth_response = RedirectResponse(url="/", status_code=HTTP_302_FOUND)
     auth_response.set_cookie(
         RAPID_ACCESS_TOKEN,
         access_token,

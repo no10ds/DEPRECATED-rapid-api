@@ -12,6 +12,7 @@ from api.application.services.authorisation.authorisation_service import (
     user_logged_in,
     RAPID_ACCESS_TOKEN,
     secure_dataset_endpoint,
+    secure_endpoint,
 )
 from api.application.services.authorisation.token_utils import parse_token
 from api.common.aws_utilities import get_secret
@@ -71,9 +72,9 @@ def status():
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
 
 
-@app.get("/", include_in_schema=False)
+@app.get("/", include_in_schema=False, dependencies=[Depends(secure_endpoint)])
 def landing(request: Request):
-    return RedirectResponse(url="/upload")
+    return templates.TemplateResponse(name="index.html", context={"request": request})
 
 
 @app.get("/login", include_in_schema=False)

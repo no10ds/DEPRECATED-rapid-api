@@ -33,6 +33,7 @@ repos:
     hooks:
     -   id: validate-html
         args: [--remove-mustaches, --mustache-remover=jinja2]
+        exclude: "header.html"
 -   repo: https://github.com/pre-commit/mirrors-scss-lint
     rev: v0.59.0
     hooks:

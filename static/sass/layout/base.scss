@@ -45,6 +45,16 @@ body {
     text-align: center;
 
     grid-template-rows: minmax(5rem, 1fr) minmax(5rem, .5fr);
+
+    &--small {
+      grid-template-rows: min-content minmax(min-content, 1fr);
+    }
+  }
+
+  &-menu {
+    align-content: space-around;
+    display: grid;
+    grid-template-rows: repeat(2, minmax(min-content, 2rem));
   }
 
   &_header {

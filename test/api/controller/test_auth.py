@@ -42,4 +42,4 @@ class TestStatus(BaseClientTest):
                 "code": temporary_code,
             },
         )
-        mock_redirect.assert_called_once_with(url="/upload", status_code=HTTP_302_FOUND)
+        mock_redirect.assert_called_once_with(url="/", status_code=HTTP_302_FOUND)

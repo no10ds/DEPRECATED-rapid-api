@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rAPId</title>
+    <link href="static/main.css" rel="stylesheet">
+</head>
+<body>
+    <div class="content">
+        {% include 'header.html' %}
+        <div class="content_body content_body--small">
+            <h1 class="content_header">Welcome to rAPId</h1>
+            <div class="content-menu">
+                <div class="btn-set">
+                    <h3 class="btn-set_header">User Management</h3>
+                    <a class="btn" href="/">Create user</a>
+                    <a class="btn" href="/">Modify user</a>
+                </div>
+                <div class="btn-set">
+                    <h3 class="btn-set_header">Data Management</h3>
+                    <a class="btn" href="/upload">Upload Dataset</a>
+                    <a class="btn" href="/">Download Dataset</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
