@@ -1,6 +1,18 @@
 a {
   &.btn {
     text-decoration: none;
+
+    &--back {
+      grid-row-start: header-start;
+      grid-row-end: header-end;
+      grid-column-start: center-start;
+      grid-column-end: col-start;
+
+      font-size: 1.4rem;
+      color: var(--light-grey-1);
+
+      align-self: center;
+    }
   }
 }
 

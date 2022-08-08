@@ -7,7 +7,10 @@
 </head>
 <body>
     <div class="content">
-        {% include 'header.html' %}
+        {% with previous_page = "/" %}
+            {% include 'header.html' %}
+        {% endwith %}
+
         <form class="form">
             <div class="form_body">
                 <div class="form-select">
