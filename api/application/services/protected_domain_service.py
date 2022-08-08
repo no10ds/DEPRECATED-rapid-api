@@ -10,7 +10,7 @@ from api.common.config.auth import (
     Action,
     PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
 )
-from api.common.custom_exceptions import UserError, ConflictError
+from api.common.custom_exceptions import ConflictError
 from api.common.logger import AppLogger
 from api.domain.permission_item import PermissionItem
 
@@ -31,7 +31,6 @@ class ProtectedDomainService:
     def create_protected_domain_permission(self, domain: str) -> None:
         AppLogger.info(f"Creating protected domain permission {domain}")
         domain = domain.upper().strip()
-        self._check_domain_exists(domain)
         self._check_protected_domain_exists(domain)
 
         generated_permissions = self._generate_protected_permission_items(domain)
@@ -76,14 +75,6 @@ class ProtectedDomainService:
         if domain.lower() in self._list_protected_permission_domains():
             AppLogger.info(f"The protected domain, [{domain}] already exists")
             raise ConflictError(f"The protected domain, [{domain}] already exists")
-
-    def _check_domain_exists(self, domain):
-        existing_domains = self.resource_adapter.get_existing_domains()
-        if domain.lower() not in existing_domains:
-            AppLogger.info(
-                f"The domain {domain} does not exist, protected domain permission not generated"
-            )
-            raise UserError(f"The domain [{domain}] does not exist")
 
     def _generate_protected_permission_items(self, domain) -> List[PermissionItem]:
         read_permission_item = PermissionItem(

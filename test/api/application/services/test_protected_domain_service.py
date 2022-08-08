@@ -7,7 +7,7 @@ from api.application.services.protected_domain_service import ProtectedDomainSer
 from api.common.config.auth import (
     PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
 )
-from api.common.custom_exceptions import UserError, ConflictError
+from api.common.custom_exceptions import ConflictError
 from api.domain.permission_item import PermissionItem
 
 
@@ -40,8 +40,6 @@ class TestProtectedDomainService:
                 domain="DOMAIN",
             ),
         ]
-
-        existing_domains = ["bus", "domain"]
 
         existing_parameters = json.dumps(
             [
@@ -102,7 +100,6 @@ class TestProtectedDomainService:
             },
         ]
 
-        self.resource_adapter.get_existing_domains.return_value = existing_domains
         self.cognito_adapter.get_protected_scopes.return_value = []
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             existing_domain_permissions
@@ -110,8 +107,6 @@ class TestProtectedDomainService:
         self.ssm_adapter.get_parameter.return_value = existing_parameters
 
         self.protected_domain_service.create_protected_domain_permission(domain)
-
-        self.resource_adapter.get_existing_domains.assert_called_once()
 
         self.dynamodb_adapter.store_protected_permission.assert_called_once_with(
             generated_permissions, "DOMAIN"
@@ -124,14 +119,6 @@ class TestProtectedDomainService:
             PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME,
             json.dumps(existing_and_new_permissions),
         )
-
-    def test_create_protected_domain_permission_when_domain_already_exists(self):
-        existing_domains = ["bus"]
-
-        self.resource_adapter.get_existing_domains.return_value = existing_domains
-
-        with pytest.raises(UserError, match=r"The domain \[DOMAIN\] does not exist"):
-            self.protected_domain_service.create_protected_domain_permission("domain")
 
     def test_create_protected_domain_permission_when_permission_exists_in_db(self):
         existing_domains = ["bus", "domain"]

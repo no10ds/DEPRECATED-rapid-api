@@ -145,15 +145,3 @@ class TestAWSResourceAdapterClientMethods:
             match="Internal server error, please contact system administrator",
         ):
             self.resource_adapter.get_datasets_metadata(query)
-
-    def test_get_existing_domains(self):
-        expected_domains = {"domain1", "domain2"}
-
-        self.resource_boto_client.get_resources.return_value = self.aws_return_value
-
-        retreieved_domains = self.resource_adapter.get_existing_domains()
-
-        self.resource_boto_client.get_resources.assert_called_once_with(
-            ResourceTypeFilters=["glue:crawler"], TagFilters=[]
-        )
-        assert retreieved_domains == expected_domains

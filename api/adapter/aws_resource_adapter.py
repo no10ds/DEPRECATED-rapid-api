@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional, Set
+from typing import List, Dict, Tuple, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -36,10 +36,6 @@ class AWSResourceAdapter:
             return []
         except ClientError as error:
             self._handle_client_error(error)
-
-    def get_existing_domains(self) -> Set[str]:
-        datasets_metadata = self.get_datasets_metadata()
-        return set([dataset.domain for dataset in datasets_metadata])
 
     def _filter_for_resource_prefix(self, aws_resources):
         return [
