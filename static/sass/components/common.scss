@@ -4,6 +4,16 @@ a {
   }
 }
 
+ul {
+  padding: 0 2rem;
+
+  > li {
+    text-align: left;
+    max-width: 80%;
+    margin: 0 auto;
+  }
+}
+
 .btn-set {
   padding-bottom: 3rem;
 
@@ -11,4 +21,66 @@ a {
   grid-template-rows: repeat(2, min-content);
   grid-row-gap: 1.5rem;
   justify-items: center;
+}
+
+.btn {
+  font-size: 1.6rem;
+  font-weight: 600;
+  border-radius: .8rem;
+  border-style: none;
+  padding: .6rem 0;
+  width: 80%;
+  background-color: var(--light-pink);
+  color: var(--light-grey-1);
+  box-shadow: var(--light-shadow);
+
+  &:hover {
+    background-color: var(--dark-pink);
+    color: var(--light-grey-1);
+    box-shadow: var(--dark-shadow);
+    cursor: pointer;
+  }
+
+  &:active {
+    transform: translateY(.2rem);
+    background-color: var(--light-grey-4);
+    color: var(--light-pink);
+    box-shadow: var(--dark-shadow);
+    cursor: pointer;
+  }
+
+  &--secondary {
+    background-color: var(--light-grey-1);
+    color: var(--pink);
+    border-style: solid;
+    border-color: var(--pink);
+    padding: .6rem 1rem;
+
+    width: 20%;
+    min-width: min-content;
+
+    &:hover,
+    &:active {
+      background-color: var(--light-grey-2);
+      color: var(--dark-pink);
+      border-color: var(--dark-pink);
+    }
+  }
+
+  &--medium {
+    width: 60%;
+  }
+}
+
+.response-msg {
+  align-self: start;
+  padding: 0 1rem 1rem;
+
+  &--error {
+    color: var(--error-text);
+  }
+
+  &--success {
+    color: var(--success-text);
+  }
 }

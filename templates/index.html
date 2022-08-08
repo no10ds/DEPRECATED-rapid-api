@@ -11,6 +11,9 @@
         <div class="content_body content_body--small">
             <h1 class="content_header">Welcome to rAPId</h1>
             <div class="content-menu">
+                {% if not can_manage_users and not can_upload and not can_download %}
+                    <h3 class="response-msg--error">You have not been granted relevant permission. Please speak to your system administrator.</h3>
+                {% endif %}
                 {% if can_manage_users %}
                     <div class="btn-set">
                         <h3 class="btn-set_header">User Management</h3>

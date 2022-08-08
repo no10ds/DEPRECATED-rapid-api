@@ -896,7 +896,8 @@ Available choices are:
 - `DATA_ADMIN` - allow user to add a schema for a dataset of any sensitivity
 - `USER_ADMIN` - allow user to add a new user
 
-  The protected domains can be listed [here](#Protected%20Domains/list_protected_domains_protected_domains_get) or created [here](#Protected%20Domains/create_protected_domain_protected_domains__domain__post).
+  The protected domains can be listed [here](#Protected%20Domains/list_protected_domains_protected_domains_get) or
+  created [here](#Protected%20Domains/create_protected_domain_protected_domains__domain__post).
 
 ### Outputs
 
@@ -952,7 +953,6 @@ Confirmation Message:
 ### Accepted permissions
 
 In order to use this endpoint you need the `USER_ADMIN` scope
-
 
 ## Create protected domain
 
@@ -1036,7 +1036,6 @@ List of permissions:
 
 In order to use this endpoint you need the `USER_ADMIN` scope
 
-
 ## List subject permissions
 
 Use this endpoint to list all permissions that are assigned to a subject.
@@ -1063,8 +1062,6 @@ List of permissions:
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
-
-
 # UI usage
 
 ## Login
@@ -1086,7 +1083,7 @@ None
 3) Wait to be redirected to Cognito
 4) Type username and password
 5) Click on "Log in"
-6) Wait to be redirected to ```/upload```
+6) Wait to be redirected to ```/```
 
 ## Logout
 
@@ -1096,20 +1093,18 @@ This endpoint is used to remove the user's credentials
 
 `GET /logout`
 
-### Needed credentials
+### Requirements
 
-None
+To be logged in
 
-### Steps - On upload page
+### How to log out
 
-1) Go to ```/upload``` as an authenticated user
-2) Click on "Log out"
-3) Wait to be redirected to ```/login```
-
-### Steps - On the browser
-
-1) Go to ```/logout``` as an authenticated user
-2) Wait to be redirected to ```/login```
+1. On any page
+    1. Click on the "Log out" button
+    2. Wait to be redirected to ```/login```
+2. Whenever you want
+    1. Go to ```/logout``` as an authenticated user
+    2. Wait to be redirected to ```/login```
 
 ## Upload
 
@@ -1145,3 +1140,25 @@ When uploading the datasets there are 2 possible responses:
 
 - Success: A message with the uploaded filename will be shown to the user
 - Failure: An error message will be shown to the user
+
+## Landing
+
+This page is used as the entry point to the rAPId service on which the user can select their desired course of action.
+
+### General structure
+
+`GET /`
+
+### Needed credentials
+
+The user must be logged in as a Cognito user to use this page.
+
+Depending on the user's permissions, allowed actions will be dynamically displayed.
+
+For example, if the user has permission "READ_PRIVATE" and "WRITE_PRIVATE" then the data management section will be
+visible and both upload and download buttons will be available.
+
+If the user is a user admin, then the user management section will be visible along with its corresponding actions.
+
+If the user has not been granted any relevant permissions an error message will be displayed prompting the user to speak
+to the relevant authority to grant them required permissions.
