@@ -3,6 +3,7 @@ from unittest.mock import patch, ANY, Mock
 
 import pytest
 from fastapi.templating import Jinja2Templates
+from starlette.status import HTTP_302_FOUND
 
 from api.application.services.UploadService import UploadService
 from api.application.services.authorisation.authorisation_service import (
@@ -79,11 +80,13 @@ class TestLandingPage(BaseClientTest):
 
 
 class TestLoginPage(BaseClientTest):
+    @patch("api.entry.user_logged_in")
     @patch("api.entry.get_secret")
     @patch.object(Jinja2Templates, "TemplateResponse")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_templates_response, mock_get_secret
+        self, mock_templates_response, mock_get_secret, mock_log_in
     ):
+        mock_log_in.return_value = False
         mock_get_secret.return_value = {"client_id": "12345", "client_secret": "54321"}
         login_template_filename = "login.html"
 
@@ -98,6 +101,17 @@ class TestLoginPage(BaseClientTest):
         )
 
         assert response.status_code == 200
+
+    @patch("api.entry.user_logged_in")
+    @patch("api.entry.RedirectResponse")
+    def test_redirects_to_landing_when_the_user_has_logged_in_already(
+        self, mock_redirect_response, mock_log_in
+    ):
+        mock_log_in.return_value = True
+        self.client.get("/login")
+        mock_redirect_response.assert_called_once_with(
+            url="/", status_code=HTTP_302_FOUND
+        )
 
 
 class TestUploadPage(BaseClientTest):

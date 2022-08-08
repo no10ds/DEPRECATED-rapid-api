@@ -107,7 +107,7 @@ def determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool]
 @app.get("/login", include_in_schema=False)
 def login(request: Request):
     if user_logged_in(request):
-        return RedirectResponse(url="/upload", status_code=HTTP_302_FOUND)
+        return RedirectResponse(url="/", status_code=HTTP_302_FOUND)
     cognito_user_login_client_id = get_secret(
         COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME
     )["client_id"]
