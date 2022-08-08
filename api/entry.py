@@ -1,4 +1,5 @@
 import os
+from typing import List, Dict
 
 import sass
 from fastapi import FastAPI, Request, Depends
@@ -15,11 +16,13 @@ from api.application.services.authorisation.authorisation_service import (
     secure_endpoint,
 )
 from api.application.services.authorisation.token_utils import parse_token
+from api.application.services.permissions_service import PermissionsService
 from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
     COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME,
     construct_user_auth_url,
     construct_logout_url,
+    Action,
 )
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.logger import AppLogger, init_logger
@@ -49,6 +52,7 @@ app.include_router(user_router)
 app.include_router(protected_domain_router)
 
 upload_service = UploadService()
+permissions_service = PermissionsService()
 
 
 @app.on_event("startup")
@@ -74,7 +78,30 @@ def status():
 
 @app.get("/", include_in_schema=False, dependencies=[Depends(secure_endpoint)])
 def landing(request: Request):
-    return templates.TemplateResponse(name="index.html", context={"request": request})
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    subject_permissions = permissions_service.get_subject_permissions(subject_id)
+    allowed_actions = determine_user_ui_actions(subject_permissions)
+    return templates.TemplateResponse(
+        name="index.html", context={"request": request, **allowed_actions}
+    )
+
+
+def determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool]:
+    return {
+        "can_manage_users": Action.USER_ADMIN.value in subject_permissions,
+        "can_upload": any(
+            (
+                permission.startswith(Action.WRITE.value)
+                for permission in subject_permissions
+            )
+        ),
+        "can_download": any(
+            (
+                permission.startswith(Action.READ.value)
+                for permission in subject_permissions
+            )
+        ),
+    }
 
 
 @app.get("/login", include_in_schema=False)
