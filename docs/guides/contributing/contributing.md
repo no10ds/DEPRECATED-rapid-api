@@ -134,6 +134,24 @@ You will need to add some environment variables to your run configuration templa
 - `COGNITO_USER_POOL_ID=11111111`
 - `ALLOWED_EMAIL_DOMAINS=example1.com,example2.com`
 
+### Scripts
+
+There are currently two scripts located in the `test/scripts`, these are:
+
+- Delete Protected Domain Permission
+- User Permission Test
+
+#### Delete Protected Domain Permission
+
+The protected domain permission was created to easily remove the protected permission from the database and all
+protected datasets associated with that domain. This is due to the prerequisite of uploading a protected dataset which
+requires a protected domain permission to exist. In order to run this script one would need to specify the domain to be
+deleted.
+
+```commandline
+python test/scripts/delete_protected_domain_permission domain-to-be-deleted
+```
+
 ### Checking your code
 
 `make precommit` will lint source code, check for secrets and security vulnerabilities, validate config and run tests
@@ -255,7 +273,8 @@ so that departments can reference the version they want when pulling from ECR.
 ⚠️ When releasing a new version of the service, you must also release a version of
 the [infrastructure](https://github.com/no10ds/rapid-infrastructure) and vice versa. Both versions should be the same (
 i.e.: both vX.Y.Z). If there are no changes in one or the other repo, it should still be released along with the other
-and a tag added to the same commit as the previous release. This ensures that the version numbers signal the compatibility between the two elements.
+and a tag added to the same commit as the previous release. This ensures that the version numbers signal the
+compatibility between the two elements.
 
 ### Prerequisites
 
@@ -285,8 +304,8 @@ scopes:
 - `USER_ADMIN`
 
 For instance, if `WRITE` scope is used, that means that whoever is trying to access the endpoint needs to have any
-of `WRITE_ALL`, `WRITE_<sensitivity_level>` listed in their permissions, where sensitivity level is the sensitivity level of the dataset being modified. Otherwise, the request
-fails.
+of `WRITE_ALL`, `WRITE_<sensitivity_level>` listed in their permissions, where sensitivity level is the sensitivity
+level of the dataset being modified. Otherwise, the request fails.
 
 > ⚠️ ️NOTE: Higher sensitivity levels imply lower sensitivity levels.
 
@@ -324,9 +343,8 @@ Note that ```secure_dataset_endpoint``` dependency function must be used when ``
 in the url path and should be taken in consideration to determine the permission to access.
 
 When using the frontend layer instead of the client app token, the user token is used. This token contains Cognito user
-subject id which can be looked up in the permissions database to describe the permission access level for that particular user. The database follows a naming convention
-of ```WRITE_PUBLIC```.
-
+subject id which can be looked up in the permissions database to describe the permission access level for that
+particular user. The database follows a naming convention of ```WRITE_PUBLIC```.
 
 ## Gotchas 🤯
 

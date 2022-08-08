@@ -7,12 +7,12 @@ from functools import reduce
 import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
 
-from api.common.config.auth import PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME
-from api.common.config.aws import (
-    AWS_REGION,
-    DYNAMO_PERMISSIONS_TABLE_NAME,
-    DATA_BUCKET,
-    RESOURCE_PREFIX,
+AWS_REGION = os.environ["AWS_REGION"]
+RESOURCE_PREFIX = os.environ["RESOURCE_PREFIX"]
+DATA_BUCKET = os.environ["DATA_BUCKET"]
+DYNAMO_PERMISSIONS_TABLE_NAME = f"{RESOURCE_PREFIX}_users_permissions"
+PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME = (
+    f"{RESOURCE_PREFIX}_protected_domain_permissions"
 )
 
 database = boto3.resource("dynamodb", region_name=AWS_REGION).Table(
@@ -198,4 +198,4 @@ if __name__ == "__main__":
         delete_protected_domain(sys.argv[1])
     else:
         print("This method requires the domain for the protected domain to be deleted.")
-        print(f"E.g. python {os.path.basename(__file__)} _example_domain")
+        print(f"E.g. python {os.path.basename(__file__)} <domain>")
