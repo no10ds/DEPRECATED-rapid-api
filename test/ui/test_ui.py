@@ -1,7 +1,6 @@
 import os
 import re
 from abc import ABC
-
 from playwright.sync_api import sync_playwright, expect
 
 from test.test_utils import get_secret
@@ -9,6 +8,8 @@ from test.test_utils import get_secret
 DOMAIN_NAME = os.environ["DOMAIN_NAME"]
 BASE_URL = f"https://{DOMAIN_NAME}"
 BROWSER_MODE = os.getenv("BROWSER_MODE", "HEADLESS")
+TEST_CSV_PATH = "./test/e2e/test_journey_file.csv"
+FILENAME = "test_journey_file.csv"
 
 
 class BaseTestUI(ABC):
@@ -31,23 +32,46 @@ class BaseTestUI(ABC):
         print(f"Clicking button: {button_text}")
         page.click(f"//button[text()='{button_text}']")
 
+    def click_label(self, page, label_text: str):
+        print(f"Clicking label: {label_text}")
+        page.click(f"//label[text()='{label_text}']")
+
     def assert_title(self, page, title: str):
         print(f"Checking page title: {title}")
         expect(page).to_have_title(re.compile(title))
+
+    def assert_contains_label(self, page, label_text: str):
+        locator = page.locator(f"//label[text()='{label_text}']")
+        expect(locator).to_contain_text(label_text)
 
     def input_text_value(self, page, input_id: str, value: str):
         print(f"Typing {value} into input with ID {input_id}")
         page.locator(f"//input[@id='{input_id}']").fill(value)
 
     def assert_dropdown_exists(self, page, dropdown_id: str):
-        print(f"Checking dropdown exists {dropdown_id}")
+        print("Checking dropdown exists in the page")
         expect(page.locator(f"#{dropdown_id}")).to_have_count(1)
 
     def assert_dataset_exists(self, page, dropdown_id: str, dataset: str):
-        print(f"Checking dataset {dataset} exists in {dropdown_id}")
+        print(f"Checking dataset {dataset} exists in the dropdown")
         options = page.locator(f"#{dropdown_id} option")
         option_text = options.all_text_contents()
         assert dataset in option_text
+
+    def assert_can_upload(self, page, dropdown_id, upload_dataset):
+        print(f"Trying uploading to '{upload_dataset}'")
+        selected = page.select_option(f"select#{dropdown_id}", upload_dataset)
+        assert selected == [upload_dataset]
+        self.choose_and_upload_file(page)
+        self.assert_contains_label(page, FILENAME)
+        self.click_button(page, "Upload dataset")
+        self.assert_contains_label(page, "File uploaded: test_e2e.csv")
+
+    def choose_and_upload_file(self, page):
+        with page.expect_file_chooser() as fc_info:
+            self.click_label(page, "Choose file")
+        file_chooser = fc_info.value
+        file_chooser.set_files(TEST_CSV_PATH)
 
     def login_with_cognito(self, page):
         print("Logging test user in with Cognito")
@@ -99,6 +123,14 @@ class TestUI(BaseTestUI):
         with sync_playwright() as playwright:
             page = self.set_up_base_page(playwright)
 
+            write_all_datasets = [
+                "demo/gapminder",
+                "demo/gapminder_private",
+                "demo/gapminder_protected",
+            ]
+            upload_dataset = "test_e2e/upload"
+            dropdown_id = "dataset"
+
             self.go_to(page, "/login")
             self.assert_title(page, "rAPId - Login")
             self.click_link(page, "Log in to rAPId")
@@ -107,11 +139,11 @@ class TestUI(BaseTestUI):
             self.click_link(page, "Upload Data")
             self.assert_title(page, "rAPId - Upload")
 
-            self.assert_dropdown_exists(page, "dataset")
-            self.assert_dataset_exists(page, "dataset", "gapminder_private")  # Private
-            self.assert_dataset_exists(page, "dataset", "gapminder")  # Public
-            self.assert_dataset_exists(
-                page, "dataset", "gapminder_protected"
-            )  # Protected
+            self.assert_dropdown_exists(page, dropdown_id)
+            self.assert_dataset_exists(page, dropdown_id, write_all_datasets[0])
+            self.assert_dataset_exists(page, dropdown_id, write_all_datasets[1])
+            self.assert_dataset_exists(page, dropdown_id, write_all_datasets[2])
+
+            self.assert_can_upload(page, dropdown_id, upload_dataset)
 
             self.logout(page)
