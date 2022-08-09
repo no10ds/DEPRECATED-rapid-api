@@ -21,6 +21,9 @@ class StorageMetaData:
     def glue_table_prefix(self):
         return self.domain + "_"
 
+    def get_ui_upload_path(self):
+        return f"{self.domain}/{self.dataset}"
+
     def glue_table_name(self) -> str:
         return f"{self.glue_table_prefix()}{self.dataset}"
 

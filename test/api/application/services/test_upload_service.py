@@ -34,8 +34,8 @@ class TestUploadService:
         result = self.upload_service.get_authorised_datasets(subject_id)
 
         assert len(result) == 2
-        assert "test_dataset_2" in result
-        assert "test_dataset_1" in result
+        assert "test_domain_1/test_dataset_1" in result
+        assert "test_domain_2/test_dataset_2" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(
@@ -73,9 +73,9 @@ class TestUploadService:
         result = self.upload_service.get_authorised_datasets(subject_id)
 
         assert len(result) == 3
-        assert "test_public_dataset" in result
-        assert "test_private_dataset" in result
-        assert "test_protected_dataset" in result
+        assert "test_domain_1/test_public_dataset" in result
+        assert "test_domain_2/test_private_dataset" in result
+        assert "test_domain_3/test_protected_dataset" in result
         assert mock_get_datasets_metadata.call_count == 3
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(
@@ -103,7 +103,7 @@ class TestUploadService:
         result = self.upload_service.get_authorised_datasets(subject_id)
 
         assert len(result) == 1
-        assert "test_dataset_1" in result
+        assert "test_domain_1/test_dataset_1" in result
         assert mock_get_datasets_metadata.call_count == 1
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_called_once_with(query_public)
@@ -135,8 +135,8 @@ class TestUploadService:
         result = self.upload_service.get_authorised_datasets(subject_id)
 
         assert len(result) == 2
-        assert "test_dataset_1" in result
-        assert "test_dataset_2" in result
+        assert "some_domain/test_dataset_1" in result
+        assert "test2domain/test_dataset_2" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(

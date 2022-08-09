@@ -76,7 +76,7 @@ class UploadService:
         )
         for protected_domain in sensitivities_and_domains.get("protected_domains"):
             [
-                authorised_datasets.add(dataset.dataset)
+                authorised_datasets.add(dataset.get_ui_upload_path())
                 for dataset in datasets_metadata_list_protected_domains
                 if dataset.domain == protected_domain.lower()
             ]
@@ -92,7 +92,7 @@ class UploadService:
                 self.resource_adapter.get_datasets_metadata(query)
             )
         return [
-            authorised_datasets.add(datasets_metadata.dataset)
+            authorised_datasets.add(datasets_metadata.get_ui_upload_path())
             for datasets_metadata in datasets_metadata_list_sensitivities
         ]
 
