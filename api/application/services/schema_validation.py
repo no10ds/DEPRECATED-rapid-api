@@ -84,7 +84,7 @@ def schema_has_valid_metadata_values(schema: Schema):
     domain_name = schema.get_domain()
     dataset_name = schema.get_dataset()
 
-    if any((char in domain_name for char in ["-"])):
+    if not valid_domain_name(domain_name):
         raise SchemaError(
             f"The value set for domain [{domain_name}] cannot contain hyphens"
         )
@@ -95,6 +95,10 @@ def schema_has_valid_metadata_values(schema: Schema):
         )
     has_valid_sensitivity_level(schema)
     has_valid_update_behaviour(schema)
+
+
+def valid_domain_name(domain: str) -> bool:
+    return not any((char in domain for char in ["-"]))
 
 
 def schema_has_valid_tag_set(schema: Schema):

@@ -3,11 +3,12 @@ from typing import List, Set
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
+from api.application.services.schema_validation import valid_domain_name
 from api.common.config.auth import (
     SensitivityLevel,
     Action,
 )
-from api.common.custom_exceptions import ConflictError
+from api.common.custom_exceptions import ConflictError, UserError
 from api.common.logger import AppLogger
 from api.domain.permission_item import PermissionItem
 
@@ -26,6 +27,10 @@ class ProtectedDomainService:
     def create_protected_domain_permission(self, domain: str) -> None:
         AppLogger.info(f"Creating protected domain permission {domain}")
         domain = domain.upper().strip()
+
+        if not valid_domain_name(domain):
+            raise UserError("Invalid domain name")
+
         self._verify_protected_domain_does_not_exist(domain)
 
         generated_permissions = self._generate_protected_permission_items(domain)

@@ -3,7 +3,7 @@ from unittest.mock import Mock
 import pytest
 
 from api.application.services.protected_domain_service import ProtectedDomainService
-from api.common.custom_exceptions import ConflictError
+from api.common.custom_exceptions import ConflictError, UserError
 from api.domain.permission_item import PermissionItem
 
 
@@ -181,3 +181,8 @@ class TestProtectedDomainService:
         assert domains == expected_response
         self.cognito_adapter.get_protected_scopes.assert_called_once()
         self.dynamodb_adapter.get_all_protected_permissions.assert_called_once()
+
+    def test_throws_if_invalid_domain_name(self):
+        domain = "bad-domain"
+        with pytest.raises(UserError, match="Invalid domain name"):
+            self.protected_domain_service.create_protected_domain_permission(domain)
