@@ -21,7 +21,7 @@ class DatabaseAdapter(ABC):
     ) -> None:
         pass
 
-    def store_protected_permission(
+    def store_protected_permissions(
         self, permissions: List[PermissionItem], domain: str
     ) -> None:
         pass
@@ -76,7 +76,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         except ClientError:
             self._handle_client_error(f"Error storing the {subject_type}: {subject_id}")
 
-    def store_protected_permission(
+    def store_protected_permissions(
         self, permissions: List[PermissionItem], domain: str
     ) -> None:
         try:

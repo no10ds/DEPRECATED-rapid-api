@@ -26,11 +26,11 @@ class ProtectedDomainService:
     def create_protected_domain_permission(self, domain: str) -> None:
         AppLogger.info(f"Creating protected domain permission {domain}")
         domain = domain.upper().strip()
-        self._check_protected_domain_exists(domain)
+        self._verify_protected_domain_does_not_exist(domain)
 
         generated_permissions = self._generate_protected_permission_items(domain)
 
-        self.dynamodb_adapter.store_protected_permission(generated_permissions, domain)
+        self.dynamodb_adapter.store_protected_permissions(generated_permissions, domain)
 
     def list_protected_domains(self) -> Set[str]:
         protected_scopes = self.cognito_adapter.get_protected_scopes()
@@ -47,7 +47,7 @@ class ProtectedDomainService:
         db_protected_domains = set([item.domain.lower() for item in permission_items])
         return db_protected_domains
 
-    def _check_protected_domain_exists(self, domain):
+    def _verify_protected_domain_does_not_exist(self, domain):
         if domain.lower() in self._list_protected_permission_domains():
             AppLogger.info(f"The protected domain, [{domain}] already exists")
             raise ConflictError(f"The protected domain, [{domain}] already exists")

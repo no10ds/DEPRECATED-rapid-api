@@ -119,7 +119,7 @@ class TestDynamoDBAdapter:
             ),
         ]
 
-        self.dynamo_adapter.store_protected_permission(permissions, domain)
+        self.dynamo_adapter.store_protected_permissions(permissions, domain)
 
         mock_batch_writer.put_item.assert_has_calls(
             (
@@ -177,7 +177,7 @@ class TestDynamoDBAdapter:
             AWSServiceError,
             match=f"Error storing the protected domain permission for {domain}",
         ):
-            self.dynamo_adapter.store_protected_permission(permissions, domain)
+            self.dynamo_adapter.store_protected_permissions(permissions, domain)
 
     def test_validate_permission_throws_error_when_query_fails(self):
         permissions = ["READ_ALL", "WRITE_ALL", "READ_PRIVATE", "USER_ADMIN"]

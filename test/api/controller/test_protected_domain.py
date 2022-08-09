@@ -15,7 +15,9 @@ class TestProtectedDomains(BaseClientTest):
         create_protected_domain_permission.assert_called_once_with("new")
 
         assert response.status_code == 201
-        assert response.json() == "Successfully created protected domain for new"
+        assert response.json() == {
+            "message": "Successfully created protected domain for new"
+        }
 
     @patch.object(ProtectedDomainService, "list_protected_domains")
     def test_list_protected_domains(self, list_protected_domains: Mock):

@@ -57,7 +57,7 @@ class TestProtectedDomainService:
 
         self.protected_domain_service.create_protected_domain_permission(domain)
 
-        self.dynamodb_adapter.store_protected_permission.assert_called_once_with(
+        self.dynamodb_adapter.store_protected_permissions.assert_called_once_with(
             generated_permissions, "DOMAIN"
         )
 
