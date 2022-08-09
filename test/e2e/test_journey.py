@@ -9,6 +9,7 @@ from requests.auth import HTTPBasicAuth
 from api.common.config.aws import DATA_BUCKET, DOMAIN_NAME
 from api.common.config.constants import CONTENT_ENCODING
 from test.e2e.e2e_test_utils import get_secret, AuthenticationFailedError
+from test.scripts.delete_protected_domain_permission import delete_permission_from_db
 
 
 class BaseJourneyTest(ABC):
@@ -34,6 +35,12 @@ class BaseJourneyTest(ABC):
 
     def list_dataset_files_url(self, domain: str, dataset: str) -> str:
         return f"{self.datasets_endpoint}/{domain}/{dataset}/files"
+
+    def create_protected_domain_url(self, domain: str) -> str:
+        return f"{self.base_url}/protected_domains/{domain}"
+
+    def list_protected_domain_url(self) -> str:
+        return f"{self.base_url}/protected_domains"
 
     def delete_data_url(self, domain: str, dataset: str, filename: str) -> str:
         return f"{self.datasets_endpoint}/{domain}/{dataset}/{filename}"
@@ -345,3 +352,62 @@ class TestAuthenticatedUserJourneys(BaseJourneyTest):
 
         assert response.status_code == HTTPStatus.OK
         assert response.json() == ["USER_ADMIN"]
+
+
+class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
+    s3_client = boto3.client("s3")
+
+    def setup_class(self):
+        token_url = f"https://{DOMAIN_NAME}/oauth2/token"
+
+        read_and_write_credentials = get_secret(
+            secret_name="E2E_TEST_CLIENT_DATA_ADMIN"  # pragma: allowlist secret
+        )
+
+        cognito_client_id = read_and_write_credentials["CLIENT_ID"]
+        cognito_client_secret = read_and_write_credentials[
+            "CLIENT_SECRET"
+        ]  # pragma: allowlist secret
+
+        auth = HTTPBasicAuth(cognito_client_id, cognito_client_secret)
+
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        payload = {
+            "grant_type": "client_credentials",
+            "client_id": cognito_client_id,
+        }
+
+        response = requests.post(token_url, auth=auth, headers=headers, json=payload)
+
+        if response.status_code != HTTPStatus.OK:
+            raise AuthenticationFailedError(f"{response.status_code}")
+
+        self.token = json.loads(response.content.decode(CONTENT_ENCODING))[
+            "access_token"
+        ]
+
+    @classmethod
+    def teardown_class(cls):
+        delete_permission_from_db("test_e2e")
+
+    # Utils -------------
+    def generate_auth_headers(self):
+        return {"Authorization": f"Bearer {self.token}"}
+
+    # Tests -------------
+    def test_create_protected_domain_permission(self):
+        create_url = self.create_protected_domain_url("test_e2e")
+        response = requests.post(create_url, headers=self.generate_auth_headers())
+
+        assert response.status_code == HTTPStatus.CREATED
+        list_url = self.list_protected_domain_url()
+        response = requests.get(list_url, headers=self.generate_auth_headers())
+
+        assert "test_e2e" in response.json()
+
+    # def test_assign_protected_domain(self):
+    #     pass
+    #
+    # def test_access_protected_domain(self):
+    #     pass

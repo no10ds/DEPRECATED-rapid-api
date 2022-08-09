@@ -29,7 +29,7 @@ def delete_protected_domain(domain: str):
     print("Deleting files...")
     delete_data(domain)
 
-    # DELETE EVIDENCE IN DATABASE AND SSM
+    # DELETE EVIDENCE IN DATABASE
     print("Deleting permissions...")
     delete_permission_from_db(domain)
 
