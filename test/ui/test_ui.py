@@ -1,5 +1,6 @@
 import os
 import re
+import time
 from abc import ABC
 from playwright.sync_api import sync_playwright, expect
 
@@ -42,6 +43,7 @@ class BaseTestUI(ABC):
 
     def assert_contains_label(self, page, label_text: str):
         locator = page.locator(f"//label[text()='{label_text}']")
+        time.sleep(1)
         expect(locator).to_contain_text(label_text)
 
     def input_text_value(self, page, input_id: str, value: str):
