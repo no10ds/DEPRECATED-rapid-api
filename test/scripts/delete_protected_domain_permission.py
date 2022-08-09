@@ -31,7 +31,7 @@ def delete_protected_domain(domain: str):
 
     # DELETE EVIDENCE IN DATABASE
     print("Deleting permissions...")
-    delete_permission_from_db(domain)
+    delete_protected_domain_permission_from_db(domain)
 
 
 def delete_data(domain):
@@ -97,10 +97,10 @@ def find_protected_datasets(domain):
         ]
         data = []
         for path in protected_datasets:
-            dataset = re.search(f"{protected_path}{domain}-([a-z_]+).json", path).group(
-                1
-            )
-            data.append({"domain": domain, "dataset": dataset})
+            result = re.search(f"{protected_path}{domain}-([a-z_]+).json", path)
+            if result:
+                dataset = result.group(1)
+                data.append({"domain": domain, "dataset": dataset})
         return data
     else:
         return None
@@ -115,14 +115,14 @@ def get_file_paths(domain: str, dataset: str, path: str):
         return [{"Key": path["Key"]} for path in response["Contents"]]
 
 
-def delete_s3_files(file_path):
+def delete_s3_files(file_path: str):
     s3_client.delete_objects(
         Bucket=s3_bucket,
         Delete={"Objects": file_path},
     )
 
 
-def delete_permission_from_db(domain):
+def delete_protected_domain_permission_from_db(domain: str):
     # Get permission ids
     protected_permissions = get_protected_permissions(domain)
 
@@ -138,10 +138,10 @@ def delete_permission_from_db(domain):
         )
 
 
-def get_protected_permissions(domain):
+def get_protected_permissions(domain: str):
     response = database.query(
         KeyConditionExpression=Key("PK").eq("PERMISSION"),
-        FilterExpression=Attr("Domain").contains(domain.upper()),
+        FilterExpression=Attr("Domain").eq(domain.upper()),
     )
     protected_permissions = [item["SK"] for item in response["Items"]]
     return protected_permissions

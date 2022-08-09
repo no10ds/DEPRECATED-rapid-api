@@ -1,6 +1,7 @@
 import json
 from abc import ABC
 from http import HTTPStatus
+from typing import List
 
 import boto3
 import requests
@@ -9,7 +10,9 @@ from requests.auth import HTTPBasicAuth
 from api.common.config.aws import DATA_BUCKET, DOMAIN_NAME
 from api.common.config.constants import CONTENT_ENCODING
 from test.e2e.e2e_test_utils import get_secret, AuthenticationFailedError
-from test.scripts.delete_protected_domain_permission import delete_permission_from_db
+from test.scripts.delete_protected_domain_permission import (
+    delete_protected_domain_permission_from_db,
+)
 
 
 class BaseJourneyTest(ABC):
@@ -41,6 +44,9 @@ class BaseJourneyTest(ABC):
 
     def list_protected_domain_url(self) -> str:
         return f"{self.base_url}/protected_domains"
+
+    def modify_client_permissions_url(self) -> str:
+        return f"{self.base_url}/client/permissions"
 
     def delete_data_url(self, domain: str, dataset: str, filename: str) -> str:
         return f"{self.datasets_endpoint}/{domain}/{dataset}/{filename}"
@@ -356,6 +362,7 @@ class TestAuthenticatedUserJourneys(BaseJourneyTest):
 
 class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
     s3_client = boto3.client("s3")
+    cognito_client_id = None
 
     def setup_class(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
@@ -364,18 +371,18 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
             secret_name="E2E_TEST_CLIENT_DATA_ADMIN"  # pragma: allowlist secret
         )
 
-        cognito_client_id = read_and_write_credentials["CLIENT_ID"]
+        self.cognito_client_id = read_and_write_credentials["CLIENT_ID"]
         cognito_client_secret = read_and_write_credentials[
             "CLIENT_SECRET"
         ]  # pragma: allowlist secret
 
-        auth = HTTPBasicAuth(cognito_client_id, cognito_client_secret)
+        auth = HTTPBasicAuth(self.cognito_client_id, cognito_client_secret)
 
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
         payload = {
             "grant_type": "client_credentials",
-            "client_id": cognito_client_id,
+            "client_id": self.cognito_client_id,
         }
 
         response = requests.post(token_url, auth=auth, headers=headers, json=payload)
@@ -389,25 +396,70 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
 
     @classmethod
     def teardown_class(cls):
-        delete_permission_from_db("test_e2e")
+        delete_protected_domain_permission_from_db("test_e2e")
 
     # Utils -------------
     def generate_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"}
 
+    def assume_permissions(self, permissions: List[str]):
+        modification_url = self.modify_client_permissions_url()
+        payload = {
+            "subject_id": self.cognito_client_id,
+            "permissions": ["USER_ADMIN", "DATA_ADMIN", *permissions],
+        }
+
+        response = requests.put(
+            modification_url, headers=self.generate_auth_headers(), json=payload
+        )
+        assert response.status_code == HTTPStatus.OK
+
+    def reset_permissions(self):
+        self.assume_permissions([])
+
     # Tests -------------
-    def test_create_protected_domain_permission(self):
+    def test_create_protected_domain(self):
+        # Create protected domain
         create_url = self.create_protected_domain_url("test_e2e")
         response = requests.post(create_url, headers=self.generate_auth_headers())
-
         assert response.status_code == HTTPStatus.CREATED
+
+        # Lists created protected domain
         list_url = self.list_protected_domain_url()
         response = requests.get(list_url, headers=self.generate_auth_headers())
-
         assert "test_e2e" in response.json()
 
-    # def test_assign_protected_domain(self):
-    #     pass
-    #
-    # def test_access_protected_domain(self):
-    #     pass
+        # Not authorised to access existing protected domain
+        url = self.query_dataset_url(
+            domain="test_e2e_protected", dataset="do_not_delete"
+        )
+        response = requests.post(url, headers=self.generate_auth_headers())
+        assert response.status_code == HTTPStatus.UNAUTHORIZED
+
+    def test_allows_access_to_protected_domain_when_granted_permission(self):
+        self.assume_permissions(["READ_PROTECTED_TEST_E2E_PROTECTED"])
+
+        url = self.query_dataset_url("test_e2e_protected", "do_not_delete")
+        response = requests.post(url, headers=self.generate_auth_headers())
+
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {
+            "0": {
+                "year": "2017",
+                "month": "7",
+                "destination": "Leeds",
+                "arrival": "London",
+                "type": "regular",
+                "status": "completed",
+            },
+            "1": {
+                "year": "2017",
+                "month": "7",
+                "destination": "Darlington",
+                "arrival": "Durham",
+                "type": "regular",
+                "status": "completed",
+            },
+        }
+
+        self.reset_permissions()
