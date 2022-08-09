@@ -304,7 +304,7 @@ scopes:
 - `USER_ADMIN`
 
 For instance, if `WRITE` scope is used, that means that whoever is trying to access the endpoint needs to have any
-of `WRITE_ALL`, `WRITE_<sensitivity_level>` listed in their permissions, where sensitivity level is the sensitivity
+of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE_PROTECTED_{DOMAIN}`  listed in their permissions, where sensitivity level is the sensitivity
 level of the dataset being modified. Otherwise, the request fails.
 
 > ⚠️ ️NOTE: Higher sensitivity levels imply lower sensitivity levels.

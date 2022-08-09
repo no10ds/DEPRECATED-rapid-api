@@ -1110,6 +1110,14 @@ To be logged in
 
 This page is used to upload datasets into the rAPId service by authenticated users.
 
+Users can only see the datasets they have permission to write to:
+- Users with `WRITE_ALL` permission will see all datasets
+- Users with `WRITE_PRIVATE` permission will see both private and public datasets
+- Users with `WRITE_PUBLIC` permission will see public datasets
+- Users with `WRITE_PROTECTED_{domain}` permission will see datasets with the protected domain `domain`
+- Users with multiple of the above write permissions will see the union of the datasets for these permissions
+- Users with no write permissions will see an empty drop-down
+
 ### General structure
 
 `GET /upload`
