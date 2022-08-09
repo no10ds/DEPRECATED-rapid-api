@@ -13,6 +13,8 @@ const uploadDataset = () => {
 
     fetch("datasets/" + select.value, {
         method: "POST",
+        // This is needed to treat this call as a browser request
+        headers: new Headers({'Accept': 'text/html'}),
         body: data
     }).then(response => response.json()
     .then(result => {
