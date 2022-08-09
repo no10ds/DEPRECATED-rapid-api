@@ -43,7 +43,7 @@ class BaseTestUI(ABC):
 
     def assert_contains_label(self, page, label_text: str):
         locator = page.locator(f"//label[text()='{label_text}']")
-        time.sleep(1)
+        time.sleep(5)
         expect(locator).to_contain_text(label_text)
 
     def input_text_value(self, page, input_id: str, value: str):
