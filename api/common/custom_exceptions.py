@@ -42,6 +42,10 @@ class UserCredentialsUnavailableError(Exception):
     pass
 
 
+class NotAuthorisedToViewPageError(Exception):
+    pass
+
+
 class TableDoesNotExistError(Exception):
     pass
 

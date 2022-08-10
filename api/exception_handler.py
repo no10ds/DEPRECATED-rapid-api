@@ -9,7 +9,11 @@ from starlette.responses import RedirectResponse
 from api.application.services.authorisation.authorisation_service import (
     UserCredentialsUnavailableError,
 )
-from api.common.custom_exceptions import SchemaError, BaseAppException
+from api.common.custom_exceptions import (
+    SchemaError,
+    BaseAppException,
+    NotAuthorisedToViewPageError,
+)
 from api.common.logger import AppLogger
 
 
@@ -25,6 +29,10 @@ def add_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(UserCredentialsUnavailableError)
     async def user_credentials_missing_handler(request, exc):
         return RedirectResponse(url="/login")
+
+    @app.exception_handler(NotAuthorisedToViewPageError)
+    async def not_authorised_to_view_page_handler(request, exc):
+        return RedirectResponse(url="/")
 
     @app.exception_handler(BaseAppException)
     async def base_app_handler(request, exc):

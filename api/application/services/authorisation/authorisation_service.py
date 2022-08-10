@@ -25,6 +25,7 @@ from api.common.custom_exceptions import (
     UserCredentialsUnavailableError,
     ClientCredentialsUnavailableError,
     UserError,
+    NotAuthorisedToViewPageError,
 )
 from api.common.logger import AppLogger
 from api.domain.token import Token
@@ -99,6 +100,9 @@ def secure_dataset_endpoint(
         check_permissions(token, security_scopes.scopes, domain, dataset)
     except InvalidTokenError as error:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
+    except AuthorisationError:
+        if user_token:
+            raise NotAuthorisedToViewPageError()
 
 
 def check_credentials_availability(

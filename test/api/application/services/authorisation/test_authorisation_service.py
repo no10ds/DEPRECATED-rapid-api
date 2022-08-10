@@ -22,6 +22,7 @@ from api.common.custom_exceptions import (
     UserCredentialsUnavailableError,
     ClientCredentialsUnavailableError,
     UserError,
+    NotAuthorisedToViewPageError,
 )
 from api.domain.token import Token
 
@@ -96,6 +97,28 @@ class TestSecureDatasetEndpoint:
                 browser_request=browser_request,
                 client_token=client_token,
                 user_token=None,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+    @patch("api.application.services.authorisation.authorisation_service.parse_token")
+    @patch(
+        "api.application.services.authorisation.authorisation_service.check_permissions"
+    )
+    def test_raises_not_authorised_to_see_page_error_when_user_unauthorised(
+        self, mock_check_permissions, mock_parse_token
+    ):
+        user_token = "unauthorised-token"
+
+        mock_parse_token.return_value = user_token
+        mock_check_permissions.side_effect = AuthorisationError("the message")
+
+        with pytest.raises(NotAuthorisedToViewPageError):
+            secure_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=True,
+                client_token=None,
+                user_token=user_token,
                 domain="mydomain",
                 dataset="mydataset",
             )
