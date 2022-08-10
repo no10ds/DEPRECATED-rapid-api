@@ -3,7 +3,7 @@ from unittest.mock import patch, ANY
 from starlette.status import HTTP_302_FOUND
 
 from api.common.config.auth import IDENTITY_PROVIDER_TOKEN_URL, COGNITO_REDIRECT_URI
-from test.api.controller.controller_test_utils import BaseClientTest
+from test.api.common.controller_test_utils import BaseClientTest
 
 
 @dataclass

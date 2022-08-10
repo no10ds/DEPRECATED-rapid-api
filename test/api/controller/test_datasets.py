@@ -19,7 +19,7 @@ from api.domain.dataset_filters import DatasetFilters
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 from api.domain.sql_query import SQLQuery
-from test.api.controller.controller_test_utils import BaseClientTest
+from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestDataUpload(BaseClientTest):

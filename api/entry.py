@@ -1,29 +1,10 @@
 import os
-from typing import List, Dict
 
 import sass
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from starlette.responses import RedirectResponse
-from starlette.status import HTTP_302_FOUND
 
-from api.application.services.UploadService import UploadService
-from api.application.services.authorisation.authorisation_service import (
-    user_logged_in,
-    RAPID_ACCESS_TOKEN,
-    secure_dataset_endpoint,
-    secure_endpoint,
-)
-from api.application.services.authorisation.token_utils import parse_token
-from api.application.services.permissions_service import PermissionsService
-from api.common.aws_utilities import get_secret
-from api.common.config.auth import (
-    COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME,
-    construct_user_auth_url,
-    construct_logout_url,
-    Action,
-)
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.logger import AppLogger, init_logger
 from api.controller.auth import auth_router
@@ -33,6 +14,9 @@ from api.controller.permissions import permissions_router
 from api.controller.protected_domain import protected_domain_router
 from api.controller.schema import schema_router
 from api.controller.user import user_router
+from api.controller_ui.data_management import data_management_router
+from api.controller_ui.landing import landing_router
+from api.controller_ui.login import login_router
 from api.exception_handler import add_exception_handlers
 
 app = FastAPI()
@@ -50,9 +34,9 @@ app.include_router(schema_router)
 app.include_router(client_router)
 app.include_router(user_router)
 app.include_router(protected_domain_router)
-
-upload_service = UploadService()
-permissions_service = PermissionsService()
+app.include_router(login_router)
+app.include_router(landing_router)
+app.include_router(data_management_router)
 
 
 @app.on_event("startup")
@@ -74,66 +58,3 @@ async def request_middleware(request: Request, call_next):
 def status():
     """The endpoint used for service health check"""
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
-
-
-@app.get("/", include_in_schema=False, dependencies=[Depends(secure_endpoint)])
-def landing(request: Request):
-    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    subject_permissions = permissions_service.get_subject_permissions(subject_id)
-    allowed_actions = determine_user_ui_actions(subject_permissions)
-    return templates.TemplateResponse(
-        name="index.html", context={"request": request, **allowed_actions}
-    )
-
-
-def determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool]:
-    return {
-        "can_manage_users": Action.USER_ADMIN.value in subject_permissions,
-        "can_upload": any(
-            (
-                permission.startswith(Action.WRITE.value)
-                for permission in subject_permissions
-            )
-        ),
-        "can_download": any(
-            (
-                permission.startswith(Action.READ.value)
-                for permission in subject_permissions
-            )
-        ),
-    }
-
-
-@app.get("/login", include_in_schema=False)
-def login(request: Request):
-    if user_logged_in(request):
-        return RedirectResponse(url="/", status_code=HTTP_302_FOUND)
-    cognito_user_login_client_id = get_secret(
-        COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME
-    )["client_id"]
-    user_auth_url = construct_user_auth_url(cognito_user_login_client_id)
-    return templates.TemplateResponse(
-        name="login.html", context={"request": request, "auth_url": user_auth_url}
-    )
-
-
-@app.get(
-    "/upload", include_in_schema=False, dependencies=[Depends(secure_dataset_endpoint)]
-)
-def upload(request: Request):
-    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    datasets = upload_service.get_authorised_datasets(subject_id)
-    return templates.TemplateResponse(
-        name="upload.html", context={"request": request, "datasets": datasets}
-    )
-
-
-@app.get("/logout", include_in_schema=False)
-def logout():
-    cognito_user_login_client_id = get_secret(
-        COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME
-    )["client_id"]
-    logout_url = construct_logout_url(cognito_user_login_client_id)
-    redirect_response = RedirectResponse(url=logout_url, status_code=HTTP_302_FOUND)
-    redirect_response.delete_cookie(RAPID_ACCESS_TOKEN)
-    return redirect_response

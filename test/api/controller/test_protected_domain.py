@@ -1,7 +1,7 @@
 from unittest.mock import patch, Mock
 
 from api.application.services.protected_domain_service import ProtectedDomainService
-from test.api.controller.controller_test_utils import BaseClientTest
+from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestProtectedDomains(BaseClientTest):

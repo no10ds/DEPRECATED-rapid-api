@@ -4,7 +4,7 @@ from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.subject_permissions import SubjectPermissions
 from api.domain.user import UserResponse, UserRequest, UserDeleteRequest
-from test.api.controller.controller_test_utils import BaseClientTest
+from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestUserCreation(BaseClientTest):

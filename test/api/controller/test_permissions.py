@@ -2,7 +2,7 @@ from unittest.mock import patch
 
 from api.application.services.permissions_service import PermissionsService
 from api.common.custom_exceptions import AWSServiceError
-from test.api.controller.controller_test_utils import BaseClientTest
+from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestListPermissions(BaseClientTest):
