@@ -12,3 +12,6 @@ class PermissionsService:
 
     def get_subject_permissions(self, subject_id: str) -> List[str]:
         return self.dynamodb_adapter.get_permissions_for_subject(subject_id)
+
+    def get_ui_permissions(self) -> dict:
+        pass

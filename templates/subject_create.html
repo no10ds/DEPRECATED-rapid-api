@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rAPId - Create Subject</title>
+    <link href="../static/main.css" rel="stylesheet">
+</head>
+<body>
+<div class="content">
+    {% with previous_page = "/" %}
+    {% include 'header.html' %}
+    {% endwith %}
+
+    <form class="form">
+        <div class="form_body">
+            <div class="form_body-section">
+                <div class="form-select">
+                    <label class="form-select_label">Type of subject</label>
+                    <select class="form-select_dropdown" id="dataset">
+                        <option value="">Please select</option>
+                        <option value="USER">User</option>
+                        <option value="CLIENT">Client</option>
+                    </select>
+                </div>
+                <div class="form-input">
+                    <label class="form-input_label" for="name">Name</label>
+                    <input class="form-input_text" name="name" id="name" type="text">
+                </div>
+                <div class="form-input">
+                    <label class="form-input_label" for="email">Email</label>
+                    <input class="form-input_text" name="email" id="email" type="email">
+                </div>
+            </div>
+            <div class="form_body-section">
+                <div class="form-checkbox">
+                    <fieldset>
+                        <legend>Admin</legend>
+                        <label>Data Admin</label>
+                        <input type="checkbox" id="data_admin" name="data_admin" value="DATA_ADMIN">
+                        <label>User Admin</label>
+                        <input type="checkbox" id="user_admin" name="user_admin" value="USER_ADMIN">
+                    </fieldset>
+                </div>
+                <div class="form-radio">
+                    <fieldset>
+                        <legend>Global read permissions</legend>
+                        <label>READ ALL</label>
+                        <input type="radio" id="read_all" name="read_global" value="READ_ALL">
+                        <label>READ PRIVATE</label>
+                        <input type="radio" id="read_private" name="read_global" value="READ_PRIVATE">
+                        <label>READ PUBLIC</label>
+                        <input type="radio" id="read_public" name="read_global" value="READ_PUBLIC">
+                    </fieldset>
+                </div>
+                <div class="form-radio">
+                    <fieldset>
+                        <legend>Global write permissions</legend>
+                        <label>write ALL</label>
+                        <input type="radio" id="write_all" name="write_global" value="write_ALL">
+                        <label>write PRIVATE</label>
+                        <input type="radio" id="write_private" name="write_global" value="write_PRIVATE">
+                        <label>write PUBLIC</label>
+                        <input type="radio" id="write_public" name="write_global" value="write_PUBLIC">
+                    </fieldset>
+                </div>
+                <div class="form-checkbox">
+                    <fieldset>
+                        <legend>Read protected permission</legend>
+                        <label>READ_PROTECTED_TEST</label>
+                        <input type="checkbox" id="read_test" name="read_test" value="READ_PROTECTED_TEST">
+                    </fieldset>
+                </div>
+                <div class="form-checkbox">
+                    <fieldset>
+                        <legend>Write protected permission</legend>
+                        <label>WRITE_PROTECTED_TEST</label>
+                        <input type="checkbox" id="write_test" name="write_test" value="WRITE_PROTECTED_TEST">
+                    </fieldset>
+                </div>
+            </div>
+        </div>
+        <div class="form_submit">
+            <button class="btn" type="button" onclick="">Create subject</button>
+        </div>
+    </form>
+</div>
+</body>
+</html>
