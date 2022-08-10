@@ -13,7 +13,7 @@ class TestUploadPage(BaseClientTest):
     def test_calls_templating_engine_with_expected_arguments(
         self, mock_templates_response, mock_upload_service, mock_parse_token
     ):
-        login_template_filename = "upload.html"
+        upload_template_filename = "upload.html"
         datasets = ["dataset.csv", "dataset2.csv"]
         subject_id = "subject_id"
 
@@ -27,7 +27,7 @@ class TestUploadPage(BaseClientTest):
         mock_parse_token.assert_called_once_with("user_token")
         mock_upload_service.assert_called_once_with(subject_id)
         mock_templates_response.assert_called_once_with(
-            name=login_template_filename,
+            name=upload_template_filename,
             context={
                 "request": ANY,
                 "datasets": datasets,
