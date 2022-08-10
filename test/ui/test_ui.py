@@ -1,5 +1,6 @@
 import os
 import re
+import uuid
 from abc import ABC
 from playwright.sync_api import sync_playwright, expect
 
@@ -19,6 +20,12 @@ class BaseTestUI(ABC):
         )
         context = browser.new_context()
         return context.new_page()
+
+    def login(self, page):
+        self.go_to(page, "/login")
+        self.assert_title(page, "rAPId - Login")
+        self.click_link(page, "Log in to rAPId")
+        self.login_with_cognito(page)
 
     def go_to(self, page, path: str):
         print(f"Going directly to page: {path}")
@@ -131,10 +138,7 @@ class TestUI(BaseTestUI):
             upload_dataset = "ui_test/upload"
             dropdown_id = "dataset"
 
-            self.go_to(page, "/login")
-            self.assert_title(page, "rAPId - Login")
-            self.click_link(page, "Log in to rAPId")
-            self.login_with_cognito(page)
+            self.login(page)
 
             self.click_link(page, "Upload Data")
             self.assert_title(page, "rAPId - Upload")
@@ -145,5 +149,19 @@ class TestUI(BaseTestUI):
             self.assert_dataset_exists(page, dropdown_id, write_all_datasets[2])
 
             self.assert_can_upload(page, dropdown_id, upload_dataset)
+
+            self.logout(page)
+
+    def test_modify_subject_journey(self):
+        with sync_playwright() as playwright:
+            page = self.set_up_base_page(playwright)
+
+            self.login(page)
+
+            self.click_link(page, "Modify User")
+            self.assert_title(page, "rAPId - Select Subject")
+
+            example_subject_id = str(uuid.uuid4())
+            self.input_text_value(page, "subject-id-input", example_subject_id)
 
             self.logout(page)
