@@ -159,6 +159,8 @@ class CognitoAdapter:
             AppLogger.info(f"Deleting client {client_id} failed with: {error.response}")
             if error.response["Error"]["Code"] == "ResourceNotFoundException":
                 raise UserError(f"The client '{client_id}' does not exist cognito")
+            if error.response["Error"]["Code"] == "InvalidParameterException":
+                raise UserError("The client ID is not valid")
             raise AWSServiceError(
                 "Something went wrong. Please Contact your administrator."
             )
