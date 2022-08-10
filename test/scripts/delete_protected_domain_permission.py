@@ -2,6 +2,7 @@ import os
 import re
 import sys
 from functools import reduce
+from typing import Dict, List, Optional, Any
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
@@ -11,33 +12,30 @@ AWS_REGION = os.environ["AWS_REGION"]
 RESOURCE_PREFIX = os.environ["RESOURCE_PREFIX"]
 DATA_BUCKET = os.environ["DATA_BUCKET"]
 DYNAMO_PERMISSIONS_TABLE_NAME = f"{RESOURCE_PREFIX}_users_permissions"
+PROTECTED_PATH = "data/schemas/PROTECTED/"
 PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME = (
     f"{RESOURCE_PREFIX}_protected_domain_permissions"
 )
 
-database = boto3.resource("dynamodb", region_name=AWS_REGION).Table(
+db_table = boto3.resource("dynamodb", region_name=AWS_REGION).Table(
     DYNAMO_PERMISSIONS_TABLE_NAME
 )
 s3_client = boto3.client("s3")
 glue_client = boto3.client("glue", region_name=AWS_REGION)
-s3_bucket = DATA_BUCKET
-protected_path = "data/schemas/PROTECTED/"
 
 
 def delete_protected_domain(domain: str):
-    # DELETE DATASET FILES
-    print("Deleting files...")
-    delete_data(domain)
-
-    # DELETE EVIDENCE IN DATABASE
-    print("Deleting permissions...")
+    delete_dataset_files(domain)
     delete_protected_domain_permission_from_db(domain)
 
 
-def delete_data(domain):
+def delete_dataset_files(domain: str):
+    print("Deleting files...")
     # Check protected domain exists
     metadatas = find_protected_datasets(domain)
-    if metadatas:
+    if not metadatas:
+        print(f"No protected domain '{domain}' found")
+    else:
         # Delete all files and raw files for each domain/dataset
         for metadata in metadatas:
             try:
@@ -72,7 +70,7 @@ def delete_data(domain):
                 delete_s3_files(
                     [
                         {
-                            "Key": f'{protected_path}{metadata["domain"]}-{metadata["dataset"]}.json'
+                            "Key": f'{PROTECTED_PATH}{metadata["domain"]}-{metadata["dataset"]}.json'
                         }
                     ]
                 )
@@ -84,20 +82,20 @@ def delete_data(domain):
             print(f'Deleting files in {metadata["domain"]}/{metadata["dataset"]}')
 
 
-def find_protected_datasets(domain):
+def find_protected_datasets(domain: str) -> Optional[List[Dict[str, str]]]:
     response = s3_client.list_objects(
-        Bucket=s3_bucket,
-        Prefix=protected_path,
+        Bucket=DATA_BUCKET,
+        Prefix=PROTECTED_PATH,
     )
     if response.get("Contents") is not None:
         protected_datasets = [
             path["Key"]
             for path in response["Contents"]
-            if path["Key"].startswith(f"{protected_path}{domain}")
+            if path["Key"].startswith(f"{PROTECTED_PATH}{domain}")
         ]
         data = []
         for path in protected_datasets:
-            result = re.search(f"{protected_path}{domain}-([a-z_]+).json", path)
+            result = re.search(f"{PROTECTED_PATH}{domain}-([a-z_]+).json", path)
             if result:
                 dataset = result.group(1)
                 data.append({"domain": domain, "dataset": dataset})
@@ -106,27 +104,30 @@ def find_protected_datasets(domain):
         return None
 
 
-def get_file_paths(domain: str, dataset: str, path: str):
+def get_file_paths(domain: str, dataset: str, path: str) -> List[Dict[str, str]]:
     response = s3_client.list_objects(
-        Bucket=s3_bucket,
+        Bucket=DATA_BUCKET,
         Prefix=f"{path}/{domain}/{dataset}",
     )
     if response.get("Contents") is not None:
         return [{"Key": path["Key"]} for path in response["Contents"]]
 
 
-def delete_s3_files(file_path: str):
+def delete_s3_files(file_paths: List[Dict[str, str]]) -> None:
     s3_client.delete_objects(
-        Bucket=s3_bucket,
-        Delete={"Objects": file_path},
+        Bucket=DATA_BUCKET,
+        Delete={"Objects": file_paths},
     )
 
 
-def delete_protected_domain_permission_from_db(domain: str):
+def delete_protected_domain_permission_from_db(domain: str) -> None:
+    print("Deleting permissions...")
     # Get permission ids
     protected_permissions = get_protected_permissions(domain)
 
-    if protected_permissions:
+    if not protected_permissions:
+        print(f"No protected domain permissions for domain '{domain}' found")
+    else:
         # Check subjects with permission
         subjects_with_protected_permissions = get_users_with_protected_permissions(
             protected_permissions
@@ -138,8 +139,8 @@ def delete_protected_domain_permission_from_db(domain: str):
         )
 
 
-def get_protected_permissions(domain: str):
-    response = database.query(
+def get_protected_permissions(domain: str) -> List[str]:
+    response = db_table.query(
         KeyConditionExpression=Key("PK").eq("PERMISSION"),
         FilterExpression=Attr("Domain").eq(domain.upper()),
     )
@@ -147,8 +148,10 @@ def get_protected_permissions(domain: str):
     return protected_permissions
 
 
-def get_users_with_protected_permissions(protected_permissions):
-    subjects_with_protected_permissions = database.query(
+def get_users_with_protected_permissions(
+    protected_permissions: List[str],
+) -> List[Dict]:
+    subjects_with_protected_permissions = db_table.query(
         KeyConditionExpression=Key("PK").eq("SUBJECT"),
         FilterExpression=reduce(
             Or,
@@ -159,10 +162,12 @@ def get_users_with_protected_permissions(protected_permissions):
 
 
 def remove_protected_permissions_from_db(
-    protected_permissions, subjects_with_protected_permissions
+    protected_permissions: List[str],
+    subjects_with_protected_permissions: List[Dict[str, Any]],
 ):
     try:
-        with database.batch_writer() as batch:
+        with db_table.batch_writer() as batch:
+            # Remove protected domain permissions from subjects
             for subject in subjects_with_protected_permissions:
                 subject["Permissions"].difference_update(protected_permissions)
 
@@ -170,6 +175,8 @@ def remove_protected_permissions_from_db(
                     subject["Permissions"] = {}
 
                 batch.put_item(Item=subject)
+
+            # Remove protected domain permissions from database
             for permission in protected_permissions:
                 batch.delete_item(
                     Key={
