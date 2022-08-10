@@ -105,6 +105,29 @@ class TestSecureDatasetEndpoint:
     @patch(
         "api.application.services.authorisation.authorisation_service.check_permissions"
     )
+    def test_raises_authorisation_error_when_client_unauthorised(
+        self, mock_check_permissions, mock_parse_token
+    ):
+        client_token = "unauthorised-token"
+        browser_request = False
+
+        mock_parse_token.return_value = client_token
+        mock_check_permissions.side_effect = AuthorisationError("the message")
+
+        with pytest.raises(AuthorisationError):
+            secure_dataset_endpoint(
+                security_scopes=SecurityScopes(scopes=["READ"]),
+                browser_request=browser_request,
+                client_token=client_token,
+                user_token=None,
+                domain="mydomain",
+                dataset="mydataset",
+            )
+
+    @patch("api.application.services.authorisation.authorisation_service.parse_token")
+    @patch(
+        "api.application.services.authorisation.authorisation_service.check_permissions"
+    )
     def test_raises_not_authorised_to_see_page_error_when_user_unauthorised(
         self, mock_check_permissions, mock_parse_token
     ):
