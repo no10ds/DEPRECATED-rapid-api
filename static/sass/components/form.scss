@@ -72,4 +72,20 @@
   &_file {
     display: none;
   }
+
+  &_text-input {
+    min-width: 40%;
+    border-style: solid;
+    border-color: var(--pink);
+    border-radius: .5rem;
+    font-size: 1.8rem;
+    text-align: center;
+    padding: .8rem;
+  }
+
+  &_text-input::placeholder {
+    color: var(--light-grey-4);
+    font-style: italic;
+  }
+
 }

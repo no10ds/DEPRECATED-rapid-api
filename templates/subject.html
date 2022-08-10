@@ -10,6 +10,25 @@
         {% with previous_page = "/" %}
             {% include 'header.html' %}
         {% endwith %}
+
+        <form class="form">
+            <div class="form_body">
+                <div class="form-select">
+                    <h1 class="content_header">Modify Subject</h1>
+                    <h3 class="content-step-indicator">Step 1 of 2</h3>
+
+                </div>
+                <div class="form-input">
+                    <label for="subject-id-input" class="form-input_filename" id="filename">Enter the ID for the user or client app you want to modify</label>
+                    <input name="subject-id" class="form-input_text-input" id="subject-id-input" type="text" placeholder="User ID or Client App ID" contenteditable="">
+                </div>
+            </div>
+            <div class="form_submit">
+                <button class="btn" type="button" onclick="">Modify</button>
+                <label class="response-msg" id="response-title"></label>
+                <label class="response-msg" id="response"></label>
+            </div>
+        </form>
     </div>
 </body>
 </html>
