@@ -50,6 +50,12 @@ async def generate_schema(
     | `dataset`     | URL parameter                           | `gapminder`                  | dataset title              |
     | `file`        | File in form data with key value `file` | `gapminder.csv`              | the dataset file itself    |
 
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Alphanumeric
+    - Cannot contain `-` and `/` symbol
     ### Click  `Try it out` to use the endpoint
 
     """
@@ -77,6 +83,13 @@ async def upload_schema(schema: Schema):
     | Parameters    | Usage                                   | Example values               | Definition            |
     |---------------|-----------------------------------------|------------------------------|-----------------------|
     | schema        | JSON request body                       | see below                    | the schema definition |
+
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Alphanumeric
+    - Cannot contain `-` and `/` symbol
 
     ### Accepted permissions
 

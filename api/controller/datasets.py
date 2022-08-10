@@ -228,6 +228,13 @@ async def upload_data(
     | `dataset`     | URL parameter                           | `passengers_by_airport`      | dataset title           |
     | `file`        | File in form data with key value `file` | `passengers_by_airport.csv`  | the dataset file itself |
 
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Alphanumeric
+    - Cannot contain `-` and `/` symbol
+
     ### Output
 
     If successful returns file name with a timestamp included, e.g.:
