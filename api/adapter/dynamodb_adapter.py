@@ -99,6 +99,8 @@ class DynamoDBAdapter(DatabaseAdapter):
             )
 
     def validate_permissions(self, subject_permissions: List[str]) -> None:
+        if not subject_permissions:
+            raise UserError("At least one permission must be provided")
         permissions_response = self._find_permissions(subject_permissions)
         if not permissions_response["Count"] == len(subject_permissions):
             AppLogger.info(f"Invalid permission in {subject_permissions}")

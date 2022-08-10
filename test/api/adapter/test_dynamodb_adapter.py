@@ -193,6 +193,15 @@ class TestDynamoDBAdapter:
         ):
             self.dynamo_adapter.validate_permissions(permissions)
 
+    def test_validate_permission_throws_error_when_no_permissions_provided(self):
+        permissions = []
+
+        with pytest.raises(
+            UserError,
+            match="At least one permission must be provided",
+        ):
+            self.dynamo_adapter.validate_permissions(permissions)
+
     def test_validates_permissions_exist_in_the_database(self):
         test_user_permissions = ["READ_PRIVATE", "WRITE_ALL"]
         self.dynamo_boto_resource.query.return_value = {
