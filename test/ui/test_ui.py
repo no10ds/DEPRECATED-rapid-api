@@ -1,6 +1,5 @@
 import os
 import re
-import time
 from abc import ABC
 from playwright.sync_api import sync_playwright, expect
 
@@ -42,7 +41,6 @@ class BaseTestUI(ABC):
         expect(page).to_have_title(re.compile(title))
 
     def assert_contains_label(self, page, label_text: str):
-        time.sleep(5)
         locator = page.locator(f"//label[text()='{label_text}']")
         expect(locator).to_contain_text(label_text)
 
@@ -67,7 +65,7 @@ class BaseTestUI(ABC):
         self.choose_and_upload_file(page)
         self.assert_contains_label(page, FILENAME)
         self.click_button(page, "Upload dataset")
-        self.assert_contains_label(page, "File uploaded: test_e2e.csv")
+        self.assert_contains_label(page, "File uploaded: ui_test.csv")
 
     def choose_and_upload_file(self, page):
         with page.expect_file_chooser() as fc_info:
@@ -126,11 +124,11 @@ class TestUI(BaseTestUI):
             page = self.set_up_base_page(playwright)
 
             write_all_datasets = [
-                "demo/gapminder",
-                "demo/gapminder_private",
-                "demo/gapminder_protected",
+                "ui_test/upload",
+                "ui_test/upload_private",
+                "test_e2e_protected/do_not_delete",
             ]
-            upload_dataset = "test_e2e/upload"
+            upload_dataset = "ui_test/upload"
             dropdown_id = "dataset"
 
             self.go_to(page, "/login")
