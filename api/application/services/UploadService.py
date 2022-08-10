@@ -31,7 +31,7 @@ class UploadService:
         self.dynamodb_adapter = dynamodb_adapter
         self.resource_adapter = resource_adapter
 
-    def get_authorised_datasets(self, subject_id: str) -> Set[str]:
+    def get_authorised_datasets(self, subject_id: str) -> List[str]:
         permissions = self.dynamodb_adapter.get_permissions_for_subject(subject_id)
         sensitivities_and_domains = self._extract_sensitivities_and_domains(permissions)
         return self._fetch_datasets(sensitivities_and_domains)
@@ -65,7 +65,7 @@ class UploadService:
                 authorised_datasets, sensitivities_and_domains
             )
 
-        return authorised_datasets
+        return sorted(authorised_datasets)
 
     def _extract_datasets_from_protected_domains(
         self, authorised_datasets, sensitivities_and_domains
