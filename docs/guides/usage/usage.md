@@ -1111,6 +1111,7 @@ To be logged in
 This page is used to upload datasets into the rAPId service by authenticated users.
 
 Users can only see the datasets they have permission to write to:
+
 - Users with `WRITE_ALL` permission will see all datasets
 - Users with `WRITE_PRIVATE` permission will see both private and public datasets
 - Users with `WRITE_PUBLIC` permission will see public datasets
@@ -1170,3 +1171,16 @@ If the user is a user admin, then the user management section will be visible al
 
 If the user has not been granted any relevant permissions an error message will be displayed prompting the user to speak
 to the relevant authority to grant them required permissions.
+
+## Modify Subject
+
+This page is used as the first step in the subject permissions modification flow. The page allows you to enter a subject
+ID and progress to step 2 to modify the permissions.
+
+### General structure
+
+`GET /subject`
+
+### Needed credentials
+
+The user must be logged in as a Cognito user to use this page and have the `USER_ADMIN` permission.
