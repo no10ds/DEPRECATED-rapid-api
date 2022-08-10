@@ -100,9 +100,11 @@ def secure_dataset_endpoint(
         check_permissions(token, security_scopes.scopes, domain, dataset)
     except InvalidTokenError as error:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
-    except AuthorisationError:
+    except AuthorisationError as error:
         if user_token:
             raise NotAuthorisedToViewPageError()
+        else:
+            raise error
 
 
 def check_credentials_availability(
