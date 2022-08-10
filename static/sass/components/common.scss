@@ -46,6 +46,11 @@ ul {
   color: var(--light-grey-1);
   box-shadow: var(--light-shadow);
 
+  &:disabled {
+    pointer-events: none;
+    background-color: var(--dark-grey-2);
+  }
+
   &:hover {
     background-color: var(--dark-pink);
     color: var(--light-grey-1);
