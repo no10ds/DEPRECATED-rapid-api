@@ -2,6 +2,7 @@ import os
 import re
 import uuid
 from abc import ABC
+
 from playwright.sync_api import sync_playwright, expect
 
 from test.test_utils import get_secret
@@ -20,6 +21,27 @@ class BaseTestUI(ABC):
         )
         context = browser.new_context()
         return context.new_page()
+
+    def login_with_cognito(self, page):
+        print("Logging test user in with Cognito")
+
+        test_user_credentials = get_secret(secret_name="UI_TEST_USER")
+        username = test_user_credentials["username"]
+        password = test_user_credentials["password"]
+
+        page.locator(
+            "//div[contains(@class, 'visible-lg')]//input[@id='signInFormUsername']"
+        ).fill(username)
+        page.locator(
+            "//div[contains(@class, 'visible-lg')]//input[@id='signInFormPassword']"
+        ).fill(password)
+        page.locator(
+            "//div[contains(@class, 'visible-lg')]//input[@name='signInSubmitButton']"
+        ).click()
+
+    def logout(self, page):
+        print("Logging out")
+        self.click_button(page, "Log out")
 
     def login(self, page):
         self.go_to(page, "/login")
@@ -43,6 +65,17 @@ class BaseTestUI(ABC):
         print(f"Clicking label: {label_text}")
         page.click(f"//label[text()='{label_text}']")
 
+    def input_text_value(self, page, input_id: str, value: str):
+        print(f"Typing {value} into input with ID {input_id}")
+        page.locator(f"//input[@id='{input_id}']").fill(value)
+
+    def choose_and_upload_file(self, page):
+        with page.expect_file_chooser() as fc_info:
+            self.click_label(page, "Choose file")
+        file_chooser = fc_info.value
+        file_chooser.set_files(TEST_CSV_PATH)
+
+    ## Assertions -------------------------------
     def assert_title(self, page, title: str):
         print(f"Checking page title: {title}")
         expect(page).to_have_title(re.compile(title))
@@ -50,10 +83,6 @@ class BaseTestUI(ABC):
     def assert_contains_label(self, page, label_text: str):
         locator = page.locator(f"//label[text()='{label_text}']")
         expect(locator).to_contain_text(label_text)
-
-    def input_text_value(self, page, input_id: str, value: str):
-        print(f"Typing {value} into input with ID {input_id}")
-        page.locator(f"//input[@id='{input_id}']").fill(value)
 
     def assert_dropdown_exists(self, page, dropdown_id: str):
         print("Checking dropdown exists in the page")
@@ -74,36 +103,12 @@ class BaseTestUI(ABC):
         self.click_button(page, "Upload dataset")
         self.assert_contains_label(page, "File uploaded: ui_test.csv")
 
-    def choose_and_upload_file(self, page):
-        with page.expect_file_chooser() as fc_info:
-            self.click_label(page, "Choose file")
-        file_chooser = fc_info.value
-        file_chooser.set_files(TEST_CSV_PATH)
-
-    def login_with_cognito(self, page):
-        print("Logging test user in with Cognito")
-
-        test_user_credentials = get_secret(secret_name="UI_TEST_USER")
-        username = test_user_credentials["username"]
-        password = test_user_credentials["password"]
-
-        page.locator(
-            "//div[contains(@class, 'visible-lg')]//input[@id='signInFormUsername']"
-        ).fill(username)
-        page.locator(
-            "//div[contains(@class, 'visible-lg')]//input[@id='signInFormPassword']"
-        ).fill(password)
-        page.locator(
-            "//div[contains(@class, 'visible-lg')]//input[@name='signInSubmitButton']"
-        ).click()
-
-    def logout(self, page):
-        print("Logging out")
-        self.click_button(page, "Log out")
-
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")
         assert "amazoncognito.com/login" in page.url
+
+    def assert_text_on_page(self, page, text: str):
+        assert page.locator(f"text={text}")
 
 
 class TestUI(BaseTestUI):
@@ -160,8 +165,15 @@ class TestUI(BaseTestUI):
 
             self.click_link(page, "Modify User")
             self.assert_title(page, "rAPId - Select Subject")
+            self.assert_text_on_page(page, "Step 1 of 2")
 
             example_subject_id = str(uuid.uuid4())
             self.input_text_value(page, "subject-id-input", example_subject_id)
+
+            self.click_button(page, "Next")
+
+            self.assert_title(page, "rAPId - Modify Subject")
+            self.assert_text_on_page(page, "Step 2 of 2")
+            self.assert_text_on_page(page, f"Permissions for {example_subject_id}")
 
             self.logout(page)
