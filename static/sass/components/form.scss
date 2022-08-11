@@ -73,7 +73,7 @@
     display: none;
   }
 
-  &_text-input {
+  &_text {
     min-width: 40%;
     border-style: solid;
     border-color: var(--pink);
@@ -83,7 +83,7 @@
     padding: .8rem;
   }
 
-  &_text-input::placeholder {
+  &_text::placeholder {
     color: var(--light-grey-4);
     font-style: italic;
   }
