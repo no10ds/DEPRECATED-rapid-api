@@ -1,0 +1,11 @@
+{% if permissions %}
+<div class="form-radio">
+    <fieldset>
+        <legend>{{legend_text}}</legend>
+         {% for permission in permissions %}
+            <label>{{ permission }}</label>
+            <input type="radio" id="{{ permission }}" name="{{ radio_name }}" value="{{permission}}">
+        {% endfor %}
+    </fieldset>
+</div>
+{% endif %}

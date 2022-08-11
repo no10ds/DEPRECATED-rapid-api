@@ -32,8 +32,8 @@ repos:
     rev: 1.3.10
     hooks:
     -   id: validate-html
-        args: [--remove-mustaches, --mustache-remover=jinja2]
-        exclude: "header.html"
+        args: [--remove-mustaches, --mustache-remover=jinja2, "--ignore=Duplicate ID \"DUMMY\""]
+        exclude: "component/*"
 -   repo: https://github.com/pre-commit/mirrors-scss-lint
     rev: v0.59.0
     hooks:

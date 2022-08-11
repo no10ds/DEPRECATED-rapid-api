@@ -1,0 +1,11 @@
+{% if permissions %}
+<div class="form-checkbox">
+    <fieldset>
+        <legend>{{legend_text}}</legend>
+        {% for permission in permissions %}
+            <label>{{ permission }}</label>
+            <input type="checkbox" id="{{ permission }}" name="{{ permission }}" value="{{permission}}">
+        {% endfor %}
+    </fieldset>
+</div>
+{% endif %}

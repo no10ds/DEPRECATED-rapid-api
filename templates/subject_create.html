@@ -8,7 +8,7 @@
 <body>
 <div class="content">
     {% with previous_page = "/" %}
-    {% include 'header.html' %}
+    {% include 'component/header.html' %}
     {% endwith %}
 
     <form class="form">
@@ -32,51 +32,21 @@
                 </div>
             </div>
             <div class="form_body-section">
-                <div class="form-checkbox">
-                    <fieldset>
-                        <legend>Admin</legend>
-                        <label>Data Admin</label>
-                        <input type="checkbox" id="data_admin" name="data_admin" value="DATA_ADMIN">
-                        <label>User Admin</label>
-                        <input type="checkbox" id="user_admin" name="user_admin" value="USER_ADMIN">
-                    </fieldset>
-                </div>
-                <div class="form-radio">
-                    <fieldset>
-                        <legend>Global read permissions</legend>
-                        <label>READ ALL</label>
-                        <input type="radio" id="read_all" name="read_global" value="READ_ALL">
-                        <label>READ PRIVATE</label>
-                        <input type="radio" id="read_private" name="read_global" value="READ_PRIVATE">
-                        <label>READ PUBLIC</label>
-                        <input type="radio" id="read_public" name="read_global" value="READ_PUBLIC">
-                    </fieldset>
-                </div>
-                <div class="form-radio">
-                    <fieldset>
-                        <legend>Global write permissions</legend>
-                        <label>write ALL</label>
-                        <input type="radio" id="write_all" name="write_global" value="write_ALL">
-                        <label>write PRIVATE</label>
-                        <input type="radio" id="write_private" name="write_global" value="write_PRIVATE">
-                        <label>write PUBLIC</label>
-                        <input type="radio" id="write_public" name="write_global" value="write_PUBLIC">
-                    </fieldset>
-                </div>
-                <div class="form-checkbox">
-                    <fieldset>
-                        <legend>Read protected permission</legend>
-                        <label>READ_PROTECTED_TEST</label>
-                        <input type="checkbox" id="read_test" name="read_test" value="READ_PROTECTED_TEST">
-                    </fieldset>
-                </div>
-                <div class="form-checkbox">
-                    <fieldset>
-                        <legend>Write protected permission</legend>
-                        <label>WRITE_PROTECTED_TEST</label>
-                        <input type="checkbox" id="write_test" name="write_test" value="WRITE_PROTECTED_TEST">
-                    </fieldset>
-                </div>
+                {% with permissions = permissions["ADMIN"], legend_text = "Admin" %}
+                    {% include 'component/permissions/checkboxes.html' %}
+                {% endwith %}
+                {% with permissions = permissions["GLOBAL_READ"], legend_text = "Global read permissions", radio_name="GLOBAL_READ" %}
+                    {% include 'component/permissions/radios.html' %}
+                {% endwith %}
+                {% with permissions = permissions["GLOBAL_WRITE"], legend_text = "Global write permissions", radio_name="GLOBAL_WRITE" %}
+                    {% include 'component/permissions/radios.html' %}
+                {% endwith %}
+                {% with permissions = permissions["PROTECTED_READ"], legend_text = "Read protected permission" %}
+                    {% include 'component/permissions/checkboxes.html' %}
+                {% endwith %}
+                {% with permissions = permissions["PROTECTED_WRITE"], legend_text = "Write protected permission" %}
+                    {% include 'component/permissions/checkboxes.html' %}
+                {% endwith %}
             </div>
         </div>
         <div class="form_submit">
