@@ -16,6 +16,15 @@ a {
   }
 }
 
+fieldset {
+  border-color: var(--light-grey-4);
+  margin: 0 auto;
+  border-width: 0;
+  border-top-width: 2px;
+  width: 70%;
+  padding-bottom: 1rem;
+}
+
 ul {
   padding: 0 2rem;
 

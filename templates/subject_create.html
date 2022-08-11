@@ -12,42 +12,43 @@
     {% endwith %}
 
     <form class="form">
-        <div class="form_body">
-            <div class="form_body-section">
-                <div class="form-select">
-                    <label class="form-select_label">Type of subject</label>
-                    <select class="form-select_dropdown" id="dataset">
-                        <option value="">Please select</option>
-                        <option value="USER">User</option>
-                        <option value="CLIENT">Client</option>
-                    </select>
-                </div>
-                <div class="form-input">
-                    <label class="form-input_label" for="name">Name</label>
-                    <input class="form-input_text" name="name" id="name" type="text">
-                </div>
-                <div class="form-input">
-                    <label class="form-input_label" for="email">Email</label>
-                    <input class="form-input_text" name="email" id="email" type="email">
-                </div>
+        <div class="form_body form_body--headed">
+            <h1 class="content_header">Create a subject</h1>
+            <h3 class="content-step-indicator">Step 1: Populate user info</h3>
+            <div class="form-select">
+                <label class="form-select_label">Type of subject</label>
+                <select class="form-select_dropdown" id="dataset">
+                    <option value="">Please select</option>
+                    <option value="USER">User</option>
+                    <option value="CLIENT">Client</option>
+                </select>
             </div>
-            <div class="form_body-section">
-                {% with permissions = permissions["ADMIN"], legend_text = "Admin" %}
-                    {% include 'component/permissions/checkboxes.html' %}
-                {% endwith %}
-                {% with permissions = permissions["GLOBAL_READ"], legend_text = "Global read permissions", radio_name="GLOBAL_READ" %}
-                    {% include 'component/permissions/radios.html' %}
-                {% endwith %}
-                {% with permissions = permissions["GLOBAL_WRITE"], legend_text = "Global write permissions", radio_name="GLOBAL_WRITE" %}
-                    {% include 'component/permissions/radios.html' %}
-                {% endwith %}
-                {% with permissions = permissions["PROTECTED_READ"], legend_text = "Read protected permission" %}
-                    {% include 'component/permissions/checkboxes.html' %}
-                {% endwith %}
-                {% with permissions = permissions["PROTECTED_WRITE"], legend_text = "Write protected permission" %}
-                    {% include 'component/permissions/checkboxes.html' %}
-                {% endwith %}
+            <div class="form-input">
+                <label class="form-input_label" for="name">Name</label>
+                <input class="form-input_text" name="name" id="name" type="text">
             </div>
+            <div class="form-input">
+                <label class="form-input_label" for="email">Email</label>
+                <input class="form-input_text" name="email" id="email" type="email">
+            </div>
+            <h3 class="content-step-indicator">Step 2: Select permissions</h3>
+            {% with permissions = permissions["ADMIN"], legend_text = "Management permissions" %}
+                {% include 'component/permissions/checkboxes.html' %}
+            {% endwith %}
+                {% with permissions = permissions["GLOBAL_READ"], legend_text = "Global read permissions",
+            radio_name="GLOBAL_READ" %}
+            {% include 'component/permissions/radios.html' %}
+            {% endwith %}
+                {% with permissions = permissions["GLOBAL_WRITE"], legend_text = "Global write permissions",
+            radio_name="GLOBAL_WRITE" %}
+                {% include 'component/permissions/radios.html' %}
+            {% endwith %}
+            {% with permissions = permissions["PROTECTED_READ"], legend_text = "Read protected permissions" %}
+                {% include 'component/permissions/checkboxes.html' %}
+            {% endwith %}
+            {% with permissions = permissions["PROTECTED_WRITE"], legend_text = "Write protected permissions" %}
+                {% include 'component/permissions/checkboxes.html' %}
+            {% endwith %}
         </div>
         <div class="form_submit">
             <button class="btn" type="button" onclick="">Create subject</button>

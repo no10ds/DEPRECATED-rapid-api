@@ -1,15 +1,15 @@
 {% if permissions %}
-<div class="form-checkbox">
-    <fieldset>
-        <legend>{{legend_text}}</legend>
-        {% for permission in permissions %}
-            <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
-            {% if permission in user_permissions %}
-                <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}" checked="checked">
-            {% else %}
-                <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}">
-            {% endif %}
-        {% endfor %}
-    </fieldset>
-</div>
+<fieldset class="form-checkbox">
+    <legend class="form-checkbox_legend">{{legend_text}}</legend>
+    {% for permission in permissions %}
+    <div class="form-checkbox_input">
+        <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
+        {% if permission in user_permissions %}
+            <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}" checked="checked">
+        {% else %}
+            <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}">
+        {% endif %}
+    </div>
+    {% endfor %}
+</fieldset>
 {% endif %}
