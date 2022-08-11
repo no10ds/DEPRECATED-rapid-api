@@ -8,7 +8,6 @@ from api.application.services.authorisation.authorisation_service import (
     secure_endpoint,
 )
 from api.application.services.permissions_service import PermissionsService
-
 from api.common.config.auth import Action
 
 permissions_service = PermissionsService()
@@ -25,8 +24,19 @@ templates = Jinja2Templates(directory=(os.path.abspath("templates")))
 @subject_management_router.get(
     "", dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])]
 )
-def modify_subject(request: Request):
+def select_subject(request: Request):
     return templates.TemplateResponse(name="subject.html", context={"request": request})
+
+
+@subject_management_router.get(
+    "/{subject_id}/modify",
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+)
+def modify_subject(request: Request, subject_id: str):
+    return templates.TemplateResponse(
+        name="subject_modify.html",
+        context={"request": request, "subject_name": subject_id},
+    )
 
 
 @subject_management_router.get(

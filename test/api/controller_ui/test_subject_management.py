@@ -23,6 +23,25 @@ class TestSubjectPage(BaseClientTest):
         assert response.status_code == 200
 
 
+class TestModifySubjectPage(BaseClientTest):
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    def test_calls_templating_engine_with_expected_arguments(
+        self, mock_templates_response
+    ):
+        subject_template_filename = "subject_modify.html"
+
+        response = self.client.get(
+            "/subject/a1b2c3d4/modify", cookies={"rat": "user_token"}
+        )
+
+        mock_templates_response.assert_called_once_with(
+            name=subject_template_filename,
+            context={"request": ANY, "subject_name": "a1b2c3d4"},
+        )
+
+        assert response.status_code == 200
+
+
 class TestCreateSubjectPage(BaseClientTest):
     @patch.object(PermissionsService, "get_ui_permissions")
     @patch.object(Jinja2Templates, "TemplateResponse")
