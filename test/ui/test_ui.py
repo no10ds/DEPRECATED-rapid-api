@@ -1,6 +1,5 @@
 import os
 import re
-import uuid
 from abc import ABC
 
 from playwright.sync_api import sync_playwright, expect
@@ -15,7 +14,16 @@ FILENAME = "test_journey_file.csv"
 
 
 class BaseTestUI(ABC):
+    username = None
+    password = None
+    subject_id = None
+
     def set_up_base_page(self, playwright):
+        test_user_credentials = get_secret(secret_name="UI_TEST_USER")
+        self.username = test_user_credentials["username"]
+        self.password = test_user_credentials["password"]
+        self.subject_id = test_user_credentials["subject_id"]
+
         browser = playwright.chromium.launch(
             headless=BROWSER_MODE == "HEADLESS", slow_mo=1000
         )
@@ -25,16 +33,12 @@ class BaseTestUI(ABC):
     def login_with_cognito(self, page):
         print("Logging test user in with Cognito")
 
-        test_user_credentials = get_secret(secret_name="UI_TEST_USER")
-        username = test_user_credentials["username"]
-        password = test_user_credentials["password"]
-
         page.locator(
             "//div[contains(@class, 'visible-lg')]//input[@id='signInFormUsername']"
-        ).fill(username)
+        ).fill(self.username)
         page.locator(
             "//div[contains(@class, 'visible-lg')]//input[@id='signInFormPassword']"
-        ).fill(password)
+        ).fill(self.password)
         page.locator(
             "//div[contains(@class, 'visible-lg')]//input[@name='signInSubmitButton']"
         ).click()
@@ -167,13 +171,12 @@ class TestUI(BaseTestUI):
             self.assert_title(page, "rAPId - Select Subject")
             self.assert_text_on_page(page, "Step 1 of 2")
 
-            example_subject_id = str(uuid.uuid4())
-            self.input_text_value(page, "subject-id-input", example_subject_id)
+            self.input_text_value(page, "subject-id-input", self.subject_id)
 
             self.click_button(page, "Next")
 
             self.assert_title(page, "rAPId - Modify Subject")
             self.assert_text_on_page(page, "Step 2 of 2")
-            self.assert_text_on_page(page, f"Permissions for {example_subject_id}")
+            self.assert_text_on_page(page, f"Permissions for {self.subject_id}")
 
             self.logout(page)
