@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.permissions_service import PermissionsService
 from api.common.config.auth import Action
+from api.common.custom_exceptions import UserError, AWSServiceError
 
 permissions_service = PermissionsService()
 
@@ -31,8 +32,19 @@ def select_subject(request: Request):
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 def modify_subject(request: Request, subject_id: str):
-    all_permissions = permissions_service.get_all_permissions_ui()
-    user_permissions = permissions_service.get_user_permissions_ui(subject_id)
+    error_message = None
+
+    try:
+        user_permissions = permissions_service.get_user_permissions_ui(subject_id)
+        all_permissions = permissions_service.get_all_permissions_ui()
+    except UserError as error:
+        user_permissions = []
+        all_permissions = []
+        error_message = f"Error: {error.message}. Please go back and try again."
+    except AWSServiceError:
+        user_permissions = []
+        all_permissions = []
+        error_message = "Something went wrong. Please contact your system administrator"
 
     return templates.TemplateResponse(
         name="subject_modify.html",
@@ -41,6 +53,7 @@ def modify_subject(request: Request, subject_id: str):
             "subject_name": subject_id,
             "permissions": all_permissions,
             "user_permissions": user_permissions,
+            "error_message": error_message,
         },
     )
 

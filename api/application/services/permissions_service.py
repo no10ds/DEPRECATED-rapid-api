@@ -1,7 +1,6 @@
 from typing import List, Dict
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.common.custom_exceptions import AWSServiceError
 
 
 class PermissionsService:
@@ -20,21 +19,13 @@ class PermissionsService:
         return self.dynamodb_adapter.get_permissions_for_subject(subject_id)
 
     def get_all_permissions_ui(self) -> Dict[str, List[Dict[str, str]]]:
-        try:
-            all_permissions = self.dynamodb_adapter.get_all_permissions()
-        except AWSServiceError:
-            all_permissions = []
+        all_permissions = self.dynamodb_adapter.get_all_permissions()
         return self._ui_permissions_structure(all_permissions)
 
     def get_user_permissions_ui(
         self, subject_id: str
     ) -> Dict[str, List[Dict[str, str]]]:
-        try:
-            user_permissions = self.dynamodb_adapter.get_permissions_for_subject(
-                subject_id
-            )
-        except AWSServiceError:
-            user_permissions = []
+        user_permissions = self.dynamodb_adapter.get_permissions_for_subject(subject_id)
         return self._ui_permissions_structure(user_permissions)
 
     def _ui_permissions_structure(

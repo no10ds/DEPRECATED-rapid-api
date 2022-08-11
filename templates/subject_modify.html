@@ -15,32 +15,39 @@
         <div class="form_body">
             <div class="form-select">
                 <h1 class="content_header">Modify Subject</h1>
-                <h3 class="content-step-indicator">Step 2 of 2</h3>
-                <h2>Permissions for <span class="highlight">{{ subject_name }}</span></h2>
+                {% if error_message %}
+                    <p><span class="response-msg--error">{{ error_message }}</span></p>
+                {% else %}
+                    <h3 class="content-step-indicator">Step 2 of 2</h3>
+                    <h2>Permissions for <span class="highlight">{{ subject_name }}</span></h2>
+                {% endif %}
             </div>
-
-            <div class="form_body-section">
-                {% with permissions = permissions["ADMIN"], user_permissions = user_permissions["ADMIN"], legend_text = "Management permissions" %}
-                    {% include 'component/permissions/checkboxes.html' %}
-                {% endwith %}
-                {% with permissions = permissions["GLOBAL_READ"], user_permissions = user_permissions["GLOBAL_READ"], legend_text = "Global read permissions", radio_name="GLOBAL_READ" %}
-                    {% include 'component/permissions/radios.html' %}
-                {% endwith %}
-                {% with permissions = permissions["GLOBAL_WRITE"], user_permissions = user_permissions["GLOBAL_WRITE"], legend_text = "Global write permissions", radio_name="GLOBAL_WRITE" %}
-                    {% include 'component/permissions/radios.html' %}
-                {% endwith %}
-                {% with permissions = permissions["PROTECTED_READ"], user_permissions = user_permissions["PROTECTED_READ"], legend_text = "Read protected permissions" %}
-                    {% include 'component/permissions/checkboxes.html' %}
-                {% endwith %}
-                {% with permissions = permissions["PROTECTED_WRITE"], user_permissions = user_permissions["PROTECTED_WRITE"], legend_text = "Write protected permissions" %}
-                    {% include 'component/permissions/checkboxes.html' %}
-                {% endwith %}
-            </div>
+            {% if not error_message and permissions %}
+                <div class="form_body-section">
+                    {% with permissions = permissions["ADMIN"], user_permissions = user_permissions["ADMIN"], legend_text = "Management permissions" %}
+                        {% include 'component/permissions/checkboxes.html' %}
+                    {% endwith %}
+                    {% with permissions = permissions["GLOBAL_READ"], user_permissions = user_permissions["GLOBAL_READ"], legend_text = "Global read permissions", radio_name="GLOBAL_READ" %}
+                        {% include 'component/permissions/radios.html' %}
+                    {% endwith %}
+                    {% with permissions = permissions["GLOBAL_WRITE"], user_permissions = user_permissions["GLOBAL_WRITE"], legend_text = "Global write permissions", radio_name="GLOBAL_WRITE" %}
+                        {% include 'component/permissions/radios.html' %}
+                    {% endwith %}
+                    {% with permissions = permissions["PROTECTED_READ"], user_permissions = user_permissions["PROTECTED_READ"], legend_text = "Read protected permissions" %}
+                        {% include 'component/permissions/checkboxes.html' %}
+                    {% endwith %}
+                    {% with permissions = permissions["PROTECTED_WRITE"], user_permissions = user_permissions["PROTECTED_WRITE"], legend_text = "Write protected permissions" %}
+                        {% include 'component/permissions/checkboxes.html' %}
+                    {% endwith %}
+                </div>
+            {% endif %}
         </div>
 
+        {% if not error_message %}
         <div class="form_submit">
             <button class="btn" type="button" onclick="modify()">Modify</button>
         </div>
+        {% endif %}
     </form>
 </div>
 {% block javascript %}

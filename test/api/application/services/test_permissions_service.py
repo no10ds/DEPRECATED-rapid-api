@@ -1,7 +1,6 @@
 from unittest.mock import Mock
 
 from api.application.services.permissions_service import PermissionsService
-from api.common.custom_exceptions import AWSServiceError
 
 
 class TestGetPermissions:
@@ -89,23 +88,6 @@ class TestGetUIPermissions:
 
         assert result == expected
 
-    def test_sends_empty_permissions_if_error_in_retrieving_from_db(self):
-        self.dynamo_adapter.get_all_permissions.side_effect = AWSServiceError(
-            "the error"
-        )
-
-        expected = {
-            "ADMIN": [],
-            "GLOBAL_READ": [],
-            "GLOBAL_WRITE": [],
-            "PROTECTED_READ": [],
-            "PROTECTED_WRITE": [],
-        }
-
-        result = self.permissions_service.get_all_permissions_ui()
-
-        assert result == expected
-
     def test_gets_user_permissions_for_ui(self):
         all_permissions = [
             "WRITE_ALL",
@@ -147,24 +129,4 @@ class TestGetUIPermissions:
 
         result = self.permissions_service.get_all_permissions_ui()
 
-        assert result == expected
-
-    def test_sends_empty_user_permissions_if_error_in_retrieving_from_db(self):
-        self.dynamo_adapter.get_permissions_for_subject.side_effect = AWSServiceError(
-            "the error"
-        )
-
-        expected = {
-            "ADMIN": [],
-            "GLOBAL_READ": [],
-            "GLOBAL_WRITE": [],
-            "PROTECTED_READ": [],
-            "PROTECTED_WRITE": [],
-        }
-
-        result = self.permissions_service.get_user_permissions_ui("the-subject-id")
-
-        self.dynamo_adapter.get_permissions_for_subject.assert_called_once_with(
-            "the-subject-id"
-        )
         assert result == expected
