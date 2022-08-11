@@ -69,6 +69,10 @@ class BaseTestUI(ABC):
         print(f"Clicking label: {label_text}")
         page.click(f"//label[text()='{label_text}']")
 
+    def click_by_id(self, page, element_id: str):
+        print(f"Clicking element with ID: {element_id}")
+        page.click(f"#{element_id}")
+
     def input_text_value(self, page, input_id: str, value: str):
         print(f"Typing {value} into input with ID {input_id}")
         page.locator(f"//input[@id='{input_id}']").fill(value)
@@ -209,13 +213,13 @@ class TestUI(BaseTestUI):
             self.input_text_value(page, "name", "my_name")
             self.input_text_value(page, "email", "my_email@email.com")
 
-            self.click_label(page, "USER_ADMIN")
-            self.click_label(page, "READ_ALL")
-            self.click_label(page, "READ_PUBLIC")
-            self.click_label(page, "WRITE_ALL")
-            self.click_label(page, "WRITE_PUBLIC")
-            self.click_label(page, "READ_PROTECTED_TEST")
-            self.click_label(page, "WRITE_PROTECTED_TEST")
+            self.click_by_id(page, "USER_ADMIN")
+            self.click_by_id(page, "READ_ALL")
+            self.click_by_id(page, "READ_PUBLIC")
+            self.click_by_id(page, "WRITE_ALL")
+            self.click_by_id(page, "WRITE_PUBLIC")
+            self.click_by_id(page, "READ_PROTECTED_TEST")
+            self.click_by_id(page, "WRITE_PROTECTED_TEST")
 
             self.click_button(page, "Create subject")
 
