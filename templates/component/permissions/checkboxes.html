@@ -3,8 +3,12 @@
     <fieldset>
         <legend>{{legend_text}}</legend>
         {% for permission in permissions %}
-            <label>{{ permission }}</label>
-            <input type="checkbox" id="{{ permission }}" name="{{ permission }}" value="{{permission}}">
+            <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
+            {% if permission in user_permissions %}
+                <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}" checked="checked">
+            {% else %}
+                <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}">
+            {% endif %}
         {% endfor %}
     </fieldset>
 </div>

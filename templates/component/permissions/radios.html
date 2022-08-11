@@ -1,11 +1,24 @@
 {% if permissions %}
-<div class="form-radio">
-    <fieldset>
-        <legend>{{legend_text}}</legend>
-         {% for permission in permissions %}
-            <label>{{ permission }}</label>
-            <input type="radio" id="{{ permission }}" name="{{ radio_name }}" value="{{permission}}">
-        {% endfor %}
-    </fieldset>
-</div>
+    <div class="form-radio">
+        <fieldset>
+            <legend>{{ legend_text }}</legend>
+            {% for permission in permissions %}
+                <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
+                {% if permission in user_permissions %}
+                    <input type="radio"
+                           id="{{ permission["name"] }}"
+                           name="{{ radio_name }}"
+                           value="{{ permission["name"] }}"
+                           checked="checked"
+                    >
+                {% else %}
+                    <input type="radio"
+                           id="{{ permission["name"] }}"
+                           name="{{ radio_name }}"
+                           value="{{ permission["name"] }}"
+                    >
+                {% endif %}
+            {% endfor %}
+        </fieldset>
+    </div>
 {% endif %}

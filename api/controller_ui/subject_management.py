@@ -4,9 +4,7 @@ from fastapi import APIRouter
 from fastapi import Request, Security
 from fastapi.templating import Jinja2Templates
 
-from api.application.services.authorisation.authorisation_service import (
-    secure_endpoint,
-)
+from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.permissions_service import PermissionsService
 from api.common.config.auth import Action
 
@@ -33,9 +31,17 @@ def select_subject(request: Request):
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 def modify_subject(request: Request, subject_id: str):
+    all_permissions = permissions_service.get_all_permissions_ui()
+    user_permissions = permissions_service.get_user_permissions_ui(subject_id)
+
     return templates.TemplateResponse(
         name="subject_modify.html",
-        context={"request": request, "subject_name": subject_id},
+        context={
+            "request": request,
+            "subject_name": subject_id,
+            "permissions": all_permissions,
+            "user_permissions": user_permissions,
+        },
     )
 
 
@@ -44,7 +50,7 @@ def modify_subject(request: Request, subject_id: str):
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 def create_subject(request: Request):
-    permissions = permissions_service.get_ui_permissions()
+    permissions = permissions_service.get_all_permissions_ui()
     return templates.TemplateResponse(
         name="subject_create.html",
         context={"request": request, "permissions": permissions},
