@@ -4,3 +4,9 @@ const onInput = (event) => {
 }
 
 document.getElementById("subject-id-input").addEventListener('input', onInput)
+
+
+const goToNextStep = () => {
+    const subjectId = document.getElementById("subject-id-input").value
+    window.location.href = `subject/${subjectId}/modify`
+}
