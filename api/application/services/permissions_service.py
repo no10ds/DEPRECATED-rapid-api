@@ -74,5 +74,23 @@ class PermissionsService:
             "name": permission,
         }
 
-    def _construct_display_name(self, permission: str):
+    def _construct_display_name(self, permission: str) -> str:
+        if self.ADMIN_SUFFIX in permission:
+            split = permission.split("_")
+            return split[0].capitalize()
+        if (
+            self.READ_PROTECTED_PREFIX in permission
+            or self.WRITE_PROTECTED_PREFIX in permission
+        ):
+            return (
+                permission.replace("READ_PROTECTED_", " ")
+                .replace("WRITE_PROTECTED_", " ")
+                .replace("_", " ")
+                .strip()
+                .lower()
+                .capitalize()
+            )
+        if permission in self.READ_PERMISSIONS or permission in self.WRITE_PERMISSIONS:
+            split = permission.split("_")
+            return split[1].upper()
         return permission

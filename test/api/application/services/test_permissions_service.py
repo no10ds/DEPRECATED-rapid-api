@@ -62,25 +62,25 @@ class TestGetUIPermissions:
 
         expected = {
             "ADMIN": [
-                {"name": "USER_ADMIN", "display_name": "USER_ADMIN"},
-                {"name": "DATA_ADMIN", "display_name": "DATA_ADMIN"},
+                {"name": "USER_ADMIN", "display_name": "User"},
+                {"name": "DATA_ADMIN", "display_name": "Data"},
             ],
-            "GLOBAL_READ": [{"name": "READ_PRIVATE", "display_name": "READ_PRIVATE"}],
+            "GLOBAL_READ": [{"name": "READ_PRIVATE", "display_name": "PRIVATE"}],
             "GLOBAL_WRITE": [
-                {"name": "WRITE_ALL", "display_name": "WRITE_ALL"},
-                {"name": "WRITE_PUBLIC", "display_name": "WRITE_PUBLIC"},
-                {"name": "WRITE_PRIVATE", "display_name": "WRITE_PRIVATE"},
+                {"name": "WRITE_ALL", "display_name": "ALL"},
+                {"name": "WRITE_PUBLIC", "display_name": "PUBLIC"},
+                {"name": "WRITE_PRIVATE", "display_name": "PRIVATE"},
             ],
             "PROTECTED_READ": [
                 {
                     "name": "READ_PROTECTED_SOME_DOMAIN",
-                    "display_name": "READ_PROTECTED_SOME_DOMAIN",
+                    "display_name": "Some domain",
                 }
             ],
             "PROTECTED_WRITE": [
                 {
                     "name": "WRITE_PROTECTED_SOME_DOMAIN",
-                    "display_name": "WRITE_PROTECTED_SOME_DOMAIN",
+                    "display_name": "Some domain",
                 }
             ],
         }
@@ -122,25 +122,25 @@ class TestGetUIPermissions:
 
         expected = {
             "ADMIN": [
-                {"name": "USER_ADMIN", "display_name": "USER_ADMIN"},
-                {"name": "DATA_ADMIN", "display_name": "DATA_ADMIN"},
+                {"name": "USER_ADMIN", "display_name": "User"},
+                {"name": "DATA_ADMIN", "display_name": "Data"},
             ],
-            "GLOBAL_READ": [{"name": "READ_PRIVATE", "display_name": "READ_PRIVATE"}],
+            "GLOBAL_READ": [{"name": "READ_PRIVATE", "display_name": "PRIVATE"}],
             "GLOBAL_WRITE": [
-                {"name": "WRITE_ALL", "display_name": "WRITE_ALL"},
-                {"name": "WRITE_PUBLIC", "display_name": "WRITE_PUBLIC"},
-                {"name": "WRITE_PRIVATE", "display_name": "WRITE_PRIVATE"},
+                {"name": "WRITE_ALL", "display_name": "ALL"},
+                {"name": "WRITE_PUBLIC", "display_name": "PUBLIC"},
+                {"name": "WRITE_PRIVATE", "display_name": "PRIVATE"},
             ],
             "PROTECTED_READ": [
                 {
                     "name": "READ_PROTECTED_SOME_DOMAIN",
-                    "display_name": "READ_PROTECTED_SOME_DOMAIN",
+                    "display_name": "Some domain",
                 }
             ],
             "PROTECTED_WRITE": [
                 {
                     "name": "WRITE_PROTECTED_SOME_DOMAIN",
-                    "display_name": "WRITE_PROTECTED_SOME_DOMAIN",
+                    "display_name": "Some domain",
                 }
             ],
         }
