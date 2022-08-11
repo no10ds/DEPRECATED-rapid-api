@@ -85,8 +85,15 @@ class BaseTestUI(ABC):
         expect(page).to_have_title(re.compile(title))
 
     def assert_contains_label(self, page, label_text: str):
+        print(f"Checking that '{label_text}' exists")
         locator = page.locator(f"//label[text()='{label_text}']")
         expect(locator).to_contain_text(label_text)
+
+    def assert_not_contains_label(self, page, label_text: str):
+        print(f"Checking that '{label_text}' does not exist")
+        locator = page.locator(f"//label[text()='{label_text}']")
+        expect(locator).to_be_disabled()
+        expect(locator).not_to_be_visible()
 
     def assert_dropdown_exists(self, page, dropdown_id: str):
         print("Checking dropdown exists in the page")
@@ -100,12 +107,16 @@ class BaseTestUI(ABC):
 
     def assert_can_upload(self, page, dropdown_id, upload_dataset):
         print(f"Trying uploading to '{upload_dataset}'")
-        selected = page.select_option(f"select#{dropdown_id}", upload_dataset)
-        assert selected == [upload_dataset]
+        self.select_from_dropdown(page, dropdown_id, upload_dataset)
         self.choose_and_upload_file(page)
         self.assert_contains_label(page, FILENAME)
         self.click_button(page, "Upload dataset")
         self.assert_contains_label(page, "File uploaded: ui_test.csv")
+
+    def select_from_dropdown(self, page, dropdown_id, value_to_select):
+        print(f"Selecting '{value_to_select}' from '{dropdown_id}'")
+        selected = page.select_option(f"select#{dropdown_id}", value_to_select)
+        assert selected == [value_to_select]
 
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")
@@ -178,5 +189,34 @@ class TestUI(BaseTestUI):
             self.assert_title(page, "rAPId - Modify Subject")
             self.assert_text_on_page(page, "Step 2 of 2")
             self.assert_text_on_page(page, f"Permissions for {self.subject_id}")
+
+            self.logout(page)
+
+    def test_create_subject_journey(self):
+        with sync_playwright() as playwright:
+            page = self.set_up_base_page(playwright)
+
+            self.login(page)
+
+            self.click_link(page, "Create User")
+            self.assert_title(page, "rAPId - Create Subject")
+            self.assert_contains_label(page, "Email")
+            self.select_from_dropdown(page, "select_subject", "CLIENT")
+            self.assert_not_contains_label(page, "Email")
+            self.select_from_dropdown(page, "select_subject", "USER")
+            self.assert_contains_label(page, "Email")
+
+            self.input_text_value(page, "name", "my_name")
+            self.input_text_value(page, "email", "my_email@email.com")
+
+            self.click_label(page, "USER_ADMIN")
+            self.click_label(page, "READ_ALL")
+            self.click_label(page, "READ_PUBLIC")
+            self.click_label(page, "WRITE_ALL")
+            self.click_label(page, "WRITE_PUBLIC")
+            self.click_label(page, "READ_PROTECTED_TEST")
+            self.click_label(page, "WRITE_PROTECTED_TEST")
+
+            self.click_button(page, "Create subject")
 
             self.logout(page)

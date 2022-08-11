@@ -17,7 +17,7 @@
             <h3 class="content-step-indicator">Step 1: Populate user info</h3>
             <div class="form-select">
                 <label class="form-select_label">Type of subject</label>
-                <select class="form-select_dropdown" id="dataset">
+                <select class="form-select_dropdown" id="select_subject">
                     <option value="">Please select</option>
                     <option value="USER">User</option>
                     <option value="CLIENT">Client</option>
@@ -27,7 +27,7 @@
                 <label class="form-input_label" for="name">Name</label>
                 <input class="form-input_text" name="name" id="name" type="text">
             </div>
-            <div class="form-input">
+            <div class="form-input" id="email_input">
                 <label class="form-input_label" for="email">Email</label>
                 <input class="form-input_text" name="email" id="email" type="email">
             </div>
@@ -55,5 +55,10 @@
         </div>
     </form>
 </div>
+{% block javascript %}
+<script type="text/javascript">
+        {% include "./js/subject_create.js" %}
+</script>
+{% endblock %}
 </body>
 </html>

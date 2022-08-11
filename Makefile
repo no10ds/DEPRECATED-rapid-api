@@ -50,6 +50,14 @@ test-headed-ui:		## Run UI tests with chrome browser window
 	@playwright install --with-deps
 	@BROWSER_MODE="HEADED" pytest test/ui -v -s
 
+test-focus-ui:		## Runs UI tests marked with `@pytest.mark.focus`
+	@playwright install --with-deps
+	@pytest test/ui -v -s -m focus
+
+test-focus-headed-ui:		## Runs UI tests marked with `@pytest.mark.focus` in headed mode
+	@playwright install --with-deps
+	@BROWSER_MODE="HEADED" pytest test/ui -v -s -m focus
+
 test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage
 
