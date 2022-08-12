@@ -221,6 +221,4 @@ class TestUI(BaseTestUI):
             self.click_by_id(page, "READ_PROTECTED_TEST")
             self.click_by_id(page, "WRITE_PROTECTED_TEST")
 
-            self.click_button(page, "Create subject")
-
             self.logout(page)

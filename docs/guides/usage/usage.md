@@ -1184,3 +1184,17 @@ ID and progress to step 2 to modify the permissions.
 ### Needed credentials
 
 The user must be logged in as a Cognito user to use this page and have the `USER_ADMIN` permission.
+
+## Create Subject
+
+This page is used as the first step in the subject creation flow. The page allows you to enter a subject name,
+select the type, if the type is "USER", it also allows an email address. Finally, permissions can be assigned
+to the new subject.
+
+### General structure
+
+`GET /subject/create`
+
+### Needed credentials
+
+The user must be logged in as a Cognito user to use this page and have the `USER_ADMIN` permission.
