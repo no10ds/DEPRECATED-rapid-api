@@ -4,7 +4,7 @@
         {% for permission in permissions %}
             <div class="form-radio_input">
                 <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
-                {% if permission in user_permissions %}
+                {% if permission in subject_permissions %}
                     <input type="radio"
                            id="{{ permission["name"] }}"
                            name="{{ radio_name }}"

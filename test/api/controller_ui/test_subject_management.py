@@ -47,7 +47,7 @@ class TestModifySubjectPage(BaseClientTest):
                 "request": ANY,
                 "subject_name": "a1b2c3d4",
                 "permissions": ["any-value"],
-                "user_permissions": ["any-value", "any-other-value"],
+                "subject_permissions": ["any-value", "any-other-value"],
                 "error_message": None,
             },
         )
@@ -75,7 +75,7 @@ class TestModifySubjectPage(BaseClientTest):
                 "request": ANY,
                 "subject_name": "a1b2c3d4",
                 "permissions": [],
-                "user_permissions": [],
+                "subject_permissions": [],
                 "error_message": "Error: Subject does not exist. Please go back and try again.",
             },
         )
@@ -103,7 +103,7 @@ class TestModifySubjectPage(BaseClientTest):
                 "request": ANY,
                 "subject_name": "a1b2c3d4",
                 "permissions": [],
-                "user_permissions": [],
+                "subject_permissions": [],
                 "error_message": "Something went wrong. Please contact your system administrator",
             },
         )

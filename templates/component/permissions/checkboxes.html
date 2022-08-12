@@ -4,7 +4,7 @@
     {% for permission in permissions %}
     <div class="form-checkbox_input">
         <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
-        {% if permission in user_permissions %}
+        {% if permission in subject_permissions %}
             <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}" checked="checked">
         {% else %}
             <input type="checkbox" id="{{ permission["name"] }}" name="{{ permission["name"] }}" value="{{permission["name"]}}">
