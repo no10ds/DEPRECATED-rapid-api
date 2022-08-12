@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Optional
 
 import boto3
 from botocore.exceptions import ClientError
@@ -114,6 +114,44 @@ class CognitoAdapter:
                 raise UserError(f"The user '{username}' does not exist cognito")
             raise AWSServiceError(
                 "Something went wrong. Please Contact your administrator."
+            )
+
+    def get_all_subjects(self) -> List[Dict[str, Optional[str]]]:
+        try:
+            clients = [
+                {
+                    "subject_id": client["ClientId"],
+                    "subject_name": client["ClientName"],
+                    "type": "CLIENT",
+                }
+                for client in self.cognito_client.list_user_pool_clients(
+                    UserPoolId=COGNITO_USER_POOL_ID
+                )["UserPoolClients"]
+            ]
+
+            users = [
+                {
+                    "subject_id": user["Attributes"][0]["Value"]
+                    if user["Attributes"][0]["Name"] == "sub"
+                    else None,
+                    "subject_name": user["Username"],
+                    "type": "USER",
+                }
+                for user in self.cognito_client.list_users(
+                    UserPoolId=COGNITO_USER_POOL_ID,
+                    AttributesToGet=[
+                        "sub",
+                    ],
+                )["Users"]
+            ]
+
+            return [*clients, *users]
+        except ClientError as error:
+            AppLogger.error(
+                f"The list of client apps and users could not be retrieved: {error}"
+            )
+            raise AWSServiceError(
+                "The list of client apps and users could not be retrieved"
             )
 
     def _validate_client_name(self, client_name: str) -> None:

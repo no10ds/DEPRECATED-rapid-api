@@ -1,6 +1,7 @@
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.common.config.auth import SubjectType
+from api.common.custom_exceptions import UserError
 from api.domain.client import ClientResponse, ClientRequest
 from api.domain.subject_permissions import SubjectPermissions
 from api.domain.user import UserRequest, UserResponse, UserDeleteRequest
@@ -65,3 +66,13 @@ class SubjectService:
         self.dynamodb_adapter.validate_permissions(subject_permissions.permissions)
         self.dynamodb_adapter.update_subject_permissions(subject_permissions)
         return subject_permissions
+
+    def get_subject_name_by_id(self, subject_id: str) -> str:
+        result = [
+            subject["subject_name"]
+            for subject in self.cognito_adapter.get_all_subjects()
+            if subject["subject_id"] == subject_id
+        ]
+        if result:
+            return result[0]
+        raise UserError(f"Subject with ID {subject_id} does not exist")

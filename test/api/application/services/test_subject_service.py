@@ -79,7 +79,6 @@ class TestClientCreation:
         self.cognito_adapter.create_client_app.assert_not_called()
 
     def test_delete_existing_client_when_db_fails(self):
-
         expected_response = ClientResponse(
             client_name="my_client",
             client_id="some-client-id",
@@ -258,6 +257,52 @@ class TestSetSubjectPermissions:
         self.dynamo_adapter.validate_permissions.assert_called_once_with(
             subject_permissions.permissions
         )
+
+
+class TestGetSubjectNameById:
+    def setup_method(self):
+        self.cognito_adapter = Mock()
+        self.dynamo_adapter = Mock()
+        self.subject_service = SubjectService(self.cognito_adapter, self.dynamo_adapter)
+
+    def test_gets_subjects_name_by_id(self):
+        self.cognito_adapter.get_all_subjects.return_value = [
+            {
+                "subject_id": "the-client-id",
+                "subject_name": "the_client_name",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-user-id",
+                "subject_name": "the_user_name",
+                "type": "USER",
+            },
+        ]
+
+        result = self.subject_service.get_subject_name_by_id("the-user-id")
+
+        assert result == "the_user_name"
+
+    def test_raises_error_if_no_subject_found(self):
+        unknown_id = "unknown-id"
+
+        self.cognito_adapter.get_all_subjects.return_value = [
+            {
+                "subject_id": "the-client-id",
+                "subject_name": "the_client_name",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-user-id",
+                "subject_name": "the_user_name",
+                "type": "USER",
+            },
+        ]
+
+        with pytest.raises(
+            UserError, match="Subject with ID unknown-id does not exist"
+        ):
+            self.subject_service.get_subject_name_by_id(unknown_id)
 
 
 class TestSubjectDeletion:

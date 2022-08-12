@@ -335,6 +335,109 @@ class TestCognitoAdapterUsers:
             self.cognito_adapter.create_user(request)
 
 
+class TestGetSubjects:
+    cognito_boto_client = None
+    cognito_adapter = None
+
+    def setup_method(self):
+        self.cognito_boto_client = Mock()
+        self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
+
+    def test_gets_all_subjects(self):
+        list_clients_response = {
+            "UserPoolClients": [
+                {"ClientId": "the-client-id-1", "ClientName": "the_client_name_1"},
+                {"ClientId": "the-client-id-2", "ClientName": "the_client_name_2"},
+            ],
+        }
+
+        list_users_response = {
+            "Users": [
+                {
+                    "Username": "user-name-1",
+                    "Attributes": [
+                        {"Name": "sub", "Value": "the-user-id-1"},
+                    ],
+                },
+                {
+                    "Username": "user-name-2",
+                    "Attributes": [
+                        {"Name": "sub", "Value": "the-user-id-2"},
+                    ],
+                },
+            ]
+        }
+
+        self.cognito_boto_client.list_user_pool_clients.return_value = (
+            list_clients_response
+        )
+        self.cognito_boto_client.list_users.return_value = list_users_response
+
+        expected = [
+            {
+                "subject_id": "the-client-id-1",
+                "subject_name": "the_client_name_1",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-client-id-2",
+                "subject_name": "the_client_name_2",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-user-id-1",
+                "subject_name": "user-name-1",
+                "type": "USER",
+            },
+            {
+                "subject_id": "the-user-id-2",
+                "subject_name": "user-name-2",
+                "type": "USER",
+            },
+        ]
+
+        result = self.cognito_adapter.get_all_subjects()
+
+        assert result == expected
+
+    def test_raises_error_when_listing_clients_fails(self):
+        self.cognito_boto_client.list_user_pool_clients.side_effect = ClientError(
+            error_response={"Error": {"Code": "SomeException"}},
+            operation_name="ListUserPoolClients",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="The list of client apps and users could not be retrieved",
+        ):
+            self.cognito_adapter.get_all_subjects()
+
+    def test_raises_error_when_listing_users_fails(self):
+        list_clients_response = {
+            "UserPoolClients": [
+                {"ClientId": "the-client-id-1", "ClientName": "the_client_name_1"},
+                {"ClientId": "the-client-id-2", "ClientName": "the_client_name_2"},
+            ],
+        }
+
+        self.cognito_boto_client.list_user_pool_clients.return_value = (
+            list_clients_response
+        )
+
+        self.cognito_boto_client.list_users.side_effect = ClientError(
+            error_response={"Error": {"Code": "SomeException"}},
+            operation_name="ListUsers",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="The list of client apps and users could not be retrieved",
+        ):
+            self.cognito_adapter.get_all_subjects()
+
+        self.cognito_boto_client.list_user_pool_clients.assert_called_once()
+
+
 class TestCognitoScopes:
     cognito_boto_client = None
     cognito_adapter = None

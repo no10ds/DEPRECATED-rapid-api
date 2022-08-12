@@ -25,9 +25,10 @@ class TestSubjectPage(BaseClientTest):
 
 class TestModifySubjectPage(BaseClientTest):
     @patch.object(Jinja2Templates, "TemplateResponse")
+    @patch("api.controller_ui.subject_management.subject_service")
     @patch("api.controller_ui.subject_management.permissions_service")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_permissions_service, mock_templates_response
+        self, mock_permissions_service, mock_subject_service, mock_templates_response
     ):
         subject_template_filename = "subject_modify.html"
 
@@ -36,16 +37,19 @@ class TestModifySubjectPage(BaseClientTest):
             "any-value",
             "any-other-value",
         ]
+        mock_subject_service.get_subject_name_by_id.return_value = "the_subject_name"
 
         response = self.client.get(
             "/subject/a1b2c3d4/modify", cookies={"rat": "user_token"}
         )
 
+        mock_subject_service.get_subject_name_by_id.assert_called_once_with("a1b2c3d4")
         mock_templates_response.assert_called_once_with(
             name=subject_template_filename,
             context={
                 "request": ANY,
-                "subject_name": "a1b2c3d4",
+                "subject_id": "a1b2c3d4",
+                "subject_name": "the_subject_name",
                 "permissions": ["any-value"],
                 "subject_permissions": ["any-value", "any-other-value"],
                 "error_message": None,
@@ -56,7 +60,7 @@ class TestModifySubjectPage(BaseClientTest):
 
     @patch.object(Jinja2Templates, "TemplateResponse")
     @patch("api.controller_ui.subject_management.permissions_service")
-    def test_calls_templating_engine_with_error_message_when_subject_not_found(
+    def test_calls_templating_engine_with_error_message_when_subject_permissions_not_found(
         self, mock_permissions_service, mock_templates_response
     ):
         subject_template_filename = "subject_modify.html"
@@ -73,7 +77,8 @@ class TestModifySubjectPage(BaseClientTest):
             name=subject_template_filename,
             context={
                 "request": ANY,
-                "subject_name": "a1b2c3d4",
+                "subject_id": "a1b2c3d4",
+                "subject_name": None,
                 "permissions": [],
                 "subject_permissions": [],
                 "error_message": "Error: Subject does not exist. Please go back and try again.",
@@ -101,11 +106,96 @@ class TestModifySubjectPage(BaseClientTest):
             name=subject_template_filename,
             context={
                 "request": ANY,
-                "subject_name": "a1b2c3d4",
+                "subject_id": "a1b2c3d4",
+                "subject_name": None,
                 "permissions": [],
                 "subject_permissions": [],
                 "error_message": "Something went wrong. Please contact your system administrator",
             },
+        )
+
+        assert response.status_code == 200
+
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    @patch("api.controller_ui.subject_management.subject_service")
+    @patch("api.controller_ui.subject_management.permissions_service")
+    def test_calls_templating_engine_with_error_message_when_subject_name_not_found(
+        self, mock_permissions_service, mock_subject_service, mock_templates_response
+    ):
+        subject_template_filename = "subject_modify.html"
+
+        mock_permissions_service.get_all_permissions_ui.return_value = ["any-value"]
+        mock_permissions_service.get_user_permissions_ui.return_value = [
+            "any-value",
+            "any-other-value",
+        ]
+        mock_subject_service.get_subject_name_by_id.side_effect = UserError(
+            "The subject name could not be found"
+        )
+
+        response = self.client.get(
+            "/subject/a1b2c3d4/modify", cookies={"rat": "user_token"}
+        )
+
+        mock_templates_response.assert_called_once_with(
+            name=subject_template_filename,
+            context={
+                "request": ANY,
+                "subject_id": "a1b2c3d4",
+                "subject_name": None,
+                "permissions": [],
+                "subject_permissions": [],
+                "error_message": "Error: The subject name could not be found. Please go back and try again.",
+            },
+        )
+
+        assert response.status_code == 200
+
+
+class TestModifySubjectSuccessPage(BaseClientTest):
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    @patch("api.controller_ui.subject_management.subject_service")
+    def test_calls_templating_engine_with_expected_arguments(
+        self, mock_subject_service, mock_templates_response
+    ):
+        subject_template_filename = "success.html"
+
+        mock_subject_service.get_subject_name_by_id.return_value = "the_subject_name"
+
+        response = self.client.get(
+            "/subject/a1b2c3d4/modify/success", cookies={"rat": "user_token"}
+        )
+
+        mock_subject_service.get_subject_name_by_id.assert_called_once_with("a1b2c3d4")
+        mock_templates_response.assert_called_once_with(
+            name=subject_template_filename,
+            context={
+                "request": ANY,
+                "subject_id": "a1b2c3d4",
+                "subject_name": "the_subject_name",
+            },
+        )
+
+        assert response.status_code == 200
+
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    @patch("api.controller_ui.subject_management.subject_service")
+    def test_calls_templating_engine_with_expected_arguments_when_getting_subject_name_fails(
+        self, mock_subject_service, mock_templates_response
+    ):
+        subject_template_filename = "success.html"
+
+        mock_subject_service.get_subject_name_by_id.side_effect = UserError(
+            "The subject name could not be found"
+        )
+
+        response = self.client.get(
+            "/subject/a1b2c3d4/modify/success", cookies={"rat": "user_token"}
+        )
+
+        mock_templates_response.assert_called_once_with(
+            name=subject_template_filename,
+            context={"request": ANY, "subject_id": "a1b2c3d4", "subject_name": None},
         )
 
         assert response.status_code == 200
