@@ -32,7 +32,7 @@
                 <input class="form-input_text" name="email" id="email" type="email">
             </div>
             <h3 class="content-step-indicator">Step 2: Select permissions</h3>
-            {% with permissions = permissions["ADMIN"], legend_text = "Management permissions" %}
+            {% with permissions = permissions["ADMIN"], legend_text = "Management permissions", checkbox_name="ADMIN" %}
                 {% include 'component/permissions/checkboxes.html' %}
             {% endwith %}
                 {% with permissions = permissions["GLOBAL_READ"], legend_text = "Global read permissions",
@@ -43,10 +43,10 @@
             radio_name="GLOBAL_WRITE" %}
                 {% include 'component/permissions/radios.html' %}
             {% endwith %}
-            {% with permissions = permissions["PROTECTED_READ"], legend_text = "Read protected permissions" %}
+            {% with permissions = permissions["PROTECTED_READ"], legend_text = "Read protected permissions", checkbox_name="READ_PROTECTED" %}
                 {% include 'component/permissions/checkboxes.html' %}
             {% endwith %}
-            {% with permissions = permissions["PROTECTED_WRITE"], legend_text = "Write protected permissions" %}
+            {% with permissions = permissions["PROTECTED_WRITE"], legend_text = "Write protected permissions", checkbox_name="WRITE_PROTECTED" %}
                 {% include 'component/permissions/checkboxes.html' %}
             {% endwith %}
         </div>
@@ -57,6 +57,7 @@
 </div>
 {% block javascript %}
 <script type="text/javascript">
+        {% include "./js/common.js" %}
         {% include "./js/subject_create.js" %}
 </script>
 {% endblock %}

@@ -10,12 +10,14 @@
                            name="{{ radio_name }}"
                            value="{{ permission["name"] }}"
                            checked="checked"
+                           onclick="toggle_check_boxes('{{ permission["name"] }}', '{{radio_name}}')"
                     >
                 {% else %}
                     <input type="radio"
                            id="{{ permission["name"] }}"
                            name="{{ radio_name }}"
                            value="{{ permission["name"] }}"
+                           onclick="toggle_check_boxes('{{ permission["name"] }}', '{{radio_name}}')"
                     >
                 {% endif %}
             </div>
@@ -26,6 +28,7 @@
                    id="{{ radio_name }}-none"
                    name="{{ radio_name }}"
                    value="NONE"
+                   onclick="toggle_check_boxes('{{ radio_name }}-none', '{{radio_name}}')"
             >
         </div>
     </fieldset>

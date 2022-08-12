@@ -99,6 +99,16 @@ class BaseTestUI(ABC):
         expect(locator).to_be_disabled()
         expect(locator).not_to_be_visible()
 
+    def assert_element_not_visible(self, page, element_id: str):
+        print(f"Checking that '{element_id}' is not visible")
+        locator = page.locator(f"#{element_id}")
+        expect(locator).to_be_hidden()
+
+    def assert_element_visible(self, page, element_id: str):
+        print(f"Checking that '{element_id}' is visible")
+        locator = page.locator(f"#{element_id}")
+        expect(locator).not_to_be_hidden()
+
     def assert_dropdown_exists(self, page, dropdown_id: str):
         print("Checking dropdown exists in the page")
         expect(page.locator(f"#{dropdown_id}")).to_have_count(1)
@@ -213,11 +223,18 @@ class TestUI(BaseTestUI):
             self.input_text_value(page, "name", "my_name")
             self.input_text_value(page, "email", "my_email@email.com")
 
+            self.assert_element_visible(page, "WRITE_PROTECTED")
+            self.assert_element_visible(page, "READ_PROTECTED")
+
             self.click_by_id(page, "USER_ADMIN")
             self.click_by_id(page, "READ_ALL")
+            self.assert_element_not_visible(page, "READ_PROTECTED")
             self.click_by_id(page, "READ_PUBLIC")
+            self.assert_element_visible(page, "READ_PROTECTED")
             self.click_by_id(page, "WRITE_ALL")
+            self.assert_element_not_visible(page, "WRITE_PROTECTED")
             self.click_by_id(page, "WRITE_PUBLIC")
+            self.assert_element_visible(page, "WRITE_PROTECTED")
             self.click_by_id(page, "READ_PROTECTED_TEST")
             self.click_by_id(page, "WRITE_PROTECTED_TEST")
 

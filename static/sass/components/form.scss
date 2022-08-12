@@ -64,12 +64,15 @@
 
 .form-checkbox,
 .form-radio {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min-content, min(100%, max(100%/2))));
-  grid-template-rows: auto;
-  justify-content: space-around;
-  align-content: center;
-  grid-row-gap: 1rem;
+
+  &:not([hidden]) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min-content, min(100%, max(100%/2))));
+    grid-template-rows: auto;
+    justify-content: space-around;
+    align-content: center;
+    grid-row-gap: 1rem;
+  }
 
   &_input {
     display: grid;
@@ -95,9 +98,12 @@
 }
 
 .form-input {
-  display: grid;
-  align-items: start;
-  justify-items: center;
+
+  &:not([hidden]) {
+    display: grid;
+    align-items: start;
+    justify-items: center;
+  }
 
   &_label {
     &:hover {
