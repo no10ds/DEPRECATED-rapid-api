@@ -1,24 +1,32 @@
 {% if permissions %}
-<fieldset class="form-radio">
-    <legend class="form-radio_legend">{{ legend_text }}</legend>
-    {% for permission in permissions %}
-    <div class="form-radio_input">
-        <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
-        {% if permission in user_permissions %}
+    <fieldset class="form-radio">
+        <legend class="form-radio_legend">{{ legend_text }}</legend>
+        {% for permission in permissions %}
+            <div class="form-radio_input">
+                <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
+                {% if permission in user_permissions %}
+                    <input type="radio"
+                           id="{{ permission["name"] }}"
+                           name="{{ radio_name }}"
+                           value="{{ permission["name"] }}"
+                           checked="checked"
+                    >
+                {% else %}
+                    <input type="radio"
+                           id="{{ permission["name"] }}"
+                           name="{{ radio_name }}"
+                           value="{{ permission["name"] }}"
+                    >
+                {% endif %}
+            </div>
+        {% endfor %}
+        <div class="form-radio_input">
+            <label for="{{ radio_name }}-none">NONE</label>
             <input type="radio"
-                   id="{{ permission["name"] }}"
+                   id="{{ radio_name }}-none"
                    name="{{ radio_name }}"
-                   value="{{ permission["name"] }}"
-                   checked="checked"
-                   >
-        {% else %}
-            <input type="radio"
-                   id="{{ permission["name"] }}"
-                   name="{{ radio_name }}"
-                   value="{{ permission["name"] }}"
-                   >
-        {% endif %}
-    </div>
-    {% endfor %}
-</fieldset>
+                   value="NONE"
+            >
+        </div>
+    </fieldset>
 {% endif %}

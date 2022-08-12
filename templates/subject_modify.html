@@ -19,9 +19,9 @@
                     <p><span class="response-msg--error">{{ error_message }}</span></p>
                 {% else %}
                     <h3 class="content-step-indicator">Step 2 of 2</h3>
-                    <h2>Permissions for <span class="highlight">{{ subject_name }}</span></h2>
                 {% endif %}
             </div>
+            <h2>Select permissions for <span class="highlight">{{ subject_name }}</span></h2>
             {% if not error_message and permissions %}
                 <div class="form_body-section">
                     {% with permissions = permissions["ADMIN"], user_permissions = user_permissions["ADMIN"], legend_text = "Management permissions" %}
@@ -42,7 +42,6 @@
                 </div>
             {% endif %}
         </div>
-
         {% if not error_message %}
         <div class="form_submit">
             <button class="btn" type="button" onclick="modify()">Modify</button>

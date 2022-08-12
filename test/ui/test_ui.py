@@ -192,7 +192,7 @@ class TestUI(BaseTestUI):
 
             self.assert_title(page, "rAPId - Modify Subject")
             self.assert_text_on_page(page, "Step 2 of 2")
-            self.assert_text_on_page(page, f"Permissions for {self.subject_id}")
+            self.assert_text_on_page(page, f"Select permissions for {self.subject_id}")
 
             self.logout(page)
 
