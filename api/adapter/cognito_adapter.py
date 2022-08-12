@@ -50,20 +50,6 @@ class CognitoAdapter:
         except ClientError as error:
             self._handle_client_error(client_request, error)
 
-    def _validate_client_name(self, client_name: str) -> None:
-        if client_name == self.placeholder_client_name:
-            raise UserError("You must specify a valid client name")
-
-        existing_clients = self.cognito_client.list_user_pool_clients(
-            UserPoolId=COGNITO_USER_POOL_ID
-        )
-        existing_client_names = [
-            client.get("ClientName")
-            for client in existing_clients.get("UserPoolClients", [])
-        ]
-        if client_name in existing_client_names:
-            raise UserError(f"Client name '{client_name}' already exists")
-
     def create_user(self, user_request: UserRequest) -> UserResponse:
         try:
             cognito_response = self.cognito_client.admin_create_user(
@@ -82,56 +68,6 @@ class CognitoAdapter:
             )
         except ClientError as error:
             self._handle_user_error(user_request, error)
-
-    def _create_user_response(
-        self, cognito_response: dict, permissions: List[str]
-    ) -> UserResponse:
-        cognito_user = cognito_response["User"]
-        return UserResponse(
-            username=cognito_user["Username"],
-            email=self._get_attribute_value("email", cognito_user["Attributes"]),
-            permissions=permissions,
-            user_id=self._get_attribute_value("sub", cognito_user["Attributes"]),
-        )
-
-    def _create_client_response(
-        self, client_request: ClientRequest, cognito_client_info: dict
-    ) -> ClientResponse:
-        client_response = ClientResponse(
-            client_name=client_request.client_name,
-            client_id=cognito_client_info["ClientId"],
-            client_secret=cognito_client_info["ClientSecret"],
-            permissions=client_request.get_permissions(),
-        )
-        return client_response
-
-    @staticmethod
-    def _get_attribute_value(attribute_name: str, attributes: List[dict]):
-        response_list = [attr for attr in attributes if attr["Name"] == attribute_name]
-        return response_list[0]["Value"]
-
-    def _build_default_scopes(self):
-        return [f"{COGNITO_RESOURCE_SERVER_ID}/CLIENT_APP"]
-
-    def _handle_client_error(self, client_request: ClientRequest, error):
-        AppLogger.info(
-            f"The client '{client_request.client_name}' could not be created with error: {error}"
-        )
-        raise AWSServiceError(
-            f"The client '{client_request.client_name}' could not be created"
-        )
-
-    def _handle_user_error(self, user_request: UserRequest, error: ClientError):
-        AppLogger.info(
-            f"The user '{user_request.username}' could not be created with error: {error}"
-        )
-        if error.response["Error"]["Code"] == "UsernameExistsException":
-            raise UserError(
-                f"The user '{user_request.username}' or email '{user_request.email}' already exist"
-            )
-        raise AWSServiceError(
-            f"The user '{user_request.username}' could not be created"
-        )
 
     def get_protected_scopes(self):
         try:
@@ -179,3 +115,66 @@ class CognitoAdapter:
             raise AWSServiceError(
                 "Something went wrong. Please Contact your administrator."
             )
+
+    def _validate_client_name(self, client_name: str) -> None:
+        if client_name == self.placeholder_client_name:
+            raise UserError("You must specify a valid client name")
+
+        existing_clients = self.cognito_client.list_user_pool_clients(
+            UserPoolId=COGNITO_USER_POOL_ID
+        )
+        existing_client_names = [
+            client.get("ClientName")
+            for client in existing_clients.get("UserPoolClients", [])
+        ]
+        if client_name in existing_client_names:
+            raise UserError(f"Client name '{client_name}' already exists")
+
+    def _create_user_response(
+        self, cognito_response: dict, permissions: List[str]
+    ) -> UserResponse:
+        cognito_user = cognito_response["User"]
+        return UserResponse(
+            username=cognito_user["Username"],
+            email=self._get_attribute_value("email", cognito_user["Attributes"]),
+            permissions=permissions,
+            user_id=self._get_attribute_value("sub", cognito_user["Attributes"]),
+        )
+
+    def _create_client_response(
+        self, client_request: ClientRequest, cognito_client_info: dict
+    ) -> ClientResponse:
+        client_response = ClientResponse(
+            client_name=client_request.client_name,
+            client_id=cognito_client_info["ClientId"],
+            client_secret=cognito_client_info["ClientSecret"],
+            permissions=client_request.get_permissions(),
+        )
+        return client_response
+
+    def _get_attribute_value(self, attribute_name: str, attributes: List[dict]):
+        response_list = [attr for attr in attributes if attr["Name"] == attribute_name]
+        return response_list[0]["Value"]
+
+    def _build_default_scopes(self):
+        return [f"{COGNITO_RESOURCE_SERVER_ID}/CLIENT_APP"]
+
+    def _handle_client_error(self, client_request: ClientRequest, error):
+        AppLogger.info(
+            f"The client '{client_request.client_name}' could not be created with error: {error}"
+        )
+        raise AWSServiceError(
+            f"The client '{client_request.client_name}' could not be created"
+        )
+
+    def _handle_user_error(self, user_request: UserRequest, error: ClientError):
+        AppLogger.info(
+            f"The user '{user_request.username}' could not be created with error: {error}"
+        )
+        if error.response["Error"]["Code"] == "UsernameExistsException":
+            raise UserError(
+                f"The user '{user_request.username}' or email '{user_request.email}' already exist"
+            )
+        raise AWSServiceError(
+            f"The user '{user_request.username}' could not be created"
+        )
