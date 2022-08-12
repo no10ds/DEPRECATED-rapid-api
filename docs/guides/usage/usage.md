@@ -1172,14 +1172,16 @@ If the user is a user admin, then the user management section will be visible al
 If the user has not been granted any relevant permissions an error message will be displayed prompting the user to speak
 to the relevant authority to grant them required permissions.
 
-## Modify Subject
+## Modify Subject Permissions
 
-This page is used as the first step in the subject permissions modification flow. The page allows you to enter a subject
-ID and progress to step 2 to modify the permissions.
+The subject permissions modification flow allows you to view and update the permissions assigned to a subject (client
+app or human user). There are two steps to the flow.
+1. The first page allows you to enter a subject ID and progress to step 2 to modify the permissions.
+2. The second page shows the current permissions and allows you to update them.
 
 ### General structure
 
-`GET /subject`
+`GET /subject` leading to -> `GET /subject/<subject_id>/modify`
 
 ### Needed credentials
 
