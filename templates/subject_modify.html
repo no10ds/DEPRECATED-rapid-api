@@ -21,7 +21,9 @@
                     <h3 class="content-step-indicator">Step 2 of 2</h3>
                 {% endif %}
             </div>
-            <h2>Select permissions for <span class="highlight">{{ subject_name }}</span></h2>
+            {% if not error_message %}
+                <h2>Select permissions for <span class="highlight">{{ subject_name }}</span></h2>
+            {% endif %}
             {% if not error_message and permissions %}
                 <div class="form_body-section">
                     {% with permissions = permissions["ADMIN"], subject_permissions = subject_permissions["ADMIN"], legend_text = "Management permissions" %}
