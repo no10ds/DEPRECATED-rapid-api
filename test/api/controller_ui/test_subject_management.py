@@ -35,8 +35,7 @@ class TestModifySubjectPage(BaseClientTest):
 
         mock_permissions_service.get_all_permissions_ui.return_value = ["any-value"]
         mock_permissions_service.get_user_permissions_ui.return_value = [
-            "any-value",
-            "any-other-value",
+            "any-other-value"
         ]
         mock_subject_service.get_subject_name_by_id.return_value = "the_subject_name"
 
@@ -52,7 +51,7 @@ class TestModifySubjectPage(BaseClientTest):
                 "subject_id": "a1b2c3d4",
                 "subject_name": "the_subject_name",
                 "permissions": ["any-value"],
-                "subject_permissions": ["any-value", "any-other-value"],
+                "subject_permissions": ["any-other-value"],
                 "error_message": None,
             },
         )
@@ -127,8 +126,7 @@ class TestModifySubjectPage(BaseClientTest):
 
         mock_permissions_service.get_all_permissions_ui.return_value = ["any-value"]
         mock_permissions_service.get_user_permissions_ui.return_value = [
-            "any-value",
-            "any-other-value",
+            "any-other-value"
         ]
         mock_subject_service.get_subject_name_by_id.side_effect = UserError(
             "The subject name could not be found"
