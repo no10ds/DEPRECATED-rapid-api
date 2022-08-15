@@ -3,22 +3,44 @@ from unittest.mock import patch, ANY
 from fastapi.templating import Jinja2Templates
 
 from api.application.services.permissions_service import PermissionsService
+from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestSubjectPage(BaseClientTest):
+    @patch.object(SubjectService, "list_subjects")
     @patch.object(Jinja2Templates, "TemplateResponse")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_templates_response
+        self, mock_templates_response, mock_list_subjects
     ):
         subject_template_filename = "subject.html"
 
+        expected_subjects = {
+            "clients": [{"subject_id": "subject_1", "subject_name": "subject_1_name"}],
+            "users": [{"subject_id": "subject_2", "subject_name": "subject_2_name"}],
+        }
+
+        mock_list_subjects.return_value = [
+            {
+                "subject_id": "subject_1",
+                "subject_name": "subject_1_name",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "subject_2",
+                "subject_name": "subject_2_name",
+                "type": "USER",
+            },
+        ]
+
         response = self.client.get("/subject", cookies={"rat": "user_token"})
+
+        mock_list_subjects.assert_called_once()
 
         mock_templates_response.assert_called_once_with(
             name=subject_template_filename,
-            context={"request": ANY},
+            context={"request": ANY, "subjects": expected_subjects},
         )
 
         assert response.status_code == 200

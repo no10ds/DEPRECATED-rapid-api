@@ -198,7 +198,7 @@ class TestUI(BaseTestUI):
             self.assert_title(page, "rAPId - Select Subject")
             self.assert_text_on_page(page, "Step 1 of 2")
 
-            self.input_text_value(page, "subject-id-input", self.subject_id)
+            self.select_from_dropdown(page, "select_subject", self.subject_name)
 
             self.click_button(page, "Next")
 

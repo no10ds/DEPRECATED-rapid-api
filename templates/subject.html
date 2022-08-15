@@ -6,33 +6,41 @@
     <link href="static/main.css" rel="stylesheet">
 </head>
 <body>
-    <div class="content">
-        {% with previous_page = "/" %}
-            {% include 'component/header.html' %}
-        {% endwith %}
+<div class="content">
+    {% with previous_page = "/" %}
+    {% include 'component/header.html' %}
+    {% endwith %}
 
-        <form class="form">
-            <div class="form_body form_body--headed">
-                <div class="form-select">
-                    <h1 class="content_header">Modify Subject</h1>
-                    <h3 class="content-step-indicator">Step 1 of 2</h3>
-                </div>
-                <div class="form-input">
-                    <label for="subject-id-input" class="form-input_filename" id="filename">Enter the ID for the user or client app you want to modify</label>
-                    <input name="subject-id" class="form-input_text" id="subject-id-input" type="text" placeholder="User ID or Client App ID" contenteditable="">
-                </div>
+    <form class="form">
+        <div class="form_body form_body--headed">
+            <div class="form-select">
+                <h1 class="content_header">Modify Subject</h1>
+                <h3 class="content-step-indicator">Step 1 of 2</h3>
             </div>
-            <div class="form_submit">
-                <button class="btn" type="button" id='button-modify' disabled onclick="goToNextStep()">Next</button>
-                <label class="response-msg" id="response-title"></label>
-                <label class="response-msg" id="response"></label>
+            <div class="form-select">
+                <label class="form-select_label">Select subject</label>
+                <select class="form-select_dropdown" id="select_subject">
+                    {% for group, subject_list in subjects.items() %}
+                     <optgroup label="{{group}}">
+                         {% for subject in subject_list %}
+                        <option value="{{subject['subject_id']}}">{{subject['subject_name']}}</option>
+                         {% endfor %}
+                     </optgroup>
+                    {% endfor %}
+                </select>
             </div>
-        </form>
-    </div>
-    {% block javascript %}
-        <script type="text/javascript">
+        </div>
+        <div class="form_submit">
+            <button class="btn" type="button" id='button-modify' onclick="goToNextStep()">Next</button>
+            <label class="response-msg" id="response-title"></label>
+            <label class="response-msg" id="response"></label>
+        </div>
+    </form>
+</div>
+{% block javascript %}
+<script type="text/javascript">
             {% include "./js/subject.js" %}
-        </script>
-    {% endblock %}
+</script>
+{% endblock %}
 </body>
 </html>

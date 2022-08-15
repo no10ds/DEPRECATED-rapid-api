@@ -26,7 +26,25 @@ templates = Jinja2Templates(directory=(os.path.abspath("templates")))
     "", dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])]
 )
 def select_subject(request: Request):
-    return templates.TemplateResponse(name="subject.html", context={"request": request})
+    subjects = subject_service.list_subjects()
+
+    users = [
+        {"subject_id": subject["subject_id"], "subject_name": subject["subject_name"]}
+        for subject in subjects
+        if subject["type"] == "USER"
+    ]
+
+    clients = [
+        {"subject_id": subject["subject_id"], "subject_name": subject["subject_name"]}
+        for subject in subjects
+        if subject["type"] == "CLIENT"
+    ]
+
+    grouped_subjects = {"clients": clients, "users": users}
+
+    return templates.TemplateResponse(
+        name="subject.html", context={"request": request, "subjects": grouped_subjects}
+    )
 
 
 @subject_management_router.get(
