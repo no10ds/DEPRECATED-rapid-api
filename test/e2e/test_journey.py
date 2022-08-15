@@ -54,6 +54,9 @@ class BaseJourneyTest(ABC):
     def permissions_url(self) -> str:
         return f"{self.base_url}/permissions"
 
+    def subjects_url(self) -> str:
+        return f"{self.base_url}/subjects"
+
     def status_url(self) -> str:
         return f"{self.base_url}/status"
 
@@ -290,7 +293,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         assert response2.status_code == HTTPStatus.NO_CONTENT
 
 
-class TestAuthenticatedUserJourneys(BaseJourneyTest):
+class TestAuthenticatedSubjectJourneys(BaseJourneyTest):
     s3_client = boto3.client("s3")
     cognito_client_id = None
 
@@ -358,6 +361,30 @@ class TestAuthenticatedUserJourneys(BaseJourneyTest):
 
         assert response.status_code == HTTPStatus.OK
         assert response.json() == ["USER_ADMIN"]
+
+    def test_list_all_subjects(self):
+        response = requests.get(
+            self.subjects_url(),
+            headers=self.generate_auth_headers(),
+        )
+
+        minimum_expected_names = [
+            "ui-test-user",
+            "e2e_test_client_read_and_write",
+            "e2e_test_client_data_admin",
+            "e2e_test_client_user_admin",
+        ]
+
+        assert response.status_code == HTTPStatus.OK
+        returned_subject_names = [
+            subject["subject_name"] for subject in response.json()
+        ]
+        assert all(
+            [
+                expected_name in returned_subject_names
+                for expected_name in minimum_expected_names
+            ]
+        )
 
 
 class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
