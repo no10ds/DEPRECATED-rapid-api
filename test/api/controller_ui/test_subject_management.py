@@ -2,6 +2,7 @@ from unittest.mock import patch, ANY
 
 from fastapi.templating import Jinja2Templates
 
+from api.application.services.permissions_service import PermissionsService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from test.api.common.controller_test_utils import BaseClientTest
 
@@ -153,14 +154,32 @@ class TestModifySubjectPage(BaseClientTest):
 
 
 class TestModifySubjectSuccessPage(BaseClientTest):
+    @patch.object(PermissionsService, "get_user_permissions_ui")
     @patch.object(Jinja2Templates, "TemplateResponse")
     @patch("api.controller_ui.subject_management.subject_service")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_subject_service, mock_templates_response
+        self,
+        mock_subject_service,
+        mock_templates_response,
+        mock_get_user_ui_permissions,
     ):
         subject_template_filename = "success.html"
 
         mock_subject_service.get_subject_name_by_id.return_value = "the_subject_name"
+        mock_get_user_ui_permissions.return_value = {
+            "PROTECTED_WRITE": [
+                {
+                    "display_name": "Write protected test",
+                    "name": "WRITE_PROTECTED_TEST",
+                }
+            ],
+            "GLOBAL_READ": [
+                {
+                    "display_name": "Read private",
+                    "name": "READ_PRIVATE",
+                }
+            ],
+        }
 
         response = self.client.get(
             "/subject/a1b2c3d4/modify/success", cookies={"rat": "user_token"}
@@ -173,6 +192,8 @@ class TestModifySubjectSuccessPage(BaseClientTest):
                 "request": ANY,
                 "subject_id": "a1b2c3d4",
                 "subject_name": "the_subject_name",
+                "subject_permissions": ["Write protected test", "Read private"],
+                "error_message": "",
             },
         )
 
@@ -185,9 +206,7 @@ class TestModifySubjectSuccessPage(BaseClientTest):
     ):
         subject_template_filename = "success.html"
 
-        mock_subject_service.get_subject_name_by_id.side_effect = UserError(
-            "The subject name could not be found"
-        )
+        mock_subject_service.get_subject_name_by_id.side_effect = AWSServiceError("")
 
         response = self.client.get(
             "/subject/a1b2c3d4/modify/success", cookies={"rat": "user_token"}
@@ -195,7 +214,13 @@ class TestModifySubjectSuccessPage(BaseClientTest):
 
         mock_templates_response.assert_called_once_with(
             name=subject_template_filename,
-            context={"request": ANY, "subject_id": "a1b2c3d4", "subject_name": None},
+            context={
+                "request": ANY,
+                "subject_id": "a1b2c3d4",
+                "subject_name": None,
+                "subject_permissions": [],
+                "error_message": "Something went wrong. Please contact your system administrator",
+            },
         )
 
         assert response.status_code == 200

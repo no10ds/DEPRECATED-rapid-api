@@ -7,10 +7,18 @@
 </head>
 <body>
 <div class="content">
+    {% with previous_page = "/" %}
+    {% include 'component/header.html' %}
+    {% endwith %}
     <form class="form">
         <div class="form_body">
+            {% if error_message %}
+            <h1 class="content_header">Error</h1>
+            <p><span class="response-msg--error">{{ error_message }}</span></p>
+            {% else %}
             <h1 class="content_header">Success</h1>
             <h2>Permissions modified for <span class="highlight">{{ subject_name }}</span></h2>
+            {% endif %}
         </div>
     </form>
 </div>
