@@ -1176,12 +1176,16 @@ to the relevant authority to grant them required permissions.
 
 The subject permissions modification flow allows you to view and update the permissions assigned to a subject (client
 app or human user). There are two steps to the flow.
+
 1. The first page allows you to enter a subject ID and progress to step 2 to modify the permissions.
 2. The second page shows the current permissions and allows you to update them.
+3. Once you have selected the desired permissions (all that you would like the subject to have, not just the ones to add or
+   remove), click 'Modify'.
+4. A success page will be shown listing the full set of permissions that the subject now has.
 
 ### General structure
 
-`GET /subject` leading to -> `GET /subject/<subject_id>/modify`
+`GET /subject` leading to -> `GET /subject/<subject_id>/modify` leading to `GET /subject/<subject_id>/modify/success`
 
 ### Needed credentials
 
@@ -1189,9 +1193,9 @@ The user must be logged in as a Cognito user to use this page and have the `USER
 
 ## Create Subject
 
-This page is used as the first step in the subject creation flow. The page allows you to enter a subject name,
-select the type, if the type is "USER", it also allows an email address. Finally, permissions can be assigned
-to the new subject.
+This page is used as the first step in the subject creation flow. The page allows you to enter a subject name, select
+the type, if the type is "USER", it also allows an email address. Finally, permissions can be assigned to the new
+subject.
 
 ### General structure
 
