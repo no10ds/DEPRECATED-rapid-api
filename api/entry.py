@@ -13,6 +13,7 @@ from api.controller.datasets import datasets_router
 from api.controller.permissions import permissions_router
 from api.controller.protected_domain import protected_domain_router
 from api.controller.schema import schema_router
+from api.controller.subjects import subjects_router
 from api.controller.user import user_router
 from api.controller_ui.data_management import data_management_router
 from api.controller_ui.landing import landing_router
@@ -39,6 +40,7 @@ app.include_router(login_router)
 app.include_router(landing_router)
 app.include_router(data_management_router)
 app.include_router(subject_management_router)
+app.include_router(subjects_router)
 
 
 @app.on_event("startup")

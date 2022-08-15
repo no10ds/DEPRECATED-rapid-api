@@ -327,3 +327,19 @@ class TestSubjectDeletion:
 
         self.cognito_adapter.delete_client_app.assert_called_once_with("my_client_id")
         self.dynamo_adapter.delete_subject.assert_called_once_with("my_client_id")
+
+
+class TestListSubjects:
+    def setup_method(self):
+        self.cognito_adapter = Mock()
+        self.dynamo_adapter = Mock()
+        self.subject_service = SubjectService(self.cognito_adapter, self.dynamo_adapter)
+
+    def test_list_subjects(self):
+        expected = [{"key": "value"}]
+
+        self.cognito_adapter.get_all_subjects.return_value = expected
+
+        result = self.subject_service.list_subjects()
+
+        assert result == expected

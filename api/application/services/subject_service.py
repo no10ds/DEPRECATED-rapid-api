@@ -1,3 +1,5 @@
+from typing import List, Dict, Optional
+
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.common.config.auth import SubjectType
@@ -76,3 +78,6 @@ class SubjectService:
         if result:
             return result[0]
         raise UserError(f"Subject with ID {subject_id} does not exist")
+
+    def list_subjects(self) -> List[Dict[str, Optional[str]]]:
+        return self.cognito_adapter.get_all_subjects()
