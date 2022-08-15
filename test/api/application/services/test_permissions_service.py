@@ -61,25 +61,53 @@ class TestGetUIPermissions:
 
         expected = {
             "ADMIN": [
-                {"name": "USER_ADMIN", "display_name": "User"},
-                {"name": "DATA_ADMIN", "display_name": "Data"},
+                {
+                    "name": "USER_ADMIN",
+                    "display_name": "User",
+                    "display_name_full": "User admin",
+                },
+                {
+                    "name": "DATA_ADMIN",
+                    "display_name": "Data",
+                    "display_name_full": "Data admin",
+                },
             ],
-            "GLOBAL_READ": [{"name": "READ_PRIVATE", "display_name": "PRIVATE"}],
+            "GLOBAL_READ": [
+                {
+                    "name": "READ_PRIVATE",
+                    "display_name": "PRIVATE",
+                    "display_name_full": "Read private",
+                }
+            ],
             "GLOBAL_WRITE": [
-                {"name": "WRITE_ALL", "display_name": "ALL"},
-                {"name": "WRITE_PUBLIC", "display_name": "PUBLIC"},
-                {"name": "WRITE_PRIVATE", "display_name": "PRIVATE"},
+                {
+                    "name": "WRITE_ALL",
+                    "display_name": "ALL",
+                    "display_name_full": "Write all",
+                },
+                {
+                    "name": "WRITE_PUBLIC",
+                    "display_name": "PUBLIC",
+                    "display_name_full": "Write public",
+                },
+                {
+                    "name": "WRITE_PRIVATE",
+                    "display_name": "PRIVATE",
+                    "display_name_full": "Write private",
+                },
             ],
             "PROTECTED_READ": [
                 {
                     "name": "READ_PROTECTED_SOME_DOMAIN",
                     "display_name": "Some domain",
+                    "display_name_full": "Read protected some domain",
                 }
             ],
             "PROTECTED_WRITE": [
                 {
                     "name": "WRITE_PROTECTED_SOME_DOMAIN",
                     "display_name": "Some domain",
+                    "display_name_full": "Write protected some domain",
                 }
             ],
         }
@@ -104,25 +132,53 @@ class TestGetUIPermissions:
 
         expected = {
             "ADMIN": [
-                {"name": "USER_ADMIN", "display_name": "User"},
-                {"name": "DATA_ADMIN", "display_name": "Data"},
+                {
+                    "name": "USER_ADMIN",
+                    "display_name": "User",
+                    "display_name_full": "User admin",
+                },
+                {
+                    "name": "DATA_ADMIN",
+                    "display_name": "Data",
+                    "display_name_full": "Data admin",
+                },
             ],
-            "GLOBAL_READ": [{"name": "READ_PRIVATE", "display_name": "PRIVATE"}],
+            "GLOBAL_READ": [
+                {
+                    "name": "READ_PRIVATE",
+                    "display_name": "PRIVATE",
+                    "display_name_full": "Read private",
+                }
+            ],
             "GLOBAL_WRITE": [
-                {"name": "WRITE_ALL", "display_name": "ALL"},
-                {"name": "WRITE_PUBLIC", "display_name": "PUBLIC"},
-                {"name": "WRITE_PRIVATE", "display_name": "PRIVATE"},
+                {
+                    "name": "WRITE_ALL",
+                    "display_name": "ALL",
+                    "display_name_full": "Write all",
+                },
+                {
+                    "name": "WRITE_PUBLIC",
+                    "display_name": "PUBLIC",
+                    "display_name_full": "Write public",
+                },
+                {
+                    "name": "WRITE_PRIVATE",
+                    "display_name": "PRIVATE",
+                    "display_name_full": "Write private",
+                },
             ],
             "PROTECTED_READ": [
                 {
                     "name": "READ_PROTECTED_SOME_DOMAIN",
                     "display_name": "Some domain",
+                    "display_name_full": "Read protected some domain",
                 }
             ],
             "PROTECTED_WRITE": [
                 {
                     "name": "WRITE_PROTECTED_SOME_DOMAIN",
                     "display_name": "Some domain",
+                    "display_name_full": "Write protected some domain",
                 }
             ],
         }

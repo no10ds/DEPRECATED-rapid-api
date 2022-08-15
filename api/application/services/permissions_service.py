@@ -62,6 +62,7 @@ class PermissionsService:
     def _for_ui(self, permission: str):
         return {
             "display_name": self._construct_display_name(permission),
+            "display_name_full": self._construct_display_full_name(permission),
             "name": permission,
         }
 
@@ -85,3 +86,6 @@ class PermissionsService:
             split = permission.split("_")
             return split[1].upper()
         return permission
+
+    def _construct_display_full_name(self, permission: str) -> str:
+        return permission.replace("_", " ").strip().lower().capitalize()

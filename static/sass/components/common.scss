@@ -32,6 +32,14 @@ ul {
     text-align: left;
     max-width: 80%;
     margin: 0 auto;
+
+    &.clean {
+      list-style: none;
+    }
+
+    &.center {
+      text-align: center;
+  }
   }
 }
 

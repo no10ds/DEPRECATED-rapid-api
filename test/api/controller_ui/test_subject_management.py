@@ -169,14 +169,12 @@ class TestModifySubjectSuccessPage(BaseClientTest):
         mock_get_user_ui_permissions.return_value = {
             "PROTECTED_WRITE": [
                 {
-                    "display_name": "Write protected test",
-                    "name": "WRITE_PROTECTED_TEST",
+                    "display_name_full": "Write protected test",
                 }
             ],
             "GLOBAL_READ": [
                 {
-                    "display_name": "Read private",
-                    "name": "READ_PRIVATE",
+                    "display_name_full": "Read private",
                 }
             ],
         }
@@ -192,7 +190,10 @@ class TestModifySubjectSuccessPage(BaseClientTest):
                 "request": ANY,
                 "subject_id": "a1b2c3d4",
                 "subject_name": "the_subject_name",
-                "subject_permissions": ["Write protected test", "Read private"],
+                "subject_permissions_display_names": [
+                    "Write protected test",
+                    "Read private",
+                ],
                 "error_message": "",
             },
         )
@@ -218,7 +219,7 @@ class TestModifySubjectSuccessPage(BaseClientTest):
                 "request": ANY,
                 "subject_id": "a1b2c3d4",
                 "subject_name": None,
-                "subject_permissions": [],
+                "subject_permissions_display_names": [],
                 "error_message": "Something went wrong. Please contact your system administrator",
             },
         )

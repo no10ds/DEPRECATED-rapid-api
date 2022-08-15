@@ -44,7 +44,7 @@ def modify_subject_success(request: Request, subject_id: str):
 
         for inner_list_permission in subject_permissions.values():
             for permission in inner_list_permission:
-                subject_permission_display_names.append(permission["display_name"])
+                subject_permission_display_names.append(permission["display_name_full"])
 
     except AWSServiceError:
         error_message = "Something went wrong. Please contact your system administrator"
@@ -55,7 +55,7 @@ def modify_subject_success(request: Request, subject_id: str):
             "request": request,
             "subject_id": subject_id,
             "subject_name": subject_name,
-            "subject_permissions": subject_permission_display_names,
+            "subject_permissions_display_names": subject_permission_display_names,
             "error_message": error_message,
         },
     )

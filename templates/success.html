@@ -18,6 +18,11 @@
             {% else %}
             <h1 class="content_header">Success</h1>
             <h2>Permissions modified for <span class="highlight">{{ subject_name }}</span></h2>
+            <ul>
+                {%for permission in subject_permissions_display_names%}
+                <li class="clean center">{{permission}}</li>
+                {% endfor %}
+            </ul>
             {% endif %}
         </div>
     </form>
