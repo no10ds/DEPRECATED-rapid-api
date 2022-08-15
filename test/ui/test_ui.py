@@ -134,6 +134,13 @@ class BaseTestUI(ABC):
         selected = page.select_option(f"select#{dropdown_id}", value_to_select)
         assert selected == [value_to_select]
 
+    def select_from_dropdown_by_visible_text(
+        self, page, dropdown_id: str, visible_text: str, expected_value: str
+    ):
+        print(f"Selecting visible value '{visible_text}' from '{dropdown_id}'")
+        selected = page.select_option(f"select#{dropdown_id}", label=visible_text)
+        assert selected == [expected_value]
+
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")
         assert "amazoncognito.com/login" in page.url
@@ -198,7 +205,12 @@ class TestUI(BaseTestUI):
             self.assert_title(page, "rAPId - Select Subject")
             self.assert_text_on_page(page, "Step 1 of 2")
 
-            self.select_from_dropdown(page, "select_subject", self.subject_name)
+            self.select_from_dropdown_by_visible_text(
+                page,
+                "select_subject",
+                visible_text=self.subject_name,
+                expected_value=self.subject_id,
+            )
 
             self.click_button(page, "Next")
 
