@@ -135,3 +135,6 @@ dmypy.json
 
 # swap files
 *.swp
+
+# local test configuration
+.run_tests_locally/
