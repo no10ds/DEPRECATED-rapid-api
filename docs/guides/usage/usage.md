@@ -849,7 +849,7 @@ Use this endpoint to add a new users, generate their credentials and add permiss
 ### Inputs
 
 | Parameters       | Usage               | Example values   | Definition                                                                |
-  |------------------|---------------------|------------------|---------------------------------------------------------------------------|
+|------------------|---------------------|------------------|---------------------------------------------------------------------------|
 | `User details`   | JSON Request Body   | See below        | The name of the user application to onboard and the granted permissions   |
 
   ```json
@@ -1055,6 +1055,37 @@ List of permissions:
   "WRITE_ALL",
   "READ_PROTECTED_<domain>",
   "..."
+]
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `USER_ADMIN` permission
+
+## List subjects
+
+Use this endpoint to list subjects (human users and client apps).
+
+### General structure
+
+`GET /subjects`
+
+### Outputs
+
+List of subjects:
+
+```json
+[
+  {
+    "subject_id": "<subject_id>" ,
+    "subject_name":  "<username>",
+    "type":  "USER"
+  },
+  {
+    "subject_id": "<subject_id>" ,
+    "subject_name":  "<client_app_name>",
+    "type":  "CLIENT"
+  }
 ]
 ```
 
