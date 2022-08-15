@@ -17,12 +17,14 @@ class BaseTestUI(ABC):
     username = None
     password = None
     subject_id = None
+    subject_name = None
 
     def set_up_base_page(self, playwright):
         test_user_credentials = get_secret(secret_name="UI_TEST_USER")
         self.username = test_user_credentials["username"]
         self.password = test_user_credentials["password"]
         self.subject_id = test_user_credentials["subject_id"]
+        self.subject_name = test_user_credentials["subject_name"]
 
         browser = playwright.chromium.launch(
             headless=BROWSER_MODE == "HEADLESS", slow_mo=1000
@@ -137,7 +139,7 @@ class BaseTestUI(ABC):
         assert "amazoncognito.com/login" in page.url
 
     def assert_text_on_page(self, page, text: str):
-        assert page.locator(f"text={text}")
+        assert text in page.content()
 
 
 class TestUI(BaseTestUI):
@@ -202,7 +204,15 @@ class TestUI(BaseTestUI):
 
             self.assert_title(page, "rAPId - Modify Subject")
             self.assert_text_on_page(page, "Step 2 of 2")
-            self.assert_text_on_page(page, f"Select permissions for {self.subject_id}")
+            self.assert_text_on_page(page, "Select permissions for")
+            self.assert_text_on_page(page, self.subject_name)
+
+            self.click_button(page, "Modify")
+
+            self.assert_title(page, "rAPId - Success")
+            self.assert_text_on_page(page, "Success")
+            self.assert_text_on_page(page, "Permissions modified for ")
+            self.assert_text_on_page(page, self.subject_name)
 
             self.logout(page)
 
