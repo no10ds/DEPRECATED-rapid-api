@@ -12,7 +12,7 @@
     {% endwith %}
 
     <form class="form">
-        <div class="form_body">
+        <div class="form_body form_body--headed">
             <div class="form-select">
                 <h1 class="content_header">Modify Subject</h1>
                 {% if error_message %}
@@ -35,10 +35,10 @@
                     {% with permissions = permissions["GLOBAL_WRITE"], subject_permissions = subject_permissions["GLOBAL_WRITE"], legend_text = "Global write permissions", radio_name="GLOBAL_WRITE" %}
                         {% include 'component/permissions/radios.html' %}
                     {% endwith %}
-                    {% with permissions = permissions["PROTECTED_READ"], subject_permissions = subject_permissions["PROTECTED_READ"], legend_text = "Read protected permissions" %}
+                    {% with permissions = permissions["PROTECTED_READ"], subject_permissions = subject_permissions["PROTECTED_READ"], legend_text = "Read protected permissions", checkbox_name="READ_PROTECTED"%}
                         {% include 'component/permissions/checkboxes.html' %}
                     {% endwith %}
-                    {% with permissions = permissions["PROTECTED_WRITE"], subject_permissions = subject_permissions["PROTECTED_WRITE"], legend_text = "Write protected permissions" %}
+                    {% with permissions = permissions["PROTECTED_WRITE"], subject_permissions = subject_permissions["PROTECTED_WRITE"], legend_text = "Write protected permissions", checkbox_name="WRITE_PROTECTED"%}
                         {% include 'component/permissions/checkboxes.html' %}
                     {% endwith %}
                 </div>

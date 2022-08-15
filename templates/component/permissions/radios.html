@@ -1,35 +1,34 @@
 {% if permissions %}
-    <fieldset class="form-radio">
-        <legend class="form-radio_legend">{{ legend_text }}</legend>
-        {% for permission in permissions %}
-            <div class="form-radio_input">
-                <label for="{{ permission["name"] }}">{{ permission["display_name"] }}</label>
-                {% if permission in subject_permissions %}
-                    <input type="radio"
-                           id="{{ permission["name"] }}"
-                           name="{{ radio_name }}"
-                           value="{{ permission["name"] }}"
-                           checked="checked"
-                           onclick="toggle_check_boxes('{{ permission["name"] }}', '{{radio_name}}')"
-                    >
-                {% else %}
-                    <input type="radio"
-                           id="{{ permission["name"] }}"
-                           name="{{ radio_name }}"
-                           value="{{ permission["name"] }}"
-                           onclick="toggle_check_boxes('{{ permission["name"] }}', '{{radio_name}}')"
-                    >
-                {% endif %}
-            </div>
-        {% endfor %}
-        <div class="form-radio_input">
-            <label for="{{ radio_name }}-none">NONE</label>
-            <input type="radio"
-                   id="{{ radio_name }}-none"
-                   name="{{ radio_name }}"
-                   value="NONE"
-                   onclick="toggle_check_boxes('{{ radio_name }}-none', '{{radio_name}}')"
-            >
-        </div>
-    </fieldset>
+<fieldset class="form-radio" id="{{ legend_text }}">
+  <legend class="form-radio_legend">{{ legend_text }}</legend>
+  {% for permission in permissions %}
+  <div class="form-radio_input">
+    <label for="{{ permission['name'] }}"
+      >{{ permission["display_name"] }}</label
+    >
+    {% if permission in subject_permissions %}
+    <input
+      type="radio"
+      id="{{ permission['name'] }}"
+      name="{{ radio_name }}"
+      value="{{ permission['name'] }}"
+      checked="checked"
+      onclick="toggle_check_boxes('{{ permission['name'] }}')"
+    />
+    {% else %} <input type="radio" id="{{ permission['name'] }}" name="{{
+    radio_name }}" value="{{ permission['name'] }}"
+    onclick="toggle_check_boxes('{{ permission["name"] }}')" > {% endif %}
+  </div>
+  {% endfor %}
+  <div class="form-radio_input">
+    <label for="{{ radio_name }}-none">NONE</label>
+    <input
+      type="radio"
+      id="{{ radio_name }}-none"
+      name="{{ radio_name }}"
+      value="NONE"
+      onclick="toggle_check_boxes('{{ radio_name }}-none')"
+    />
+  </div>
+</fieldset>
 {% endif %}
