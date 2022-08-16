@@ -65,9 +65,11 @@ jobs:
         run: make check-app-is-running
 
       - name: Install journey requirements
+        id: install-requirements
         run:  pip install -r requirements.txt
 
       - name: Run E2E Tests
+        id: e2e-tests
         env:
           DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
           DATA_BUCKET: ${{ secrets.DATA_BUCKET }}
@@ -80,12 +82,13 @@ jobs:
         run: pytest test/e2e -v
 
       - name: Run UI Tests
+        id: ui-tests
         env:
           DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
         run: make test-ui
 
       - name: Tag image as failure
-        if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure'
+        if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure' || steps.ui-tests.conclusion == 'failure' || steps.install-requirements.conclusion == 'failure'
         run: make tag-prod-failure
 
       - name: Clean Docker context
