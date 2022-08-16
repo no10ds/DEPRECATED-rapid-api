@@ -7,7 +7,7 @@ const modify = (subjectId) => {
 
     const checkedRadios = Array.from(radios).filter((radio) => radio.checked);
     const checkedBoxes = Array.from(checkboxes).filter(
-        (checkbox) => checkbox.checked
+        checkbox => !checkbox.disabled && checkbox.checked
     );
 
     const selections = checkedRadios.concat(checkedBoxes);
