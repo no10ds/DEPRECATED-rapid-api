@@ -20,6 +20,7 @@
             <div class="form-select">
                 <label class="form-select_label" for="select_subject">Select subject</label>
                 <select class="form-select_dropdown" id="select_subject">
+                    <option value="" disabled selected hidden>Please select a client app or user...</option>
                     {% for group, subject_list in subjects.items() %}
                      <optgroup label="{{group}}">
                          {% for subject in subject_list %}
@@ -31,7 +32,7 @@
             </div>
         </div>
         <div class="form_submit">
-            <button class="btn" type="button" id='button-modify' onclick="goToNextStep()">Next</button>
+            <button class="btn" type="button" id='button-modify' disabled onclick="goToNextStep()">Next</button>
             <label class="response-msg" id="response-title"></label>
             <label class="response-msg" id="response"></label>
         </div>
