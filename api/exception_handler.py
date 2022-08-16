@@ -1,31 +1,29 @@
 import json
+import os
 from typing import List
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
 from starlette.responses import RedirectResponse
 
 from api.application.services.authorisation.authorisation_service import (
     UserCredentialsUnavailableError,
+    is_browser_request,
 )
 from api.common.custom_exceptions import (
-    SchemaError,
     BaseAppException,
     NotAuthorisedToViewPageError,
+    SchemaError,
 )
 from api.common.logger import AppLogger
 
+templates = Jinja2Templates(directory=(os.path.abspath("templates")))
+
 
 def add_exception_handlers(app: FastAPI) -> None:
-    @app.exception_handler(Exception)
-    async def general_handler(request, exc):
-        AppLogger.error(f"Uncaught exception: {exc}")
-        return JSONResponse(
-            content={"details": "Something went wrong. Contact your administrator."},
-            status_code=500,
-        )
-
+    # Custom handlers
     @app.exception_handler(UserCredentialsUnavailableError)
     async def user_credentials_missing_handler(request, exc):
         return RedirectResponse(url="/login")
@@ -34,12 +32,6 @@ def add_exception_handlers(app: FastAPI) -> None:
     async def not_authorised_to_view_page_handler(request, exc):
         return RedirectResponse(url="/")
 
-    @app.exception_handler(BaseAppException)
-    async def base_app_handler(request, exc):
-        return JSONResponse(
-            content={"details": exc.message}, status_code=exc.status_code
-        )
-
     @app.exception_handler(SchemaError)
     async def schema_error_handler(request, exc):
         AppLogger.warning(f"Invalid schema generated: {exc.message}")
@@ -47,6 +39,36 @@ def add_exception_handlers(app: FastAPI) -> None:
             content={"details": exc.message}, status_code=exc.status_code
         )
 
+    @app.exception_handler(BaseAppException)
+    async def base_app_handler(request, exc):
+        if is_browser_request(request):
+            return templates.TemplateResponse(
+                name="error.html",
+                context={"request": request, "error_message": exc.message},
+            )
+        else:
+            return JSONResponse(
+                content={"details": exc.message}, status_code=exc.status_code
+            )
+
+    @app.exception_handler(Exception)
+    async def general_handler(request, exc):
+        try:
+            message = exc.message
+            status_code = exc.status_code
+        except AttributeError:
+            message = "Something went wrong. Please contact your system administrator."
+            status_code = 500
+
+        if is_browser_request(request):
+            return templates.TemplateResponse(
+                name="error.html",
+                context={"request": request, "error_message": message},
+            )
+        else:
+            return JSONResponse(content={"details": message}, status_code=status_code)
+
+    # Override handlers
     @app.exception_handler(RequestValidationError)
     async def pydantic_error_handler(request, exc):
         return JSONResponse(

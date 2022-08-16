@@ -1,9 +1,6 @@
-import os
-
 import sass
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.logger import AppLogger, init_logger
@@ -26,8 +23,6 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
 sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
 add_exception_handlers(app)
-
-templates = Jinja2Templates(directory=(os.path.abspath("templates")))
 
 app.include_router(auth_router)
 app.include_router(permissions_router)

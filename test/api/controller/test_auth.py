@@ -11,7 +11,7 @@ class MockResponse:
     content: bytes
 
 
-class TestStatus(BaseClientTest):
+class TestAuth(BaseClientTest):
     @patch("api.controller.auth.get_secret")
     @patch("api.controller.auth.RedirectResponse")
     @patch("api.controller.auth.requests")

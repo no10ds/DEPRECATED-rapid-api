@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rAPId - Error</title>
+    <link href="static/main.css" rel="stylesheet">
+</head>
+<body>
+<div class="content">
+    {% with previous_page = "/" %}
+        {% include 'component/header.html' %}
+    {% endwith %}
+    <div class="content_body content_body--small">
+        <h1 class="content_header highlight">Error</h1>
+        <div class="content-menu">
+            {% if error_message %}
+                <h3 class="response-msg--error">{{ error_message }}</h3>
+            {% endif %}
+        </div>
+    </div>
+</div>
+</body>
+</html>
