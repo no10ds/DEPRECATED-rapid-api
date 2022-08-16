@@ -3,6 +3,7 @@ from unittest.mock import patch, ANY, Mock
 import pytest
 from fastapi.templating import Jinja2Templates
 
+from api.common.custom_exceptions import UserError, AWSServiceError
 from api.controller_ui.landing import determine_user_ui_actions
 from test.api.common.controller_test_utils import BaseClientTest
 
@@ -54,9 +55,91 @@ class TestLandingPage(BaseClientTest):
             name=landing_template_filename,
             context={
                 "request": ANY,
+                "error_message": None,
                 "can_manage_users": True,
                 "can_upload": True,
                 "can_download": True,
+            },
+        )
+
+        assert response.status_code == 200
+
+    @patch("api.controller_ui.landing.permissions_service")
+    @patch("api.controller_ui.landing.parse_token")
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    def test_calls_template_with_expected_arguments_when_user_error(
+        self, mock_templates_response, mock_parse_token, mock_permissions_service
+    ):
+        landing_template_filename = "index.html"
+        mock_token = Mock()
+        mock_token.subject = "123abc"
+        mock_parse_token.return_value = mock_token
+
+        mock_permissions_service.get_subject_permissions.side_effect = UserError(
+            "a message"
+        )
+
+        response = self.client.get("/", cookies={"rat": "user_token"})
+
+        mock_templates_response.assert_called_once_with(
+            name=landing_template_filename,
+            context={
+                "request": ANY,
+                "error_message": "You have not been granted relevant permissions. Please speak to your system administrator.",
+            },
+        )
+
+        assert response.status_code == 200
+
+    @patch("api.controller_ui.landing.permissions_service")
+    @patch("api.controller_ui.landing.parse_token")
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    def test_calls_template_with_expected_arguments_when_aws_error(
+        self, mock_templates_response, mock_parse_token, mock_permissions_service
+    ):
+        landing_template_filename = "index.html"
+        mock_token = Mock()
+        mock_token.subject = "123abc"
+        mock_parse_token.return_value = mock_token
+
+        mock_permissions_service.get_subject_permissions.side_effect = AWSServiceError(
+            "a custom message"
+        )
+
+        response = self.client.get("/", cookies={"rat": "user_token"})
+
+        mock_templates_response.assert_called_once_with(
+            name=landing_template_filename,
+            context={"request": ANY, "error_message": "a custom message"},
+        )
+
+        assert response.status_code == 200
+
+    @patch("api.controller_ui.landing.determine_user_ui_actions")
+    @patch("api.controller_ui.landing.permissions_service")
+    @patch("api.controller_ui.landing.parse_token")
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    def test_calls_template_with_expected_arguments_when_no_permissions(
+        self,
+        mock_templates_response,
+        mock_parse_token,
+        _mock_permissions_service,
+        mock_ui_actions,
+    ):
+        landing_template_filename = "index.html"
+        mock_token = Mock()
+        mock_token.subject = "123abc"
+        mock_parse_token.return_value = mock_token
+
+        mock_ui_actions.return_value = {}
+
+        response = self.client.get("/", cookies={"rat": "user_token"})
+
+        mock_templates_response.assert_called_once_with(
+            name=landing_template_filename,
+            context={
+                "request": ANY,
+                "error_message": "You have not been granted relevant permissions. Please speak to your system administrator.",
             },
         )
 

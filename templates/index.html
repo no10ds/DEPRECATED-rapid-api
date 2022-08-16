@@ -6,34 +6,34 @@
     <link href="static/main.css" rel="stylesheet">
 </head>
 <body>
-    <div class="content">
-        {% include 'component/header.html' %}
-        <div class="content_body content_body--small">
-            <h1 class="content_header">Welcome to rAPId</h1>
-            <div class="content-menu">
-                {% if not can_manage_users and not can_upload and not can_download %}
-                    <h3 class="response-msg--error">You have not been granted relevant permission. Please speak to your system administrator.</h3>
-                {% endif %}
-                {% if can_manage_users %}
-                    <div class="btn-set">
-                        <h3 class="btn-set_header">User Management</h3>
-                        <a class="btn" href="/subject/create">Create User</a>
-                        <a class="btn" href="/subject">Modify User</a>
-                    </div>
-                {% endif %}
-                {% if can_upload or can_download %}
-                    <div class="btn-set">
-                        <h3 class="btn-set_header">Data Management</h3>
-                        {% if can_upload %}
-                            <a class="btn" href="/upload">Upload Data</a>
-                        {% endif %}
-                        {% if false and can_download %}
-                            <a class="btn" href="/">Download Data</a>
-                        {% endif %}
-                    </div>
-                {% endif %}
-            </div>
+<div class="content">
+    {% include 'component/header.html' %}
+    <div class="content_body content_body--small">
+        <h1 class="content_header">Welcome to rAPId</h1>
+        <div class="content-menu">
+            {% if error_message %}
+                <h3 class="response-msg--error">{{ error_message }}</h3>
+            {% endif %}
+            {% if can_manage_users %}
+                <div class="btn-set">
+                    <h3 class="btn-set_header">User Management</h3>
+                    <a class="btn" href="/subject/create">Create User</a>
+                    <a class="btn" href="/subject">Modify User</a>
+                </div>
+            {% endif %}
+            {% if can_upload or can_download %}
+                <div class="btn-set">
+                    <h3 class="btn-set_header">Data Management</h3>
+                    {% if can_upload %}
+                        <a class="btn" href="/upload">Upload Data</a>
+                    {% endif %}
+                    {% if false and can_download %}
+                        <a class="btn" href="/">Download Data</a>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
     </div>
+</div>
 </body>
 </html>
