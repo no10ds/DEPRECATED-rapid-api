@@ -1208,7 +1208,7 @@ to the relevant authority to grant them required permissions.
 The subject permissions modification flow allows you to view and update the permissions assigned to a subject (client
 app or human user). There are two steps to the flow.
 
-1. The first page allows you to enter a subject ID and progress to step 2 to modify the permissions.
+1. The first page allows you to choose a subject from a dropdown and progress to step 2 to modify their permissions.
 2. The second page shows the current permissions and allows you to update them.
 3. Once you have selected the desired permissions (all that you would like the subject to have, not just the ones to add or
    remove), click 'Modify'.
