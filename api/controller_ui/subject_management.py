@@ -9,7 +9,6 @@ from api.application.services.permissions_service import PermissionsService
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
 from api.common.custom_exceptions import UserError, AWSServiceError
-from api.domain.user import UserResponse
 
 permissions_service = PermissionsService()
 subject_service = SubjectService()
@@ -122,56 +121,6 @@ def create_subject(request: Request):
         name="subject_create.html",
         context={"request": request, "permissions": permissions},
     )
-
-
-@subject_management_router.get(
-    "/create/{subject_id}/success",
-    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
-)
-def create_subject_success(request: Request, subject_id: str):
-    template_response = {}
-    permissions_display_name = []
-    error_message = ""
-
-    try:
-        response = subject_service.get_subject_by_id(subject_id)
-        subject_permissions = permissions_service.get_user_permissions_ui(subject_id)
-        _get_permission_display_name(permissions_display_name, subject_permissions)
-
-        template_response = (
-            _build_user_response(response)
-            if type(response) == UserResponse
-            else _build_client_response(response)
-        )
-
-    except AWSServiceError:
-        error_message = "Something went wrong. Please contact your system administrator"
-
-    return templates.TemplateResponse(
-        name="success.html",
-        context={
-            "request": request,
-            **template_response,
-            "subject_permissions_display_names": permissions_display_name,
-            "error_message": error_message,
-        },
-    )
-
-
-def _build_client_response(response):
-    return {
-        "subject_id": response.client_id,
-        "subject_name": response.client_name,
-        "secret": response.client_secret,
-    }
-
-
-def _build_user_response(response):
-    return {
-        "subject_id": response.user_id,
-        "subject_name": response.username,
-        "email": response.email,
-    }
 
 
 def _get_permission_display_name(subject_permission_display_names, subject_permissions):

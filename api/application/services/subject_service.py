@@ -81,21 +81,3 @@ class SubjectService:
 
     def list_subjects(self) -> List[Dict[str, Optional[str]]]:
         return self.cognito_adapter.get_all_subjects()
-
-    def get_subject_by_id(self, subject_id: str) -> ClientResponse | UserResponse:
-        result = [
-            subject
-            for subject in self.cognito_adapter.get_all_subjects()
-            if subject["subject_id"] == subject_id
-        ]
-        if result:
-            if result[0]["type"] == SubjectType.USER.value:
-                return UserResponse(
-                    username=result[0]["subject_name"],
-                    email=result[0]["email"],
-                    permissions=[],
-                    user_id=result[0]["subject_id"],
-                )
-            elif result[0]["type"] == SubjectType.CLIENT.value:
-                return self.cognito_adapter.get_client_by_id(subject_id)
-        raise UserError(f"Subject with ID {subject_id} does not exist")

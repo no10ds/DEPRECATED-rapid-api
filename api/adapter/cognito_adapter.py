@@ -151,21 +151,6 @@ class CognitoAdapter:
                 "The list of client apps and users could not be retrieved"
             )
 
-    def get_client_by_id(self, client_id: str) -> ClientResponse:
-        try:
-            response = self.cognito_client.describe_user_pool_client(
-                UserPoolId=COGNITO_USER_POOL_ID, ClientId=client_id
-            )["UserPoolClient"]
-            return ClientResponse(
-                client_id=response["ClientId"],
-                client_name=response["ClientName"],
-                permissions=[],
-                client_secret=response["ClientSecret"],
-            )
-        except ClientError as error:
-            AppLogger.info(f"Unable to retrieve client {error}")
-            raise AWSServiceError("The client could not be retrieved")
-
     def _get_user_attribute(self, user: Dict, required_attribute: str) -> Optional[str]:
         for attribute in user["Attributes"]:
             if attribute["Name"] == required_attribute:

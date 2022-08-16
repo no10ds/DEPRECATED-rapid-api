@@ -221,40 +221,6 @@ class TestCognitoAdapterClientApps(BaseCognitoAdapter):
         with pytest.raises(UserError, match="You must specify a valid client name"):
             self.cognito_adapter.create_client_app(client_request)
 
-    def test_get_client_by_id(self):
-        self.cognito_boto_client.describe_user_pool_client.return_value = {
-            "UserPoolClient": {
-                "UserPoolId": COGNITO_USER_POOL_ID,
-                "ClientName": "client_name",
-                "ClientId": "some_id",
-                "ClientSecret": "some_secret",  # pragma: allowlist secret
-            }
-        }
-
-        expected_response = ClientResponse(
-            client_id="some_id",
-            client_name="client_name",
-            permissions=[],
-            client_secret="some_secret",  # pragma: allowlist secret
-        )
-
-        response = self.cognito_adapter.get_client_by_id("some_id")
-
-        assert response == expected_response
-
-        self.cognito_boto_client.describe_user_pool_client.assert_called_once_with(
-            UserPoolId=COGNITO_USER_POOL_ID, ClientId="some_id"
-        )
-
-    def test_get_client_by_id_throws_cognito_error(self):
-        self.cognito_boto_client.describe_user_pool_client.side_effect = ClientError(
-            error_response={"Error": {"Code": "ResourceNotFoundException"}},
-            operation_name="DescribeUserPoolClient",
-        )
-
-        with pytest.raises(AWSServiceError, match="The client could not be retrieved"):
-            self.cognito_adapter.get_client_by_id("some_id")
-
 
 class TestCognitoAdapterUsers(BaseCognitoAdapter):
     def test_create_user(self):
