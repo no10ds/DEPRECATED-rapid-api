@@ -320,6 +320,27 @@ class TestDatasetInfo(BaseClientTest):
         assert response.status_code == 200
         assert response.json() == expected_response
 
+    @patch.object(DataService, "get_dataset_info")
+    def test_returns_error_response_when_schema_not_found_error(
+        self, mock_get_dataset_info
+    ):
+        mock_get_dataset_info.side_effect = SchemaNotFoundError(
+            "Could not find schema for mydomain/mydataset"
+        )
+
+        response = self.client.get(
+            "/datasets/mydomain/mydataset/info",
+            headers={"Authorization": "Bearer test-token"},
+            # Not passing a JSON body here to filter by tags
+        )
+
+        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset")
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": "Could not find schema for mydomain/mydataset"
+        }
+
 
 class TestQuery(BaseClientTest):
     @patch.object(AthenaAdapter, "query")

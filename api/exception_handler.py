@@ -16,6 +16,7 @@ from api.common.custom_exceptions import (
     BaseAppException,
     NotAuthorisedToViewPageError,
     SchemaError,
+    SchemaNotFoundError,
 )
 from api.common.logger import AppLogger
 
@@ -38,6 +39,12 @@ def add_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             content={"details": exc.message}, status_code=exc.status_code
         )
+
+    @app.exception_handler(SchemaNotFoundError)
+    async def schema_not_found_handler(request, exc):
+        message = exc.message if exc.message else "Schema not found."
+        AppLogger.warning("Schema not found: %s", message)
+        return JSONResponse(content={"details": message}, status_code=400)
 
     @app.exception_handler(BaseAppException)
     async def base_app_handler(request, exc):

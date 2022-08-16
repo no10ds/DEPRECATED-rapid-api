@@ -1,7 +1,7 @@
 from typing import Optional
 
 from fastapi import APIRouter, Request
-from fastapi import UploadFile, File, HTTPException, Response, Security
+from fastapi import UploadFile, File, Response, Security
 from fastapi import status as http_status
 from pandas import DataFrame
 from starlette.responses import PlainTextResponse
@@ -105,12 +105,7 @@ async def get_dataset_info(domain: str, dataset: str):
     ### Click  `Try it out` to use the endpoint
 
     """
-    try:
-        dataset_info = data_service.get_dataset_info(domain, dataset)
-        return dataset_info
-    except SchemaNotFoundError as error:
-        AppLogger.warning("Schema not found: %s", error.args[0])
-        raise HTTPException(status_code=400, detail=error.args[0])
+    return data_service.get_dataset_info(domain, dataset)
 
 
 @datasets_router.get(

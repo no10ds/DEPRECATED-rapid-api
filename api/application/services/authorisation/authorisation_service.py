@@ -20,7 +20,6 @@ from api.common.config.auth import (
     RAPID_ACCESS_TOKEN,
 )
 from api.common.custom_exceptions import (
-    SchemaNotFoundError,
     AuthorisationError,
     UserCredentialsUnavailableError,
     ClientCredentialsUnavailableError,
@@ -134,15 +133,8 @@ def check_permissions(
     domain: Optional[str],
     dataset: Optional[str],
 ):
-    try:
-        subject_permissions = retrieve_permissions(token)
-        match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
-    except SchemaNotFoundError:
-        AppLogger.info(f"Dataset [{dataset}] in domain [{domain}] does not exist")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Dataset [{dataset}] in domain [{domain}] does not exist",
-        )
+    subject_permissions = retrieve_permissions(token)
+    match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
 
 
 def retrieve_permissions(token: Token) -> List[str]:

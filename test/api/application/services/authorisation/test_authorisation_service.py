@@ -18,7 +18,6 @@ from api.application.services.authorisation.authorisation_service import (
 from api.common.config.auth import SensitivityLevel
 from api.common.custom_exceptions import (
     AuthorisationError,
-    SchemaNotFoundError,
     UserCredentialsUnavailableError,
     ClientCredentialsUnavailableError,
     UserError,
@@ -259,25 +258,6 @@ class TestSecureDatasetEndpoint:
         mock_match_permissions.assert_called_once_with(
             subject_permissions, endpoint_scopes, domain, dataset
         )
-
-    @patch(
-        "api.application.services.authorisation.authorisation_service.retrieve_permissions"
-    )
-    @patch(
-        "api.application.services.authorisation.authorisation_service.match_permissions"
-    )
-    @patch("api.application.services.authorisation.authorisation_service.Token")
-    def test_check_permission_for_client_token_throws_http_exception(
-        self, mock_token, mock_match_permissions, mock_retrieve_permissions
-    ):
-        endpoint_scopes = ["READ"]
-        domain = "test-domain"
-        dataset = "test-dataset"
-        mock_retrieve_permissions.return_value = ["Permission1", "Permission2"]
-        mock_match_permissions.side_effect = SchemaNotFoundError()
-
-        with pytest.raises(HTTPException):
-            check_permissions(mock_token, endpoint_scopes, domain, dataset)
 
 
 class TestCheckCredentialsAvailability:

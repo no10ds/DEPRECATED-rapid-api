@@ -34,6 +34,11 @@ class DatasetError(UserError):
         super().__init__(message)
 
 
+class SchemaNotFoundError(UserError):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 class ClientCredentialsUnavailableError(BaseAppException):
     pass
 
@@ -55,10 +60,6 @@ class TableNotCreatedError(Exception):
 
 
 class CrawlerCreateFailsError(Exception):
-    pass
-
-
-class SchemaNotFoundError(Exception):
     pass
 
 
