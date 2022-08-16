@@ -1,3 +1,4 @@
+from abc import ABC
 from unittest.mock import Mock
 
 import pytest
@@ -11,14 +12,17 @@ from api.domain.client import ClientRequest, ClientResponse
 from api.domain.user import UserResponse, UserRequest
 
 
-class TestCognitoAdapterClientApps:
+class BaseCognitoAdapter(ABC):
     cognito_boto_client = None
     cognito_adapter = None
 
-    def setup_method(self):
-        self.cognito_boto_client = Mock()
-        self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
+    @classmethod
+    def setup_method(cls):
+        cls.cognito_boto_client = Mock()
+        cls.cognito_adapter = CognitoAdapter(cls.cognito_boto_client)
 
+
+class TestCognitoAdapterClientApps(BaseCognitoAdapter):
     def test_create_client_app(self):
         self.cognito_boto_client.list_user_pool_clients.return_value = {
             "UserPoolClients": []
@@ -217,15 +221,42 @@ class TestCognitoAdapterClientApps:
         with pytest.raises(UserError, match="You must specify a valid client name"):
             self.cognito_adapter.create_client_app(client_request)
 
+    def test_get_client_by_id(self):
+        self.cognito_boto_client.describe_user_pool_client.return_value = {
+            "UserPoolClient": {
+                "UserPoolId": COGNITO_USER_POOL_ID,
+                "ClientName": "client_name",
+                "ClientId": "some_id",
+                "ClientSecret": "some_secret",  # pragma: allowlist secret
+            }
+        }
 
-class TestCognitoAdapterUsers:
-    cognito_boto_client = None
-    cognito_adapter = None
+        expected_response = ClientResponse(
+            client_id="some_id",
+            client_name="client_name",
+            permissions=[],
+            client_secret="some_secret",  # pragma: allowlist secret
+        )
 
-    def setup_method(self):
-        self.cognito_boto_client = Mock()
-        self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
+        response = self.cognito_adapter.get_client_by_id("some_id")
 
+        assert response == expected_response
+
+        self.cognito_boto_client.describe_user_pool_client.assert_called_once_with(
+            UserPoolId=COGNITO_USER_POOL_ID, ClientId="some_id"
+        )
+
+    def test_get_client_by_id_throws_cognito_error(self):
+        self.cognito_boto_client.describe_user_pool_client.side_effect = ClientError(
+            error_response={"Error": {"Code": "ResourceNotFoundException"}},
+            operation_name="DescribeUserPoolClient",
+        )
+
+        with pytest.raises(AWSServiceError, match="The client could not be retrieved"):
+            self.cognito_adapter.get_client_by_id("some_id")
+
+
+class TestCognitoAdapterUsers(BaseCognitoAdapter):
     def test_create_user(self):
         cognito_response = {
             "User": {
@@ -335,14 +366,7 @@ class TestCognitoAdapterUsers:
             self.cognito_adapter.create_user(request)
 
 
-class TestGetSubjects:
-    cognito_boto_client = None
-    cognito_adapter = None
-
-    def setup_method(self):
-        self.cognito_boto_client = Mock()
-        self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
-
+class TestGetSubjects(BaseCognitoAdapter):
     def test_gets_all_subjects(self):
         list_clients_response = {
             "UserPoolClients": [
@@ -357,6 +381,8 @@ class TestGetSubjects:
                     "Username": "user-name-1",
                     "Attributes": [
                         {"Name": "sub", "Value": "the-user-id-1"},
+                        {"Name": "email_verified", "Value": "True"},
+                        {"Name": "email", "Value": "fake@test.com"},
                     ],
                 },
                 {
@@ -387,11 +413,13 @@ class TestGetSubjects:
             {
                 "subject_id": "the-user-id-1",
                 "subject_name": "user-name-1",
+                "email": "fake@test.com",
                 "type": "USER",
             },
             {
                 "subject_id": "the-user-id-2",
                 "subject_name": "user-name-2",
+                "email": None,
                 "type": "USER",
             },
         ]
@@ -438,14 +466,7 @@ class TestGetSubjects:
         self.cognito_boto_client.list_user_pool_clients.assert_called_once()
 
 
-class TestCognitoScopes:
-    cognito_boto_client = None
-    cognito_adapter = None
-
-    def setup_method(self):
-        self.cognito_boto_client = Mock()
-        self.cognito_adapter = CognitoAdapter(self.cognito_boto_client)
-
+class TestCognitoScopes(BaseCognitoAdapter):
     def test_get_existing_scopes(self):
         resource_server_response = {
             "ResourceServer": {

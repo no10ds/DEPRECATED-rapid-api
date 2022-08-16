@@ -2,19 +2,7 @@ toggle_element(document.getElementById("WRITE_ALL").checked, "WRITE_PROTECTED");
 toggle_element(document.getElementById("READ_ALL").checked, "READ_PROTECTED");
 
 const modify = (subjectId) => {
-    const radios = document.querySelectorAll('input[type="radio"]');
-    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
-
-    const checkedRadios = Array.from(radios).filter((radio) => radio.checked);
-    const checkedBoxes = Array.from(checkboxes).filter(
-        checkbox => !checkbox.disabled && checkbox.checked
-    );
-
-    const selections = checkedRadios.concat(checkedBoxes);
-
-    const filteredSelections = selections.filter(
-        (selection) => selection.value !== "NONE"
-    );
+  const filteredSelections = extract_selections();
 
     const requestBody = {
         subject_id: subjectId,

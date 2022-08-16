@@ -12,7 +12,8 @@ function switch_enable_mode(do_switch, parent_element) {
 
 function toggle_inputs(element_id, value_to_check, element_to_toggle) {
   document.getElementById(element_id).onchange = () => {
-    var name_to_bd = document.getElementById(element_id).value == value_to_check;
+    var name_to_bd =
+      document.getElementById(element_id).value == value_to_check;
     toggle_element(name_to_bd, element_to_toggle);
   };
 }
@@ -20,7 +21,33 @@ function toggle_inputs(element_id, value_to_check, element_to_toggle) {
 function toggle_check_boxes(radio_id) {
   if (radio_id.startsWith("READ_") || radio_id.startsWith("GLOBAL_READ")) {
     toggle_element(radio_id == "READ_ALL", "READ_PROTECTED");
-  } else if (radio_id.startsWith("WRITE_") || radio_id.startsWith("GLOBAL_WRITE")) {
+  } else if (
+    radio_id.startsWith("WRITE_") ||
+    radio_id.startsWith("GLOBAL_WRITE")
+  ) {
     toggle_element(radio_id == "WRITE_ALL", "WRITE_PROTECTED");
   }
+}
+
+function extract_selections() {
+  const radios = document.querySelectorAll('input[type="radio"]');
+  const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+
+  const checkedRadios = Array.from(radios).filter((radio) => radio.checked);
+  const checkedBoxes = Array.from(checkboxes).filter(
+    checkbox => !checkbox.disabled && checkbox.checked
+  );
+
+  const selections = checkedRadios.concat(checkedBoxes);
+
+  const filteredSelections = selections.filter(
+    (selection) => selection.value !== "NONE"
+  );
+
+  return filteredSelections;
+}
+
+function get_selected_value(element_id) {
+  const element = document.getElementById(element_id);
+  return element.options[element.selectedIndex].text;
 }

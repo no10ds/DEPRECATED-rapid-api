@@ -52,6 +52,7 @@ class CognitoAdapter:
 
     def create_user(self, user_request: UserRequest) -> UserResponse:
         try:
+            AppLogger.info(f"Attempting to create user {user_request.username}")
             cognito_response = self.cognito_client.admin_create_user(
                 UserPoolId=COGNITO_USER_POOL_ID,
                 Username=user_request.get_validated_username(),
@@ -131,17 +132,13 @@ class CognitoAdapter:
 
             users = [
                 {
-                    "subject_id": user["Attributes"][0]["Value"]
-                    if user["Attributes"][0]["Name"] == "sub"
-                    else None,
+                    "subject_id": self._get_user_attribute(user, "sub"),
+                    "email": self._get_user_attribute(user, "email"),
                     "subject_name": user["Username"],
                     "type": "USER",
                 }
                 for user in self.cognito_client.list_users(
                     UserPoolId=COGNITO_USER_POOL_ID,
-                    AttributesToGet=[
-                        "sub",
-                    ],
                 )["Users"]
             ]
 
@@ -153,6 +150,26 @@ class CognitoAdapter:
             raise AWSServiceError(
                 "The list of client apps and users could not be retrieved"
             )
+
+    def get_client_by_id(self, client_id: str) -> ClientResponse:
+        try:
+            response = self.cognito_client.describe_user_pool_client(
+                UserPoolId=COGNITO_USER_POOL_ID, ClientId=client_id
+            )["UserPoolClient"]
+            return ClientResponse(
+                client_id=response["ClientId"],
+                client_name=response["ClientName"],
+                permissions=[],
+                client_secret=response["ClientSecret"],
+            )
+        except ClientError as error:
+            AppLogger.info(f"Unable to retrieve client {error}")
+            raise AWSServiceError("The client could not be retrieved")
+
+    def _get_user_attribute(self, user: Dict, required_attribute: str) -> Optional[str]:
+        for attribute in user["Attributes"]:
+            if attribute["Name"] == required_attribute:
+                return attribute["Value"]
 
     def _validate_client_name(self, client_name: str) -> None:
         if client_name == self.placeholder_client_name:

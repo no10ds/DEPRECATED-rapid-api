@@ -343,3 +343,125 @@ class TestListSubjects:
         result = self.subject_service.list_subjects()
 
         assert result == expected
+
+
+class TestGetSubject:
+    def setup_method(self):
+        self.cognito_adapter = Mock()
+        self.dynamo_adapter = Mock()
+        self.subject_service = SubjectService(self.cognito_adapter, self.dynamo_adapter)
+
+    def test_gets_user_by_id(self):
+        self.cognito_adapter.get_all_subjects.return_value = [
+            {
+                "subject_id": "the-client-id-1",
+                "subject_name": "the_client_name_1",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-client-id-2",
+                "subject_name": "the_client_name_2",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "FAKE_ID123",
+                "subject_name": "user-name-1",
+                "email": "user1@test.com",
+                "type": "USER",
+            },
+            {
+                "subject_id": "the-user-id-1",
+                "subject_name": "user-name-2",
+                "email": None,
+                "type": "USER",
+            },
+        ]
+
+        expected_response = UserResponse(
+            username="user-name-1",
+            email="user1@test.com",
+            permissions=[],
+            user_id="FAKE_ID123",
+        )
+
+        response = self.subject_service.get_subject_by_id("FAKE_ID123")
+        assert response == expected_response
+        self.cognito_adapter.get_all_subjects.assert_called_once()
+
+    def test_gets_client_by_id(self):
+        self.cognito_adapter.get_all_subjects.return_value = [
+            {
+                "subject_id": "the-client-id-1",
+                "subject_name": "the_client_name_1",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-client-id-2",
+                "subject_name": "the_client_name_2",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-user-id-1",
+                "subject_name": "user-name-1",
+                "email": "user1@test.com",
+                "type": "USER",
+            },
+            {
+                "subject_id": "the-user-id-2",
+                "subject_name": "user-name-2",
+                "email": None,
+                "type": "USER",
+            },
+        ]
+
+        self.cognito_adapter.get_client_by_id.return_value = ClientResponse(
+            client_id="the-client-id-1",
+            client_name="the_client_name_1",
+            permissions=[],
+            client_secret="FAKE_ID123",  # pragma: allowlist secret
+        )
+
+        expected_response = ClientResponse(
+            client_id="the-client-id-1",
+            client_name="the_client_name_1",
+            permissions=[],
+            client_secret="FAKE_ID123",  # pragma: allowlist secret
+        )
+
+        response = self.subject_service.get_subject_by_id("the-client-id-1")
+
+        assert response == expected_response
+
+        self.cognito_adapter.get_all_subjects.assert_called_once()
+        self.cognito_adapter.get_client_by_id.assert_called_once_with("the-client-id-1")
+
+    def test_gets_subject_by_id_throws_error_for_non_existent_id(self):
+        self.cognito_adapter.get_all_subjects.return_value = [
+            {
+                "subject_id": "the-client-id-1",
+                "subject_name": "the_client_name_1",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-client-id-2",
+                "subject_name": "the_client_name_2",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "the-user-id-1",
+                "subject_name": "user-name-1",
+                "email": "user1@test.com",
+                "type": "USER",
+            },
+            {
+                "subject_id": "the-user-id-2",
+                "subject_name": "user-name-2",
+                "email": None,
+                "type": "USER",
+            },
+        ]
+
+        with pytest.raises(
+            UserError, match="Subject with ID 123FAKE321 does not exist"
+        ):
+            self.subject_service.get_subject_by_id("123FAKE321")
