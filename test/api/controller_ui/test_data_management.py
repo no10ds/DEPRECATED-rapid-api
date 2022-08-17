@@ -38,7 +38,7 @@ class TestUploadPage(BaseClientTest):
         assert response.status_code == 200
 
 
-class TestDownloadPage(BaseClientTest):
+class TestSelectDatasetPage(BaseClientTest):
     @patch("api.controller_ui.data_management.parse_token")
     @patch.object(DatasetService, "get_authorised_datasets")
     @patch.object(Jinja2Templates, "TemplateResponse")
@@ -65,6 +65,29 @@ class TestDownloadPage(BaseClientTest):
         mock_templates_response.assert_called_once_with(
             name=download_template_filename,
             context={"request": ANY, "datasets": expected_datasets},
+        )
+
+        assert response.status_code == 200
+
+
+class TestDownloadPage(BaseClientTest):
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    def test_calls_templating_engine_with_expected_arguments(
+        self, mock_templates_response
+    ):
+        download_template_filename = "download.html"
+
+        response = self.client.get(
+            "/download/domain1/dataset1", cookies={"rat": "user_token"}
+        )
+
+        mock_templates_response.assert_called_once_with(
+            name=download_template_filename,
+            context={
+                "request": ANY,
+                "domain": "domain1",
+                "dataset": "dataset1",
+            },
         )
 
         assert response.status_code == 200

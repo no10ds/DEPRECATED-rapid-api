@@ -1,6 +1,6 @@
 const goToNextStep = () => {
     const dataset = document.getElementById("select_dataset").value
-    console.log(`Going to download page for ${dataset}`)
+    window.location.href = `download/${dataset}`
 }
 
 const toggleModifyButton = (event) => {

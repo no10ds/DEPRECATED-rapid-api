@@ -30,6 +30,16 @@ def select_dataset(request: Request):
     )
 
 
+@data_management_router.get(
+    "/download/{domain}/{dataset}", dependencies=[Security(secure_endpoint)]
+)
+def download_dataset(request: Request, domain: str, dataset: str):
+    return templates.TemplateResponse(
+        name="download.html",
+        context={"request": request, "domain": domain, "dataset": dataset},
+    )
+
+
 @data_management_router.get("/upload", dependencies=[Security(secure_endpoint)])
 def upload(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
