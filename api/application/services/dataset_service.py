@@ -5,51 +5,52 @@ from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.common.config.auth import SensitivityLevel, Action
 from api.domain.dataset_filters import DatasetFilters
 
-START_INDEX_WRITE = len(Action.WRITE.value + "_")
-START_INDEX_PROTECTED = len(
-    Action.WRITE.value + "_" + SensitivityLevel.PROTECTED.value + "_"
-)
-
-WRITE_ALL = Action.WRITE.value + "_ALL"
-WRITE_PRIVATE = Action.WRITE.value + "_" + SensitivityLevel.PRIVATE.value
-WRITE_PUBLIC = Action.WRITE.value + "_" + SensitivityLevel.PUBLIC.value
-WRITE_PROTECTED_DOMAIN = (
-    Action.WRITE.value + "_" + SensitivityLevel.PROTECTED.value + "_"
-)
+WRITE_ALL = f"{Action.WRITE.value}_ALL"
+WRITE_PRIVATE = f"{Action.WRITE.value}_{SensitivityLevel.PRIVATE.value}"
+WRITE_PUBLIC = f"{Action.WRITE.value}_{SensitivityLevel.PUBLIC.value}"
+READ_ALL = f"{Action.READ.value}_ALL"
+READ_PRIVATE = f"{Action.READ.value}_{SensitivityLevel.PRIVATE.value}"
+READ_PUBLIC = f"{Action.READ.value}_{SensitivityLevel.PUBLIC.value}"
 
 sensitivities_dict = {
     WRITE_ALL: SensitivityLevel.get_all_values(),
     WRITE_PRIVATE: [SensitivityLevel.PRIVATE.value, SensitivityLevel.PUBLIC.value],
     WRITE_PUBLIC: [SensitivityLevel.PUBLIC.value],
+    READ_ALL: SensitivityLevel.get_all_values(),
+    READ_PRIVATE: [SensitivityLevel.PRIVATE.value, SensitivityLevel.PUBLIC.value],
+    READ_PUBLIC: [SensitivityLevel.PUBLIC.value],
 }
 
 
-class UploadService:
+class DatasetService:
     def __init__(
         self, dynamodb_adapter=DynamoDBAdapter(), resource_adapter=AWSResourceAdapter()
     ):
         self.dynamodb_adapter = dynamodb_adapter
         self.resource_adapter = resource_adapter
 
-    def get_authorised_datasets(self, subject_id: str) -> List[str]:
+    def get_authorised_datasets(self, subject_id: str, action: Action) -> List[str]:
         permissions = self.dynamodb_adapter.get_permissions_for_subject(subject_id)
-        sensitivities_and_domains = self._extract_sensitivities_and_domains(permissions)
+        sensitivities_and_domains = self._extract_sensitivities_and_domains(
+            permissions, action
+        )
         return self._fetch_datasets(sensitivities_and_domains)
 
     def _extract_sensitivities_and_domains(
-        self, permissions: List[str]
+        self, permissions: List[str], action: Action
     ) -> Dict[str, Set[str]]:
         sensitivities = set()
         protected_domains = set()
 
-        write_permissions = [
+        relevant_permissions = [
             permission
             for permission in permissions
-            if permission.startswith(Action.WRITE.value)
+            if permission.startswith(action.value)
         ]
-        for permission in write_permissions:
-            if self._is_protected_permission(permission):
-                protected_domains.add(permission[START_INDEX_PROTECTED:])
+        for permission in relevant_permissions:
+            if self._is_protected_permission(permission, action):
+                slice_index = self._protected_index_map(action)
+                protected_domains.add(permission[slice_index:])
             else:
                 sensitivities.update(sensitivities_dict.get(permission))
         return {"protected_domains": protected_domains, "sensitivities": sensitivities}
@@ -96,6 +97,17 @@ class UploadService:
             for datasets_metadata in datasets_metadata_list_sensitivities
         ]
 
-    @staticmethod
-    def _is_protected_permission(permission) -> bool:
-        return permission.startswith(WRITE_PROTECTED_DOMAIN)
+    def _is_protected_permission(self, permission: str, action: Action) -> bool:
+        return permission.startswith(
+            f"{action.value}_{SensitivityLevel.PROTECTED.value}_"
+        )
+
+    def _protected_index_map(self, action: Action) -> int:
+        return {
+            Action.WRITE.value: len(
+                f"{Action.WRITE.value}_{SensitivityLevel.PROTECTED.value}_"
+            ),
+            Action.READ.value: len(
+                f"{Action.READ.value}_{SensitivityLevel.PROTECTED.value}_"
+            ),
+        }[action.value]

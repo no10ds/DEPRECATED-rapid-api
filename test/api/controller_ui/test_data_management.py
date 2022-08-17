@@ -2,13 +2,13 @@ from unittest.mock import patch, ANY, Mock
 
 from fastapi.templating import Jinja2Templates
 
-from api.application.services.UploadService import UploadService
+from api.application.services.dataset_service import DatasetService
 from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestUploadPage(BaseClientTest):
     @patch("api.controller_ui.data_management.parse_token")
-    @patch.object(UploadService, "get_authorised_datasets")
+    @patch.object(DatasetService, "get_authorised_datasets")
     @patch.object(Jinja2Templates, "TemplateResponse")
     def test_calls_templating_engine_with_expected_arguments(
         self, mock_templates_response, mock_upload_service, mock_parse_token
@@ -32,6 +32,25 @@ class TestUploadPage(BaseClientTest):
                 "request": ANY,
                 "datasets": datasets,
             },
+        )
+
+        assert response.status_code == 200
+
+
+class TestDownloadPage(BaseClientTest):
+    @patch.object(Jinja2Templates, "TemplateResponse")
+    def test_calls_templating_engine_with_expected_arguments(
+        self, mock_templates_response
+    ):
+        download_template_filename = "datasets.html"
+
+        expected_datasets = None
+
+        response = self.client.get("/download", cookies={"rat": "user_token"})
+
+        mock_templates_response.assert_called_once_with(
+            name=download_template_filename,
+            context={"request": ANY, "datasets": expected_datasets},
         )
 
         assert response.status_code == 200

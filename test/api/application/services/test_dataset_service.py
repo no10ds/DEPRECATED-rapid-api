@@ -2,18 +2,20 @@ from unittest.mock import patch, call
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.application.services.UploadService import UploadService
+from api.application.services.dataset_service import DatasetService
+from api.common.config.auth import Action
 from api.domain.dataset_filters import DatasetFilters
 
 
-class TestUploadService:
-    upload_service = UploadService()
+class TestWriteDataset:
+    upload_service = DatasetService()
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
     def test_get_authorised_datasets(
         self, mock_get_permissions_for_subject, mock_get_datasets_metadata
     ):
+        action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_PRIVATE", "WRITE_PUBLIC", "WRITE_PRIVATE"]
         query_public = DatasetFilters(sensitivity="PUBLIC")
@@ -31,7 +33,7 @@ class TestUploadService:
             [enriched_dataset_metadata_2],
         ]
 
-        result = self.upload_service.get_authorised_datasets(subject_id)
+        result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 2
         assert "test_domain_1/test_dataset_1" in result
@@ -47,6 +49,7 @@ class TestUploadService:
     def test_get_authorised_datasets_with_write_all_permission(
         self, mock_get_permissions_for_subject, mock_get_datasets_metadata
     ):
+        action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_PRIVATE", "WRITE_ALL", "WRITE_PRIVATE"]
         query_public = DatasetFilters(sensitivity="PUBLIC")
@@ -70,7 +73,7 @@ class TestUploadService:
             [enriched_dataset_metadata_3],
         ]
 
-        result = self.upload_service.get_authorised_datasets(subject_id)
+        result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 3
         assert "test_domain_1/test_public_dataset" in result
@@ -88,6 +91,7 @@ class TestUploadService:
     def test_get_authorised_datasets_for_write_public(
         self, mock_get_permissions_for_subject, mock_get_datasets_metadata
     ):
+        action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_ALL", "WRITE_PUBLIC"]
         query_public = DatasetFilters(sensitivity="PUBLIC")
@@ -100,7 +104,7 @@ class TestUploadService:
         mock_get_permissions_for_subject.return_value = permissions
         mock_get_datasets_metadata.return_value = enriched_dataset_metadata_list
 
-        result = self.upload_service.get_authorised_datasets(subject_id)
+        result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 1
         assert "test_domain_1/test_dataset_1" in result
@@ -113,6 +117,7 @@ class TestUploadService:
     def test_get_authorised_datasets_for_protected_domain(
         self, mock_get_permissions_for_subject, mock_get_datasets_metadata
     ):
+        action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_ALL", "WRITE_PUBLIC", "WRITE_PROTECTED_TEST2DOMAIN"]
         query_public = DatasetFilters(sensitivity="PUBLIC")
@@ -132,7 +137,7 @@ class TestUploadService:
             [enriched_dataset_metadata_protected_domain],
         ]
 
-        result = self.upload_service.get_authorised_datasets(subject_id)
+        result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 2
         assert "some_domain/test_dataset_1" in result
