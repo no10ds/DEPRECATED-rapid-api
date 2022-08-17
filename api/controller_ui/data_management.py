@@ -7,6 +7,7 @@ from fastapi.templating import Jinja2Templates
 from api.application.services.authorisation.authorisation_service import (
     RAPID_ACCESS_TOKEN,
     secure_endpoint,
+    secure_dataset_endpoint,
 )
 from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.dataset_service import DatasetService
@@ -31,7 +32,8 @@ def select_dataset(request: Request):
 
 
 @data_management_router.get(
-    "/download/{domain}/{dataset}", dependencies=[Security(secure_endpoint)]
+    "/download/{domain}/{dataset}",
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
 def download_dataset(request: Request, domain: str, dataset: str):
     return templates.TemplateResponse(
