@@ -25,13 +25,15 @@
   }
 
   &_submit {
-    display: grid;
-    text-align: center;
-    justify-items: center;
-    align-items: center;
-    grid-template-rows: minmax(2rem, min-content) minmax(3rem, 1fr) minmax(2rem, min-content);
-    grid-row-gap: .6rem;
-    margin-top: 2rem;
+    &:not([hidden]) {
+      display: grid;
+      text-align: center;
+      justify-items: center;
+      align-items: center;
+      grid-template-rows: minmax(2rem, min-content) minmax(3rem, 1fr) minmax(2rem, min-content);
+      grid-row-gap: .6rem;
+      margin-top: 2rem;
+    }
   }
 
   &--logout {

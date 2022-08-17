@@ -48,8 +48,12 @@ function render_creation_success(type, requestBody) {
       return response.json();
     })
     .then((data) => {
-      window.location.href = `${window.location.href}/${
-        data.user_id ? type == "user" : data.client_id
-      }/success`;
+      var html = '<div class="form_body" id="success_form">' +
+                    '<h1 class="content_header">Success</h1>' +
+                    '<h2>Permissions modified for <span class="highlight">'+ data.client_name +'</span></h2>' +
+                  '</div>'
+      document.getElementById("success").innerHTML = html;
+      document.getElementById("create_form").hidden = true;
+      document.getElementById("submit_form").hidden = true;
     });
 }

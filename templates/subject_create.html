@@ -12,7 +12,7 @@
     {% endwith %}
 
     <form class="form">
-        <div class="form_body form_body--headed">
+        <div class="form_body form_body--headed" id="create_form">
             <h1 class="content_header">Create a subject</h1>
             <h3 class="content-step-indicator">Step 1: Populate subject info</h3>
             <div class="form-select">
@@ -50,10 +50,15 @@
                 {% include 'component/permissions/checkboxes.html' %}
             {% endwith %}
         </div>
-        <div class="form_submit">
+        <div class="form_submit" id="submit_form">
             <button class="btn" type="button" onclick="create_subject()">Create subject</button>
         </div>
+
+        <div id="success">
+        </div>
     </form>
+
+
 </div>
 {% block javascript %}
 <script type="text/javascript">
