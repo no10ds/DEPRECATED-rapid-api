@@ -26,8 +26,17 @@ upload_service = DatasetService()
 def select_dataset(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
     datasets = upload_service.get_authorised_datasets(subject_id, Action.READ)
+
+    grouped_datasets = {}
+    for dataset in datasets:
+        domain, dataset = dataset.split("/")[0], dataset.split("/")[1]
+        if domain not in grouped_datasets:
+            grouped_datasets[domain] = [dataset]
+        else:
+            grouped_datasets[domain].append(dataset)
+
     return templates.TemplateResponse(
-        name="datasets.html", context={"request": request, "datasets": datasets}
+        name="datasets.html", context={"request": request, "datasets": grouped_datasets}
     )
 
 

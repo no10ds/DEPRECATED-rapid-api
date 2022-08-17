@@ -54,10 +54,14 @@ class TestSelectDatasetPage(BaseClientTest):
 
         mock_get_authorised_datasets.return_value = [
             "domain1/dataset1",
-            "domain2/dataset2",
+            "domain1/dataset2",
+            "domain2/dataset3",
         ]
 
-        expected_datasets = ["domain1/dataset1", "domain2/dataset2"]
+        expected_datasets = {
+            "domain1": ["dataset1", "dataset2"],
+            "domain2": ["dataset3"],
+        }
 
         response = self.client.get("/download", cookies={"rat": "user_token"})
 

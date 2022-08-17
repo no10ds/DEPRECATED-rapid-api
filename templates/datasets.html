@@ -20,8 +20,12 @@
                 <label class="form-select_label" for="select_dataset">Select dataset</label>
                 <select class="form-select_dropdown" id="select_dataset">
                     <option value="" disabled selected hidden>Please select a dataset</option>
-                    {% for dataset in datasets %}
-                        <option value="{{ dataset }}">{{ dataset }}</option>
+                    {% for domain, dataset_list in datasets.items() %}
+                        <optgroup label="{{domain}}">
+                            {% for dataset in dataset_list %}
+                                <option value="{{ domain }}/{{ dataset }}">{{ dataset }}</option>
+                            {% endfor %}
+                        </optgroup>
                     {% endfor %}
                 </select>
             </div>
