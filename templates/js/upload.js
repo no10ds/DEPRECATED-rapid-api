@@ -54,5 +54,7 @@ document.getElementById("file").onchange = () => {
 }
 
 document.getElementById("dataset").onchange = () => {
+    document.getElementById("response-title").innerHTML = ""
+    document.getElementById("response").innerHTML = "";
     document.getElementById("upload-dataset").textContent = 'Step 3: Hit "Upload dataset" button and the data will be uploaded to ' + document.getElementById("dataset").value;
 }
