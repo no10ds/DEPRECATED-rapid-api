@@ -23,10 +23,10 @@ upload_service = DatasetService()
 
 @data_management_router.get("/download", dependencies=[Security(secure_endpoint)])
 def select_dataset(request: Request):
-    grouped_datasets = None
-
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    datasets = upload_service.get_authorised_datasets(subject_id, Action.READ)
     return templates.TemplateResponse(
-        name="datasets.html", context={"request": request, "datasets": grouped_datasets}
+        name="datasets.html", context={"request": request, "datasets": datasets}
     )
 
 

@@ -12,9 +12,8 @@ class TestUploadPage(BaseClientTest):
     @patch.object(DatasetService, "get_authorised_datasets")
     @patch.object(Jinja2Templates, "TemplateResponse")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_templates_response, mock_dataset_service, mock_parse_token
+        self, mock_templates_response, mock_get_authorised_datasets, mock_parse_token
     ):
-        action = Action.WRITE
         upload_template_filename = "upload.html"
         datasets = ["dataset.csv", "dataset2.csv"]
         subject_id = "subject_id"
@@ -22,12 +21,12 @@ class TestUploadPage(BaseClientTest):
         mock_token = Mock()
         mock_token.subject = subject_id
         mock_parse_token.return_value = mock_token
-        mock_dataset_service.return_value = datasets
+        mock_get_authorised_datasets.return_value = datasets
 
         response = self.client.get("/upload", cookies={"rat": "user_token"})
 
         mock_parse_token.assert_called_once_with("user_token")
-        mock_dataset_service.assert_called_once_with(subject_id, action)
+        mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.WRITE)
         mock_templates_response.assert_called_once_with(
             name=upload_template_filename,
             context={
@@ -40,16 +39,29 @@ class TestUploadPage(BaseClientTest):
 
 
 class TestDownloadPage(BaseClientTest):
+    @patch("api.controller_ui.data_management.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
     @patch.object(Jinja2Templates, "TemplateResponse")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_templates_response
+        self, mock_templates_response, mock_get_authorised_datasets, mock_parse_token
     ):
+        subject_id = "123abc"
         download_template_filename = "datasets.html"
 
-        expected_datasets = None
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
+        mock_get_authorised_datasets.return_value = [
+            "domain1/dataset1",
+            "domain2/dataset2",
+        ]
+
+        expected_datasets = ["domain1/dataset1", "domain2/dataset2"]
 
         response = self.client.get("/download", cookies={"rat": "user_token"})
 
+        mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.READ)
         mock_templates_response.assert_called_once_with(
             name=download_template_filename,
             context={"request": ANY, "datasets": expected_datasets},
