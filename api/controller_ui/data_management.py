@@ -1,12 +1,11 @@
 import os
 
 from fastapi import APIRouter, Security
-from fastapi import Request, Depends
+from fastapi import Request
 from fastapi.templating import Jinja2Templates
 
 from api.application.services.authorisation.authorisation_service import (
     RAPID_ACCESS_TOKEN,
-    secure_dataset_endpoint,
     secure_endpoint,
 )
 from api.application.services.authorisation.token_utils import parse_token
@@ -22,9 +21,7 @@ templates = Jinja2Templates(directory=(os.path.abspath("templates")))
 upload_service = DatasetService()
 
 
-@data_management_router.get(
-    "/download", dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])]
-)
+@data_management_router.get("/download", dependencies=[Security(secure_endpoint)])
 def select_dataset(request: Request):
     grouped_datasets = None
 
@@ -33,10 +30,10 @@ def select_dataset(request: Request):
     )
 
 
-@data_management_router.get("/upload", dependencies=[Depends(secure_dataset_endpoint)])
+@data_management_router.get("/upload", dependencies=[Security(secure_endpoint)])
 def upload(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    datasets = upload_service.get_authorised_datasets(subject_id)
+    datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
     return templates.TemplateResponse(
         name="upload.html", context={"request": request, "datasets": datasets}
     )

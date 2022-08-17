@@ -3,6 +3,7 @@ from unittest.mock import patch, ANY, Mock
 from fastapi.templating import Jinja2Templates
 
 from api.application.services.dataset_service import DatasetService
+from api.common.config.auth import Action
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -11,8 +12,9 @@ class TestUploadPage(BaseClientTest):
     @patch.object(DatasetService, "get_authorised_datasets")
     @patch.object(Jinja2Templates, "TemplateResponse")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_templates_response, mock_upload_service, mock_parse_token
+        self, mock_templates_response, mock_dataset_service, mock_parse_token
     ):
+        action = Action.WRITE
         upload_template_filename = "upload.html"
         datasets = ["dataset.csv", "dataset2.csv"]
         subject_id = "subject_id"
@@ -20,12 +22,12 @@ class TestUploadPage(BaseClientTest):
         mock_token = Mock()
         mock_token.subject = subject_id
         mock_parse_token.return_value = mock_token
-        mock_upload_service.return_value = datasets
+        mock_dataset_service.return_value = datasets
 
         response = self.client.get("/upload", cookies={"rat": "user_token"})
 
         mock_parse_token.assert_called_once_with("user_token")
-        mock_upload_service.assert_called_once_with(subject_id)
+        mock_dataset_service.assert_called_once_with(subject_id, action)
         mock_templates_response.assert_called_once_with(
             name=upload_template_filename,
             context={
