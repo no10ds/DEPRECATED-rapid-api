@@ -17,8 +17,10 @@ class TestSubjectPage(BaseClientTest):
         subject_template_filename = "subject.html"
 
         expected_subjects = {
-            "clients": [{"subject_id": "subject_1", "subject_name": "subject_1_name"}],
-            "users": [{"subject_id": "subject_2", "subject_name": "subject_2_name"}],
+            "Client Apps": [
+                {"subject_id": "subject_1", "subject_name": "subject_1_name"}
+            ],
+            "Users": [{"subject_id": "subject_2", "subject_name": "subject_2_name"}],
         }
 
         mock_list_subjects.return_value = [

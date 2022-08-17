@@ -40,7 +40,7 @@ def select_subject(request: Request):
         if subject["type"] == "CLIENT"
     ]
 
-    grouped_subjects = {"clients": clients, "users": users}
+    grouped_subjects = {"Client Apps": clients, "Users": users}
 
     return templates.TemplateResponse(
         name="subject.html", context={"request": request, "subjects": grouped_subjects}
