@@ -112,30 +112,6 @@ Example:
 }
 ```
 
-## Infrastructure Versioning
-
-Currently, we are only versioning the service by making releases on Github and tagging the image in ECR accordingly.
-
-There is no such mechanism for the infrastructure aspect of the application.
-
-Therefore, a risk exists that additions/changes to the infrastructure are not compatible with a previous version of the
-service image.
-
-### Possible solution
-
-Making use of the git tagging feature is the most accessible solution.
-
-Releases of the service image should specify which versions of the infrastructure are compatible.
-
-Departments can then pull or specify that version of the repo in their environment and apply the relevant configuration.
-
-### Considerations
-
-There is a risk that departments may be using an old version of the service, and need to use an old version of the
-infrastructure which does not have the latest security patches or bug fixes.
-
-Some mechanism for alerting departments of the need to update should also be implemented
-
 ## Change storage data format
 
 ### Problem
