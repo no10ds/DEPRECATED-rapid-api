@@ -137,6 +137,9 @@ class BaseTestUI(ABC):
     def select_from_dropdown_by_visible_text(
         self, page, dropdown_id: str, visible_text: str, expected_value: str
     ):
+        """
+        Limitation: Will not work if multiple visible values in the dropdown are the same
+        """
         print(f"Selecting visible value '{visible_text}' from '{dropdown_id}'")
         selected = page.select_option(f"select#{dropdown_id}", label=visible_text)
         assert selected == [expected_value]
@@ -192,6 +195,30 @@ class TestUI(BaseTestUI):
             self.assert_dataset_exists(page, dropdown_id, write_all_datasets[2])
 
             self.assert_can_upload(page, dropdown_id, upload_dataset)
+
+            self.logout(page)
+
+    def test_download_journey(self):
+        with sync_playwright() as playwright:
+            page = self.set_up_base_page(playwright)
+
+            self.login(page)
+
+            # Download page link toggled off for now
+            self.go_to(page, "/download")
+
+            self.assert_title(page, "rAPId - Select Dataset")
+            self.select_from_dropdown_by_visible_text(
+                page,
+                "select_dataset",
+                visible_text="query",
+                expected_value="test_e2e/query",
+            )
+
+            self.click_button(page, "Next")
+
+            self.assert_title(page, "rAPId - Download")
+            self.assert_text_on_page(page, "test_e2e/query")
 
             self.logout(page)
 

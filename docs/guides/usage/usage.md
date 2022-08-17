@@ -1181,6 +1181,46 @@ When uploading the datasets there are 2 possible responses:
 - Success: A message with the uploaded filename will be shown to the user
 - Failure: An error message will be shown to the user
 
+
+## Download
+
+This page is used to download datasets from the rAPId instance by authenticated users.
+
+Users can only see the datasets they have permission to read from:
+
+- Users with `READ_ALL` permission will see all datasets
+- Users with `READ_PRIVATE` permission will see both private and public datasets
+- Users with `READ_PUBLIC` permission will see public datasets
+- Users with `READ_PROTECTED_{domain}` permission will see datasets with the protected domain `domain`
+- Users with multiple of the above write permissions will see the union of the datasets for these permissions
+- Users with no write permissions will see an empty drop-down
+
+### General structure
+
+`GET /download`
+
+### Needed credentials
+
+The user must be logged in as a Cognito user to use this page. The credentials will be read from the cookie "rat" that
+stands for "Rapid Access Token".
+
+For example, if the user has permission "READ_PRIVATE", "WRITE_PRIVATE" and "dot/trucks" dataset has the sensitivity of
+PRIVATE (or PUBLIC) then they will be able to see and write to the datasets "dot/trucks".
+
+If the user is missing any permissions, they can be added in the permissions database table.
+
+### Steps
+
+To download a dataset just follow these simple steps.
+
+1) Log in
+2) Click on the `Download data` link
+3) Select a dataset from the list
+4) Click `Next`
+5) Confirm the domain and dataset on the following page
+6) Click `Download`
+
+
 ## Landing
 
 This page is used as the entry point to the rAPId service on which the user can select their desired course of action.
