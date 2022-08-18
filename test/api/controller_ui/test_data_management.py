@@ -15,13 +15,18 @@ class TestUploadPage(BaseClientTest):
         self, mock_templates_response, mock_get_authorised_datasets, mock_parse_token
     ):
         upload_template_filename = "upload.html"
-        datasets = ["dataset.csv", "dataset2.csv"]
+        datasets = ["domain1/dataset1.csv", "domain2/dataset2.csv"]
         subject_id = "subject_id"
 
         mock_token = Mock()
         mock_token.subject = subject_id
         mock_parse_token.return_value = mock_token
         mock_get_authorised_datasets.return_value = datasets
+
+        expected_datasets = {
+            "domain1": ["dataset1.csv"],
+            "domain2": ["dataset2.csv"],
+        }
 
         response = self.client.get("/upload", cookies={"rat": "user_token"})
 
@@ -31,7 +36,7 @@ class TestUploadPage(BaseClientTest):
             name=upload_template_filename,
             context={
                 "request": ANY,
-                "datasets": datasets,
+                "datasets": expected_datasets,
             },
         )
 

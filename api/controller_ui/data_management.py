@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 from fastapi import APIRouter, Security
 from fastapi import Request
@@ -22,11 +23,7 @@ templates = Jinja2Templates(directory=(os.path.abspath("templates")))
 upload_service = DatasetService()
 
 
-@data_management_router.get("/download", dependencies=[Security(secure_endpoint)])
-def select_dataset(request: Request):
-    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    datasets = upload_service.get_authorised_datasets(subject_id, Action.READ)
-
+def group_datasets_by_domain(datasets: List[str]):
     grouped_datasets = {}
     for dataset in datasets:
         domain, dataset = dataset.split("/")[0], dataset.split("/")[1]
@@ -34,6 +31,15 @@ def select_dataset(request: Request):
             grouped_datasets[domain] = [dataset]
         else:
             grouped_datasets[domain].append(dataset)
+    return grouped_datasets
+
+
+@data_management_router.get("/download", dependencies=[Security(secure_endpoint)])
+def select_dataset(request: Request):
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    datasets = upload_service.get_authorised_datasets(subject_id, Action.READ)
+
+    grouped_datasets = group_datasets_by_domain(datasets)
 
     return templates.TemplateResponse(
         name="datasets.html", context={"request": request, "datasets": grouped_datasets}
@@ -55,6 +61,9 @@ def download_dataset(request: Request, domain: str, dataset: str):
 def upload(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
     datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
+
+    grouped_datasets = group_datasets_by_domain(datasets)
+
     return templates.TemplateResponse(
-        name="upload.html", context={"request": request, "datasets": datasets}
+        name="upload.html", context={"request": request, "datasets": grouped_datasets}
     )

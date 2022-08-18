@@ -98,20 +98,34 @@ class TestSubjectPage(BaseClientTest):
 
         expected_subjects = {
             "Client Apps": [
-                {"subject_id": "subject_1", "subject_name": "subject_1_name"}
+                {"subject_id": "subject_1", "subject_name": "A_subject_1_name"},
+                {"subject_id": "subject_2", "subject_name": "B_subject_2_name"},
             ],
-            "Users": [{"subject_id": "subject_2", "subject_name": "subject_2_name"}],
+            "Users": [
+                {"subject_id": "subject_3", "subject_name": "C_subject_3_name"},
+                {"subject_id": "subject_4", "subject_name": "D_subject_4_name"},
+            ],
         }
 
         mock_list_subjects.return_value = [
             {
-                "subject_id": "subject_1",
-                "subject_name": "subject_1_name",
+                "subject_id": "subject_2",
+                "subject_name": "B_subject_2_name",
                 "type": "CLIENT",
             },
             {
-                "subject_id": "subject_2",
-                "subject_name": "subject_2_name",
+                "subject_id": "subject_1",
+                "subject_name": "A_subject_1_name",
+                "type": "CLIENT",
+            },
+            {
+                "subject_id": "subject_4",
+                "subject_name": "D_subject_4_name",
+                "type": "USER",
+            },
+            {
+                "subject_id": "subject_3",
+                "subject_name": "C_subject_3_name",
                 "type": "USER",
             },
         ]

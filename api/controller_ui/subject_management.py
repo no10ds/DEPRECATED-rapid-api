@@ -28,17 +28,29 @@ templates = Jinja2Templates(directory=(os.path.abspath("templates")))
 def select_subject(request: Request):
     subjects = subject_service.list_subjects()
 
-    users = [
-        {"subject_id": subject["subject_id"], "subject_name": subject["subject_name"]}
-        for subject in subjects
-        if subject["type"] == "USER"
-    ]
+    users = sorted(
+        [
+            {
+                "subject_id": subject["subject_id"],
+                "subject_name": subject["subject_name"],
+            }
+            for subject in subjects
+            if subject["type"] == "USER"
+        ],
+        key=lambda client: client["subject_name"],
+    )
 
-    clients = [
-        {"subject_id": subject["subject_id"], "subject_name": subject["subject_name"]}
-        for subject in subjects
-        if subject["type"] == "CLIENT"
-    ]
+    clients = sorted(
+        [
+            {
+                "subject_id": subject["subject_id"],
+                "subject_name": subject["subject_name"],
+            }
+            for subject in subjects
+            if subject["type"] == "CLIENT"
+        ],
+        key=lambda client: client["subject_name"],
+    )
 
     grouped_subjects = {"Client Apps": clients, "Users": users}
 
