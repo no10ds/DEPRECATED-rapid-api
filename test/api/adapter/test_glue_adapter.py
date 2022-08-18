@@ -11,12 +11,11 @@ from api.common.config.aws import (
 )
 from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
-    CrawlerCreateFailsError,
     CrawlerStartFailsError,
-    CrawlerDeleteFailsError,
-    GetCrawlerError,
     CrawlerIsNotReadyError,
-    TableNotCreatedError,
+    CrawlerAlreadyExistsError,
+    CrawlerCreationError,
+    AWSServiceError,
 )
 
 
@@ -65,7 +64,7 @@ class TestGlueAdapterCrawlerMethods:
             operation_name="CreateCrawler",
         )
 
-        with pytest.raises(CrawlerCreateFailsError):
+        with pytest.raises(CrawlerAlreadyExistsError):
             self.glue_adapter.create_crawler("domain", "dataset", {})
 
     def test_create_crawler_fails(self):
@@ -74,7 +73,7 @@ class TestGlueAdapterCrawlerMethods:
             operation_name="CreateCrawler",
         )
 
-        with pytest.raises(CrawlerCreateFailsError):
+        with pytest.raises(CrawlerCreationError):
             self.glue_adapter.create_crawler("domain", "dataset", {})
 
     def test_start_crawler(self):
@@ -104,17 +103,21 @@ class TestGlueAdapterCrawlerMethods:
             operation_name="DeleteCrawler",
         )
 
-        with pytest.raises(CrawlerDeleteFailsError):
+        with pytest.raises(AWSServiceError):
             self.glue_adapter.delete_crawler("domain", "dataset")
 
+    @patch("api.adapter.glue_adapter.RESOURCE_PREFIX", "the-resource-prefix")
     def test_fails_to_check_if_crawler_is_running(self):
         self.glue_boto_client.get_crawler.side_effect = ClientError(
             error_response={"Error": {"Code": "SomeProblem"}},
             operation_name="GetCrawler",
         )
 
-        with pytest.raises(GetCrawlerError):
-            self.glue_adapter.check_crawler_is_ready("domain", "dataset")
+        with pytest.raises(
+            AWSServiceError,
+            match="Failed to get crawler state resource_prefix=the-resource-prefix, domain = domain1 dataset = dataset2",
+        ):
+            self.glue_adapter.check_crawler_is_ready("domain1", "dataset2")
 
     def test_check_crawler_is_ready(self):
         self.glue_boto_client.get_crawler.return_value = {
@@ -367,7 +370,7 @@ class TestGlueAdapterCatalogTableMethods:
         )
 
         with pytest.raises(
-            TableNotCreatedError, match=r"\[some-name\] was not created after \d+s"
+            AWSServiceError, match=r"\[some-name\] was not created after \d+s"
         ):
             self.glue_adapter.get_table_when_created("some-name")
 

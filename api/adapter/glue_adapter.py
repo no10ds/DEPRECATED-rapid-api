@@ -18,13 +18,12 @@ from api.common.config.aws import (
     RESOURCE_PREFIX,
 )
 from api.common.custom_exceptions import (
-    CrawlerCreateFailsError,
     CrawlerStartFailsError,
-    CrawlerDeleteFailsError,
-    GetCrawlerError,
     CrawlerIsNotReadyError,
     TableDoesNotExistError,
-    TableNotCreatedError,
+    CrawlerAlreadyExistsError,
+    CrawlerCreationError,
+    AWSServiceError,
 )
 from api.common.logger import AppLogger
 from api.domain.storage_metadata import StorageMetaData
@@ -81,20 +80,20 @@ class GlueAdapter:
                 self._generate_crawler_name(domain, dataset)
             )
         except ClientError:
-            raise CrawlerDeleteFailsError("Failed to delete crawler")
+            raise AWSServiceError("Failed to delete crawler")
 
-    def check_crawler_is_ready(self, domain: str, dataset: str):
+    def check_crawler_is_ready(self, domain: str, dataset: str) -> None:
         if self._get_crawler_state(domain, dataset) != "READY":
             raise CrawlerIsNotReadyError(
-                f"Crawler is not ready for resource_prefix={RESOURCE_PREFIX}, domain={domain} and dataset={dataset}"
+                f"Crawler is currently processing for resource_prefix={RESOURCE_PREFIX}, domain={domain} and dataset={dataset}"
             )
 
-    def update_catalog_table_config(self, domain: str, dataset: str):
+    def update_catalog_table_config(self, domain: str, dataset: str) -> None:
         table_name = StorageMetaData(domain, dataset).glue_table_name()
         if self._table_needs_reconfiguration(table_name):
             threading.Thread(target=self.update_table, args=(table_name,)).start()
 
-    def update_table(self, table_name: str):
+    def update_table(self, table_name: str) -> None:
         table = self.get_table_when_created(table_name)
         updated_definition = self.update_table_csv_parsing_config(table)
         self.glue_client.update_table(
@@ -112,7 +111,7 @@ class GlueAdapter:
                 )
                 sleep(GLUE_TABLE_PRESENCE_CHECK_INTERVAL)
                 continue
-        raise TableNotCreatedError(
+        raise AWSServiceError(
             f"[{table_name}] was not created after {GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT * GLUE_TABLE_PRESENCE_CHECK_INTERVAL}s"
         )  # noqa: E501
 
@@ -149,7 +148,7 @@ class GlueAdapter:
             )
             return response["Crawler"]["State"]
         except ClientError:
-            raise GetCrawlerError(
+            raise AWSServiceError(
                 f"Failed to get crawler state resource_prefix={RESOURCE_PREFIX}, domain = {domain} dataset = {dataset}"
             )
 
@@ -158,9 +157,9 @@ class GlueAdapter:
 
     def _handle_crawler_create_error(self, error: ClientError):
         if error.response["Error"]["Code"] == "AlreadyExistsException":
-            raise CrawlerCreateFailsError("Crawler already exists with same name")
+            raise CrawlerAlreadyExistsError("Crawler already exists with same name")
         else:
-            raise CrawlerCreateFailsError("Crawler creation error")
+            raise CrawlerCreationError("Crawler creation error")
 
     def _table_needs_reconfiguration(self, table_name: str) -> bool:
         try:

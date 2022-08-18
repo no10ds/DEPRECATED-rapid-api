@@ -5,7 +5,7 @@ import pandas as pd
 from pandas import Timestamp
 
 from api.common.config.constants import CONTENT_ENCODING
-from api.common.custom_exceptions import DatasetError
+from api.common.custom_exceptions import DatasetValidationError
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema
@@ -32,7 +32,7 @@ def transform_and_validate(schema: Schema, data: pd.DataFrame) -> pd.DataFrame:
     )
 
     if validation_context.has_errors():
-        raise DatasetError(validation_context.errors())
+        raise DatasetValidationError(validation_context.errors())
 
     return validation_context.get_dataframe()
 
@@ -69,7 +69,7 @@ def dataset_has_correct_columns(
 
     if not has_expected_columns or len(actual_columns) != len(expected_columns):
         # Cannot reasonably proceed with further validation if we don't even have the correct columns
-        raise DatasetError(
+        raise DatasetValidationError(
             f"Expected columns: {expected_columns}, received: {actual_columns}"
         )
 

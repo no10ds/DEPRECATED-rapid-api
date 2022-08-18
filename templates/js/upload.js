@@ -13,13 +13,11 @@ const uploadDataset = () => {
 
     fetch("datasets/" + select.value, {
         method: "POST",
-        // This is needed to treat this call as a browser request
-        headers: new Headers({'Accept': 'text/html'}),
         body: data
     }).then(response => response.json()
     .then(result => {
         if(response.ok) {
-            response_text_element.innerHTML = `File uploaded: ${result['uploaded']}`
+            response_text_element.innerHTML = `File uploaded: ${result['details']}`
             response_text_element.classList.add("response-msg--success");
             response_text_element.classList.remove("response-msg--error");
         } else {

@@ -15,8 +15,6 @@ from api.application.services.authorisation.authorisation_service import (
 from api.common.custom_exceptions import (
     BaseAppException,
     NotAuthorisedToViewPageError,
-    SchemaError,
-    SchemaNotFoundError,
 )
 from api.common.logger import AppLogger
 
@@ -31,29 +29,18 @@ def add_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(NotAuthorisedToViewPageError)
     async def not_authorised_to_view_page_handler(request, exc):
-        return RedirectResponse(url="/")
+        message = "You are not authorised to perform this action."
+        status_code = 403
 
-    @app.exception_handler(SchemaError)
-    async def schema_error_handler(request, exc):
-        AppLogger.warning(f"Invalid schema generated: {exc.message}")
-        return JSONResponse(
-            content={"details": exc.message}, status_code=exc.status_code
-        )
-
-    @app.exception_handler(SchemaNotFoundError)
-    async def schema_not_found_handler(request, exc):
-        message = exc.message if exc.message else "Schema not found."
-        AppLogger.warning("Schema not found: %s", message)
+        AppLogger.warning("Unauthorised page access: %s", exc)
         if is_browser_request(request):
-            return templates.TemplateResponse(
-                name="error.html",
-                context={"request": request, "error_message": exc.message},
-            )
+            return RedirectResponse(url="/")
         else:
-            return JSONResponse(content={"details": message}, status_code=400)
+            return JSONResponse(content={"details": message}, status_code=status_code)
 
     @app.exception_handler(BaseAppException)
     async def base_app_handler(request, exc):
+        AppLogger.error("Base app exception caught: %s", exc)
         if is_browser_request(request):
             return templates.TemplateResponse(
                 name="error.html",
@@ -66,13 +53,10 @@ def add_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def general_handler(request, exc):
-        try:
-            message = exc.message
-            status_code = exc.status_code
-        except AttributeError:
-            message = "Something went wrong. Please contact your system administrator."
-            status_code = 500
+        message = "Something went wrong. Please contact your system administrator."
+        status_code = 500
 
+        AppLogger.error("Something went wrong: %s", exc)
         if is_browser_request(request):
             return templates.TemplateResponse(
                 name="error.html",

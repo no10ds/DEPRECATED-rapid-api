@@ -37,9 +37,8 @@ function create_client(name, permissions) {
 function render_creation_success(type, requestBody) {
   fetch(`/${type}`, {
     method: "POST",
-    // This is needed to treat this call as a browser request
     headers: new Headers({
-      Accept: "text/html,application/json",
+      Accept: "application/json",
       "Content-Type": "application/json",
     }),
     body: JSON.stringify(requestBody),

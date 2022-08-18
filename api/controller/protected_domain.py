@@ -49,7 +49,7 @@ def create_protected_domain(domain: str):
     ### Click  `Try it out` to use the endpoint
     """
     protected_domain_service.create_protected_domain_permission(domain)
-    return {"message": f"Successfully created protected domain for {domain}"}
+    return {"details": f"Successfully created protected domain for {domain}"}
 
 
 @protected_domain_router.get(

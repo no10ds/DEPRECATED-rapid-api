@@ -195,7 +195,7 @@ class TestModifyUserPermissions(BaseClientTest):
 class TestUserDeletion(BaseClientTest):
     @patch.object(SubjectService, "delete_user")
     def test_returns_user_information_when_valid_request(self, mock_create_user):
-        expected_response = {"message": "The user 'my_user' has been deleted"}
+        expected_response = {"details": "The user 'my_user' has been deleted"}
         delete_request = UserDeleteRequest(
             username="my_user", user_id="some-uu-id-b226-e5fd18c59b85"
         )

@@ -7,14 +7,13 @@ from botocore.exceptions import ClientError
 
 from api.application.services.data_service import DataService
 from api.common.custom_exceptions import (
-    ProtectedDomainDoesNotExistError,
     SchemaNotFoundError,
     CrawlerIsNotReadyError,
-    GetCrawlerError,
     CrawlerStartFailsError,
-    SchemaError,
+    SchemaValidationError,
     ConflictError,
     UserError,
+    AWSServiceError,
 )
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -119,8 +118,8 @@ class TestUploadSchema:
     def test_check_for_protected_domain_fails(self):
         schema = Schema(
             metadata=SchemaMetadata(
-                domain="domain",
-                dataset="dataset",
+                domain="domain1",
+                dataset="dataset2",
                 sensitivity="PROTECTED",
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
@@ -137,7 +136,9 @@ class TestUploadSchema:
             return_value=["other"]
         )
 
-        with pytest.raises(ProtectedDomainDoesNotExistError):
+        with pytest.raises(
+            UserError, match="The protected domain 'domain1' does not exist."
+        ):
             self.data_service.check_for_protected_domain(schema)
 
     def test_upload_schema_throws_error_when_schema_already_exists(self):
@@ -167,7 +168,7 @@ class TestUploadSchema:
             ],
         )
 
-        with pytest.raises(SchemaError):
+        with pytest.raises(SchemaValidationError):
             self.data_service.upload_schema(invalid_schema)
 
 
@@ -546,9 +547,11 @@ class TestUploadDataset:
             ],
         )
 
-        self.glue_adapter.check_crawler_is_ready.side_effect = GetCrawlerError("msg")
+        self.glue_adapter.check_crawler_is_ready.side_effect = AWSServiceError(
+            "Some message"
+        )
 
-        with pytest.raises(GetCrawlerError):
+        with pytest.raises(AWSServiceError, match="Some message"):
             self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(

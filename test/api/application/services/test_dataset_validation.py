@@ -16,7 +16,7 @@ from api.application.services.dataset_validation import (
     dataset_has_no_illegal_characters_in_partition_columns,
     transform_and_validate,
 )
-from api.common.custom_exceptions import DatasetError, UserError
+from api.common.custom_exceptions import DatasetValidationError, UserError
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -119,7 +119,7 @@ class TestDatasetValidation:
 
         pattern = "Expected columns: \\['colname1', 'colname2', 'colname3'\\], received: \\['wrongcolumn', 'colname2', 'colname3'\\]"  # noqa: E501
 
-        with pytest.raises(DatasetError, match=pattern):
+        with pytest.raises(DatasetValidationError, match=pattern):
             get_validated_dataframe(self.valid_schema, file_contents)
 
     def test_invalid_when_partition_column_with_illegal_characters(self):
@@ -150,7 +150,7 @@ class TestDatasetValidation:
             "colname1,colname2\n2021,01/02/2021\n2020,01/02/2021\n"
         )
 
-        with pytest.raises(DatasetError):
+        with pytest.raises(DatasetValidationError):
             get_validated_dataframe(valid_schema, file_contents)
 
     def test_valid_when_date_partition_column_with_illegal_slash_character(self):
@@ -176,7 +176,7 @@ class TestDatasetValidation:
 
         try:
             get_validated_dataframe(valid_schema, file_contents)
-        except DatasetError:
+        except DatasetValidationError:
             pytest.fail("An unexpected InvalidDatasetError was thrown")
 
     def test_invalid_when_strings_in_numeric_column(self):
@@ -184,7 +184,7 @@ class TestDatasetValidation:
             "colname1,colname2,colname3\n" "23,name1,name3\n" "34,name2,name4\n"
         )
 
-        with pytest.raises(DatasetError):
+        with pytest.raises(DatasetValidationError):
             get_validated_dataframe(self.valid_schema, df)
 
     def test_invalid_when_entire_column_is_different_to_expected_type(self):
@@ -193,7 +193,7 @@ class TestDatasetValidation:
         )
 
         with pytest.raises(
-            DatasetError,
+            DatasetValidationError,
             match=r"Column \[colname2\] has an incorrect data type. Expected object, received float64",
             # noqa: E501, W605
         ):
@@ -278,7 +278,7 @@ class TestDatasetValidation:
 
         df = set_encoded_content(data_frame)
 
-        with pytest.raises(DatasetError):
+        with pytest.raises(DatasetValidationError):
             get_validated_dataframe(schema, df)
 
     def test_validates_correct_data_types(self):
@@ -315,7 +315,7 @@ class TestDatasetValidation:
 
         try:
             get_validated_dataframe(schema, df)
-        except DatasetError:
+        except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
     def test_validates_custom_data_types_as_object_type(self):
@@ -355,7 +355,7 @@ class TestDatasetValidation:
 
         try:
             get_validated_dataframe(schema, df)
-        except DatasetError:
+        except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
     def test_validates_dataset_with_empty_rows(self):
@@ -399,7 +399,7 @@ class TestDatasetValidation:
 
         try:
             get_validated_dataframe(schema, df)
-        except DatasetError:
+        except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
     @pytest.mark.parametrize(
@@ -443,7 +443,7 @@ class TestDatasetValidation:
         )
 
         with pytest.raises(
-            DatasetError,
+            DatasetValidationError,
             match=re.escape(
                 f"Expected columns: {schema_columns}, received: {dataframe_columns}"
             ),
@@ -485,7 +485,7 @@ class TestDatasetValidation:
 
         try:
             dataset_has_acceptable_null_values(df, schema)
-        except DatasetError as error:
+        except DatasetValidationError as error:
             assert error.message == [
                 "Column [col2] does not allow null values",
                 "Column [col3] does not allow null values",
@@ -544,7 +544,7 @@ class TestDatasetValidation:
 
         try:
             dataset_has_correct_data_types(df, schema)
-        except DatasetError as error:
+        except DatasetValidationError as error:
             assert error.message == [
                 "Column [col2] has an incorrect data type. Expected boolean, received object",
                 "Column [col3] has an incorrect data type. Expected Int64, received object",
@@ -606,7 +606,7 @@ class TestDatasetValidation:
 
         try:
             dataset_has_no_illegal_characters_in_partition_columns(df, schema)
-        except DatasetError as error:
+        except DatasetValidationError as error:
             assert error.message == [
                 "Partition column [col1] has values with illegal characters '/'",
                 "Partition column [col2] has values with illegal characters '/'",
@@ -667,7 +667,7 @@ class TestDatasetValidation:
 
         try:
             transform_and_validate(schema, df)
-        except DatasetError as error:
+        except DatasetValidationError as error:
             assert error.message == [
                 "Failed to convert column [col5] to type [Int64]",
                 "Column [col4] does not match specified date format in at least one row",
@@ -910,7 +910,7 @@ class TestDatasetTransformation:
 
         try:
             set_data_types(df, schema)
-        except DatasetError as error:
+        except DatasetValidationError as error:
             assert error.message == [
                 "Failed to convert [col2] to [Int64]",
                 "Failed to convert [col3] to [Float64]",

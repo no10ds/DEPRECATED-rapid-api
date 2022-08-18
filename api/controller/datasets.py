@@ -19,9 +19,6 @@ from api.common.config.auth import Action
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
-    CrawlerIsNotReadyError,
-    GetCrawlerError,
-    AWSServiceError,
     UserError,
 )
 from api.common.logger import AppLogger
@@ -189,15 +186,10 @@ async def delete_data_file(
     try:
         delete_service.delete_dataset_file(domain, dataset, filename)
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
-    except CrawlerIsNotReadyError as error:
-        AppLogger.warning("File deletion did not occur: %s", error.args[0])
-        raise UserError(
-            message="Unable to delete file. Please try again later.", status_code=429
-        )
     except CrawlerStartFailsError as error:
         AppLogger.warning("Failed to start crawler: %s", error.args[0])
         response.status_code = http_status.HTTP_202_ACCEPTED
-        return {f"{filename} has been deleted."}
+        return {"details": f"{filename} has been deleted."}
 
 
 @datasets_router.post(
@@ -257,15 +249,6 @@ async def upload_data(
     except SchemaNotFoundError as error:
         AppLogger.warning("Schema not found: %s", error.args[0])
         raise UserError(message=error.args[0])
-    except CrawlerIsNotReadyError as error:
-        AppLogger.warning("Data was not uploaded: %s", error.args[0])
-        raise UserError(
-            message="Data is currently processing. Please try again later.",
-            status_code=429,
-        )
-    except GetCrawlerError as error:
-        AppLogger.error(error.args[0])
-        raise AWSServiceError(message="Internal failure when uploading data.")
     except CrawlerStartFailsError as error:
         AppLogger.warning("Failed to start crawler: %s", error.args[0])
         response.status_code = http_status.HTTP_202_ACCEPTED

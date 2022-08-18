@@ -16,7 +16,6 @@ from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
     UserError,
-    ProtectedDomainDoesNotExistError,
 )
 from api.common.logger import AppLogger
 from api.domain.data_types import DataTypes
@@ -128,8 +127,8 @@ class DataService:
                 schema.get_domain().lower()
                 not in self.protected_domain_service.list_protected_domains()
             ):
-                raise ProtectedDomainDoesNotExistError(
-                    f"The protected domain '{schema.get_domain()}' does not exist, please create it first."
+                raise UserError(
+                    f"The protected domain '{schema.get_domain()}' does not exist."
                 )
         return schema.get_domain()
 

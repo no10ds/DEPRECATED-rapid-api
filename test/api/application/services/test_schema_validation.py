@@ -9,7 +9,7 @@ from api.application.services.schema_validation import (
 )
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import MAX_CUSTOM_TAG_COUNT
-from api.common.custom_exceptions import SchemaError
+from api.common.custom_exceptions import SchemaValidationError
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, UpdateBehaviour, SchemaMetadata
 
@@ -48,13 +48,13 @@ class TestSchemaValidation:
     def _assert_validate_schema_raises_error(
         self, invalid_schema: Schema, message_pattern: str
     ):
-        with pytest.raises(SchemaError, match=message_pattern):
+        with pytest.raises(SchemaValidationError, match=message_pattern):
             validate_schema(invalid_schema)
 
     def test_valid_schema(self):
         try:
             validate_schema(self.valid_schema)
-        except SchemaError:
+        except SchemaValidationError:
             pytest.fail("Unexpected SchemaError was thrown")
 
     def test_is_invalid_schema_with_no_columns(self):
@@ -551,7 +551,7 @@ class TestSchemaValidation:
 
         try:
             validate_schema(valid_schema)
-        except SchemaError:
+        except SchemaValidationError:
             pytest.fail("Unexpected SchemaError was thrown")
 
     @pytest.mark.parametrize(
@@ -580,7 +580,7 @@ class TestSchemaValidation:
 
         try:
             validate_schema(valid_schema)
-        except SchemaError:
+        except SchemaValidationError:
             pytest.fail("Unexpected SchemaError was thrown")
 
     @pytest.mark.parametrize(
@@ -649,7 +649,7 @@ class TestSchemaValidation:
 
         try:
             validate_schema(valid_schema)
-        except SchemaError:
+        except SchemaValidationError:
             pytest.fail("Unexpected SchemaError was thrown")
 
     @pytest.mark.parametrize(
@@ -715,7 +715,7 @@ class TestSchemaValidation:
 
         try:
             validate_schema(valid_schema)
-        except SchemaError:
+        except SchemaValidationError:
             pytest.fail("Unexpected SchemaError was thrown")
 
     def test_invalid_schema_when_too_many_tags_are_specified(self):
@@ -744,7 +744,7 @@ class TestSchemaValidation:
         )
 
         with pytest.raises(
-            SchemaError,
+            SchemaValidationError,
             match=f"You cannot specify more than {MAX_CUSTOM_TAG_COUNT} tags",
         ):
             validate_schema_for_upload(invalid_schema)
@@ -798,7 +798,7 @@ class TestSchemaValidation:
             ],
         )
 
-        with pytest.raises(SchemaError, match=message):
+        with pytest.raises(SchemaValidationError, match=message):
             validate_schema_for_upload(invalid_schema)
 
     @pytest.mark.parametrize(
@@ -843,7 +843,7 @@ class TestSchemaValidation:
             ],
         )
 
-        with pytest.raises(SchemaError, match=message):
+        with pytest.raises(SchemaValidationError, match=message):
             validate_schema_for_upload(invalid_schema)
 
     @pytest.mark.parametrize(
@@ -879,7 +879,7 @@ class TestSchemaValidation:
 
         try:
             validate_schema(valid_schema)
-        except SchemaError:
+        except SchemaValidationError:
             pytest.fail("Unexpected SchemaError was thrown")
 
     def test_validate_schema_removes_duplicated_tags(self):
@@ -919,7 +919,7 @@ class TestSchemaValidation:
     def test_is_valid_when_schema_for_upload_has_valid_owners_email_address(self):
         try:
             validate_schema_for_upload(self.valid_schema)
-        except SchemaError:
+        except SchemaValidationError:
             pytest.fail("Unexpected SchemaError was thrown")
 
     @pytest.mark.parametrize(
@@ -965,7 +965,7 @@ class TestSchemaValidation:
             ],
         )
 
-        with pytest.raises(SchemaError):
+        with pytest.raises(SchemaValidationError):
             validate_schema_for_upload(invalid_upload_schema)
 
     @pytest.mark.parametrize(
@@ -999,5 +999,5 @@ class TestSchemaValidation:
             ],
         )
 
-        with pytest.raises(SchemaError):
+        with pytest.raises(SchemaValidationError):
             validate_schema_for_upload(invalid_upload_schema)

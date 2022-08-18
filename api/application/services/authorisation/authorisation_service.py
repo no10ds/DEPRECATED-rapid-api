@@ -7,7 +7,7 @@ from fastapi.security import SecurityScopes
 from fastapi.security.utils import get_authorization_scheme_param
 from jwt import InvalidTokenError
 from starlette.requests import Request
-from starlette.status import HTTP_401_UNAUTHORIZED, HTTP_403_FORBIDDEN
+from starlette.status import HTTP_401_UNAUTHORIZED
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.adapter.s3_adapter import S3Adapter
@@ -22,9 +22,9 @@ from api.common.config.auth import (
 from api.common.custom_exceptions import (
     AuthorisationError,
     UserCredentialsUnavailableError,
-    ClientCredentialsUnavailableError,
     UserError,
     NotAuthorisedToViewPageError,
+    AuthenticationError,
 )
 from api.common.logger import AppLogger
 from api.domain.token import Token
@@ -109,7 +109,7 @@ def secure_dataset_endpoint(
 def check_credentials_availability(
     browser_request: bool, user_token: Optional[str], client_token: Optional[str]
 ) -> None:
-    if not have_credentials(browser_request, client_token, user_token):
+    if not have_credentials(client_token, user_token):
         if browser_request:
             AppLogger.info("Cannot retrieve user credentials if no user token provided")
             raise UserCredentialsUnavailableError()
@@ -117,14 +117,13 @@ def check_credentials_availability(
             AppLogger.info(
                 "Cannot retrieve client credentials if no client token provided"
             )
-            raise ClientCredentialsUnavailableError(
-                message="You are not authorised to perform this action",
-                status_code=HTTP_403_FORBIDDEN,
+            raise AuthenticationError(
+                message="You are not authorised to perform this action"
             )
 
 
-def have_credentials(browser_request: bool, client_token: str, user_token: str) -> bool:
-    return bool((browser_request and user_token) or client_token)
+def have_credentials(client_token: str, user_token: str) -> bool:
+    return bool(user_token or client_token)
 
 
 def check_permissions(

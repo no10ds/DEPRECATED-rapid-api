@@ -177,7 +177,7 @@ class TestModifyClientPermissions(BaseClientTest):
 class TestClientDeletion(BaseClientTest):
     @patch.object(SubjectService, "delete_client")
     def test_returns_client_information_when_valid_request(self, mock_delete_client):
-        expected_response = {"message": "The client 'my-client-id' has been deleted"}
+        expected_response = {"details": "The client 'my-client-id' has been deleted"}
 
         response = self.client.delete(
             "/client/my-client-id",

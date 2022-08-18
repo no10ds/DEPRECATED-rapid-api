@@ -150,4 +150,4 @@ async def delete_user(delete_request: UserDeleteRequest):
 
     """
     subject_service.delete_user(delete_request)
-    return {"message": f"The user '{delete_request.username}' has been deleted"}
+    return {"details": f"The user '{delete_request.username}' has been deleted"}

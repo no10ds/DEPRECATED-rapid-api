@@ -10,8 +10,8 @@ from api.application.services.schema_infer_service import SchemaInferService
 from api.common.config.auth import Action
 from api.common.custom_exceptions import (
     AWSServiceError,
-    CrawlerCreateFailsError,
-    ProtectedDomainDoesNotExistError,
+    CrawlerAlreadyExistsError,
+    CrawlerCreationError,
 )
 from api.common.logger import AppLogger
 from api.controller.utils import _response_body
@@ -100,11 +100,9 @@ async def upload_schema(schema: Schema):
     try:
         schema_file_name = data_service.upload_schema(schema)
         return _response_body(schema_file_name)
-    except ProtectedDomainDoesNotExistError as error:
-        _log_and_raise_error("Protected domain error", error.args[0])
-    except CrawlerCreateFailsError as error:
+    except (CrawlerCreationError, CrawlerAlreadyExistsError) as error:
         _delete_uploaded_schema(schema)
-        _log_and_raise_error("Failed to create crawler", error.args[0])
+        raise error
 
 
 def _delete_uploaded_schema(schema: Schema):

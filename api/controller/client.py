@@ -136,4 +136,4 @@ async def delete_client(client_id: str):
 
     """
     subject_service.delete_client(client_id)
-    return {"message": f"The client '{client_id}' has been deleted"}
+    return {"details": f"The client '{client_id}' has been deleted"}

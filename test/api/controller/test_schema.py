@@ -5,10 +5,10 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
 from api.common.custom_exceptions import (
-    SchemaError,
+    SchemaValidationError,
     ConflictError,
-    ProtectedDomainDoesNotExistError,
-    CrawlerCreateFailsError,
+    CrawlerCreationError,
+    UserError,
 )
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -32,7 +32,7 @@ class TestSchemaUpload(BaseClientTest):
         mock_upload_schema.assert_called_once_with(expected_schema)
 
         assert response.status_code == 201
-        assert response.json() == {"uploaded": "some-thing.json"}
+        assert response.json() == {"details": "some-thing.json"}
 
     def test_return_400_pydantic_error(self):
         request_body = {
@@ -74,7 +74,7 @@ class TestSchemaUpload(BaseClientTest):
     @patch.object(DataService, "upload_schema")
     def test_returns_400_when_invalid_schema(self, mock_upload_schema):
         request_body, expected_schema = self._generate_schema()
-        mock_upload_schema.side_effect = SchemaError("Error message")
+        mock_upload_schema.side_effect = SchemaValidationError("Error message")
         response = self.client.post(
             "/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
         )
@@ -84,15 +84,13 @@ class TestSchemaUpload(BaseClientTest):
 
     @patch.object(DeleteService, "delete_schema")
     @patch.object(DataService, "upload_schema")
-    def test_returns_500_schema_deletion_if_crawler_creation_fails(
+    def test_schema_deletion_returns_500_if_crawler_creation_fails(
         self, mock_upload_schema, mock_delete_schema
     ):
         request_body, _ = self._generate_schema()
 
         mock_upload_schema.return_value = "some-thing.json"
-        mock_upload_schema.side_effect = CrawlerCreateFailsError(
-            "Crawler creation error"
-        )
+        mock_upload_schema.side_effect = CrawlerCreationError("Crawler creation error")
 
         response = self.client.post(
             "/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
@@ -110,15 +108,13 @@ class TestSchemaUpload(BaseClientTest):
     ):
         request_body, _ = self._generate_schema()
 
-        mock_upload_schema.side_effect = ProtectedDomainDoesNotExistError(
-            "Protected domain error"
-        )
+        mock_upload_schema.side_effect = UserError("Protected domain error")
 
         response = self.client.post(
             "/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
         )
 
-        assert response.status_code == 500
+        assert response.status_code == 400
         assert response.json() == {"details": "Protected domain error"}
 
     def _generate_schema(self) -> Tuple[Dict, Schema]:
@@ -221,7 +217,7 @@ class TestSchemaGeneration(BaseClientTest):
         file_content = b"colname1,colname2\nsomething,123\notherthing,456\n\n"
         file_name = "filename.csv"
         error_message = "The schema is wrong"
-        mock_infer_schema.side_effect = SchemaError(error_message)
+        mock_infer_schema.side_effect = SchemaValidationError(error_message)
 
         response = self.client.post(
             "/schema/PUBLIC/mydomain/mydataset/generate",

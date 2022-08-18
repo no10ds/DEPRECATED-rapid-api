@@ -9,11 +9,11 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.common.custom_exceptions import (
     UserError,
-    DatasetError,
+    DatasetValidationError,
     CrawlerStartFailsError,
     SchemaNotFoundError,
     CrawlerIsNotReadyError,
-    GetCrawlerError,
+    AWSServiceError,
 )
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.schema import Schema, Column
@@ -42,7 +42,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         assert response.status_code == 201
-        assert response.json() == {"uploaded": file_name_with_timestamp}
+        assert response.json() == {"details": "2022-05-05T12:00:00-filename.csv"}
 
     @patch.object(DataService, "upload_dataset")
     def test_calls_data_upload_service_fails_when_invalid_dataset_is_uploaded(
@@ -51,7 +51,9 @@ class TestDataUpload(BaseClientTest):
         file_content = b"some,content"
         file_name = "filename.csv"
 
-        mock_upload_dataset.side_effect = DatasetError("Expected 3 columns, received 4")
+        mock_upload_dataset.side_effect = DatasetValidationError(
+            "Expected 3 columns, received 4"
+        )
 
         response = self.client.post(
             "/datasets/domain/dataset",
@@ -88,7 +90,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         assert response.status_code == 202
-        assert response.json() == {"uploaded": file_name}
+        assert response.json() == {"details": "filename.csv"}
 
     def test_calls_data_fails_with_missing_path(self):
         file_content = b"some,content"
@@ -141,16 +143,14 @@ class TestDataUpload(BaseClientTest):
         )
 
         assert response.status_code == 429
-        assert response.json() == {
-            "details": "Data is currently processing. Please try again later."
-        }
+        assert response.json() == {"details": "Some message"}
 
     @patch.object(DataService, "upload_dataset")
     def test_raises_error_when_fails_to_get_crawler_state(self, mock_upload_dataset):
         file_content = b"some,content"
         file_name = "filename.csv"
 
-        mock_upload_dataset.side_effect = GetCrawlerError("Some message")
+        mock_upload_dataset.side_effect = AWSServiceError("Some message")
 
         response = self.client.post(
             "/datasets/domain/dataset",
@@ -163,7 +163,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         assert response.status_code == 500
-        assert response.json() == {"details": "Internal failure when uploading data."}
+        assert response.json() == {"details": "Some message"}
 
 
 class TestListDatasets(BaseClientTest):
@@ -336,7 +336,7 @@ class TestDatasetInfo(BaseClientTest):
 
         mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset")
 
-        assert response.status_code == 400
+        assert response.status_code == 404
         assert response.json() == {
             "details": "Could not find schema for mydomain/mydataset"
         }
@@ -544,9 +544,7 @@ class TestDeleteFiles(BaseClientTest):
     def test_returns_429_when_crawler_is_not_ready_before_deletion(
         self, mock_delete_dataset_file
     ):
-        mock_delete_dataset_file.side_effect = CrawlerIsNotReadyError(
-            "Some random message"
-        )
+        mock_delete_dataset_file.side_effect = CrawlerIsNotReadyError("Some message")
 
         response = self.client.delete(
             "/datasets/mydomain/mydataset/2022-01-01T00:00:00-file.csv",
@@ -558,9 +556,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         assert response.status_code == 429
-        assert response.json() == {
-            "details": "Unable to delete file. Please try again later."
-        }
+        assert response.json() == {"details": "Some message"}
 
     @patch.object(DeleteService, "delete_dataset_file")
     def test_returns_202_when_crawler_cannot_start_after_deletion(
@@ -580,7 +576,9 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         assert response.status_code == 202
-        assert response.json() == ["2022-01-01T00:00:00-file.csv has been deleted."]
+        assert response.json() == {
+            "details": "2022-01-01T00:00:00-file.csv has been deleted."
+        }
 
     @patch.object(DeleteService, "delete_dataset_file")
     def test_returns_400_when_file_name_does_not_exist(self, mock_delete_dataset_file):

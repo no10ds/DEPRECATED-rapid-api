@@ -19,9 +19,9 @@ from api.common.config.auth import SensitivityLevel
 from api.common.custom_exceptions import (
     AuthorisationError,
     UserCredentialsUnavailableError,
-    ClientCredentialsUnavailableError,
     UserError,
     NotAuthorisedToViewPageError,
+    AuthenticationError,
 )
 from api.domain.token import Token
 
@@ -70,8 +70,7 @@ class TestSecureDatasetEndpoint:
         user_token = None
         client_token = None
         browser_request = False
-
-        with pytest.raises(ClientCredentialsUnavailableError):
+        with pytest.raises(AuthenticationError):
             secure_dataset_endpoint(
                 security_scopes=SecurityScopes(scopes=["READ"]),
                 browser_request=browser_request,
@@ -290,27 +289,24 @@ class TestCheckCredentialsAvailability:
             )
 
     def test_raises_http_error_when_is_not_browser_request_with_no_credentials(self):
-        with pytest.raises(ClientCredentialsUnavailableError):
+        with pytest.raises(AuthenticationError):
             check_credentials_availability(
                 browser_request=False, user_token=None, client_token=None
             )
 
     @pytest.mark.parametrize(
-        "browser_request, user_token, client_token, expected",
+        "user_token, client_token, expected",
         [
             # Credentials DO exist
-            (True, "the-user-token", None, True),
-            (False, None, "the-client-token", True),
+            ("the-user-token", None, True),
+            (None, "the-client-token", True),
             # Credentials do NOT exist
-            (False, None, None, False),
-            (True, None, None, False),
+            (None, None, False),
+            (None, None, False),
         ],
     )
-    def test_returns_expected_outcome(
-        self, browser_request, user_token, client_token, expected
-    ):
+    def test_returns_expected_outcome(self, user_token, client_token, expected):
         result = have_credentials(
-            browser_request=browser_request,
             user_token=user_token,
             client_token=client_token,
         )

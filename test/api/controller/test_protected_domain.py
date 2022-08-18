@@ -16,7 +16,7 @@ class TestProtectedDomains(BaseClientTest):
 
         assert response.status_code == 201
         assert response.json() == {
-            "message": "Successfully created protected domain for new"
+            "details": "Successfully created protected domain for new"
         }
 
     @patch.object(ProtectedDomainService, "list_protected_domains")

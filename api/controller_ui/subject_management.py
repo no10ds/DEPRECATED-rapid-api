@@ -1,4 +1,5 @@
 import os
+from typing import List, Dict
 
 from fastapi import APIRouter
 from fastapi import Request, Security
@@ -8,7 +9,6 @@ from api.application.services.authorisation.authorisation_service import secure_
 from api.application.services.permissions_service import PermissionsService
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
-from api.common.custom_exceptions import UserError, AWSServiceError
 
 permissions_service = PermissionsService()
 subject_service = SubjectService()
@@ -52,20 +52,9 @@ def select_subject(request: Request):
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 def modify_subject_success(request: Request, subject_id: str):
-    subject_permission_display_names = []
-    subject_name = None
-    error_message = ""
-
-    try:
-        subject_name = subject_service.get_subject_name_by_id(subject_id)
-        subject_permissions = permissions_service.get_user_permissions_ui(subject_id)
-
-        _get_permission_display_name(
-            subject_permission_display_names, subject_permissions
-        )
-
-    except AWSServiceError:
-        error_message = "Something went wrong. Please contact your system administrator"
+    subject_name = subject_service.get_subject_name_by_id(subject_id)
+    subject_permissions = permissions_service.get_user_permissions_ui(subject_id)
+    subject_permission_display_names = _get_permission_display_name(subject_permissions)
 
     return templates.TemplateResponse(
         name="success.html",
@@ -74,7 +63,6 @@ def modify_subject_success(request: Request, subject_id: str):
             "subject_id": subject_id,
             "subject_name": subject_name,
             "subject_permissions_display_names": subject_permission_display_names,
-            "error_message": error_message,
         },
     )
 
@@ -84,19 +72,9 @@ def modify_subject_success(request: Request, subject_id: str):
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 def modify_subject(request: Request, subject_id: str):
-    error_message = None
-    subject_name = None
-
-    try:
-        subject_permissions = permissions_service.get_user_permissions_ui(subject_id)
-        all_permissions = permissions_service.get_all_permissions_ui()
-        subject_name = subject_service.get_subject_name_by_id(subject_id)
-    except UserError as error:
-        subject_permissions, all_permissions = [], []
-        error_message = f"Error: {error.message}. Please go back and try again."
-    except AWSServiceError:
-        subject_permissions, all_permissions = [], []
-        error_message = "Something went wrong. Please contact your system administrator"
+    subject_permissions = permissions_service.get_user_permissions_ui(subject_id)
+    all_permissions = permissions_service.get_all_permissions_ui()
+    subject_name = subject_service.get_subject_name_by_id(subject_id)
 
     return templates.TemplateResponse(
         name="subject_modify.html",
@@ -106,7 +84,6 @@ def modify_subject(request: Request, subject_id: str):
             "subject_name": subject_name,
             "permissions": all_permissions,
             "subject_permissions": subject_permissions,
-            "error_message": error_message,
         },
     )
 
@@ -123,7 +100,11 @@ def create_subject(request: Request):
     )
 
 
-def _get_permission_display_name(subject_permission_display_names, subject_permissions):
+def _get_permission_display_name(
+    subject_permissions: Dict[str, List[Dict[str, str]]]
+) -> List[str]:
+    subject_permission_display_names = []
     for inner_list_permission in subject_permissions.values():
         for permission in inner_list_permission:
             subject_permission_display_names.append(permission["display_name_full"])
+    return subject_permission_display_names
