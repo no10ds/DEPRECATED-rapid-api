@@ -1,6 +1,7 @@
 import os
 import re
 from abc import ABC
+from typing import Optional
 
 from playwright.sync_api import sync_playwright, expect
 
@@ -123,7 +124,9 @@ class BaseTestUI(ABC):
 
     def assert_can_upload(self, page, dropdown_id, upload_dataset):
         print(f"Trying uploading to '{upload_dataset}'")
-        self.select_from_dropdown(page, dropdown_id, upload_dataset)
+        self.select_from_dropdown_by_visible_text(
+            page, dropdown_id, visible_text=upload_dataset
+        )
         self.choose_and_upload_file(page)
         self.assert_contains_label(page, FILENAME)
         self.click_button(page, "Upload dataset")
@@ -135,14 +138,19 @@ class BaseTestUI(ABC):
         assert selected == [value_to_select]
 
     def select_from_dropdown_by_visible_text(
-        self, page, dropdown_id: str, visible_text: str, expected_value: str
+        self,
+        page,
+        dropdown_id: str,
+        visible_text: str,
+        expected_value: Optional[str] = None,
     ):
         """
         Limitation: Will not work if multiple visible values in the dropdown are the same
         """
         print(f"Selecting visible value '{visible_text}' from '{dropdown_id}'")
         selected = page.select_option(f"select#{dropdown_id}", label=visible_text)
-        assert selected == [expected_value]
+        if expected_value:
+            assert selected == [expected_value]
 
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")
@@ -177,11 +185,11 @@ class TestUI(BaseTestUI):
             page = self.set_up_base_page(playwright)
 
             write_all_datasets = [
-                "ui_test/upload",
-                "ui_test/upload_private",
-                "test_e2e_protected/do_not_delete",
+                "upload",
+                "upload_private",
+                "do_not_delete",
             ]
-            upload_dataset = "ui_test/upload"
+            upload_dataset = "upload"
             dropdown_id = "dataset"
 
             self.login(page)
