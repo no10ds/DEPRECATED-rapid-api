@@ -240,7 +240,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
     def test_queries_non_existing_dataset_when_authorised(self):
         url = self.query_dataset_url("mydomain", "unknowndataset")
         response = requests.post(url, headers=self.generate_auth_headers())
-        assert response.status_code == HTTPStatus.BAD_REQUEST
+        assert response.status_code == HTTPStatus.NOT_FOUND
 
     def test_queries_existing_dataset_as_json_when_authorised(self):
         url = self.query_dataset_url(domain=self.e2e_test_domain, dataset="query")
