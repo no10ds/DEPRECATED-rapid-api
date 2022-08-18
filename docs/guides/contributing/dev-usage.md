@@ -48,3 +48,13 @@ extend this in the future.
 
 The "action" component of a permission (`READ`, `WRITE`, etc.) is used only in the matching logic when a request is made
 and compared to the specified scope assigned to the endpoint being accessed.
+
+
+## Handling Exceptions
+
+We have a global exception handler that catches custom defined and unexpected exceptions. This handler either redirects
+the user to an error page if it is a browser request or otherwise returns a structured json response with corresponding
+status code.
+
+When handling exceptions in the code favour using the most generic custom exceptions as defined in `custom_exceptions.py`.
+Only create a new custom exception if you need it to modify behaviour further up in the call chain and this would improve readability.

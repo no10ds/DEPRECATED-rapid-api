@@ -229,3 +229,15 @@ For each block, the terraform command invocation also needs to change, so it can
 below:
 
 `terraform apply /location/app-cluster/main.tf -var-file=/location/common-params.tfvars -var-file=/location/app-cluster.tfvars`
+
+
+## Exception Handling and HTTP Status Codes
+
+### Problem
+
+Currently, our custom exceptions are defined with a status code, this pollutes application logic with the HTTP layer
+
+### Suggested solution
+
+Ideally we pull up assigning the status codes into the global exception handler, which already determines whether to
+return json or redirect a user.
