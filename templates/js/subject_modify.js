@@ -17,11 +17,11 @@ const modify = (subjectId) => {
         }),
         body: JSON.stringify(requestBody),
     }).then(response => response.json()
-        .then(result => {
+        .then(data => {
             if (response.ok) {
                 navigateToSuccessPage()
             } else {
-                showErrorMessage(result["details"])
+                showErrorMessage(data["details"])
             }
         })).catch(_ => {
         showErrorMessage('Something went wrong. Please contact your system administrator.')

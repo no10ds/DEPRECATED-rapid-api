@@ -48,7 +48,7 @@ function render_creation_success(type, requestBody) {
               load_success_html(data, type)
               hide_elements(["create_form", "submit_form"])
             } else {
-                showErrorMessage(result["details"])
+                showErrorMessage(data["details"])
             }
         })).catch(_ => {
         showErrorMessage('Something went wrong. Please contact your system administrator.')
