@@ -19,13 +19,30 @@
             <div class="form-select">
                 <h2 class="highlight">{{ domain }}/{{ dataset }}</h2>
             </div>
+            <div class="form-select">
+                <label class="form-select_label">Data format</label>
+                <select class="form-select_dropdown" id="select_format">
+                    <option value="csv" selected>csv</option>
+                    <option value="json">json</option>
+                </select>
+            </div>
         </div>
+        <h4 class="response-msg--error" id="error-message"></h4>
         <div class="form_submit">
-            <button class="btn" type="button" id='button-modify' onclick="">Download</button>
+            <button class="btn" type="button" id='download-dataset'
+                    onclick="downloadDataset('{{domain}}','{{dataset}}')">Download
+            </button>
             <label class="response-msg" id="response-title"></label>
             <label class="response-msg" id="response"></label>
         </div>
     </form>
 </div>
+{% block javascript %}
+<script type="text/javascript">
+        {% include "./js/common.js" %}
+        {% include "./js/dataset_download.js" %}
+
+</script>
+{% endblock %}
 </body>
 </html>
