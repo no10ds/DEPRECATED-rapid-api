@@ -25,7 +25,6 @@ class UserError(BaseAppException):
 
 
 class ConflictError(UserError):
-    # This is fine because we want a specific status code
     def __init__(self, message, status_code: int = 409):
         super().__init__(message, status_code)
 
