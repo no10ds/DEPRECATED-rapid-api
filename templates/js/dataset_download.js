@@ -13,19 +13,20 @@ const downloadDataset = (domain, dataset) => {
             "Content-Type": "application/json",
         }),
         body: JSON.stringify(queryBody),
-    }).then(response => response.blob()
-        .then(blob => {
-            if (response.ok) {
+    }).then(response => {
+        if(response.ok) {
+            return response.blob().then(blob => {
                 // disable submit button till the dataset downloads
                 toggleSwitchDisable('download-dataset', true)
 
                 downloadFile(blob, domain, dataset, selected_format)
                 // enable submit button back
                 toggleSwitchDisable('download-dataset', false)
-            } else {
-                showErrorMessage(result["details"])
-            }
-        })).catch(_ => {
+                }
+            )
+        } else {
+            return response.json().then(result => showErrorMessage(result["details"]))
+        }}).catch(_ => {
         showErrorMessage('Something went wrong. Please contact your system administrator.')
         // enable submit button back
         toggleSwitchDisable('download-dataset', false)
