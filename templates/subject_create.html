@@ -50,6 +50,7 @@
                 {% include 'component/permissions/checkboxes.html' %}
             {% endwith %}
         </div>
+        <h4 hidden class="response-msg--error" id="error-message"></h4>
         <div class="form_submit" id="submit_form">
             <button class="btn" type="button" onclick="create_subject()">Create subject</button>
         </div>
@@ -57,8 +58,6 @@
         <div id="success">
         </div>
     </form>
-
-
 </div>
 {% block javascript %}
 <script type="text/javascript">

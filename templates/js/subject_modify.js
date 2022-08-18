@@ -33,23 +33,4 @@ const navigateToSuccessPage = () => {
     window.location.href = `${window.location.href}/success`;
 }
 
-const showErrorMessage = (message) => {
-    const errorMessageContainer = document.getElementById('error-message')
-    errorMessageContainer.innerText = message
-}
-
-const hideErrorMessage = () => {
-    const errorMessageContainer = document.getElementById('error-message')
-    errorMessageContainer.innerText = ''
-}
-
-const setupEventListeners = () => {
-    // Set up inputs to clear error message on interaction
-    const allInputs = document.querySelectorAll('input')
-    allInputs.forEach(input => {
-        input.addEventListener('click', hideErrorMessage)
-    })
-}
-
-
 setupEventListeners()

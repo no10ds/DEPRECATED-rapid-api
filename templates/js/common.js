@@ -51,3 +51,24 @@ function get_selected_value(element_id) {
   const element = document.getElementById(element_id);
   return element.options[element.selectedIndex].text;
 }
+
+const showErrorMessage = (message) => {
+    const errorMessageContainer = document.getElementById('error-message')
+    errorMessageContainer.innerText = message
+    errorMessageContainer.hidden = false
+}
+
+const hideErrorMessage = () => {
+    const errorMessageContainer = document.getElementById('error-message')
+    errorMessageContainer.innerText = ''
+    errorMessageContainer.hidden = true
+}
+
+const setupEventListeners = () => {
+    // Set up inputs to clear error message on interaction
+    const allInputs = document.querySelectorAll('input')
+    allInputs.forEach(input => {
+        input.addEventListener('click', hideErrorMessage)
+        input.addEventListener('focus', hideErrorMessage)
+    })
+}

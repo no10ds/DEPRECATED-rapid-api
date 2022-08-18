@@ -43,21 +43,25 @@ function render_creation_success(type, requestBody) {
       "Content-Type": "application/json",
     }),
     body: JSON.stringify(requestBody),
-  })
-    .then((response) => {
-      return response.json();
-    })
-    .then((data) => {
-      load_success_html(data, type)
-      hide_elements(["create_form", "submit_form"])
+  }).then(response => response.json()
+        .then(data => {
+            if (response.ok) {
+              load_success_html(data, type)
+              hide_elements(["create_form", "submit_form"])
+            } else {
+                showErrorMessage(result["details"])
+            }
+        })).catch(_ => {
+        showErrorMessage('Something went wrong. Please contact your system administrator.')
     });
-}
+};
 
 function load_success_html(response_data, type) {
 
   const is_client = type == "client";
   const html = '<div class="form_body form_body--headed" id="success_form">' +
                '<h1 class="content_header">Success</h1>' +
+               '<h2 class="content_header">You will only see this page once. Please make note of the details below.</h2>' +
                data_for_subject(is_client, response_data) +
                '</div>'
   document.getElementById("success").innerHTML = html;
@@ -65,16 +69,18 @@ function load_success_html(response_data, type) {
 
 function data_for_subject(is_client, response_data){
     if (is_client) {
-        return '<h2>Client <span class="highlight">' + response_data.client_name + '</span> created</h2>' +
-               '<h2>Id: <span class="highlight">' + response_data.client_id + '</span></h2>' +
-               '<h2>Secret: <span class="highlight">' + response_data.client_secret + '</span></h2>';
+        return '<h3>Client <span class="highlight">' + response_data.client_name + '</span> created</h3>' +
+               '<h3>Id: <span class="highlight">' + response_data.client_id + '</span></h3>' +
+               '<h3>Secret: <span class="highlight">' + response_data.client_secret + '</span></h3>';
     } else {
-        return '<h2>User <span class="highlight">' + response_data.username + '</span> created</h2>' +
-               '<h2>Id: <span class="highlight">' + response_data.user_id + '</span></h2>' +
-               '<h2>Email: <span class="highlight">' + response_data.email+ '</span></h2>';
+        return '<h3>User <span class="highlight">' + response_data.username + '</span> created</h3>' +
+               '<h3>Id: <span class="highlight">' + response_data.user_id + '</span></h3>' +
+               '<h3>Email: <span class="highlight">' + response_data.email+ '</span></h3>';
     }
 }
 
 function hide_elements(element_ids) {
   element_ids.forEach(element_id => document.getElementById(element_id).hidden = true);
 }
+
+setupEventListeners()
