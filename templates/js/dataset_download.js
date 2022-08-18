@@ -1,7 +1,7 @@
 const downloadDataset = (domain, dataset) => {
     const selected_format = get_selected_value("select_format");
 
-    const accept_header = select_format == "json" ? "application/json" : "text/csv"
+    const accept_header = selected_format == "json" ? "application/json" : "text/csv"
 
     // Empty SQL query
     const queryBody = {}
