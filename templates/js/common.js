@@ -72,3 +72,5 @@ const setupEventListeners = () => {
         input.addEventListener('focus', hideErrorMessage)
     })
 }
+
+setupEventListeners()

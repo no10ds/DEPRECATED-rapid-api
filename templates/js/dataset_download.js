@@ -1,10 +1,32 @@
+function addListValueToQuery(queryBody, queryField, elementId) {
+    const valueToAdd = document.getElementById(elementId).value;
+    if (valueToAdd) {
+        queryBody[queryField] = valueToAdd.split(",");
+   }
+}
+
+function addStringValueToQuery(queryBody, queryField, elementId) {
+    const valueToAdd = document.getElementById(elementId).value;
+    if (valueToAdd) {
+        queryBody[queryField] = valueToAdd;
+   }
+}
+
+function createQuery() {
+   const queryBody = {};
+   addListValueToQuery(queryBody, "select_columns", "selectColumns");
+   addStringValueToQuery(queryBody, "filter", "filter");
+   addListValueToQuery(queryBody, "group_by_columns", "groupByColumns");
+   addStringValueToQuery(queryBody, "aggregation_conditions", "aggregationConditions");
+   addStringValueToQuery(queryBody, "limit", "rowLimit");
+
+   return queryBody
+}
+
 const downloadDataset = (domain, dataset) => {
     const selected_format = get_selected_value("select_format");
 
     const accept_header = selected_format == "json" ? "application/json" : "text/csv"
-
-    // Empty SQL query
-    const queryBody = {}
 
     fetch(`/datasets/${domain}/${dataset}/query`, {
         method: "POST",
@@ -12,7 +34,7 @@ const downloadDataset = (domain, dataset) => {
             "Accept": accept_header,
             "Content-Type": "application/json",
         }),
-        body: JSON.stringify(queryBody),
+        body: JSON.stringify(createQuery()),
     }).then(response => {
         if(response.ok) {
             return response.blob().then(blob => {
@@ -47,5 +69,4 @@ function downloadFile(blob, domain, dataset, selected_format) {
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
-
 }

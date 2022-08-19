@@ -31,5 +31,3 @@ const modify = (subjectId) => {
 const navigateToSuccessPage = () => {
     window.location.href = `${window.location.href}/success`;
 }
-
-setupEventListeners()

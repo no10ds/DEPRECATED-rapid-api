@@ -14,6 +14,16 @@ a {
       align-self: center;
     }
   }
+
+  &.link {
+    color: var(--pink);
+
+    &:focus,
+     :active,
+     :hover {
+      color: var(--dark-pink);
+    }
+  }
 }
 
 fieldset {

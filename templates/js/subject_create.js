@@ -81,5 +81,3 @@ function data_for_subject(is_client, response_data){
 function hide_elements(element_ids) {
   element_ids.forEach(element_id => document.getElementById(element_id).hidden = true);
 }
-
-setupEventListeners()

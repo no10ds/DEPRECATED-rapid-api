@@ -129,6 +129,15 @@
     font-size: 1.8rem;
     text-align: center;
     padding: .8rem;
+
+    &--row {
+      width: 60%;
+    }
+  }
+
+  &_legend {
+    padding: 0 .5rem .5rem;
+    font-weight: 600;
   }
 
   &_text::placeholder {
@@ -136,4 +145,14 @@
     font-style: italic;
   }
 
+  &--row {
+
+    &:not([hidden]) {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 80%;
+      margin: 1.5rem auto;
+    }
+  }
 }
