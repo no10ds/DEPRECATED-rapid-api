@@ -151,9 +151,7 @@ class BaseTestUI(ABC):
 
     def assert_can_upload(self, page, dropdown_id, upload_dataset):
         print(f"Trying uploading to '{upload_dataset}'")
-        self.select_from_dropdown_by_visible_text(
-            page, dropdown_id, visible_text=upload_dataset
-        )
+        self.select_from_dropdown(page, dropdown_id, upload_dataset)
         self.choose_and_upload_file(page)
         self.assert_contains_label(page, FILENAME)
         self.click_button(page, "Upload dataset")
@@ -196,7 +194,7 @@ class TestUI(BaseTestUI):
                 "upload_private",
                 "do_not_delete",
             ]
-            upload_dataset = "upload"
+            upload_dataset = "ui_test/upload"
             dropdown_id = "dataset"
 
             self.login(page)
