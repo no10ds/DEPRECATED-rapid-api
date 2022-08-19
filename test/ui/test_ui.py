@@ -217,8 +217,7 @@ class TestUI(BaseTestUI):
 
             self.login(page)
 
-            # Download page link toggled off for now
-            self.go_to(page, "/download")
+            self.click_link(page, "Download Data")
 
             self.assert_title(page, "rAPId - Select Dataset")
             self.select_from_dropdown_by_visible_text(
