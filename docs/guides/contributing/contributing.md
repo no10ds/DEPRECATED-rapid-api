@@ -286,9 +286,9 @@ compatibility between the two elements.
 1. Decide on the new version number following the [semantic versioning approach](https://semver.org/)
 2. Update and commit the [Changelog](../../../changelog.md) (you can follow
    the [template](../../../changelog_release_template.md))
-3. Run `make release commit=<commit_hash> version=v.X.X.X`
+3. Run `make release commit=<commit_hash> version=vX.X.X`
 
-> ⚠️ Ensure the version number follows the format `v.X.X.X` with full-stops in the same places, particularly the first one after the `v`
+> ⚠️ Ensure the version number follows the format `vX.X.X` with full-stops in the same places
 
 Now the release pipeline will run automatically, build the image off that version of the code, tag it and push it to ECR
 

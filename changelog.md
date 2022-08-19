@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v2.0.0 - _2022-08-19_
+
+See [v2.0.0] changes
+
+v2.0.0 provides a complete overhaul on how we handle authorisation as well as an extended UI.
+
+### Fixed
+- Consistent exception handling
+
+### Added
+- Endpoints:
+  - Create subject
+  - List subjects
+  - Delete subject
+  - Modify subject permissions
+  - Get subject permissions
+  - Get all permissions
+- UI
+  - User management flows
+  - Data management flows
+- UI user journey test
+
+### Changed
+- Complete overhaul of authorisation process
+
+[v2.0.0]: https://github.com/no10ds/rapid-api/compare/v1.3.0...v2.0.0
 
 ## v1.3.0 - _2022-06-17_
 
