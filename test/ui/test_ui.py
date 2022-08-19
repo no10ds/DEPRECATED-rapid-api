@@ -86,6 +86,33 @@ class BaseTestUI(ABC):
         file_chooser = fc_info.value
         file_chooser.set_files(TEST_CSV_PATH)
 
+    def download_file(self, page, element_id, expected_filename):
+        with page.expect_download() as download_info:
+            self.click_by_id(page, element_id)
+        download = download_info.value
+        assert download.suggested_filename == expected_filename
+        download.delete()
+
+    def select_from_dropdown(self, page, dropdown_id, value_to_select):
+        print(f"Selecting '{value_to_select}' from '{dropdown_id}'")
+        selected = page.select_option(f"select#{dropdown_id}", value_to_select)
+        assert selected == [value_to_select]
+
+    def select_from_dropdown_by_visible_text(
+        self,
+        page,
+        dropdown_id: str,
+        visible_text: str,
+        expected_value: Optional[str] = None,
+    ):
+        """
+        Limitation: Will not work if multiple visible values in the dropdown are the same
+        """
+        print(f"Selecting visible value '{visible_text}' from '{dropdown_id}'")
+        selected = page.select_option(f"select#{dropdown_id}", label=visible_text)
+        if expected_value:
+            assert selected == [expected_value]
+
     ## Assertions -------------------------------
     def assert_title(self, page, title: str):
         print(f"Checking page title: {title}")
@@ -131,26 +158,6 @@ class BaseTestUI(ABC):
         self.assert_contains_label(page, FILENAME)
         self.click_button(page, "Upload dataset")
         self.assert_contains_label(page, "File uploaded: ui_test.csv")
-
-    def select_from_dropdown(self, page, dropdown_id, value_to_select):
-        print(f"Selecting '{value_to_select}' from '{dropdown_id}'")
-        selected = page.select_option(f"select#{dropdown_id}", value_to_select)
-        assert selected == [value_to_select]
-
-    def select_from_dropdown_by_visible_text(
-        self,
-        page,
-        dropdown_id: str,
-        visible_text: str,
-        expected_value: Optional[str] = None,
-    ):
-        """
-        Limitation: Will not work if multiple visible values in the dropdown are the same
-        """
-        print(f"Selecting visible value '{visible_text}' from '{dropdown_id}'")
-        selected = page.select_option(f"select#{dropdown_id}", label=visible_text)
-        if expected_value:
-            assert selected == [expected_value]
 
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")
@@ -227,6 +234,12 @@ class TestUI(BaseTestUI):
 
             self.assert_title(page, "rAPId - Download")
             self.assert_text_on_page(page, "test_e2e/query")
+
+            self.select_from_dropdown_by_visible_text(
+                page, "select_format", visible_text="json", expected_value="json"
+            )
+
+            self.download_file(page, "download-dataset", "test_e2e_query.json")
 
             self.logout(page)
 
