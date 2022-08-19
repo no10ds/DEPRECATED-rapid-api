@@ -1,6 +1,7 @@
 import os
 from typing import List
 
+from dateutil import parser
 from fastapi import APIRouter, Security
 from fastapi import Request
 from fastapi.templating import Jinja2Templates
@@ -11,6 +12,7 @@ from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
 )
 from api.application.services.authorisation.token_utils import parse_token
+from api.application.services.data_service import DataService
 from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import Action
 
@@ -21,6 +23,7 @@ data_management_router = APIRouter(
 templates = Jinja2Templates(directory=(os.path.abspath("templates")))
 
 upload_service = DatasetService()
+data_service = DataService()
 
 
 def group_datasets_by_domain(datasets: List[str]):
@@ -51,9 +54,21 @@ def select_dataset(request: Request):
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
 def download_dataset(request: Request, domain: str, dataset: str):
+    dataset_info = data_service.get_dataset_info(domain, dataset)
+    date = parser.parse(dataset_info.metadata.last_updated)
+    new_date = date.strftime("%-d %b %Y at %H:%M:%S")
+
+    ui_dataset_info = {
+        "domain": domain,
+        "dataset": dataset,
+        "number_of_rows": dataset_info.metadata.number_of_rows,
+        "number_of_columns": dataset_info.metadata.number_of_columns,
+        "last_updated": new_date,
+    }
+
     return templates.TemplateResponse(
         name="download.html",
-        context={"request": request, "domain": domain, "dataset": dataset},
+        context={"request": request, "dataset_info": ui_dataset_info},
     )
 
 

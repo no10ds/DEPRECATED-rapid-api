@@ -233,7 +233,8 @@ class TestUI(BaseTestUI):
             self.click_button(page, "Next")
 
             self.assert_title(page, "rAPId - Download")
-            self.assert_text_on_page(page, "test_e2e/query")
+            self.assert_text_on_page(page, "test_e2e")
+            self.assert_text_on_page(page, "query")
 
             self.select_from_dropdown_by_visible_text(
                 page, "select_format", visible_text="json", expected_value="json"

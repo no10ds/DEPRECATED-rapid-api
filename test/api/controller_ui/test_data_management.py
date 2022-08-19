@@ -2,8 +2,15 @@ from unittest.mock import patch, ANY, Mock
 
 from fastapi.templating import Jinja2Templates
 
+from api.application.services.data_service import DataService
 from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import Action
+from api.domain.enriched_schema import (
+    EnrichedSchema,
+    EnrichedSchemaMetadata,
+    EnrichedColumn,
+)
+from api.domain.schema_metadata import Owner
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -81,9 +88,53 @@ class TestSelectDatasetPage(BaseClientTest):
 
 class TestDownloadPage(BaseClientTest):
     @patch.object(Jinja2Templates, "TemplateResponse")
+    @patch.object(DataService, "get_dataset_info")
     def test_calls_templating_engine_with_expected_arguments(
-        self, mock_templates_response
+        self, mock_get_dataset_info, mock_templates_response
     ):
+        expected_response = EnrichedSchema(
+            metadata=EnrichedSchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                number_of_rows=48718,
+                number_of_columns=3,
+                last_updated="2022-03-01 11:03:49+00:00",
+            ),
+            columns=[
+                EnrichedColumn(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                EnrichedColumn(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+                EnrichedColumn(
+                    name="date",
+                    partition_index=None,
+                    data_type="date",
+                    allow_null=False,
+                    format="%d/%m/%Y",
+                    statistics={"max": "2021-07-01", "min": "2014-01-01"},
+                ),
+            ],
+        )
+
+        expected_info = {
+            "domain": "domain1",
+            "dataset": "dataset1",
+            "number_of_rows": 48718,
+            "number_of_columns": 3,
+            "last_updated": "1 Mar 2022 at 11:03:49",
+        }
+        mock_get_dataset_info.return_value = expected_response
+
         download_template_filename = "download.html"
 
         response = self.client.get(
@@ -92,11 +143,9 @@ class TestDownloadPage(BaseClientTest):
 
         mock_templates_response.assert_called_once_with(
             name=download_template_filename,
-            context={
-                "request": ANY,
-                "domain": "domain1",
-                "dataset": "dataset1",
-            },
+            context={"request": ANY, "dataset_info": expected_info},
         )
+
+        mock_get_dataset_info.assert_called_once_with("domain1", "dataset1")
 
         assert response.status_code == 200
