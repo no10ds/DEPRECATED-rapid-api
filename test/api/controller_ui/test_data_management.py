@@ -133,9 +133,27 @@ class TestDownloadPage(BaseClientTest):
             "number_of_columns": 3,
             "last_updated": "1 Mar 2022 at 11:03:49",
             "columns": [
-                {"name": "colname1", "data_type": "Int64", "allow_null": True},
-                {"name": "colname2", "data_type": "object", "allow_null": False},
-                {"name": "colname3", "data_type": "date", "allow_null": False},
+                {
+                    "name": "colname1",
+                    "data_type": "Int64",
+                    "allow_null": True,
+                    "max": "-",
+                    "min": "-",
+                },
+                {
+                    "name": "colname2",
+                    "data_type": "object",
+                    "allow_null": False,
+                    "max": "-",
+                    "min": "-",
+                },
+                {
+                    "name": "colname3",
+                    "data_type": "date",
+                    "allow_null": False,
+                    "max": "2021-07-01",
+                    "min": "2014-01-01",
+                },
             ],
         }
         mock_get_dataset_info.return_value = expected_response
