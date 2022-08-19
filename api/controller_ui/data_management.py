@@ -65,6 +65,8 @@ def download_dataset(request: Request, domain: str, dataset: str):
                 "name": column.name,
                 "data_type": column.data_type,
                 "allow_null": column.allow_null,
+                "min": column.statistics["min"] if column.statistics else "-",
+                "max": column.statistics["max"] if column.statistics else "-",
             }
         )
 

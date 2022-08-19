@@ -15,41 +15,50 @@
             <div class="form-select">
                 <h1 class="content_header">Download</h1>
             </div>
-            <table class="info-table dataset-info">
+            <h3>Dataset Overview</h3>
+            <table class="info-table">
                 <tr>
-                    <td class="metric-label">Domain</td>
-                    <td class="metric highlight bold">{{dataset_info.domain}}</td>
+                    <td class="bold">Domain</td>
+                    <td class="highlight bold">{{dataset_info.domain}}</td>
                 </tr>
                 <tr>
-                    <td class="metric-label">Dataset</td>
-                    <td class="metric highlight bold">{{dataset_info.dataset}}</td>
+                    <td class="bold">Dataset</td>
+                    <td class="highlight bold">{{dataset_info.dataset}}</td>
                 </tr>
                 <tr>
-                    <td class="metric-label">Last updated</td>
-                    <td class="metric">{{dataset_info.last_updated}}</td>
+                    <td class="bold">Last updated</td>
+                    <td>{{dataset_info.last_updated}}</td>
                 </tr>
                 <tr>
-                    <td class="metric-label">Number of Rows</td>
-                    <td class="metric">{{dataset_info.number_of_rows}}</td>
+                    <td class="bold">Number of Rows</td>
+                    <td>{{dataset_info.number_of_rows}}</td>
+                </tr>
+                <tr>
+                    <td class="bold">Number of Columns</td>
+                    <td>{{dataset_info.number_of_columns}}</td>
                 </tr>
             </table>
             <h3>Columns</h3>
-            <table class="info-table info-table--fixed-width">
+            <table class="info-table">
                 <tr>
-                    <th class="first_col">Title</th>
+                    <th>Name</th>
                     <th>Data Type</th>
-                    <th class="last_col">Allows Null</th>
+                    <th>Allows Null</th>
+                    <th>Max</th>
+                    <th>Min</th>
                 </tr>
                 {% for column in dataset_info.columns %}
                 <tr>
-                    <td class="first_col">{{column.name}}</td>
+                    <td>{{column.name}}</td>
                     <td>{{column.data_type}}</td>
-                    <td class="last_col">{{column.allow_null}}</td>
+                    <td>{{column.allow_null}}</td>
+                    <td>{{column.min}}</td>
+                    <td>{{column.max}}</td>
                 </tr>
                 {% endfor %}
             </table>
             <div class="form-select">
-                <label class="form-select_label">Data format</label>
+                <label class="form-select_label" for="select_format">Data format</label>
                 <select class="form-select_dropdown" id="select_format">
                     <option value="csv">csv</option>
                     <option value="json">json</option>
