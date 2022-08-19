@@ -13,10 +13,38 @@
   }
 
   tr {
-    border: 1px solid var(--dark-grey-2);
+    border: 1px solid var(--light-grey-4);
   }
 
   td {
+    padding: .25rem 1rem;
+  }
+}
+
+.column-info {
+  margin-left: auto;
+  margin-right: auto;
+  width: 50%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  tr {
+    border: 1px solid var(--light-grey-4);
+
+    :first-child {
+      text-align: left;
+    }
+
+    :last-child {
+      text-align: right;
+    }
+  }
+
+  td {
+    padding: .25rem 1rem;
+  }
+
+  th {
     padding: .25rem 1rem;
   }
 }

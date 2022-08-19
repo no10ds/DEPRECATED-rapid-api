@@ -57,6 +57,16 @@ def download_dataset(request: Request, domain: str, dataset: str):
     dataset_info = data_service.get_dataset_info(domain, dataset)
     date = parser.parse(dataset_info.metadata.last_updated)
     new_date = date.strftime("%-d %b %Y at %H:%M:%S")
+    columns = []
+
+    for column in dataset_info.columns:
+        columns.append(
+            {
+                "name": column.name,
+                "data_type": column.data_type,
+                "allow_null": column.allow_null,
+            }
+        )
 
     ui_dataset_info = {
         "domain": domain,
@@ -64,6 +74,7 @@ def download_dataset(request: Request, domain: str, dataset: str):
         "number_of_rows": dataset_info.metadata.number_of_rows,
         "number_of_columns": dataset_info.metadata.number_of_columns,
         "last_updated": new_date,
+        "columns": columns,
     }
 
     return templates.TemplateResponse(

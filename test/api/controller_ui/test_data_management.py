@@ -116,7 +116,7 @@ class TestDownloadPage(BaseClientTest):
                     allow_null=False,
                 ),
                 EnrichedColumn(
-                    name="date",
+                    name="colname3",
                     partition_index=None,
                     data_type="date",
                     allow_null=False,
@@ -132,6 +132,11 @@ class TestDownloadPage(BaseClientTest):
             "number_of_rows": 48718,
             "number_of_columns": 3,
             "last_updated": "1 Mar 2022 at 11:03:49",
+            "columns": [
+                {"name": "colname1", "data_type": "Int64", "allow_null": True},
+                {"name": "colname2", "data_type": "object", "allow_null": False},
+                {"name": "colname3", "data_type": "date", "allow_null": False},
+            ],
         }
         mock_get_dataset_info.return_value = expected_response
 

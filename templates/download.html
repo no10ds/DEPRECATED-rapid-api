@@ -1,42 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
+<head>
+    <meta charset="UTF-8"/>
     <title>rAPId - Download</title>
-    <link href="/static/main.css" rel="stylesheet" />
-  </head>
-  <body>
-    <div class="content">
-      {% with previous_page = "/download" %} {% include 'component/header.html'
-      %} {% endwith %}
+    <link href="/static/main.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="content">
+    {% with previous_page = "/download" %} {% include 'component/header.html'
+    %} {% endwith %}
 
-      <form class="form">
+    <form class="form">
         <div class="form_body form_body--headed">
             <div class="form-select">
                 <h1 class="content_header">Download</h1>
             </div>
             <table class="dataset-info">
-            <tr>
-              <td class="metric-label"><h3>Domain</h3></td>
-              <td class="metric">
-                <h3 class="highlight">{{dataset_info.domain}}</h3>
-              </td>
-            </tr>
-            <tr>
-              <td class="metric-label"><h3>Dataset</h3></td>
-              <td class="metric">
-                <h3 class="highlight">{{dataset_info.dataset}}</h3>
-              </td>
-            </tr>
-            <tr>
-              <td class="metric-label"><h3>Last updated</h3></td>
-              <td class="metric">{{dataset_info.last_updated}}</td>
-            </tr>
-            <tr>
-              <td class="metric-label"><h3>Number of Rows</h3></td>
-              <td class="metric">{{dataset_info.number_of_rows}}</td>
-            </tr>
-          </table>
+                <tr>
+                    <td class="metric-label"><h3>Domain</h3></td>
+                    <td class="metric">
+                        <h3 class="highlight">{{dataset_info.domain}}</h3>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="metric-label"><h3>Dataset</h3></td>
+                    <td class="metric">
+                        <h3 class="highlight">{{dataset_info.dataset}}</h3>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="metric-label"><h3>Last updated</h3></td>
+                    <td class="metric">{{dataset_info.last_updated}}</td>
+                </tr>
+                <tr>
+                    <td class="metric-label"><h3>Number of Rows</h3></td>
+                    <td class="metric">{{dataset_info.number_of_rows}}</td>
+                </tr>
+            </table>
+            <h3>Columns</h3>
+            <table class="column-info">
+                <tr>
+                    <th class="first_col">Title</th>
+                    <th>Data Type</th>
+                    <th class="last_col">Allows Null</th>
+                </tr>
+                {% for column in dataset_info.columns %}
+                <tr>
+                    <td class="first_col">{{column.name}}</td>
+                    <td>{{column.data_type}}</td>
+                    <td class="last_col">{{column.allow_null}}</td>
+                </tr>
+                {% endfor %}
+            </table>
             <div class="form-select">
                 <label class="form-select_label">Data format</label>
                 <select class="form-select_dropdown" id="select_format">
@@ -48,7 +63,8 @@
         <h4 class="response-msg--error" id="error-message"></h4>
         <div class="form_submit">
             <button class="btn" type="button" id='download-dataset'
-                    onclick="downloadDataset('{{dataset_info.domain}}','{{dataset_info.dataset}}')">Download</button>
+                    onclick="downloadDataset('{{dataset_info.domain}}','{{dataset_info.dataset}}')">Download
+            </button>
             <label class="response-msg" id="response-title"></label>
             <label class="response-msg" id="response"></label>
         </div>
@@ -58,6 +74,7 @@
 <script type="text/javascript">
         {% include "./js/common.js" %}
         {% include "./js/dataset_download.js" %}
+
 
 </script>
 {% endblock %}
