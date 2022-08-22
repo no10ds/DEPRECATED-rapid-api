@@ -1077,14 +1077,14 @@ List of subjects:
 ```json
 [
   {
-    "subject_id": "<subject_id>" ,
-    "subject_name":  "<username>",
-    "type":  "USER"
+    "subject_id": "<subject_id>",
+    "subject_name": "<username>",
+    "type": "USER"
   },
   {
-    "subject_id": "<subject_id>" ,
-    "subject_name":  "<client_app_name>",
-    "type":  "CLIENT"
+    "subject_id": "<subject_id>",
+    "subject_name": "<client_app_name>",
+    "type": "CLIENT"
   }
 ]
 ```
@@ -1181,7 +1181,6 @@ When uploading the datasets there are 2 possible responses:
 - Success: A message with the uploaded filename will be shown to the user
 - Failure: An error message will be shown to the user
 
-
 ## Download
 
 This page is used to download datasets from the rAPId instance by authenticated users.
@@ -1218,8 +1217,26 @@ To download a dataset just follow these simple steps.
 3) Select a dataset from the list
 4) Click `Next`
 5) Confirm the domain and dataset on the following page
-6) Click `Download`
+6) Select the format of the output file (`csv` or `json`)
+7) Click `Download`
 
+As an optional step the user can introduce SQL query operations, such as:
+
+1) Select columns: Columns to be returned, introduced as a comma separated string, valid syntax allows `colname`
+   or `function(colname)`, and add aliases to the columns `colname as alias`.
+2) Filter: Filters row for a specified column depending on boolean logic. Allowed values include `>`, `<`, `=`, `<=`
+   , `>=`, others.
+3) Group by columns: Arranges identical data into groups.
+4) Aggregation conditions: Used to perform calculations on a column. Allowed values include `COUNT()`, `AVG()`, `MAX()`
+   , `MIN()`, others.
+5) Row limit: Number of rows to be returned. Any integer is allowed.
+
+### Response
+
+When downloading the datasets there are 2 possible responses:
+
+- Success: A file with the structure `domain_dataset.{selected_format}` will be downloaded.
+- Failure: An error message will be shown to the user.
 
 ## Landing
 
@@ -1250,8 +1267,8 @@ app or human user). There are two steps to the flow.
 
 1. The first page allows you to choose a subject from a dropdown and progress to step 2 to modify their permissions.
 2. The second page shows the current permissions and allows you to update them.
-3. Once you have selected the desired permissions (all that you would like the subject to have, not just the ones to add or
-   remove), click 'Modify'.
+3. Once you have selected the desired permissions (all that you would like the subject to have, not just the ones to add
+   or remove), click 'Modify'.
 4. A success page will be shown listing the full set of permissions that the subject now has.
 
 ### General structure
