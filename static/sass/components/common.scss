@@ -26,6 +26,12 @@ a {
   }
 }
 
+input {
+  &.invalid {
+    border-color: var(--error-text);
+  }
+}
+
 fieldset {
   border-color: var(--light-grey-4);
   margin: 0 auto;

@@ -69,24 +69,25 @@
                 <a class="link" href="https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#query-dataset" target="_blank">query writing guide</a>
                 <div class="form-input form-input--row">
                     <label class="form-input_label" for="selectColumns">select columns</label>
-                    <input class="form-input_text form-input_text--row" name="selectColumns" id="selectColumns" type="text" placeholder="column1, avg(column2)">
+                    <input class="form-input_text form-input_text--row" name="selectColumns" id="selectColumns" type="text" placeholder="column1, avg(column2)" maxlength="200">
                 </div>
                 <div class="form-input form-input--row">
                     <label class="form-input_label" for="filter">filter</label>
-                    <input class="form-input_text form-input_text--row" name="filter" id="filter" type="text" placeholder="column >= 10">
+                    <input class="form-input_text form-input_text--row" name="filter" id="filter" type="text" placeholder="column >= 10" maxlength="200">
                 </div>
                 <div class="form-input form-input--row">
                     <label class="form-input_label" for="groupByColumns">group by columns</label>
-                    <input class="form-input_text form-input_text--row" name="groupByColumns" id="groupByColumns" type="text" placeholder="column1, column3">
+                    <input class="form-input_text form-input_text--row" name="groupByColumns" id="groupByColumns" type="text" placeholder="column1, column3" maxlength="200">
                 </div>
                 <div class="form-input form-input--row">
                     <label class="form-input_label" for="aggregationConditions">aggregation conditions</label>
-                    <input class="form-input_text form-input_text--row" name="aggregationConditions" id="aggregationConditions" type="text" placeholder="avg(column2) <= 15">
+                    <input class="form-input_text form-input_text--row" name="aggregationConditions" id="aggregationConditions" type="text" placeholder="avg(column2) <= 15" maxlength="200">
                 </div>
                 <div class="form-input form-input--row">
                     <label class="form-input_label" for="rowLimit">row limit</label>
-                    <input class="form-input_text form-input_text--row" name="rowLimit" id="rowLimit" type="number" placeholder="30">
+                    <input class="form-input_text form-input_text--row" name="rowLimit" id="rowLimit" type="number" placeholder="30" max="2147483647">
                 </div>
+                <h4 hidden class="form-input_error" id="rowLimitError">The provided number is too large or invalid</h4>
             </fieldset>
         </div>
         <h4 hidden class="response-msg--error" id="error-message"></h4>
@@ -103,8 +104,6 @@
 <script type="text/javascript">
         {% include "./js/common.js" %}
         {% include "./js/dataset_download.js" %}
-
-
 </script>
 {% endblock %}
 </body>

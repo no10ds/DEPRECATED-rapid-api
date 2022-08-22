@@ -64,6 +64,29 @@ const hideErrorMessage = () => {
     errorMessageContainer.hidden = true
 }
 
+const setupNumericValuesEvents = (elementId) => {
+  const numericElement = document.getElementById(elementId);
+  numericElement.errorMsgId = `${elementId}Error`
+  numericElement.addEventListener('focusout', handleValidation)
+}
+
+const handleValidation = (event) => {
+  let numericElement = event.currentTarget;
+  const errorMsg = document.getElementById(numericElement.errorMsgId);
+  numericElement.value = Math.floor(numericElement.value);
+  if(numericElement.value == 0) {
+    numericElement.value = ""
+  }
+  if(numericElement.checkValidity()) {
+    event.currentTarget.classList.remove("invalid");
+    errorMsg.hidden = true;
+  } else {
+    event.currentTarget.classList.add("invalid");
+    errorMsg.hidden = false;
+  }
+}
+
+
 const setupEventListeners = () => {
     // Set up inputs to clear error message on interaction
     const allInputs = document.querySelectorAll('input')

@@ -70,3 +70,5 @@ function downloadFile(blob, domain, dataset, selected_format) {
                 a.click();
                 window.URL.revokeObjectURL(url);
 }
+
+setupNumericValuesEvents('rowLimit')

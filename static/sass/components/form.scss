@@ -116,6 +116,10 @@
     }
   }
 
+  &_error {
+    color: var(--error-text);
+  }
+
   &_file {
     display: none;
   }
@@ -146,9 +150,9 @@
   }
 
   &--row {
-
     &:not([hidden]) {
       display: flex;
+      text-align: start;
       align-items: center;
       justify-content: space-between;
       width: 80%;
