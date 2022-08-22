@@ -3,7 +3,6 @@ import re
 from abc import ABC
 from typing import Optional, List
 
-import pytest
 from playwright.sync_api import sync_playwright, expect
 
 from test.test_utils import get_secret
@@ -217,7 +216,6 @@ class TestUI(BaseTestUI):
 
             self.logout(page)
 
-    @pytest.mark.focus
     def test_download_journey(self):
         with sync_playwright() as playwright:
             page = self.set_up_base_page(playwright)

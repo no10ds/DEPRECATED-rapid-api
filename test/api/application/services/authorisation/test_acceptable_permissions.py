@@ -7,6 +7,7 @@ from api.application.services.authorisation.acceptable_permissions import (
     AcceptablePermissions,
     generate_acceptable_scopes,
 )
+from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.config.auth import SensitivityLevel
 
 
@@ -75,7 +76,7 @@ class TestAcceptablePermissions:
 
 
 class TestAcceptablePermissionsGeneration:
-    @patch("api.application.services.authorisation.authorisation_service.s3_adapter")
+    @patch.object(ProtectedDomainService, "list_protected_domains")
     @pytest.mark.parametrize(
         "domain, sensitivity, endpoint_scopes, acceptable_scopes",
         [
@@ -128,7 +129,6 @@ class TestAcceptablePermissionsGeneration:
                 ),  # noqa: E126
             ),
             (
-                # TODO: Current protected domain auth functionality - tbc
                 "domain",
                 SensitivityLevel.PROTECTED,
                 ["WRITE"],
@@ -136,16 +136,30 @@ class TestAcceptablePermissionsGeneration:
                     required=set(), optional={"WRITE_ALL", "WRITE_PROTECTED_DOMAIN"}
                 ),  # noqa: E126
             ),
+            (
+                None,
+                SensitivityLevel.PUBLIC,
+                ["READ"],
+                AcceptablePermissions(  # noqa: E126
+                    required=set(),
+                    optional={
+                        "READ_ALL",
+                        "READ_PROTECTED_TEST",
+                        "READ_PRIVATE",
+                        "READ_PUBLIC",
+                    },
+                ),
+            ),
         ],
     )
     def test_generate_acceptable_permissions(
         self,
-        mock_s3_adapter,
+        mock_list_protected_domains,
         domain: str,
         sensitivity: SensitivityLevel,
         endpoint_scopes: List[str],
         acceptable_scopes: AcceptablePermissions,
     ):
-        mock_s3_adapter.get_dataset_sensitivity.return_value = sensitivity
+        mock_list_protected_domains.return_value = ["test"]
         result = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
         assert result == acceptable_scopes
