@@ -1186,6 +1186,9 @@ PRIVATE (or PUBLIC) then they will be able to see and write to the datasets "dot
 
 If the user is missing any permissions, they can be added in the permissions database.
 
+If user does not have any write permissions, they will not see the `Upload Data` button and will be redirected to the landing page
+when trying to access the `/upload` endpoint.
+
 ### Steps
 
 To upload dataset just follow these simple steps.
@@ -1229,6 +1232,9 @@ For example, if the user has permission "READ_PRIVATE", "WRITE_PRIVATE" and "dot
 PRIVATE (or PUBLIC) then they will be able to see and write to the datasets "dot/trucks".
 
 If the user is missing any permissions, they can be added in the permissions database table.
+
+If user does not have any read permissions, they will not see the `Downlad Data` button and will be redirected to the landing page
+when trying to access the `/download` endpoint.
 
 ### Steps
 

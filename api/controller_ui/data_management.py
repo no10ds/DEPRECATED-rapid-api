@@ -37,7 +37,9 @@ def group_datasets_by_domain(datasets: List[str]):
     return grouped_datasets
 
 
-@data_management_router.get("/download", dependencies=[Security(secure_endpoint)])
+@data_management_router.get(
+    "/download", dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])]
+)
 def select_dataset(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
     datasets = upload_service.get_authorised_datasets(subject_id, Action.READ)
@@ -85,7 +87,9 @@ def download_dataset(request: Request, domain: str, dataset: str):
     )
 
 
-@data_management_router.get("/upload", dependencies=[Security(secure_endpoint)])
+@data_management_router.get(
+    "/upload", dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])]
+)
 def upload(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
     datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
