@@ -1137,6 +1137,28 @@ To be logged in
     1. Go to ```/logout``` as an authenticated user
     2. Wait to be redirected to ```/login```
 
+## Landing
+
+This page is used as the entry point to the rAPId service on which the user can select their desired course of action.
+
+### General structure
+
+`GET /`
+
+### Needed credentials
+
+The user must be logged in as a Cognito user to use this page.
+
+Depending on the user's permissions, allowed actions will be dynamically displayed.
+
+For example, if the user has permission "READ_PRIVATE" and "WRITE_PRIVATE" then the data management section will be
+visible and both upload and download buttons will be available.
+
+If the user is a user admin, then the user management section will be visible along with its corresponding actions.
+
+If the user has not been granted any relevant permissions an error message will be displayed prompting the user to speak
+to the relevant authority to grant them required permissions.
+
 ## Upload
 
 This page is used to upload datasets into the rAPId service by authenticated users.
@@ -1191,8 +1213,8 @@ Users can only see the datasets they have permission to read from:
 - Users with `READ_PRIVATE` permission will see both private and public datasets
 - Users with `READ_PUBLIC` permission will see public datasets
 - Users with `READ_PROTECTED_{domain}` permission will see datasets with the protected domain `domain`
-- Users with multiple of the above write permissions will see the union of the datasets for these permissions
-- Users with no write permissions will see an empty drop-down
+- Users with multiple of the above read permissions will see the union of the datasets for these permissions
+- Users with no read permissions will see an empty drop-down
 
 ### General structure
 
@@ -1213,10 +1235,10 @@ If the user is missing any permissions, they can be added in the permissions dat
 To download a dataset just follow these simple steps.
 
 1) Log in
-2) Click on the `Download data` link
+2) Click on the `Download Data` link
 3) Select a dataset from the list
 4) Click `Next`
-5) Confirm the domain and dataset on the following page
+5) View the dataset specific information
 6) Select the format of the output file (`csv` or `json`)
 7) Click `Download`
 
@@ -1237,28 +1259,6 @@ When downloading the datasets there are 2 possible responses:
 
 - Success: A file with the structure `domain_dataset.{selected_format}` will be downloaded.
 - Failure: An error message will be shown to the user.
-
-## Landing
-
-This page is used as the entry point to the rAPId service on which the user can select their desired course of action.
-
-### General structure
-
-`GET /`
-
-### Needed credentials
-
-The user must be logged in as a Cognito user to use this page.
-
-Depending on the user's permissions, allowed actions will be dynamically displayed.
-
-For example, if the user has permission "READ_PRIVATE" and "WRITE_PRIVATE" then the data management section will be
-visible and both upload and download buttons will be available.
-
-If the user is a user admin, then the user management section will be visible along with its corresponding actions.
-
-If the user has not been granted any relevant permissions an error message will be displayed prompting the user to speak
-to the relevant authority to grant them required permissions.
 
 ## Modify Subject Permissions
 

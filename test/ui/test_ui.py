@@ -1,8 +1,9 @@
 import os
 import re
 from abc import ABC
-from typing import Optional
+from typing import Optional, List
 
+import pytest
 from playwright.sync_api import sync_playwright, expect
 
 from test.test_utils import get_secret
@@ -164,6 +165,11 @@ class BaseTestUI(ABC):
     def assert_text_on_page(self, page, text: str):
         assert text in page.content()
 
+    def assert_text_in_table_on_page(self, page, rows_in_table: List[str]):
+        for row in rows_in_table:
+            print(f"Checking row '{row}' exists in table")
+            expect(page.locator(f'tr:has-text("{row}")')).to_have_count(1)
+
 
 class TestUI(BaseTestUI):
     def test_log_in_and_log_out_sequence(self):
@@ -211,6 +217,7 @@ class TestUI(BaseTestUI):
 
             self.logout(page)
 
+    @pytest.mark.focus
     def test_download_journey(self):
         with sync_playwright() as playwright:
             page = self.set_up_base_page(playwright)
@@ -230,8 +237,16 @@ class TestUI(BaseTestUI):
             self.click_button(page, "Next")
 
             self.assert_title(page, "rAPId - Download")
-            self.assert_text_on_page(page, "test_e2e")
-            self.assert_text_on_page(page, "query")
+            rows_in_table = [
+                "Domain test_e2e",
+                "Dataset query",
+                "Number of Rows 2",
+                "Number of Columns 6",
+                "year Int64 True - -",
+                "month Int64 True - -",
+                "destination object True - -",
+            ]
+            self.assert_text_in_table_on_page(page, rows_in_table)
 
             self.select_from_dropdown_by_visible_text(
                 page, "select_format", visible_text="json", expected_value="json"
