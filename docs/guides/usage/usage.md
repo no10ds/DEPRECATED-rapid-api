@@ -915,6 +915,11 @@ Once the new user has been created, the following information will be shown in t
 }
 ```
 
+### Gotchas 🤯
+
+When the email with user password is sent, it adds a dot `.` right at the end of the password. Users must be mindful not to include this dot when they log in
+with this temporary password.
+
 ### Accepted permissions
 
 In order to use this endpoint you need the `USER_ADMIN` permission
