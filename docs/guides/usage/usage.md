@@ -917,8 +917,8 @@ Once the new user has been created, the following information will be shown in t
 
 ### Gotchas 🤯
 
-When the email with user password is sent, it adds a dot `.` right at the end of the password. Users must be mindful not to include this dot when they log in
-with this temporary password.
+When the email with user password is sent, it adds a dot `.` right at the end of the password. Users must be mindful not
+to include this dot when they log in with this temporary password.
 
 ### Accepted permissions
 
@@ -1191,8 +1191,8 @@ PRIVATE (or PUBLIC) then they will be able to see and write to the datasets "dot
 
 If the user is missing any permissions, they can be added in the permissions database.
 
-If user does not have any write permissions, they will not see the `Upload Data` button and will be redirected to the landing page
-when trying to access the `/upload` endpoint.
+If user does not have any write permissions, they will not see the `Upload Data` button and will be redirected to the
+landing page when trying to access the `/upload` endpoint.
 
 ### Steps
 
@@ -1238,8 +1238,8 @@ PRIVATE (or PUBLIC) then they will be able to see and write to the datasets "dot
 
 If the user is missing any permissions, they can be added in the permissions database table.
 
-If user does not have any read permissions, they will not see the `Downlad Data` button and will be redirected to the landing page
-when trying to access the `/download` endpoint.
+If user does not have any read permissions, they will not see the `Downlad Data` button and will be redirected to the
+landing page when trying to access the `/download` endpoint.
 
 ### Steps
 
@@ -1270,6 +1270,19 @@ When downloading the datasets there are 2 possible responses:
 
 - Success: A file with the structure `domain_dataset.{selected_format}` will be downloaded.
 - Failure: An error message will be shown to the user.
+
+### Query structure
+
+  Returns a list of datasets matching the query request, e.g.:
+
+| Query Field              | Example values                                          | SQL Equivalent                                                        | Additional Notes                                                                         |
+|--------------------------|---------------------------------------------------------|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------|
+| `select columns`         | - `col1, col2` <br> - `col1, count(col2) AS col2_count` | - `SELECT col1, col2` <br> - `SELECT col1, count(col2) AS col2_count` | - Any other aggregation functions are allowed  <br> - CASE queries included              |
+| `filter`                 | - `(col1='bus' OR col1='train') AND col2>=10`           | - `WHERE (col1='bus' OR col1='train') AND col2>=10`                   |                                                                                          |
+| `group by columns`       | - `col1`                                                | - `GROUP BY col1`                                                     |                                                                                          |
+| `aggregation conditions` | - `avg(col1) > 10`                                      | - `HAVING avg(col1) > 10`                                             |                                                                                          |
+| `row limit`              | - `10`                                                  | - `LIMIT 10`                                                          | This value is capped at the number of rows in the table, displayed in dataset details    |
+
 
 ## Modify Subject Permissions
 
