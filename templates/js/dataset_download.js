@@ -71,4 +71,8 @@ function downloadFile(blob, domain, dataset, selected_format) {
                 window.URL.revokeObjectURL(url);
 }
 
-setupNumericValuesEvents('rowLimit')
+function enforceMinMax(el, max){
+    if(parseInt(el.value) > parseInt(max)){
+      el.value = max;
+    }
+}

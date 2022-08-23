@@ -85,9 +85,8 @@
                 </div>
                 <div class="form-input form-input--row">
                     <label class="form-input_label" for="rowLimit">row limit</label>
-                    <input class="form-input_text form-input_text--row" name="rowLimit" id="rowLimit" type="number" placeholder="30" max="2147483647">
+                    <input class="form-input_text form-input_text--row" name="rowLimit" id="rowLimit" type="number" placeholder="30" onkeyup="enforceMinMax(this, '{{dataset_info.number_of_rows}}')" >
                 </div>
-                <h4 hidden class="form-input_error" id="rowLimitError">The provided number is too large or invalid</h4>
             </fieldset>
         </div>
         <h4 hidden class="response-msg--error" id="error-message"></h4>
