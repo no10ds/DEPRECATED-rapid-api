@@ -14,7 +14,6 @@ from api.common.custom_exceptions import (
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 from test.test_utils import (
-    set_encoded_content,
     mock_schema_response,
     mock_list_schemas_response,
 )
@@ -78,25 +77,32 @@ class TestS3AdapterUpload:
         domain = "domain"
         dataset = "dataset"
         filename = "data.csv"
+
+        partition_1 = pd.DataFrame({"colname2": ["user1"]})
+        partition_2 = pd.DataFrame({"colname2": ["user2"]})
+
         partitioned_data = [
-            ("year=2020/month=1", pd.DataFrame({"colname2": ["user1"]})),
-            ("year=2020/month=2", pd.DataFrame({"colname2": ["user2"]})),
+            ("year=2020/month=1", partition_1),
+            ("year=2020/month=2", partition_2),
         ]
 
         self.persistence_adapter.upload_partitioned_data(
             domain, dataset, filename, partitioned_data
         )
 
+        partition_1_parquet = partition_1.to_parquet(compression="gzip", index=False)
+        partition_2_parquet = partition_2.to_parquet(compression="gzip", index=False)
+
         calls = [
             call(
                 Bucket="dataset",
                 Key="data/domain/dataset/year=2020/month=1/data.csv",
-                Body=set_encoded_content("colname2\n" "user1\n"),
+                Body=partition_1_parquet,
             ),
             call(
                 Bucket="dataset",
                 Key="data/domain/dataset/year=2020/month=2/data.csv",
-                Body=set_encoded_content("colname2\n" "user2\n"),
+                Body=partition_2_parquet,
             ),
         ]
 

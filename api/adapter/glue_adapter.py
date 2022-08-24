@@ -1,6 +1,6 @@
 import threading
 from time import sleep
-from typing import Dict
+from typing import Dict, List
 
 import boto3
 from botocore.exceptions import ClientError
@@ -10,9 +10,6 @@ from api.common.config.aws import (
     GLUE_CATALOGUE_DB_NAME,
     GLUE_CRAWLER_ROLE,
     GLUE_CONNECTION_NAME,
-    GLUE_QUOTE_CHAR,
-    GLUE_CSV_CLASSIFIER,
-    GLUE_CSV_SERIALISATION_LIBRARY,
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     GLUE_TABLE_PRESENCE_CHECK_INTERVAL,
     RESOURCE_PREFIX,
@@ -26,6 +23,8 @@ from api.common.custom_exceptions import (
     AWSServiceError,
 )
 from api.common.logger import AppLogger
+from api.domain.data_types import DataTypes
+from api.domain.schema import Column, Schema
 from api.domain.storage_metadata import StorageMetaData
 
 
@@ -50,9 +49,6 @@ class GlueAdapter:
                 Role=self.glue_crawler_role,
                 DatabaseName=self.glue_catalogue_db_name,
                 TablePrefix=data_store.glue_table_prefix(),
-                Classifiers=[
-                    GLUE_CSV_CLASSIFIER,
-                ],
                 Targets={
                     "S3Targets": [
                         {
@@ -88,18 +84,25 @@ class GlueAdapter:
                 f"Crawler is currently processing for resource_prefix={RESOURCE_PREFIX}, domain={domain} and dataset={dataset}"
             )
 
-    def update_catalog_table_config(self, domain: str, dataset: str) -> None:
-        table_name = StorageMetaData(domain, dataset).glue_table_name()
-        if self._table_needs_reconfiguration(table_name):
-            threading.Thread(target=self.update_table, args=(table_name,)).start()
+    def update_catalog_table_config(self, schema: Schema) -> None:
+        threading.Thread(
+            target=self.update_partition_column_data_types, args=(schema,)
+        ).start()
 
-    def update_table(self, table_name: str) -> None:
-        table = self.get_table_when_created(table_name)
-        updated_definition = self.update_table_csv_parsing_config(table)
+    def update_partition_column_data_types(self, schema: Schema) -> None:
+        table_name = StorageMetaData(
+            schema.get_domain(), schema.get_dataset()
+        ).glue_table_name()
+        table_definition = self.get_table_when_created(table_name)
+        updated_definition = self.update_glue_table_partition_column_types(
+            table_definition, schema.get_partition_columns()
+        )
         self.glue_client.update_table(
             DatabaseName=self.glue_catalogue_db_name, TableInput=updated_definition
         )
-        AppLogger.info(f"Glue table [{table_name}] updated with CSV parsing config")
+        AppLogger.info(
+            f"Glue table [{table_name}] updated with correct column types config"
+        )
 
     def get_table_when_created(self, table_name: str) -> Dict:
         for _ in range(GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT):
@@ -119,26 +122,35 @@ class GlueAdapter:
         table = self._get_table(table_name)
         return str(table["Table"]["UpdateTime"])
 
-    def update_table_csv_parsing_config(self, response: Dict) -> Dict:
-        table_storage_desc = response["Table"]["StorageDescriptor"]
-        table_storage_desc["SerdeInfo"] = {
-            **table_storage_desc["SerdeInfo"],
-            "SerializationLibrary": GLUE_CSV_SERIALISATION_LIBRARY,
-            "Parameters": {
-                **table_storage_desc["SerdeInfo"]["Parameters"],
-                "quoteChar": GLUE_QUOTE_CHAR,
-            },
+    def update_glue_table_partition_column_types(
+        self, table_definition: Dict, partition_columns: List[Column]
+    ) -> Dict:
+        table_partition_keys = table_definition["Table"]["PartitionKeys"]
+
+        partition_column_type_map = {
+            schema_partition.name: schema_partition.data_type
+            for schema_partition in partition_columns
         }
 
+        data_types_map = {
+            DataTypes.INT: "bigint",
+            DataTypes.FLOAT: "double",
+        }
+
+        for table_partition in table_partition_keys:
+            data_type = partition_column_type_map[table_partition["Name"]]
+            if data_type in DataTypes.numeric_data_types():
+                table_partition["Type"] = data_types_map[data_type]
+
         return {
-            "Name": response["Table"]["Name"],
-            "Owner": response["Table"]["Owner"],
-            "LastAccessTime": response["Table"]["LastAccessTime"],
-            "Retention": response["Table"]["Retention"],
-            "PartitionKeys": response["Table"]["PartitionKeys"],
-            "TableType": response["Table"]["TableType"],
-            "Parameters": response["Table"]["Parameters"],
-            "StorageDescriptor": table_storage_desc,
+            "Name": table_definition["Table"]["Name"],
+            "Owner": table_definition["Table"]["Owner"],
+            "LastAccessTime": table_definition["Table"]["LastAccessTime"],
+            "Retention": table_definition["Table"]["Retention"],
+            "PartitionKeys": table_partition_keys,
+            "TableType": table_definition["Table"]["TableType"],
+            "Parameters": table_definition["Table"]["Parameters"],
+            "StorageDescriptor": table_definition["Table"]["StorageDescriptor"],
         }
 
     def _get_crawler_state(self, domain: str, dataset: str) -> str:
@@ -160,29 +172,6 @@ class GlueAdapter:
             raise CrawlerAlreadyExistsError("Crawler already exists with same name")
         else:
             raise CrawlerCreationError("Crawler creation error")
-
-    def _table_needs_reconfiguration(self, table_name: str) -> bool:
-        try:
-            table_config = self._get_table(table_name)
-        except TableDoesNotExistError:
-            return True
-        return not self._table_configured_correctly(table_config)
-
-    def _table_configured_correctly(self, table_config: Dict) -> bool:
-        try:
-            serialisation_lib = table_config["Table"]["StorageDescriptor"]["SerdeInfo"][
-                "SerializationLibrary"
-            ]
-            quote_char = table_config["Table"]["StorageDescriptor"]["SerdeInfo"][
-                "Parameters"
-            ]["quoteChar"]
-        except KeyError:
-            return False
-
-        quote_char_correct = quote_char == GLUE_QUOTE_CHAR
-        lib_correct = serialisation_lib == GLUE_CSV_SERIALISATION_LIBRARY
-
-        return quote_char_correct and lib_correct
 
     def _get_table(self, table_name: str) -> Dict:
         try:

@@ -6,7 +6,6 @@ from botocore.exceptions import ClientError
 from api.adapter.glue_adapter import GlueAdapter
 from api.common.config.aws import (
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
-    GLUE_CSV_CLASSIFIER,
     DATA_BUCKET,
 )
 from api.common.config.aws import RESOURCE_PREFIX
@@ -17,6 +16,8 @@ from api.common.custom_exceptions import (
     CrawlerCreationError,
     AWSServiceError,
 )
+from api.domain.schema import Column, Schema
+from api.domain.schema_metadata import SchemaMetadata
 
 
 class TestGlueAdapterCrawlerMethods:
@@ -42,7 +43,6 @@ class TestGlueAdapterCrawlerMethods:
             Role="GLUE_CRAWLER_ROLE",
             DatabaseName="GLUE_CATALOGUE_DB_NAME",
             TablePrefix="domain_",
-            Classifiers=[GLUE_CSV_CLASSIFIER],
             Targets={
                 "S3Targets": [
                     {
@@ -166,81 +166,15 @@ class TestGlueAdapterCatalogTableMethods:
             operation_name="GetTable",
         )
 
-        self.glue_adapter.update_catalog_table_config("a-domain", "b-dataset")
+        schema = Mock()
+        schema.get_domain.return_value = "a-domain"
+        schema.get_dataset.return_value = "b-dataset"
 
-        self.glue_boto_client.get_table.assert_called_once_with(
-            DatabaseName="GLUE_CATALOGUE_DB_NAME", Name="a-domain_b-dataset"
-        )
-        mock_thread.assert_called_once_with(target=ANY, args=("a-domain_b-dataset",))
+        self.glue_adapter.update_catalog_table_config(schema)
 
-    @patch("api.adapter.glue_adapter.threading.Thread")
-    def test_starts_thread_to_update_table_config_when_table_exists_but_not_correctly_configured(
-        self, mock_thread
-    ):
-        self.glue_boto_client.get_table.return_value = {
-            "Table": {
-                "StorageDescriptor": {
-                    "SerdeInfo": {
-                        "SerializationLibrary": "INCORRECT",
-                        "Parameters": {"quoteChar": "ALSO INCORRECT"},
-                    }
-                }
-            }
-        }
+        mock_thread.assert_called_once_with(target=ANY, args=(schema,))
 
-        self.glue_adapter.update_catalog_table_config("a-domain", "b-dataset")
-
-        self.glue_boto_client.get_table.assert_called_once_with(
-            DatabaseName="GLUE_CATALOGUE_DB_NAME", Name="a-domain_b-dataset"
-        )
-        mock_thread.assert_called_once_with(target=ANY, args=("a-domain_b-dataset",))
-        assert mock_thread.call_args[1]["target"].__name__ == "update_table"
-
-    @patch("api.adapter.glue_adapter.threading.Thread")
-    def test_starts_thread_to_update_table_config_when_table_exists_but_no_relevant_config_exists(
-        self, mock_thread
-    ):
-        self.glue_boto_client.get_table.return_value = {
-            "Table": {
-                "StorageDescriptor": {
-                    "SerdeInfo": {
-                        # Missing "SerializationLibrary" key
-                        "Parameters": {
-                            # Missing "quoteChar" key
-                        }
-                    }
-                }
-            }
-        }
-
-        self.glue_adapter.update_catalog_table_config("a-domain", "b-dataset")
-
-        self.glue_boto_client.get_table.assert_called_once_with(
-            DatabaseName="GLUE_CATALOGUE_DB_NAME", Name="a-domain_b-dataset"
-        )
-        mock_thread.assert_called_once_with(target=ANY, args=("a-domain_b-dataset",))
-        assert mock_thread.call_args[1]["target"].__name__ == "update_table"
-
-    @patch("api.adapter.glue_adapter.threading.Thread")
-    def test_does_not_start_thread_to_update_table_config_when_correctly_configured_table_exists(
-        self, mock_thread
-    ):
-        self.glue_boto_client.get_table.return_value = {
-            "Table": {
-                "StorageDescriptor": {
-                    "SerdeInfo": {
-                        "SerializationLibrary": "org.apache.hadoop.hive.serde2.OpenCSVSerde",
-                        "Parameters": {"quoteChar": '"'},
-                    }
-                }
-            }
-        }
-
-        self.glue_adapter.update_catalog_table_config("a-domain", "b-dataset")
-
-        assert not mock_thread.called
-
-    def test_updates_table_config_with_correct_serialisation_library_and_quote_character(
+    def test_updates_table_config_with_partition_column_data_types(
         self,
     ):
         original_table_config = {
@@ -249,41 +183,44 @@ class TestGlueAdapterCatalogTableMethods:
                 "Owner": 222,
                 "LastAccessTime": 333,
                 "Retention": 444,
-                "PartitionKeys": 555,
+                "PartitionKeys": [
+                    {"Name": "year", "Type": "string"},
+                    {"Name": "rate", "Type": "string"},
+                    {"Name": "city", "Type": "string"},
+                ],
                 "TableType": 666,
                 "Parameters": 777,
-                "StorageDescriptor": {
-                    "existing_key": 888,
-                    "SerdeInfo": {
-                        "SerializationLibrary": "INCORRECT",
-                        "Parameters": {
-                            "existing_param": 999,
-                            "quoteChar": "ALSO INCORRECT",
-                        },
-                    },
-                },
+                "StorageDescriptor": 888,
             }
         }
+
+        partition_columns = [
+            Column(name="year", data_type="Int64", partition_index=1, allow_null=False),
+            Column(
+                name="rate", data_type="Float64", partition_index=2, allow_null=False
+            ),
+            Column(
+                name="city", data_type="object", partition_index=3, allow_null=False
+            ),
+        ]
 
         altered_table_config = {
             "Name": 111,
             "Owner": 222,
             "LastAccessTime": 333,
             "Retention": 444,
-            "PartitionKeys": 555,
+            "PartitionKeys": [
+                {"Name": "year", "Type": "bigint"},
+                {"Name": "rate", "Type": "double"},
+                {"Name": "city", "Type": "string"},
+            ],
             "TableType": 666,
             "Parameters": 777,
-            "StorageDescriptor": {
-                "existing_key": 888,
-                "SerdeInfo": {
-                    "SerializationLibrary": "org.apache.hadoop.hive.serde2.OpenCSVSerde",
-                    "Parameters": {"existing_param": 999, "quoteChar": '"'},
-                },
-            },
+            "StorageDescriptor": 888,
         }
 
-        result = self.glue_adapter.update_table_csv_parsing_config(
-            original_table_config
+        result = self.glue_adapter.update_glue_table_partition_column_types(
+            original_table_config, partition_columns
         )
 
         assert result == altered_table_config
@@ -295,40 +232,54 @@ class TestGlueAdapterCatalogTableMethods:
                 "Owner": 222,
                 "LastAccessTime": 333,
                 "Retention": 444,
-                "PartitionKeys": 555,
+                "PartitionKeys": [
+                    {"Name": "year", "Type": "string"},
+                    {"Name": "rate", "Type": "string"},
+                ],
                 "TableType": 666,
                 "Parameters": 777,
-                "StorageDescriptor": {
-                    "existing_key": 888,
-                    "SerdeInfo": {
-                        "SerializationLibrary": "INCORRECT",
-                        "Parameters": {
-                            "existing_param": 999,
-                            "quoteChar": "ALSO INCORRECT",
-                        },
-                    },
-                },
+                "StorageDescriptor": 888,
             }
         }
+
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some", dataset="other", sensitivity="PUBLIC", owners=[]
+            ),
+            columns=[
+                Column(
+                    name="year", data_type="Int64", partition_index=1, allow_null=False
+                ),
+                Column(
+                    name="rate",
+                    data_type="Float64",
+                    partition_index=2,
+                    allow_null=False,
+                ),
+                Column(
+                    name="city",
+                    data_type="object",
+                    partition_index=None,
+                    allow_null=False,
+                ),
+            ],
+        )
 
         altered_table_config = {
             "Name": 111,
             "Owner": 222,
             "LastAccessTime": 333,
             "Retention": 444,
-            "PartitionKeys": 555,
+            "PartitionKeys": [
+                {"Name": "year", "Type": "bigint"},
+                {"Name": "rate", "Type": "double"},
+            ],
             "TableType": 666,
             "Parameters": 777,
-            "StorageDescriptor": {
-                "existing_key": 888,
-                "SerdeInfo": {
-                    "SerializationLibrary": "org.apache.hadoop.hive.serde2.OpenCSVSerde",
-                    "Parameters": {"existing_param": 999, "quoteChar": '"'},
-                },
-            },
+            "StorageDescriptor": 888,
         }
 
-        self.glue_adapter.update_table("some-table-name")
+        self.glue_adapter.update_partition_column_data_types(schema)
 
         self.glue_boto_client.update_table.assert_called_once_with(
             DatabaseName="GLUE_CATALOGUE_DB_NAME", TableInput=altered_table_config
@@ -375,53 +326,3 @@ class TestGlueAdapterCatalogTableMethods:
             self.glue_adapter.get_table_when_created("some-name")
 
         assert mock_sleep.call_count == GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT
-
-    def test_updates_glue_table_with_relevant_config(self):
-        table_name = "some-table"
-
-        invalid_table_config = {
-            "Table": {
-                "Name": table_name,
-                "Owner": 222,
-                "LastAccessTime": 333,
-                "Retention": 444,
-                "PartitionKeys": 555,
-                "TableType": 666,
-                "Parameters": 777,
-                "StorageDescriptor": {
-                    "existing_key": 888,
-                    "SerdeInfo": {
-                        "SerializationLibrary": "INCORRECT",
-                        "Parameters": {
-                            "existing_param": 999,
-                            "quoteChar": "ALSO INCORRECT",
-                        },
-                    },
-                },
-            }
-        }
-
-        altered_table_config = {
-            "Name": table_name,
-            "Owner": 222,
-            "LastAccessTime": 333,
-            "Retention": 444,
-            "PartitionKeys": 555,
-            "TableType": 666,
-            "Parameters": 777,
-            "StorageDescriptor": {
-                "existing_key": 888,
-                "SerdeInfo": {
-                    "SerializationLibrary": "org.apache.hadoop.hive.serde2.OpenCSVSerde",
-                    "Parameters": {"existing_param": 999, "quoteChar": '"'},
-                },
-            },
-        }
-
-        self.glue_boto_client.get_table.return_value = invalid_table_config
-
-        self.glue_adapter.update_table(table_name)
-
-        self.glue_boto_client.update_table.assert_called_once_with(
-            DatabaseName="GLUE_CATALOGUE_DB_NAME", TableInput=altered_table_config
-        )

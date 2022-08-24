@@ -64,8 +64,8 @@ class DataService:
 
         raw_filename = self.generate_raw_filename(filename)
         converter = {
-            UpdateBehaviour.APPEND.value: raw_filename,
-            UpdateBehaviour.OVERWRITE.value: f"{schema.get_domain()}.csv",
+            UpdateBehaviour.APPEND.value: f"{raw_filename.replace('.csv', '')}.parquet",
+            UpdateBehaviour.OVERWRITE.value: f"{schema.get_domain()}.parquet",
         }
         permanent_filename = converter[behaviour]
         return raw_filename, permanent_filename
@@ -97,7 +97,7 @@ class DataService:
             )
             self._upload_data(schema, validated_dataframe, permanent_filename)
             self.glue_adapter.start_crawler(domain, dataset)
-            self.glue_adapter.update_catalog_table_config(domain, dataset)
+            self.glue_adapter.update_catalog_table_config(schema)
             return permanent_filename
 
     def upload_schema(self, schema: Schema) -> str:

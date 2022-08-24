@@ -222,7 +222,7 @@ class TestUploadDataset:
         )
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
 
-        self.s3_adapter.find_schema.return_value = Schema(
+        schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
                 dataset="other",
@@ -244,25 +244,26 @@ class TestUploadDataset:
                 ),
             ],
         )
+
+        self.s3_adapter.find_schema.return_value = schema
+
         partitioned_data = [("", expected)]
         mock_partitioner.return_value = partitioned_data
 
         self.data_service.generate_raw_filename = Mock(
-            return_value=("2022-03-03T12:00:00-data.csv")
+            return_value="2022-03-03T12:00:00-data.csv"
         )
 
-        filename = self.data_service.upload_dataset(
+        permanent_filename = self.data_service.upload_dataset(
             "some", "other", "data.csv", file_contents
         )
-        assert filename == "2022-03-03T12:00:00-data.csv"
+        assert permanent_filename == "2022-03-03T12:00:00-data.parquet"
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", "2022-03-03T12:00:00-data.csv", partitioned_data
+            "some", "other", "2022-03-03T12:00:00-data.parquet", partitioned_data
         )
 
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(
-            "some", "other"
-        )
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
         self.data_service.generate_raw_filename.assert_called_once_with("data.csv")
 
@@ -279,7 +280,7 @@ class TestUploadDataset:
         )
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
 
-        self.s3_adapter.find_schema.return_value = Schema(
+        schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
                 dataset="other",
@@ -301,6 +302,9 @@ class TestUploadDataset:
                 ),
             ],
         )
+
+        self.s3_adapter.find_schema.return_value = schema
+
         partitioned_data = [
             ("colname1=1234", pd.DataFrame({"colname2": ["Carlos"]})),
             ("colname1=4567", pd.DataFrame({"colname2": ["Ada"]})),
@@ -311,18 +315,16 @@ class TestUploadDataset:
             return_value=("2022-03-02T12:00:00-data.csv")
         )
 
-        filename = self.data_service.upload_dataset(
+        permanent_filename = self.data_service.upload_dataset(
             "some", "other", "data.csv", file_contents
         )
-        assert filename == "2022-03-02T12:00:00-data.csv"
+        assert permanent_filename == "2022-03-02T12:00:00-data.parquet"
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", "2022-03-02T12:00:00-data.csv", partitioned_data
+            "some", "other", "2022-03-02T12:00:00-data.parquet", partitioned_data
         )
 
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(
-            "some", "other"
-        )
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
     # Happy Path -------------------------------------
     @patch("api.application.services.data_service.generate_partitioned_data")
@@ -340,7 +342,7 @@ class TestUploadDataset:
         )
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
 
-        self.s3_adapter.find_schema.return_value = Schema(
+        schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
                 dataset="other",
@@ -363,21 +365,22 @@ class TestUploadDataset:
                 ),
             ],
         )
+
+        self.s3_adapter.find_schema.return_value = schema
+
         partitioned_data = [("", expected)]
         mock_partitioner.return_value = partitioned_data
 
-        filename = self.data_service.upload_dataset(
+        permanent_filename = self.data_service.upload_dataset(
             "some", "other", "data.csv", file_contents
         )
-        assert filename == "some.csv"
+        assert permanent_filename == "some.parquet"
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", "some.csv", partitioned_data
+            "some", "other", "some.parquet", partitioned_data
         )
 
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(
-            "some", "other"
-        )
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_dataset_with_overwrite_behaviour_with_two_partitions(
@@ -394,7 +397,7 @@ class TestUploadDataset:
         )
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
 
-        self.s3_adapter.find_schema.return_value = Schema(
+        schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
                 dataset="other",
@@ -417,24 +420,25 @@ class TestUploadDataset:
                 ),
             ],
         )
+
+        self.s3_adapter.find_schema.return_value = schema
+
         partitioned_data = [
             ("colname1=1234", pd.DataFrame({"colname2": ["Carlos"]})),
             ("colname1=4567", pd.DataFrame({"colname2": ["Ada"]})),
         ]
         mock_partitioner.return_value = partitioned_data
 
-        filename = self.data_service.upload_dataset(
+        permanent_filename = self.data_service.upload_dataset(
             "some", "other", "data.csv", file_contents
         )
-        assert filename == "some.csv"
+        assert permanent_filename == "some.parquet"
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", "some.csv", partitioned_data
+            "some", "other", "some.parquet", partitioned_data
         )
 
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(
-            "some", "other"
-        )
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
     # E2E flow ---------------------------------------
     @patch("api.application.services.data_service.generate_partitioned_data")
@@ -448,7 +452,7 @@ class TestUploadDataset:
             ",\n"  # Entirely null row
         )
 
-        self.s3_adapter.find_schema.return_value = Schema(
+        schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
                 dataset="other",
@@ -472,6 +476,8 @@ class TestUploadDataset:
             ],
         )
 
+        self.s3_adapter.find_schema.return_value = schema
+
         expected_transformed_df = pd.DataFrame(
             {
                 "date": ["2012-06-12", "2012-07-12"],
@@ -482,13 +488,13 @@ class TestUploadDataset:
         mock_partitioner.return_value(expected_transformed_df)
 
         self.data_service.generate_raw_filename = Mock(
-            return_value=("2022-03-03T12:00:00-data.csv")
+            return_value="2022-03-03T12:00:00-data.csv"
         )
 
-        filename = self.data_service.upload_dataset(
-            "some", "other", "data.csv", file_contents
+        permanent_filename = self.data_service.upload_dataset(
+            "some", "other", "data.parquet", file_contents
         )
-        assert filename == "2022-03-03T12:00:00-data.csv"
+        assert permanent_filename == "2022-03-03T12:00:00-data.parquet"
 
         #  Checking mock calls with dataframes does not work because we need to call the df.equals() method
         partitioner_args = mock_partitioner.call_args.args
@@ -498,12 +504,10 @@ class TestUploadDataset:
 
         assert upload_args[0] == "some"
         assert upload_args[1] == "other"
-        assert upload_args[2] == "2022-03-03T12:00:00-data.csv"
+        assert upload_args[2] == "2022-03-03T12:00:00-data.parquet"
         assert upload_args[3].equals(expected_transformed_df)
 
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(
-            "some", "other"
-        )
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
     # Schema retrieval -------------------------------
     def test_raises_error_when_schema_does_not_exist(self):

@@ -93,7 +93,7 @@ class S3Adapter:
             upload_path = self._construct_partitioned_data_path(
                 partition_path, filename, domain, dataset
             )
-            data_content = self._convert_to_bytes(data.to_csv(index=False))
+            data_content = data.to_parquet(compression="gzip", index=False)
             self.store_data(upload_path, data_content)
 
     def upload_raw_data(
