@@ -22,7 +22,6 @@ from api.common.custom_exceptions import (
     UserError,
 )
 from api.common.logger import AppLogger
-from api.controller.utils import _response_body
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
@@ -245,14 +244,14 @@ async def upload_data(
         filename = data_service.upload_dataset(
             domain, dataset, file.filename, file_contents
         )
-        return _response_body(filename)
+        return {"details": filename.replace(".parquet", "")}
     except SchemaNotFoundError as error:
         AppLogger.warning("Schema not found: %s", error.args[0])
         raise UserError(message=error.args[0])
     except CrawlerStartFailsError as error:
         AppLogger.warning("Failed to start crawler: %s", error.args[0])
         response.status_code = http_status.HTTP_202_ACCEPTED
-        return _response_body(file.filename)
+        return {"details": file.filename}
 
 
 @datasets_router.post(

@@ -26,7 +26,7 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     def test_calls_data_upload_service_successfully(self, mock_upload_dataset):
         file_content = b"some,content"
-        file_name = "filename.csv"
+        file_name = "filename.parquet"
         file_name_with_timestamp = f"2022-05-05T12:00:00-{file_name}"
 
         mock_upload_dataset.return_value = file_name_with_timestamp
@@ -42,7 +42,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         assert response.status_code == 201
-        assert response.json() == {"details": "2022-05-05T12:00:00-filename.csv"}
+        assert response.json() == {"details": "2022-05-05T12:00:00-filename"}
 
     @patch.object(DataService, "upload_dataset")
     def test_calls_data_upload_service_fails_when_invalid_dataset_is_uploaded(

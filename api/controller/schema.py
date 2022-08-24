@@ -14,7 +14,6 @@ from api.common.custom_exceptions import (
     CrawlerCreationError,
 )
 from api.common.logger import AppLogger
-from api.controller.utils import _response_body
 from api.domain.schema import Schema
 
 data_service = DataService()
@@ -99,7 +98,7 @@ async def upload_schema(schema: Schema):
     """
     try:
         schema_file_name = data_service.upload_schema(schema)
-        return _response_body(schema_file_name)
+        return {"details": schema_file_name}
     except (CrawlerCreationError, CrawlerAlreadyExistsError) as error:
         _delete_uploaded_schema(schema)
         raise error
