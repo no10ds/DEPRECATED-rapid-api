@@ -17,19 +17,22 @@
             <h3 class="content-step-indicator">Step 1: Populate subject info</h3>
             <div class="form-select">
                 <label class="form-select_label">Type of subject</label>
-                <select class="form-select_dropdown" id="select_subject">
+                <select class="form-select_dropdown" id="select_subject" required>
                     <option value="">Please select</option>
                     <option value="USER">User</option>
                     <option value="CLIENT">Client</option>
                 </select>
+                <h4 hidden class="form-input_error" id="select_subjectError">Please select a type of user.</h4>
             </div>
             <div class="form-input">
                 <label class="form-input_label" for="name">Name</label>
-                <input class="form-input_text" name="name" id="name" type="text">
+                <input class="form-input_text" name="name" id="name" type="text" required pattern="[a-zA-Z][a-zA-Z0-9@._-]{2,127}">
+                <h4 hidden class="form-input_error" id="nameError">The provided name is invalid.</h4>
             </div>
             <div class="form-input" id="email_input">
                 <label class="form-input_label" for="email">Email</label>
-                <input class="form-input_text" name="email" id="email" type="email">
+                <input class="form-input_text" name="email" id="email" type="email" required pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$">
+                <h4 hidden class="form-input_error" id="emailError">The provided email is invalid.</h4>
             </div>
             <h3 class="content-step-indicator">Step 2: Select permissions</h3>
             {% with permissions = permissions["ADMIN"], legend_text = "Management permissions", checkbox_name="ADMIN" %}
@@ -52,9 +55,8 @@
         </div>
         <h4 hidden class="response-msg--error" id="error-message"></h4>
         <div class="form_submit" id="submit_form">
-            <button class="btn" type="button" onclick="create_subject()">Create subject</button>
+            <button class="btn" type="button" id="createSubject" onclick="create_subject()">Create subject</button>
         </div>
-
         <div id="success">
         </div>
     </form>

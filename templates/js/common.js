@@ -53,47 +53,90 @@ function get_selected_value(element_id) {
 }
 
 const showErrorMessage = (message) => {
-    const errorMessageContainer = document.getElementById('error-message')
-    errorMessageContainer.innerText = message
-    errorMessageContainer.hidden = false
+    const errorMessageContainer = document.getElementById('error-message');
+    errorMessageContainer.innerText = message;
+    errorMessageContainer.hidden = false;
 }
 
 const hideErrorMessage = () => {
-    const errorMessageContainer = document.getElementById('error-message')
-    errorMessageContainer.innerText = ''
-    errorMessageContainer.hidden = true
+    const errorMessageContainer = document.getElementById('error-message');
+    errorMessageContainer.innerText = '';
+    errorMessageContainer.hidden = true;
 }
 
 const setupNumericValuesEvents = (elementId) => {
   const numericElement = document.getElementById(elementId);
-  numericElement.errorMsgId = `${elementId}Error`
-  numericElement.addEventListener('focusout', handleValidation)
+  numericElement.errorMsgId = `${elementId}Error`;
+  numericElement.addEventListener('focusout', handleNumericValidation);
 }
 
-const handleValidation = (event) => {
+const handleNumericValidation = (event) => {
   let numericElement = event.currentTarget;
-  const errorMsg = document.getElementById(numericElement.errorMsgId);
   numericElement.value = Math.floor(numericElement.value);
   if(numericElement.value == 0) {
-    numericElement.value = ""
+    numericElement.value = "";
   }
-  if(numericElement.checkValidity()) {
-    event.currentTarget.classList.remove("invalid");
-    errorMsg.hidden = true;
+  handleBaseValidation(numericElement);
+}
+
+const handleBaseValidation = (elementToValidate) => {
+  const errorMsg = document.getElementById(elementToValidate.errorMsgId);
+  if(elementToValidate.checkValidity()) {
+    elementToValidate.classList.remove("invalid");
+    if(!!errorMsg) {
+      errorMsg.hidden = true;
+    }
   } else {
-    event.currentTarget.classList.add("invalid");
+    elementToValidate.classList.add("invalid");
     errorMsg.hidden = false;
   }
 }
 
+const handleValidation = (event) => {
+  handleBaseValidation(event.currentTarget);
+}
 
-const setupEventListeners = () => {
-    // Set up inputs to clear error message on interaction
-    const allInputs = document.querySelectorAll('input')
+const setupValidationForType = (inputType) => {
+    const allInputs = document.querySelectorAll(inputType);
     allInputs.forEach(input => {
-        input.addEventListener('click', hideErrorMessage)
-        input.addEventListener('focus', hideErrorMessage)
+        input.errorMsgId = `${input.id}Error`;
+        input.addEventListener('focusout', handleValidation);
     })
 }
 
-setupEventListeners()
+const setupEventListeners = () => {
+    // Set up inputs to clear error message on interaction
+    const allInputs = document.querySelectorAll('input');
+    allInputs.forEach(input => {
+        input.addEventListener('click', hideErrorMessage);
+        input.addEventListener('focus', hideErrorMessage);
+    })
+    setupValidationForType('input[type="text"]');
+    setupValidationForType('input[type="email"]');
+    setupValidationForType('select');
+}
+
+const isValidForm = () => {
+  const validInputs = checkInputsValidity("input");
+  const validSelects = checkInputsValidity("select");
+  return validInputs && validSelects;
+}
+
+const checkInputsValidity = (inputType) => {
+  let isValid = true;
+  const allInputs = document.querySelectorAll(inputType);
+      allInputs.forEach(input => {
+        if(!input.checkValidity()) {
+          isValid = false;
+          input.errorMsgId = `${input.id}Error`;
+          handleBaseValidation(input);
+        }
+    })
+  return isValid;
+}
+
+const scrollToTop = () => {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+setupEventListeners();

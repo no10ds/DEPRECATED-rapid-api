@@ -1,17 +1,26 @@
 toggle_inputs("select_subject", "CLIENT", "email_input");
 
 function create_subject() {
+  if(isValidForm()) {
+    handle_creation();
+  } else {
+    scrollToTop();
+  }
+}
+
+function handle_creation() {
   const name = document.getElementById("name").value;
   const permissions = extract_selections();
   const subject_type = get_selected_value("select_subject");
 
-  if (subject_type == "User") {
-    const email = document.getElementById("email").value;
-    create_user(name, email, permissions);
-  } else if (subject_type == "Client") {
-    create_client(name, permissions);
-  } else {
-    return null;
+  switch(subject_type) {
+    case "User":
+      const email = document.getElementById("email").value;
+      create_user(name, email, permissions);
+    case "Client":
+      create_client(name, permissions);
+    default:
+      return null;
   }
 }
 
