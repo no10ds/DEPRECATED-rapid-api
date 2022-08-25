@@ -1,16 +1,16 @@
 {
   "metadata": {
     "domain": "test_e2e",
-    "dataset": "delete",
+    "dataset": "upload",
     "sensitivity": "PUBLIC",
     "tags": {
-      "test_e2e": "delete",
+      "test_e2e": "upload",
       "test": "e2e"
     },
     "owners": [
       {
-        "name": "delete",
-        "email": "delete@test.com"
+        "name": "upload",
+        "email": "upload@test.com"
       }
     ]
   },

@@ -132,15 +132,15 @@ class GlueAdapter:
             for schema_partition in partition_columns
         }
 
-        data_types_map = {
+        glue_types_map = {
             DataTypes.INT: "bigint",
             DataTypes.FLOAT: "double",
         }
 
         for table_partition in table_partition_keys:
-            data_type = partition_column_type_map[table_partition["Name"]]
-            if data_type in DataTypes.numeric_data_types():
-                table_partition["Type"] = data_types_map[data_type]
+            actual_data_type = partition_column_type_map[table_partition["Name"]]
+            if actual_data_type in glue_types_map:
+                table_partition["Type"] = glue_types_map[actual_data_type]
 
         return {
             "Name": table_definition["Table"]["Name"],

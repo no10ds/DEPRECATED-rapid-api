@@ -64,7 +64,7 @@ class DataService:
 
         raw_filename = self.generate_raw_filename(filename)
         converter = {
-            UpdateBehaviour.APPEND.value: f"{raw_filename.replace('.csv', '')}.parquet",
+            UpdateBehaviour.APPEND.value: raw_filename.replace(".csv", ".parquet"),
             UpdateBehaviour.OVERWRITE.value: f"{schema.get_domain()}.parquet",
         }
         permanent_filename = converter[behaviour]
