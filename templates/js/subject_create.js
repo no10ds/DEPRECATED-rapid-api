@@ -17,8 +17,10 @@ function handle_creation() {
     case "User":
       const email = document.getElementById("email").value;
       create_user(name, email, permissions);
+      break;
     case "Client":
       create_client(name, permissions);
+      break;
     default:
       return null;
   }
