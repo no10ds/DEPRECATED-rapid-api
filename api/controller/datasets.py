@@ -157,10 +157,10 @@ async def delete_data_file(
     """
     ## Delete Data File
 
-    Use this endpoint to delete raw files linked to a specific domain/dataset, if there is no data stored for the
+    Use this endpoint to delete a specific file linked to a domain/dataset. If there is no data stored for the
     domain/dataset or the file name is invalid an error will be thrown.
 
-    When a valid file in the domain/dataset is deleted success message will be displayed
+    When a valid file in the domain/dataset is deleted, a success message will be displayed.
 
     ### General structure
 

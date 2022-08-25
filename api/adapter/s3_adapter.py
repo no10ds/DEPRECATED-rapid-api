@@ -108,14 +108,25 @@ class S3Adapter:
         )
         return self._map_object_list_to_filename(object_list)
 
-    def delete_dataset_files(self, domain: str, dataset: str, filename: str):
+    def delete_dataset_files(self, domain: str, dataset: str, raw_data_filename: str):
         dataset_metadata = StorageMetaData(domain, dataset)
         files = self._list_files_from_path(dataset_metadata.location())
+
         files_to_delete = [
-            {"Key": file["Key"]} for file in files if file["Key"].endswith(filename)
+            {"Key": data_file["Key"]}
+            for data_file in files
+            if self._clean_filename(data_file["Key"])
+            == self._clean_filename(raw_data_filename)
         ]
-        files_to_delete.append({"Key": dataset_metadata.raw_data_path(filename)})
-        self._delete_objects(files_to_delete, filename)
+
+        files_to_delete.append(
+            {"Key": dataset_metadata.raw_data_path(raw_data_filename)}
+        )
+
+        self._delete_objects(files_to_delete, raw_data_filename)
+
+    def _clean_filename(self, file_key: str) -> str:
+        return file_key.rsplit("/", 1)[-1].split(".")[0]
 
     def _construct_partitioned_data_path(
         self, partition_path: str, filename: str, domain: str, dataset: str

@@ -3,7 +3,6 @@ from abc import ABC
 from http import HTTPStatus
 from typing import List
 
-import pytest
 import boto3
 import requests
 from requests.auth import HTTPBasicAuth
@@ -271,7 +270,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         response = requests.post(url, headers=(self.generate_auth_headers()), json=body)
         assert response.status_code == HTTPStatus.FORBIDDEN
 
-    @pytest.mark.skip("Service needs to be fixed to handle parquet file extensions")
     def test_deletes_existing_data_when_authorised(self):
         # Upload files directly to relevant directories in S3
         self.upload_test_file_to_(
@@ -293,7 +291,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         response_list = json.loads(available_datasets_response.text)
         assert self.filename in response_list
 
-        # Delete chosen dataset (raw files and actual data)
+        # Delete chosen dataset file (raw file and actual data file)
         first_dataset_file = response_list[0]
         delete_raw_data_url = self.delete_raw_data_url(
             domain=self.e2e_test_domain, dataset="delete", filename=first_dataset_file

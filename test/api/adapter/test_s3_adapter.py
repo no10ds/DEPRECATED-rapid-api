@@ -76,7 +76,7 @@ class TestS3AdapterUpload:
     def test_upload_partitioned_data(self):
         domain = "domain"
         dataset = "dataset"
-        filename = "data.csv"
+        filename = "data.parquet"
 
         partition_1 = pd.DataFrame({"colname2": ["user1"]})
         partition_2 = pd.DataFrame({"colname2": ["user2"]})
@@ -96,12 +96,12 @@ class TestS3AdapterUpload:
         calls = [
             call(
                 Bucket="dataset",
-                Key="data/domain/dataset/year=2020/month=1/data.csv",
+                Key="data/domain/dataset/year=2020/month=1/data.parquet",
                 Body=partition_1_parquet,
             ),
             call(
                 Bucket="dataset",
-                Key="data/domain/dataset/year=2020/month=2/data.csv",
+                Key="data/domain/dataset/year=2020/month=2/data.parquet",
                 Body=partition_2_parquet,
             ),
         ]
@@ -254,9 +254,9 @@ class TestS3Deletion:
     def test_deletion_of_raw_files_with_no_partitions(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
-                {"Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.csv"},
-                {"Key": "data/domain/dataset/2020-01-01T12:00:00-file1.csv"},
-                {"Key": "data/domain/dataset/2020-01-01T12:00:00-file2.csv"},
+                {"Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.parquet"},
+                {"Key": "data/domain/dataset/2020-01-01T12:00:00-file1.parquet"},
+                {"Key": "data/domain/dataset/2020-01-01T12:00:00-file2.parquet"},
             ],
             "Name": "data-bucket",
             "Prefix": "data/domain/dataset",
@@ -265,7 +265,7 @@ class TestS3Deletion:
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
                 {
-                    "Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
+                    "Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.parquet",
                 },
                 {
                     "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
@@ -285,7 +285,7 @@ class TestS3Deletion:
             Delete={
                 "Objects": [
                     {
-                        "Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
+                        "Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.parquet",
                     },
                     {
                         "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
@@ -298,12 +298,16 @@ class TestS3Deletion:
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
                 {
-                    "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.csv"
+                    "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.parquet"
                 },
-                {"Key": "data/domain/dataset/2022/03/2020-05-01T12:00:00-file1.csv"},
-                {"Key": "data/domain/dataset/2022/02/2020-01-01T12:00:00-file2.csv"},
                 {
-                    "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.csv"
+                    "Key": "data/domain/dataset/2022/03/2020-05-01T12:00:00-file1.parquet"
+                },
+                {
+                    "Key": "data/domain/dataset/2022/02/2020-01-01T12:00:00-file2.parquet"
+                },
+                {
+                    "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.parquet"
                 },
             ],
             "Name": "data-bucket",
@@ -313,10 +317,10 @@ class TestS3Deletion:
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
                 {
-                    "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.csv",
+                    "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.parquet",
                 },
                 {
-                    "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.csv",
+                    "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.parquet",
                 },
                 {
                     "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
@@ -336,10 +340,10 @@ class TestS3Deletion:
             Delete={
                 "Objects": [
                     {
-                        "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.csv",
+                        "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.parquet",
                     },
                     {
-                        "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.csv",
+                        "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.parquet",
                     },
                     {
                         "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
