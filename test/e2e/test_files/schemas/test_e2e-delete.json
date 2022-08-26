@@ -12,7 +12,8 @@
         "name": "delete",
         "email": "delete@test.com"
       }
-    ]
+    ],
+    "update_behaviour": "OVERWRITE"
   },
   "columns": [
     {

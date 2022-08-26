@@ -12,7 +12,8 @@
         "name": "upload",
         "email": "upload@test.com"
       }
-    ]
+    ],
+    "update_behaviour": "OVERWRITE"
   },
   "columns": [
     {
