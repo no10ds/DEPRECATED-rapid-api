@@ -28,7 +28,7 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
@@ -197,13 +197,13 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
             ],
         )
@@ -224,13 +224,13 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
             ],
         )
@@ -412,6 +412,39 @@ class TestSchemaValidation:
             invalid_schema, "At least one column should not be partitioned"
         )
 
+    def test_is_invalid_schema_when_partitioned_columns_allow_null_values(self):
+        invalid_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=1,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=0,
+                    data_type="object",
+                    allow_null=False,
+                ),
+                Column(
+                    name="colname3",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+        self._assert_validate_schema_raises_error(
+            invalid_schema, "Partition columns cannot allow null values"
+        )
+
     @pytest.mark.parametrize(
         "data_type",
         [
@@ -552,7 +585,7 @@ class TestSchemaValidation:
         try:
             validate_schema(valid_schema)
         except SchemaValidationError:
-            pytest.fail("Unexpected SchemaError was thrown")
+            pytest.fail("Unexpected SchemaValidationError was thrown")
 
     @pytest.mark.parametrize(
         "provided_sensitivity",
@@ -581,7 +614,7 @@ class TestSchemaValidation:
         try:
             validate_schema(valid_schema)
         except SchemaValidationError:
-            pytest.fail("Unexpected SchemaError was thrown")
+            pytest.fail("Unexpected SchemaValidationError was thrown")
 
     @pytest.mark.parametrize(
         "provided_sensitivity",
@@ -650,7 +683,7 @@ class TestSchemaValidation:
         try:
             validate_schema(valid_schema)
         except SchemaValidationError:
-            pytest.fail("Unexpected SchemaError was thrown")
+            pytest.fail("Unexpected SchemaValidationError was thrown")
 
     @pytest.mark.parametrize(
         "provided_update_behaviour",
@@ -716,7 +749,7 @@ class TestSchemaValidation:
         try:
             validate_schema(valid_schema)
         except SchemaValidationError:
-            pytest.fail("Unexpected SchemaError was thrown")
+            pytest.fail("Unexpected SchemaValidationError was thrown")
 
     def test_invalid_schema_when_too_many_tags_are_specified(self):
         key_value_tags = {
@@ -880,7 +913,7 @@ class TestSchemaValidation:
         try:
             validate_schema(valid_schema)
         except SchemaValidationError:
-            pytest.fail("Unexpected SchemaError was thrown")
+            pytest.fail("Unexpected SchemaValidationError was thrown")
 
     def test_validate_schema_removes_duplicated_tags(self):
         valid_schema = Schema(
@@ -920,7 +953,7 @@ class TestSchemaValidation:
         try:
             validate_schema_for_upload(self.valid_schema)
         except SchemaValidationError:
-            pytest.fail("Unexpected SchemaError was thrown")
+            pytest.fail("Unexpected SchemaValidationError was thrown")
 
     @pytest.mark.parametrize(
         "owners",

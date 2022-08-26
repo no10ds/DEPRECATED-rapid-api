@@ -52,13 +52,13 @@ class TestUploadSchema:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
             ],
         )

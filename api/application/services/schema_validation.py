@@ -34,6 +34,7 @@ def schema_has_valid_column_definitions(schema: Schema):
     has_clean_column_headings(schema)
     has_unique_partition_indexes(schema)
     has_valid_partition_index_values(schema)
+    has_allow_null_false_on_partitioned_columns(schema)
     has_only_accepted_data_types(schema)
     has_valid_date_column_definition(schema)
 
@@ -141,6 +142,12 @@ def has_valid_partition_index_values(schema: Schema):
         raise SchemaValidationError(
             "You can not have a partition number greater than the number of partition columns"
         )
+
+
+def has_allow_null_false_on_partitioned_columns(schema):
+    for partitioned_col in schema.get_partition_columns():
+        if partitioned_col.allow_null:
+            raise SchemaValidationError("Partition columns cannot allow null values")
 
 
 def has_only_accepted_data_types(schema: Schema):
