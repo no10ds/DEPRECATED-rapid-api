@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v3.0.0 - _2022-08-26_
+
+See [v3.0.0] changes
+
+v3.0.0 Provides download functionality in the UI, allowing the user to query. Also, it introduces parquet as the format
+to store files, allowing then null values in the datasets.
+
+### Fixed
+- Error when querying files with null values on numeric columns.
+- Add protected domains to list all datasets endpoint.
+
+### Added
+- UI
+  - Input validation on subject creation
+  - Data management download flow
+    - Allow user to download datasets from the UI
+    - Allow user to introduce queries
+
+### Changed
+- Store files in parquet instead of csv
+- Data management migrated to parquet
+
+[v3.0.0]: https://github.com/no10ds/rapid-api/compare/v2.0.0...v3.0.0
+
 ## v2.0.0 - _2022-08-19_
 
 See [v2.0.0] changes
