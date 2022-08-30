@@ -1115,7 +1115,6 @@ to the login endpoint.
 If the user has the application opened in 2 tabs and leaves 1 idle while works in another, the logout process will be
 triggered.
 
-
 ## Login
 
 This page is used to authenticate users.

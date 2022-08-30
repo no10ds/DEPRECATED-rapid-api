@@ -112,31 +112,6 @@ Example:
 }
 ```
 
-## Change storage data format
-
-### Problem
-
-Storing files in CSV format might be less efficient than parquet, therefore transforming to parquet can be a good future
-improvement.
-
-### Suggested solution
-
-Transform the data files into a different format such as parquet. To do so, you will need to take few things in
-consideration:
-
-- When running the crawler for the first time, we change the `StorageDescriptor` (`glue_adapter.py`) for the tables to
-  use a CSV formatter
-- When running the infra to set up glue (`modules/data-workflow/glue-components.tf`), we are creating
-  an `aws_glue_classifier` named `custom_csv_classifier` and is set up in `create_crawler` (`glue_adapter.py`) with the
-  string `single_column_csv_classifier`. To use parquet we need to change to a parquet classifier
-- In `s3_adapter.py` when storing the file, the format is defined in `_construct_partitioned_data_path`. It works using
-  the input filename, and since this already has `.csv` on it, it gets stored with it. To change it we just need to
-  replace `.csv` to `.{desiredformat}`
-
-### Assumptions
-
-- Parquet will perform better
-
 ## CSRF and XSS protection
 
 ### Problem
@@ -230,7 +205,6 @@ below:
 
 `terraform apply /location/app-cluster/main.tf -var-file=/location/common-params.tfvars -var-file=/location/app-cluster.tfvars`
 
-
 ## Exception Handling and HTTP Status Codes
 
 ### Problem
@@ -241,3 +215,14 @@ Currently, our custom exceptions are defined with a status code, this pollutes a
 
 Ideally we pull up assigning the status codes into the global exception handler, which already determines whether to
 return json or redirect a user.
+
+
+## Session timeout in 2+ tabs
+
+### Problem
+If the user has the application opened in 2+ tabs and leaves 1 idle while works in another, the logout process will be
+triggered, thus ending the session also on the tab that the user is working on and making the user to re-authenticate.
+
+### Suggested solution
+Store the timeout time in the local storage, create an interval that checks every second if the timeout has been
+reached and update the time everytime a user does an action in any of the tabs.
