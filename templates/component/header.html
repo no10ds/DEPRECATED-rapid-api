@@ -4,3 +4,8 @@
 <form class="form--logout" action="/logout" method="get">
     <button class="btn btn--secondary btn--medium">Log out</button>
 </form>
+{% block javascript %}
+<script type="text/javascript">
+        {% include "./js/session_timer.js" %}
+</script>
+{% endblock %}
