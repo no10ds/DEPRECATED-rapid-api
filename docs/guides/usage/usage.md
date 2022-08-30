@@ -1100,6 +1100,22 @@ In order to use this endpoint you need the `USER_ADMIN` permission
 
 # UI usage
 
+## Credentials
+For most of the UI endpoint user credentials will be required, therefore, a user must exist in cognito and the relevant
+permissions have to be stored in DynamoDB to be grated access.
+
+A user can log out at any point by:
+1. Calling `/logout`.
+2. Clicking on the "logout" button.
+
+If a user stays idle for 5 minutes, the logout process will be triggered automatically and the user will be redirected
+to the login endpoint.
+
+### Gotchas
+If the user has the application opened in 2 tabs and leaves 1 idle while works in another, the logout process will be
+triggered.
+
+
 ## Login
 
 This page is used to authenticate users.
