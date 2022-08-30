@@ -11,7 +11,7 @@ var sessionTimer = function () {
     document.onkeydown = resetTimer;
 
     function logout() {
-        window.location.href = "logout"
+        window.location.href = `${location.protocol}//${location.host}/logout`
     }
 
     function resetTimer() {
