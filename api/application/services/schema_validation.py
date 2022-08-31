@@ -109,7 +109,7 @@ def valid_dataset_name(dataset: str) -> bool:
 
 
 def validate_alphanumeric_string(string_input: str) -> bool:
-    regex = re.compile("^[a-zA-Z].[a-zA-Z0-9]*$", re.I)
+    regex = re.compile("^[a-zA-Z][a-zA-Z0-9]*$", re.I)
     match = regex.match(string_input)
     return bool(match)
 
