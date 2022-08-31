@@ -38,19 +38,11 @@ class ProtectedDomainService:
         self.dynamodb_adapter.store_protected_permissions(generated_permissions, domain)
 
     def list_protected_domains(self) -> Set[str]:
-        protected_scopes = self.cognito_adapter.get_protected_scopes()
-        cognito_protected_domains = set(
-            scope.split(f"{SensitivityLevel.PROTECTED.value}_")[-1].lower()
-            for scope in protected_scopes
-        )
-
-        db_protected_domains = self._list_protected_permission_domains()
-        return cognito_protected_domains.union(db_protected_domains)
+        return self._list_protected_permission_domains()
 
     def _list_protected_permission_domains(self):
         permission_items = self.dynamodb_adapter.get_all_protected_permissions()
-        db_protected_domains = set([item.domain.lower() for item in permission_items])
-        return db_protected_domains
+        return set([item.domain.lower() for item in permission_items])
 
     def _verify_protected_domain_does_not_exist(self, domain):
         if domain.lower() in self._list_protected_permission_domains():

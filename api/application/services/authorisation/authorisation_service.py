@@ -138,10 +138,9 @@ def check_permissions(
 
 def retrieve_permissions(token: Token) -> List[str]:
     try:
-        database_permissions = db_adapter.get_permissions_for_subject(token.subject)
-        return database_permissions if database_permissions else token.permissions
+        return db_adapter.get_permissions_for_subject(token.subject)
     except UserError:
-        return token.permissions
+        return []
 
 
 def match_permissions(

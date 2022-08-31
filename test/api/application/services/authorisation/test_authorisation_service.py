@@ -332,34 +332,11 @@ class TestRetrievePermissions:
             "WRITE_PUBLIC",
         ]
 
-    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
     @patch("api.application.services.authorisation.authorisation_service.db_adapter")
-    def test_get_subject_permissions_from_token_when_none_in_the_database(
-        self, mock_db_adapter
-    ):
+    def test_returns_no_permissions_when_subject_not_found_error(self, mock_db_adapter):
         token_with_no_db_permissions = Token(
             {
                 "sub": "the-subject-id",
-                "scope": "https://example.com/READ_PRIVATE https://example.com/DATA_ADMIN",
-            }
-        )
-
-        mock_db_adapter.get_permissions_for_subject.return_value = []
-
-        result = retrieve_permissions(token_with_no_db_permissions)
-
-        assert result == [
-            "READ_PRIVATE",
-            "DATA_ADMIN",
-        ]
-
-    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
-    @patch("api.application.services.authorisation.authorisation_service.db_adapter")
-    def test_get_subject_permissions_for_subject_not_found_error(self, mock_db_adapter):
-        token_with_no_db_permissions = Token(
-            {
-                "sub": "the-subject-id",
-                "scope": "https://example.com/READ_PRIVATE https://example.com/DATA_ADMIN",
             }
         )
 
@@ -369,10 +346,7 @@ class TestRetrievePermissions:
 
         result = retrieve_permissions(token_with_no_db_permissions)
 
-        assert result == [
-            "READ_PRIVATE",
-            "DATA_ADMIN",
-        ]
+        assert result == []
 
     @patch("api.application.services.authorisation.authorisation_service.db_adapter")
     def test_return_empty_permissions_list_when_no_permissions_found(
