@@ -89,19 +89,29 @@ def schema_has_valid_metadata_values(schema: Schema):
 
     if not valid_domain_name(domain_name):
         raise SchemaValidationError(
-            f"The value set for domain [{domain_name}] cannot contain hyphens"
+            f"The value set for domain [{domain_name}] must be alphanumeric and start with an alphabetic character"
         )
 
-    if any((char in dataset_name for char in ["-"])):
+    if not valid_dataset_name(dataset_name):
         raise SchemaValidationError(
-            f"The value set for dataset [{dataset_name}] cannot contain hyphens"
+            f"The value set for dataset [{dataset_name}] must be alphanumeric and start with an alphabetic character"
         )
     has_valid_sensitivity_level(schema)
     has_valid_update_behaviour(schema)
 
 
 def valid_domain_name(domain: str) -> bool:
-    return not any((char in domain for char in ["-"]))
+    return validate_alphanumeric_string(domain)
+
+
+def valid_dataset_name(dataset: str) -> bool:
+    return validate_alphanumeric_string(dataset)
+
+
+def validate_alphanumeric_string(string_input: str) -> bool:
+    regex = re.compile("^[a-zA-Z].[a-zA-Z0-9]*$", re.I)
+    match = regex.match(string_input)
+    return bool(match)
 
 
 def schema_has_valid_tag_set(schema: Schema):

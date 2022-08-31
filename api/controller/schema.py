@@ -53,8 +53,9 @@ async def generate_schema(
 
     The domain and dataset names must adhere to the following conditions:
 
-    - Alphanumeric
-    - Cannot contain `-` and `/` symbol
+    - Only alphanumeric characters allowed
+    - Have to start with an alphabetic character
+
     ### Click  `Try it out` to use the endpoint
 
     """
@@ -87,8 +88,8 @@ async def upload_schema(schema: Schema):
 
     The domain and dataset names must adhere to the following conditions:
 
-    - Alphanumeric
-    - Cannot contain `-` and `/` symbol
+    - Only alphanumeric characters allowed
+    - Have to start with an alphabetic character
 
     ### Accepted permissions
 

@@ -18,8 +18,8 @@ class TestSchemaValidation:
     def setup_method(self):
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
-                domain="some_domain",
-                dataset="other_dataset",
+                domain="someDomain",
+                dataset="otherDataset",
                 sensitivity="PUBLIC",
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
@@ -90,7 +90,7 @@ class TestSchemaValidation:
         )
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            r"The value set for domain \[test-domain\] cannot contain hyphens",
+            r"The value set for domain \[test-domain\] must be alphanumeric and start with an alphabetic character",
         )
 
     def test_is_invalid_schema_with_dataset_name_containing_hyphen(self):
@@ -112,7 +112,7 @@ class TestSchemaValidation:
         )
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            r"The value set for dataset \[test-dataset\] cannot contain hyphens",
+            r"The value set for dataset \[test-dataset\] must be alphanumeric and start with an alphabetic character",
         )
 
     def test_is_invalid_schema_with_empty_column_name(self):
@@ -170,13 +170,13 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname1",
                     partition_index=None,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
             ],
         )
@@ -287,7 +287,7 @@ class TestSchemaValidation:
                     name=col_name,
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 )
             ],
         )
@@ -308,7 +308,7 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
@@ -335,7 +335,7 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=-1,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
@@ -364,7 +364,7 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=2,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
@@ -376,7 +376,7 @@ class TestSchemaValidation:
                     name="colname3",
                     partition_index=None,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
             ],
         )
@@ -398,7 +398,7 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=1,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
@@ -425,19 +425,19 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=1,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
                 Column(
                     name="colname3",
                     partition_index=None,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
             ],
         )
@@ -983,13 +983,13 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
                     data_type="object",
-                    allow_null=False,
+                    allow_null=True,
                 ),
                 Column(
                     name="colname3",
@@ -1017,7 +1017,95 @@ class TestSchemaValidation:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
+                    allow_null=False,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
                     allow_null=True,
+                ),
+                Column(
+                    name="colname3",
+                    partition_index=None,
+                    data_type="boolean",
+                    allow_null=False,
+                ),
+            ],
+        )
+
+        with pytest.raises(SchemaValidationError):
+            validate_schema_for_upload(invalid_upload_schema)
+
+    @pytest.mark.parametrize(
+        "domain",
+        [
+            "_domain",
+            "do_main",
+            "4domain",
+            "&domain",
+            "dom-ain",
+            "domain^",
+        ],
+    )
+    def test_is_invalid_when_domain_has_incorrect_format(self, domain):
+        invalid_upload_schema = Schema(
+            metadata=SchemaMetadata(
+                domain=domain,
+                dataset="dataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=False,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname3",
+                    partition_index=None,
+                    data_type="boolean",
+                    allow_null=False,
+                ),
+            ],
+        )
+
+        with pytest.raises(SchemaValidationError):
+            validate_schema_for_upload(invalid_upload_schema)
+
+    @pytest.mark.parametrize(
+        "dataset",
+        [
+            "_dataset",
+            "data_set",
+            "4dataset",
+            "&dataset",
+            "data-set",
+            "dataset^",
+        ],
+    )
+    def test_is_invalid_when_dataset_has_incorrect_format(self, dataset):
+        invalid_upload_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset=dataset,
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",

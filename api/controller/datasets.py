@@ -254,8 +254,8 @@ async def upload_data(
 
     The domain and dataset names must adhere to the following conditions:
 
-    - Alphanumeric
-    - Cannot contain `-` and `/` symbol
+    - Only alphanumeric characters allowed
+    - Have to start with an alphabetic character
 
     ### Output
 
