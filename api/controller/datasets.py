@@ -195,9 +195,10 @@ async def delete_data_file(
 
 @datasets_router.post(
     "/v2/upload",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
 )
 def upload_large_file(chunk_size_mb: int = 50, file: UploadFile = File(...)):
+    AppLogger.info("Large file upload: Beginning write to disk")
     start = time.time()
     try:
         # Read file to disk
@@ -205,6 +206,7 @@ def upload_large_file(chunk_size_mb: int = 50, file: UploadFile = File(...)):
             mb_1 = 1024 * 1024
 
             while contents := file.file.read(mb_1 * chunk_size_mb):
+                AppLogger.info("Large file upload: Writing chunk to file")
                 f.write(contents)
 
         # Check that file exists on disk
