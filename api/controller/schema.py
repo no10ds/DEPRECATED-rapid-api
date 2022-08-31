@@ -106,7 +106,10 @@ async def upload_schema(schema: Schema):
 
 def _delete_uploaded_schema(schema: Schema):
     delete_service.delete_schema(
-        schema.get_domain(), schema.get_dataset(), schema.get_sensitivity()
+        schema.get_domain(),
+        schema.get_dataset(),
+        schema.get_sensitivity(),
+        schema.get_version(),
     )
 
 

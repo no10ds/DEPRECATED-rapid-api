@@ -99,7 +99,7 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 500
         assert response.json() == {"details": "Crawler creation error"}
 
-        mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC")
+        mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC", None)
 
     @patch.object(DataService, "upload_schema")
     def test_returns_500_if_protected_domain_does_not_exist(
@@ -123,6 +123,7 @@ class TestSchemaUpload(BaseClientTest):
                 "domain": "some",
                 "dataset": "thing",
                 "sensitivity": "PUBLIC",
+                "version": None,
                 "owners": [{"name": "owner", "email": "owner@email.com"}],
                 "key_value_tags": {"tag1": "value1", "tag2": "value2"},
                 "key_only_tags": ["tag3", "tag4"],

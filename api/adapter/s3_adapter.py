@@ -52,21 +52,17 @@ class S3Adapter:
             if error.response["Error"]["Code"] == "NoSuchKey":
                 raise UserError(f"The file [{filename}] does not exist")
 
-    def save_schema(
-        self, domain: str, dataset: str, sensitivity: str, schema: Schema
-    ) -> str:
-        schema_meta_data = SchemaMetadata(
-            sensitivity=sensitivity, domain=domain, dataset=dataset
-        )
+    def save_schema(self, schema: Schema) -> str:
+        schema_metadata = schema.metadata
         self.store_data(
-            object_full_path=schema_meta_data.schema_path(),
+            object_full_path=schema_metadata.schema_path(),
             object_content=self._convert_to_bytes(schema.json(indent=True)),
         )
-        return schema_meta_data.schema_name()
+        return schema_metadata.schema_name()
 
-    def delete_schema(self, domain: str, dataset: str, sensitivity: str):
+    def delete_schema(self, domain: str, dataset: str, sensitivity: str, version: int):
         schema_path = SchemaMetadata(
-            sensitivity=sensitivity, domain=domain, dataset=dataset
+            sensitivity=sensitivity, domain=domain, dataset=dataset, version=version
         ).schema_path()
         self._delete_data(schema_path)
 

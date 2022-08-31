@@ -37,6 +37,7 @@ def mock_schema_response():
             "domain": "test_domain",
             "dataset": "test_dataset",
             "sensitivity": "PUBLIC",
+            "version": 1,
         },
         "columns": [
             {
@@ -64,7 +65,7 @@ def mock_list_schemas_response(
             {"Key": "data/schemas/"},
             {"Key": f"data/schemas/{sensitivity}/"},
             {
-                "Key": f"data/schemas/{sensitivity}/{domain}-{dataset}.json",
+                "Key": f"data/schemas/{sensitivity}/{domain}/{dataset}/1/schema.json",
             },
         ],
         "Name": "bucket-name",

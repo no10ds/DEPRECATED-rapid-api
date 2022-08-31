@@ -50,14 +50,13 @@ class TestSchemaInfer:
                     format=None,
                 ),
             ],
-        )
+        ).dict(exclude_none=True)
         file_content = b"colname1,colname2,Col name 3,Col/name 4! \nsomething,123,1,True\notherthing,123,3,False\n\n"
 
         actual_schema = self.infer_schema_service.infer_schema(
             "mydomain", "mydataset", "PUBLIC", file_content
         )
-
-        assert expected_schema == actual_schema
+        assert actual_schema == expected_schema
 
     @patch("api.application.services.schema_infer_service.pd")
     def test_raises_error_when_parsing_provided_file_fails(self, mock_pd):

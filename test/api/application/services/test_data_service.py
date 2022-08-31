@@ -69,9 +69,7 @@ class TestUploadSchema:
 
         result = self.data_service.upload_schema(self.valid_schema)
 
-        self.s3_adapter.save_schema.assert_called_once_with(
-            "some", "other", "PUBLIC", self.valid_schema
-        )
+        self.s3_adapter.save_schema.assert_called_once_with(self.valid_schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
             "some", "other", {"sensitivity": "PUBLIC"}
         )

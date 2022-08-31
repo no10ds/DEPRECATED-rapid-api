@@ -27,6 +27,9 @@ class Schema(BaseModel):
     def get_sensitivity(self) -> str:
         return self.metadata.get_sensitivity()
 
+    def get_version(self) -> int:
+        return self.metadata.get_version()
+
     def get_custom_tags(self) -> Dict[str, str]:
         return self.metadata.get_custom_tags()
 

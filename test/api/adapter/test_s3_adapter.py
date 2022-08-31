@@ -114,6 +114,7 @@ class TestS3AdapterUpload:
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
+                version=1,
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
             columns=[
@@ -126,20 +127,15 @@ class TestS3AdapterUpload:
             ],
         )
 
-        result = self.persistence_adapter.save_schema(
-            domain="test_domain",
-            dataset="test_dataset",
-            sensitivity="PUBLIC",
-            schema=valid_schema,
-        )
+        result = self.persistence_adapter.save_schema(schema=valid_schema)
 
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
-            Key="data/schemas/PUBLIC/test_domain-test_dataset.json",
-            Body=b'{\n "metadata": {\n  "domain": "test_domain",\n  "dataset": "test_dataset",\n  "sensitivity": "PUBLIC",\n  "key_value_tags": {},\n  "key_only_tags": [],\n  "owners": [\n   {\n    "name": "owner",\n    "email": "owner@email.com"\n   }\n  ],\n  "update_behaviour": "APPEND"\n },\n "columns": [\n  {\n   "name": "colname1",\n   "partition_index": 0,\n   "data_type": "Int64",\n   "allow_null": true,\n   "format": null\n  }\n ]\n}',
+            Key="data/schemas/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Body=b'{\n "metadata": {\n  "domain": "test_domain",\n  "dataset": "test_dataset",\n  "sensitivity": "PUBLIC",\n  "version": 1,\n  "key_value_tags": {},\n  "key_only_tags": [],\n  "owners": [\n   {\n    "name": "owner",\n    "email": "owner@email.com"\n   }\n  ],\n  "update_behaviour": "APPEND"\n },\n "columns": [\n  {\n   "name": "colname1",\n   "partition_index": 0,\n   "data_type": "Int64",\n   "allow_null": true,\n   "format": null\n  }\n ]\n}',
         )
 
-        assert result == "test_domain-test_dataset.json"
+        assert result == "test_domain/test_dataset/1/schema.json"
 
     def test_raw_data_upload(self):
         file_contents = b"value,data\n1,2\n1,12"
@@ -178,7 +174,10 @@ class TestS3AdapterDataRetrieval:
 
         valid_schema = Schema(
             metadata=SchemaMetadata(
-                domain=domain, dataset=dataset, sensitivity="PUBLIC"
+                domain=domain,
+                dataset=dataset,
+                sensitivity="PUBLIC",
+                version=1,
             ),
             columns=[
                 Column(
@@ -197,7 +196,8 @@ class TestS3AdapterDataRetrieval:
             Bucket="dataset", Prefix="data/schemas"
         )
         self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="data/schemas/PUBLIC/test_domain-test_dataset.json"
+            Bucket="dataset",
+            Key="data/schemas/PUBLIC/test_domain/test_dataset/1/schema.json",
         )
 
         assert schema == valid_schema
@@ -245,10 +245,10 @@ class TestS3Deletion:
         )
 
     def test_deletion_of_schema(self):
-        self.persistence_adapter.delete_schema("domain", "dataset", "PUBLIC")
+        self.persistence_adapter.delete_schema("domain", "dataset", "PUBLIC", 2)
 
         self.mock_s3_client.delete_object.assert_called_once_with(
-            Bucket="data-bucket", Key="data/schemas/PUBLIC/domain-dataset.json"
+            Bucket="data-bucket", Key="data/schemas/PUBLIC/domain/dataset/2/schema.json"
         )
 
     def test_deletion_of_raw_files_with_no_partitions(self):

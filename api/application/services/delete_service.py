@@ -11,8 +11,8 @@ class DeleteService:
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
 
-    def delete_schema(self, domain: str, dataset: str, sensitivity: str):
-        self.persistence_adapter.delete_schema(domain, dataset, sensitivity)
+    def delete_schema(self, domain: str, dataset: str, sensitivity: str, version: int):
+        self.persistence_adapter.delete_schema(domain, dataset, sensitivity, version)
 
     def delete_dataset_file(self, domain: str, dataset: str, filename: str):
         self._validate_filename(filename)

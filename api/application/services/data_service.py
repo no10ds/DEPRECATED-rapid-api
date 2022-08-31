@@ -29,6 +29,8 @@ from api.domain.schema_metadata import UpdateBehaviour
 from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import StorageMetaData
 
+NEW_SCHEMA_VERSION_NUMBER = 1
+
 
 class DataService:
     def __init__(
@@ -101,6 +103,7 @@ class DataService:
             return permanent_filename
 
     def upload_schema(self, schema: Schema) -> str:
+        schema.metadata.version = NEW_SCHEMA_VERSION_NUMBER
         if self._get_schema(schema.get_domain(), schema.get_dataset()) is not None:
             AppLogger.warning(
                 "Schema already exists for domain=%s and dataset=%s",
@@ -111,9 +114,7 @@ class DataService:
 
         self.check_for_protected_domain(schema)
         validate_schema_for_upload(schema)
-        schema_name = self.persistence_adapter.save_schema(
-            schema.get_domain(), schema.get_dataset(), schema.get_sensitivity(), schema
-        )
+        schema_name = self.persistence_adapter.save_schema(schema)
         self.glue_adapter.create_crawler(
             schema.get_domain(),
             schema.get_dataset(),

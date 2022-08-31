@@ -24,6 +24,7 @@ class SchemaMetadata(BaseModel):
     domain: str
     dataset: str
     sensitivity: str
+    version: Optional[int]
     key_value_tags: Dict[str, str] = dict()
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
@@ -38,17 +39,30 @@ class SchemaMetadata(BaseModel):
     def get_sensitivity(self) -> str:
         return self.sensitivity
 
+    def get_version(self) -> int:
+        return self.version
+
     def schema_path(self) -> str:
         return f"{SCHEMAS_LOCATION}/{self.sensitivity}/{self.schema_name()}"
 
     def schema_name(self) -> str:
-        return f"{self.domain}-{self.dataset}.json"
+        return f"{self.domain}/{self.dataset}/{self.version}/schema.json"
 
+    # TODO remove else block once schema versioning migration is done
     @classmethod
     def from_path(cls, path: str):
         sensitivity = parse_categorisation(path, SensitivityLevel.values(), "PUBLIC")
-        domain, dataset = path.split("/")[-1].replace(".json", "").split("-")
-        return cls(domain=domain, dataset=dataset, sensitivity=sensitivity)
+        if path.endswith("schema.json"):
+            split_path = path.split("/")
+            return cls(
+                domain=split_path[-4],
+                dataset=split_path[-3],
+                sensitivity=sensitivity,
+                version=split_path[-2],
+            )
+        else:
+            domain, dataset = path.split("/")[-1].replace(".json", "").split("-")
+            return cls(domain=domain, dataset=dataset, sensitivity=sensitivity)
 
     def get_custom_tags(self) -> Dict[str, str]:
         return {**self.key_value_tags, **dict.fromkeys(self.key_only_tags, "")}

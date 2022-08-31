@@ -17,10 +17,10 @@ class TestDeleteService:
         self.delete_service = DeleteService(self.s3_adapter, self.glue_adapter)
 
     def test_delete_schema(self):
-        self.delete_service.delete_schema("domain", "dataset", "PUBLIC")
+        self.delete_service.delete_schema("domain", "dataset", "PUBLIC", 2)
 
         self.s3_adapter.delete_schema.assert_called_once_with(
-            "domain", "dataset", "PUBLIC"
+            "domain", "dataset", "PUBLIC", 2
         )
 
     def test_delete_file_when_crawler_is_ready(self):

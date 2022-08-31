@@ -1,5 +1,5 @@
 from io import StringIO
-from typing import List, Union
+from typing import List, Union, Any
 
 import pandas as pd
 
@@ -19,7 +19,7 @@ class SchemaInferService:
         dataset: str,
         sensitivity: str,
         file_content: Union[bytes, str],
-    ) -> Schema:
+    ) -> dict[str, Any]:
         dataframe = self._construct_dataframe(file_content)
         schema = Schema(
             metadata=SchemaMetadata(
@@ -31,7 +31,7 @@ class SchemaInferService:
             columns=self._infer_columns(dataframe),
         )
         validate_schema(schema)
-        return schema
+        return schema.dict(exclude_none=True)
 
     def transform_to_nullable_data_type(self, data_type_name: str) -> str:
         if data_type_name.capitalize() in DataTypes.numeric_data_types():
