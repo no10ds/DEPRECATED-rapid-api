@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 import pytest
 
 from api.domain.token import Token
@@ -24,7 +22,6 @@ def valid_user_token_payload():
 
 
 class TestSubjectExtraction:
-    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
     def test_extract_subject_when_available_and_valid(self, valid_client_token_payload):
         token = Token(valid_client_token_payload)
 

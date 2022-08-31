@@ -170,7 +170,6 @@ class TestSecureDatasetEndpoint:
             token, ["READ"], "mydomain", "mydataset"
         )
 
-    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
     @patch(
         "api.application.services.authorisation.authorisation_service.check_permissions"
     )
@@ -183,7 +182,6 @@ class TestSecureDatasetEndpoint:
         token = Token(
             {
                 "sub": "the-client-id",
-                "scope": "https://example.com/scope1 https://example.com/scope2",
             }
         )
 
@@ -203,7 +201,6 @@ class TestSecureDatasetEndpoint:
             token, ["READ"], "mydomain", None
         )
 
-    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
     @patch(
         "api.application.services.authorisation.authorisation_service.check_permissions"
     )
@@ -215,7 +212,6 @@ class TestSecureDatasetEndpoint:
         token = Token(
             {
                 "sub": "the-user-id",
-                "scope": "https://example.com/scope1 https://example.com/scope2",
             }
         )
 

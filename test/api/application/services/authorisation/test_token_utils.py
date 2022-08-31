@@ -27,7 +27,6 @@ class TestParseToken:
         mock_token_payload.assert_called_once_with("user-token")
         mock_token.assert_called_once_with(payload)
 
-    @patch("api.domain.token.COGNITO_RESOURCE_SERVER_ID", "https://example.com")
     @patch("api.application.services.authorisation.token_utils.Token")
     @patch(
         "api.application.services.authorisation.token_utils.get_validated_token_payload"
@@ -36,7 +35,6 @@ class TestParseToken:
         token = "client-token"
         payload = {
             "sub": "the-client-id",
-            "scope": "https://example.com/scope1 https://example.com/scope2",
         }
         mock_token_payload.return_value = payload
 
