@@ -1067,6 +1067,48 @@ List of permissions:
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
+## Modify subject permissions
+
+Use this endpoint to modify the permissions that are granted to users and clients.
+
+### General structure
+
+`GET /subjects/permissions`
+
+### Inputs
+
+| Parameters            | Usage               | Example values   | Definition                             |
+|-----------------------|---------------------|------------------|----------------------------------------|
+| `Subject Permissions` | JSON Request Body   | See below        | The details used to modify permissions |
+
+```json
+{
+  "subject_id": "123456789",
+  "permissions": [
+    "READ_ALL",
+    "WRITE_PUBLIC"
+  ]
+}
+  ```
+
+### Outputs
+
+Confirmation of permissions:
+
+```json
+{
+  "subject_id": "123456789",
+  "permissions": [
+    "READ_ALL",
+    "WRITE_PUBLIC"
+  ]
+}
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `USER_ADMIN` scope
+
 ## List subjects
 
 Use this endpoint to list subjects (human users and client apps).

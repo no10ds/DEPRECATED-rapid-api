@@ -9,7 +9,7 @@ const modify = (subjectId) => {
         permissions: filteredSelections.map((element) => element.value),
     };
 
-    fetch("/client/permissions", {
+    fetch("/subjects/permissions", {
         method: "PUT",
         headers: new Headers({
             Accept: "application/json",
