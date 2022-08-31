@@ -1,6 +1,5 @@
 var sessionTimer = function () {
-    // 300000 milliseconds = 5 minutes
-    const TIME_OUT_IN_MS = 300000;
+    const FIVE_MINUTES = 300000;
     let time;
     window.onload = resetTimer;
     // DOM Events
@@ -16,7 +15,7 @@ var sessionTimer = function () {
 
     function resetTimer() {
         clearTimeout(time);
-        time = setTimeout(logout, TIME_OUT_IN_MS)
+        time = setTimeout(logout, FIVE_MINUTES)
     }
 };
 

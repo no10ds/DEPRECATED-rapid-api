@@ -346,6 +346,10 @@ When using the frontend layer instead of the client app token, the user token is
 subject id which can be looked up in the permissions database to describe the permission access level for that
 particular user. The database follows a naming convention of ```WRITE_PUBLIC```.
 
+## Session timeout
+A 5min timer has been added to the user session in the UI, to change this value please go to
+[session_time.js](./templates/js/session_timer.js) and change the `FIVE_MINUTES` field.
+
 ## Gotchas 🤯
 
 - When using `Pyenv` you will probably be using v2+. If this is the case, ensure you add `$(pyenv root)/shims` to your
