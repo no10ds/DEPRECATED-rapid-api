@@ -1,3 +1,5 @@
+import os
+import time
 from typing import Optional
 
 from fastapi import APIRouter, Request
@@ -189,6 +191,38 @@ async def delete_data_file(
         AppLogger.warning("Failed to start crawler: %s", error.args[0])
         response.status_code = http_status.HTTP_202_ACCEPTED
         return {"details": f"{filename} has been deleted."}
+
+
+@datasets_router.post(
+    "/v2/upload",
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+)
+def upload_large_file(chunk_size_mb: int = 50, file: UploadFile = File(...)):
+    start = time.time()
+    try:
+        # Read file to disk
+        with open(file.filename, "wb") as f:
+            mb_1 = 1024 * 1024
+
+            while contents := file.file.read(mb_1 * chunk_size_mb):
+                f.write(contents)
+
+        # Check that file exists on disk
+        csvs = [file for file in os.listdir(os.getcwd()) if ".csv" in file]
+        # Delete the uploaded file
+        os.remove(file.filename)
+
+    except Exception as error:
+        AppLogger.error("Something went wrong", error)
+
+    end = time.time()
+
+    return {
+        "message": f"Successfully uploaded {file.filename}",
+        "chunk_size": f"{chunk_size_mb}Mb",
+        "processing_time": f"{end - start}s",
+        "available_csvs_before_deletion": csvs,
+    }
 
 
 @datasets_router.post(
