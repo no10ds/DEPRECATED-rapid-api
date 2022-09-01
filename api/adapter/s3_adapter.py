@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Union, Optional, List, Tuple, Dict
 
 import boto3
@@ -93,10 +94,12 @@ class S3Adapter:
             self.store_data(upload_path, data_content)
 
     def upload_raw_data(
-        self, domain: str, dataset: str, filename: str, file_contents: Union[bytes, str]
+        self, domain: str, dataset: str, file_path: Path, filename: str
     ):
         raw_data_path = StorageMetaData(domain, dataset).raw_data_path(filename)
-        self.store_data(raw_data_path, file_contents)
+        self.__s3_client.upload_file(
+            Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path
+        )
 
     def list_raw_files(self, domain: str, dataset: str):
         object_list = self._list_files_from_path(

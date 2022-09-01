@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest.mock import Mock, call
 
 import pandas as pd
@@ -138,19 +139,17 @@ class TestS3AdapterUpload:
         assert result == "test_domain/test_dataset/1/schema.json"
 
     def test_raw_data_upload(self):
-        file_contents = b"value,data\n1,2\n1,12"
-
         self.persistence_adapter.upload_raw_data(
             domain="some",
             dataset="values",
-            filename="filename.csv",
-            file_contents=file_contents,
+            file_path=Path("filename.csv"),
+            filename="custom-filename.csv",
         )
 
-        self.mock_s3_client.put_object.assert_called_with(
+        self.mock_s3_client.upload_file.assert_called_with(
+            Filename="filename.csv",
             Bucket="dataset",
-            Key="raw_data/some/values/filename.csv",
-            Body=file_contents,
+            Key="raw_data/some/values/custom-filename.csv",
         )
 
 

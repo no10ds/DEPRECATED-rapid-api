@@ -1,6 +1,6 @@
 import os
-import time
-from typing import Optional
+from pathlib import Path
+from typing import Optional, Tuple
 
 from fastapi import APIRouter, Request
 from fastapi import UploadFile, File, Response, Security
@@ -194,45 +194,11 @@ async def delete_data_file(
 
 
 @datasets_router.post(
-    "/v2/upload",
-    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
-)
-def upload_large_file(chunk_size_mb: int = 50, file: UploadFile = File(...)):
-    AppLogger.info("Large file upload: Beginning write to disk")
-    start = time.time()
-    try:
-        # Read file to disk
-        with open(file.filename, "wb") as f:
-            mb_1 = 1024 * 1024
-
-            while contents := file.file.read(mb_1 * chunk_size_mb):
-                AppLogger.info("Large file upload: Writing chunk to file")
-                f.write(contents)
-
-        # Check that file exists on disk
-        csvs = [file for file in os.listdir(os.getcwd()) if ".csv" in file]
-        # Delete the uploaded file
-        os.remove(file.filename)
-
-    except Exception as error:
-        AppLogger.error("Something went wrong", error)
-
-    end = time.time()
-
-    return {
-        "message": f"Successfully uploaded {file.filename}",
-        "chunk_size": f"{chunk_size_mb}Mb",
-        "processing_time": f"{end - start}s",
-        "available_csvs_before_deletion": csvs,
-    }
-
-
-@datasets_router.post(
     "/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
-async def upload_data(
+def upload_data(
     domain: str, dataset: str, response: Response, file: UploadFile = File(...)
 ):
     """
@@ -275,19 +241,40 @@ async def upload_data(
     ### Click  `Try it out` to use the endpoint
 
     """
+    incoming_filename = None
+    final_filename = file.filename
     try:
-        file_contents = await file.read()
-        filename = data_service.upload_dataset(
-            domain, dataset, file.filename, file_contents
+        incoming_file_path, incoming_filename = store_file_to_disk(file)
+        final_filename = data_service.upload_dataset(
+            domain, dataset, incoming_file_path, incoming_filename
         )
-        return {"details": filename.replace(".parquet", "")}
+        return {"details": final_filename.replace(".parquet", "")}
     except SchemaNotFoundError as error:
         AppLogger.warning("Schema not found: %s", error.args[0])
         raise UserError(message=error.args[0])
     except CrawlerStartFailsError as error:
         AppLogger.warning("Failed to start crawler: %s", error.args[0])
         response.status_code = http_status.HTTP_202_ACCEPTED
-        return {"details": file.filename}
+        return {"details": final_filename}
+    finally:
+        # Temporarily delete uploaded file here
+        try:
+            os.remove(incoming_filename)
+        except (FileNotFoundError, TypeError):
+            pass
+
+
+def store_file_to_disk(file: UploadFile = File(...)) -> Tuple[Path, str]:
+    filename = file.filename
+    file_path = Path(filename)
+    chunk_size_mb = 50
+    mb_1 = 1024 * 1024
+
+    with open(file_path, "wb") as incoming_file:
+        while contents := file.file.read(mb_1 * chunk_size_mb):
+            incoming_file.write(contents)
+
+    return file_path, filename
 
 
 @datasets_router.post(

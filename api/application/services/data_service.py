@@ -1,4 +1,5 @@
 import time
+from pathlib import Path
 from typing import List, Tuple
 
 import pandas as pd
@@ -12,6 +13,7 @@ from api.application.services.partitioning_service import generate_partitioned_d
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
 from api.common.config.auth import SensitivityLevel
+from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
@@ -30,6 +32,10 @@ from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import StorageMetaData
 
 NEW_SCHEMA_VERSION_NUMBER = 1
+
+
+def construct_dataframe(file_path: Path) -> pd.DataFrame:
+    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",")
 
 
 class DataService:
@@ -76,8 +82,8 @@ class DataService:
         self,
         domain: str,
         dataset: str,
+        file_path: Path,
         filename: str,
-        file_contents: bytes,
     ) -> str:
         schema = self._get_schema(domain, dataset)
         if not schema:
@@ -86,18 +92,18 @@ class DataService:
             )
         else:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
-            validated_dataframe = get_validated_dataframe(schema, file_contents)
+            dataframe = construct_dataframe(file_path)
+            validated_dataframe = get_validated_dataframe(schema, dataframe)
             (
                 raw_filename,
                 permanent_filename,
             ) = self.generate_raw_and_permanent_filenames(schema, filename)
+
             self.persistence_adapter.upload_raw_data(
-                schema.get_domain(),
-                schema.get_dataset(),
-                raw_filename,
-                file_contents,
+                schema.get_domain(), schema.get_dataset(), file_path, raw_filename
             )
             self._upload_data(schema, validated_dataframe, permanent_filename)
+
             self.glue_adapter.start_crawler(domain, dataset)
             self.glue_adapter.update_catalog_table_config(schema)
             return permanent_filename

@@ -1,10 +1,8 @@
-from io import StringIO
 from typing import Tuple
 
 import pandas as pd
 from pandas import Timestamp
 
-from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import DatasetValidationError
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
@@ -12,10 +10,8 @@ from api.domain.schema import Schema
 from api.domain.validation_context import ValidationContext
 
 
-def get_validated_dataframe(schema: Schema, file_contents: bytes) -> pd.DataFrame:
-    df = construct_dataframe(file_contents)
-    df = transform_and_validate(schema, df)
-    return df
+def get_validated_dataframe(schema: Schema, dataframe: pd.DataFrame) -> pd.DataFrame:
+    return transform_and_validate(schema, dataframe)
 
 
 def transform_and_validate(schema: Schema, data: pd.DataFrame) -> pd.DataFrame:
@@ -35,11 +31,6 @@ def transform_and_validate(schema: Schema, data: pd.DataFrame) -> pd.DataFrame:
         raise DatasetValidationError(validation_context.errors())
 
     return validation_context.get_dataframe()
-
-
-def construct_dataframe(file_contents: bytes) -> pd.DataFrame:
-    parsed_contents = StringIO(str(file_contents, CONTENT_ENCODING))
-    return pd.read_csv(parsed_contents, encoding=CONTENT_ENCODING, sep=",")
 
 
 def set_data_types(df: pd.DataFrame, schema: Schema) -> Tuple[pd.DataFrame, list[str]]:

@@ -20,7 +20,6 @@ from api.common.custom_exceptions import DatasetValidationError, UserError
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
-from test.test_utils import set_encoded_content
 
 
 class TestDatasetValidation:
@@ -91,10 +90,13 @@ class TestDatasetValidation:
             ],
         )
 
-        file_contents = set_encoded_content(
-            "colname1,colname2,colname3,Col-Name!4\n"
-            "1234,Carlos,true,12/05/2022\n"
-            "4567,Ada,,15/11/2022\n"
+        dataframe = pd.DataFrame(
+            {
+                "colname1": [1234, 4567],
+                "colname2": ["Carlos", "Ada"],
+                "colname3": [True, pd.NA],
+                "Col-Name!4": ["12/05/2022", "15/11/2022"],
+            }
         )
 
         expected = pd.DataFrame(
@@ -108,19 +110,23 @@ class TestDatasetValidation:
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
         expected["colname3"] = expected["colname3"].astype(dtype=pd.BooleanDtype())
 
-        validated_dataframe = get_validated_dataframe(full_valid_schema, file_contents)
+        validated_dataframe = get_validated_dataframe(full_valid_schema, dataframe)
 
         assert validated_dataframe.equals(expected)
 
     def test_invalid_column_names(self):
-        file_contents = set_encoded_content(
-            "wrongcolumn,colname2,colname3\n" "1234,Carlos\n" "4567,Ada\n"
+        dataframe = pd.DataFrame(
+            {
+                "wrongcolumn": [1234, 4567],
+                "colname2": ["Carlos", "Ada"],
+                "colname3": [pd.NA, pd.NA],
+            }
         )
 
         pattern = "Expected columns: \\['colname1', 'colname2', 'colname3'\\], received: \\['wrongcolumn', 'colname2', 'colname3'\\]"  # noqa: E501
 
         with pytest.raises(DatasetValidationError, match=pattern):
-            get_validated_dataframe(self.valid_schema, file_contents)
+            get_validated_dataframe(self.valid_schema, dataframe)
 
     def test_invalid_when_partition_column_with_illegal_characters(self):
         valid_schema = Schema(
@@ -146,12 +152,12 @@ class TestDatasetValidation:
             ],
         )
 
-        file_contents = set_encoded_content(
-            "colname1,colname2\n2021,01/02/2021\n2020,01/02/2021\n"
+        dataframe = pd.DataFrame(
+            {"colname1": [2021, 2020], "colname2": ["01/02/2021", "01/02/2021"]}
         )
 
         with pytest.raises(DatasetValidationError):
-            get_validated_dataframe(valid_schema, file_contents)
+            get_validated_dataframe(valid_schema, dataframe)
 
     def test_valid_when_date_partition_column_with_illegal_slash_character(self):
         valid_schema = Schema(
@@ -172,24 +178,28 @@ class TestDatasetValidation:
             ],
         )
 
-        file_contents = set_encoded_content("colname1\n01/02/2021\n01/02/2021\n")
+        dataframe = pd.DataFrame({"colname1": ["01/02/2021", "01/02/2021"]})
 
         try:
-            get_validated_dataframe(valid_schema, file_contents)
+            get_validated_dataframe(valid_schema, dataframe)
         except DatasetValidationError:
             pytest.fail("An unexpected InvalidDatasetError was thrown")
 
     def test_invalid_when_strings_in_numeric_column(self):
-        df = set_encoded_content(
-            "colname1,colname2,colname3\n" "23,name1,name3\n" "34,name2,name4\n"
+        dataframe = pd.DataFrame(
+            {
+                "colname1": [23, 34],
+                "colname2": ["name1", "name2"],
+                "colname3": ["name3", "name4"],
+            }
         )
 
         with pytest.raises(DatasetValidationError):
-            get_validated_dataframe(self.valid_schema, df)
+            get_validated_dataframe(self.valid_schema, dataframe)
 
     def test_invalid_when_entire_column_is_different_to_expected_type(self):
-        df = set_encoded_content(
-            "colname1,colname2,colname3\n" "1,67.8,True\n" "2,98.2,False\n"
+        dataframe = pd.DataFrame(
+            {"colname1": [1, 2], "colname2": [67.8, 98.2], "colname3": [True, False]}
         )
 
         with pytest.raises(
@@ -197,7 +207,7 @@ class TestDatasetValidation:
             match=r"Column \[colname2\] has an incorrect data type. Expected object, received float64",
             # noqa: E501, W605
         ):
-            get_validated_dataframe(self.valid_schema, df)
+            get_validated_dataframe(self.valid_schema, dataframe)
 
     def test_retains_specified_schema_data_types_when_null_values_present(self):
         schema = Schema(
@@ -229,9 +239,11 @@ class TestDatasetValidation:
             ],
         )
 
-        df = set_encoded_content("col1,col2,col3\n" "45,,hello\n" ",23.1,\n")
+        dataframe = pd.DataFrame(
+            {"col1": [45, pd.NA], "col2": [pd.NA, 23.1], "col3": ["hello", pd.NA]}
+        )
 
-        validated_dataset = get_validated_dataframe(schema, df)
+        validated_dataset = get_validated_dataframe(schema, dataframe)
 
         actual_dtypes = list(validated_dataset.dtypes)
         expected_dtypes = ["Int64", "Float64", "object"]
@@ -239,14 +251,20 @@ class TestDatasetValidation:
         assert actual_dtypes == expected_dtypes
 
     @pytest.mark.parametrize(
-        "data_frame",
+        "dataframe",
         [
-            "col1,col2,col3\n" "45,56.2,hello\n" ",23.1,there\n",  # noqa: E126
-            "col1,col2,col3\n" "45,56.2,hello\n" "56,,there\n",  # noqa: E126
-            "col1,col2,col3\n" "45,56.2,hello\n" "56,23.1,\n",  # noqa: E126
+            pd.DataFrame(
+                {"col1": [45, pd.NA], "col2": [56.2, 23.1], "col3": ["hello", "there"]}
+            ),
+            pd.DataFrame(
+                {"col1": [45, 56], "col2": [56.2, pd.NA], "col3": ["hello", "there"]}
+            ),
+            pd.DataFrame(
+                {"col1": [45, 56], "col2": [56.2, 23.1], "col3": ["hello", pd.NA]}
+            ),
         ],
     )
-    def test_checks_for_unacceptable_null_values(self, data_frame):
+    def test_checks_for_unacceptable_null_values(self, dataframe: pd.DataFrame):
         schema = Schema(
             metadata=SchemaMetadata(
                 domain="test_domain",
@@ -276,13 +294,13 @@ class TestDatasetValidation:
             ],
         )
 
-        df = set_encoded_content(data_frame)
-
         with pytest.raises(DatasetValidationError):
-            get_validated_dataframe(schema, df)
+            get_validated_dataframe(schema, dataframe)
 
     def test_validates_correct_data_types(self):
-        df = set_encoded_content("col1,col2,col3\n 1234,4.53,Carlos\n 4567,9.33,Ada\n")
+        dataframe = pd.DataFrame(
+            {"col1": [1234, 4567], "col2": [4.53, 9.33], "col3": ["Carlos", "Ada"]}
+        )
 
         schema = Schema(
             metadata=SchemaMetadata(
@@ -314,13 +332,17 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(schema, df)
+            get_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
     def test_validates_custom_data_types_as_object_type(self):
-        df = set_encoded_content(
-            "col1,col2,col3\n12/04/2016,4.53,Carlos\n13/04/2016,9.33,Ada\n"
+        dataframe = pd.DataFrame(
+            {
+                "col1": ["12/04/2016", "13/04/2016"],
+                "col2": [4.53, 9.33],
+                "col3": ["Carlos", "Ada"],
+            }
         )
 
         schema = Schema(
@@ -354,17 +376,17 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(schema, df)
+            get_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
     def test_validates_dataset_with_empty_rows(self):
-        df = set_encoded_content(
-            "col1,col2,col3\n"
-            "12/04/2016,4.53,Carlos\n"
-            "13/04/2016,9.33,Ada\n"
-            ",,\n"
-            ",,"
+        dataframe = pd.DataFrame(
+            {
+                "col1": ["12/04/2016", "13/04/2016", pd.NA, pd.NA],
+                "col2": [4.53, 9.33, pd.NA, pd.NA],
+                "col3": ["Carlos", "Ada", pd.NA, pd.NA],
+            }
         )
 
         schema = Schema(
@@ -398,7 +420,7 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(schema, df)
+            get_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
