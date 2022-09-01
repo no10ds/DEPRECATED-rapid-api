@@ -168,5 +168,8 @@ class TestProtectedDomainService:
 
     def test_throws_if_invalid_domain_name(self):
         domain = "bad-domain"
-        with pytest.raises(UserError, match="Invalid domain name"):
+        with pytest.raises(
+            UserError,
+            match=r"The value set for domain \[BAD-DOMAIN\] must be alphanumeric and start with an alphabetic character",
+        ):
             self.protected_domain_service.create_protected_domain_permission(domain)
