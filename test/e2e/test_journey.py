@@ -45,8 +45,8 @@ class BaseJourneyTest(ABC):
     def list_protected_domain_url(self) -> str:
         return f"{self.base_url}/protected_domains"
 
-    def modify_client_permissions_url(self) -> str:
-        return f"{self.base_url}/client/permissions"
+    def modify_subjects_permissions_url(self) -> str:
+        return f"{self.base_url}/subjects/permissions"
 
     def delete_raw_data_url(self, domain: str, dataset: str, filename: str) -> str:
         return f"{self.datasets_endpoint}/{domain}/{dataset}/{filename}"
@@ -441,7 +441,7 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
         return {"Authorization": f"Bearer {self.token}"}
 
     def assume_permissions(self, permissions: List[str]):
-        modification_url = self.modify_client_permissions_url()
+        modification_url = self.modify_subjects_permissions_url()
         payload = {
             "subject_id": self.cognito_client_id,
             "permissions": ["USER_ADMIN", "DATA_ADMIN", *permissions],
