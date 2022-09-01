@@ -93,7 +93,7 @@ async def upload_schema(schema: Schema):
 
     ### Accepted permissions
 
-    In order to use this endpoint you need the `DATA_ADMIN` scope.
+    In order to use this endpoint you need the `DATA_ADMIN` permission.
 
     ### Click  `Try it out` to use the endpoint
     """

@@ -148,7 +148,7 @@ Schema in json format in the response body:
 
 ### Accepted permissions
 
-In order to use this endpoint you don't need any scope.
+In order to use this endpoint you don't need any permission.
 
 ### Examples
 
@@ -225,7 +225,7 @@ None
 
 ### Accepted permissions
 
-In order to use this endpoint you need the `DATA_ADMIN` scope.
+In order to use this endpoint you need the `DATA_ADMIN` permission.
 
 ## Upload dataset
 
@@ -359,7 +359,7 @@ If no dataset exists or none that matches the query, you will get an empty respo
 ### Accepted permissions
 
 You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -499,7 +499,7 @@ Schema in json format in the response body:
 ### Accepted permissions
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -539,7 +539,7 @@ List of raw files in json format in the response body:
 ### Accepted permissions
 
 You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
 ### Examples
 
@@ -568,7 +568,7 @@ When a valid file in the domain/dataset is deleted success message will be displ
 
 ### Accepted permissions
 
-In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level,
+In order to use this endpoint you need a relevant WRITE permission that matches the dataset sensitivity level,
 e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
 ### Examples
@@ -688,7 +688,7 @@ To get a CSV response, the `Accept` Header has to be set to `text/csv`. The resp
 
 ### Accepted permissions
 
-In order to use this endpoint you need a `READ` scope with appropriate sensitivity level permission,
+In order to use this endpoint you need a `READ` permission with appropriate sensitivity level permission,
 e.g.: `READ_PRIVATE`.
 
 ### Examples
@@ -834,7 +834,7 @@ Confirmation Message:
 
 ### Accepted permissions
 
-In order to use this endpoint you need the `USER_ADMIN` scope
+In order to use this endpoint you need the `USER_ADMIN` permission
 
 ## Create user
 
@@ -957,7 +957,7 @@ Confirmation Message:
 
 ### Accepted permissions
 
-In order to use this endpoint you need the `USER_ADMIN` scope
+In order to use this endpoint you need the `USER_ADMIN` permission
 
 ## Create protected domain
 
@@ -990,7 +990,7 @@ None
 
 ### Accepted permission
 
-In order to use this endpoint you need the `DATA_ADMIN` scope
+In order to use this endpoint you need the `DATA_ADMIN` permission
 
 ## List protected domains
 
@@ -1002,7 +1002,7 @@ Use this endpoint to list the protected domains that currently exist.
 
 ### Outputs
 
-List of protected scopes in json format in the response body:
+List of protected permissions in json format in the response body:
 
 ```json
 [
@@ -1013,7 +1013,7 @@ List of protected scopes in json format in the response body:
 
 ### Accepted permissions
 
-In order to use this endpoint you need the `DATA_ADMIN` scope
+In order to use this endpoint you need the `DATA_ADMIN` permission
 
 ## List permissions
 
@@ -1039,7 +1039,7 @@ List of permissions:
 
 ### Accepted permissions
 
-In order to use this endpoint you need the `USER_ADMIN` scope
+In order to use this endpoint you need the `USER_ADMIN` permission
 
 ## List subject permissions
 
@@ -1107,7 +1107,7 @@ Confirmation of permissions:
 
 ### Accepted permissions
 
-In order to use this endpoint you need the `USER_ADMIN` scope
+In order to use this endpoint you need the `USER_ADMIN` permission
 
 ## List subjects
 

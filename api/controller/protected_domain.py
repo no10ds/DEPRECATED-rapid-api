@@ -26,7 +26,7 @@ def create_protected_domain(domain: str):
 
     Protected domains can be created to restrict access permissions to specific domains
 
-    Use this endpoint to create a new protected domain. After this you can create clients with the scope for this domain and create `PROTECTED` datasets within this domain.
+    Use this endpoint to create a new protected domain. After this you can create clients with the permission for this domain and create `PROTECTED` datasets within this domain.
 
 
     ### Inputs
@@ -44,7 +44,7 @@ def create_protected_domain(domain: str):
 
     ### Accepted permissions
 
-    In order to use this endpoint you need the `DATA_ADMIN` scope
+    In order to use this endpoint you need the `DATA_ADMIN` permission
 
     ### Click  `Try it out` to use the endpoint
     """
@@ -64,7 +64,7 @@ def list_protected_domains():
 
     ### Outputs
 
-    List of protected scopes in json format in the response body:
+    List of protected permissions in json format in the response body:
 
     ```json
     [

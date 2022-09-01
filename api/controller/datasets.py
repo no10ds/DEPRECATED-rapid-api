@@ -63,7 +63,7 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Accepted permissions
 
     You will always be able to list all available datasets, regardless of their sensitivity level, provided you have
-    a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+    a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
     ### Click  `Try it out` to use the endpoint
 
@@ -98,7 +98,7 @@ async def get_dataset_info(domain: str, dataset: str):
     ### Accepted permissions
 
     You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-    a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+    a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
     ### Click  `Try it out` to use the endpoint
 
@@ -140,7 +140,7 @@ async def list_raw_files(domain: str, dataset: str):
     ### Accepted permissions
 
     You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
-    a `READ` scope, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+    a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
     ### Click  `Try it out` to use the endpoint
 
@@ -178,7 +178,7 @@ async def delete_data_file(
 
 
     ### Accepted permissions
-    In order to use this endpoint you need a relevant WRITE scope that matches the dataset sensitivity level,
+    In order to use this endpoint you need a relevant WRITE permission that matches the dataset sensitivity level,
     e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
     ### Click  `Try it out` to use the endpoint
@@ -235,7 +235,7 @@ def upload_data(
 
     ### Accepted permissions
 
-    In order to use this endpoint you need a relevant `WRITE` scope that matches the dataset sensitivity level,
+    In order to use this endpoint you need a relevant `WRITE` permission that matches the dataset sensitivity level,
     e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
 
     ### Click  `Try it out` to use the endpoint
@@ -341,7 +341,7 @@ async def query_dataset(
 
     ### Accepted permissions
 
-    In order to use this endpoint you need a `READ` scope with appropriate sensitivity level permission,
+    In order to use this endpoint you need a `READ` permission with appropriate sensitivity level permission,
     e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
     ### Click  `Try it out` to use the endpoint

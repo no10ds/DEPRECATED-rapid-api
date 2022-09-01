@@ -296,14 +296,14 @@ Now the release pipeline will run automatically, build the image off that versio
 
 We are using the FastApi Security package. Security takes dependencies and scopes as arguments. In our case the
 dependency are the ```secure_endpoint```, ```secure_dataset_endpoint``` methods, and one or more of the following action
-scopes:
+permissions:
 
 - `READ`
 - `WRITE`
 - `DATA_ADMIN`
 - `USER_ADMIN`
 
-For instance, if `WRITE` scope is used, that means that whoever is trying to access the endpoint needs to have any
+For instance, if `WRITE` permission is used, that means that whoever is trying to access the endpoint needs to have any
 of `WRITE_ALL`, `WRITE_<sensitivity_level>`, `WRITE_PROTECTED_{DOMAIN}`  listed in their permissions, where sensitivity level is the sensitivity
 level of the dataset being modified. Otherwise, the request fails.
 

@@ -47,7 +47,7 @@ extend this in the future.
 | Client app | Client Token | Permissions | `WRITE_PUBLIC`, `READ_PRIVATE` | No specificity at the domain or dataset level, only sensitivity  |
 
 The "action" component of a permission (`READ`, `WRITE`, etc.) is used only in the matching logic when a request is made
-and compared to the specified scope assigned to the endpoint being accessed.
+and compared to the specified permission assigned to the endpoint being accessed.
 
 
 ## Handling Exceptions
