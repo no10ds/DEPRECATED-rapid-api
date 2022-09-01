@@ -1,5 +1,6 @@
 import time
 from dataclasses import dataclass
+from typing import Optional
 
 from api.common.config.aws import DATA_BUCKET
 
@@ -8,6 +9,7 @@ from api.common.config.aws import DATA_BUCKET
 class StorageMetaData:
     domain: str
     dataset: str
+    version: Optional[int] = 1
 
     def location(self) -> str:
         return self._construct_dataset_location(self.domain, self.dataset)
@@ -19,13 +21,13 @@ class StorageMetaData:
         return f"{self.raw_data_location()}/{filename}"
 
     def glue_table_prefix(self):
-        return self.domain + "_"
+        return f"{self.domain}_{self.dataset}_"
 
     def get_ui_upload_path(self):
         return f"{self.domain}/{self.dataset}"
 
     def glue_table_name(self) -> str:
-        return f"{self.glue_table_prefix()}{self.dataset}"
+        return f"{self.glue_table_prefix()}{self.version}"
 
     def s3_path(self) -> str:
         return f"s3://{DATA_BUCKET}/{self.location()}/"

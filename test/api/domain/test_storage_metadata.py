@@ -16,10 +16,10 @@ class TestStorageMetaData:
         )
 
     def test_glue_table_prefix(self):
-        assert self.dataset_meta_data.glue_table_prefix() == "DOMAIN_"
+        assert self.dataset_meta_data.glue_table_prefix() == "DOMAIN_DATASET_"
 
     def test_glue_table_name(self):
-        assert self.dataset_meta_data.glue_table_name() == "DOMAIN_DATASET"
+        assert self.dataset_meta_data.glue_table_name() == "DOMAIN_DATASET_1"
 
     def test_s3_path(self):
         assert (

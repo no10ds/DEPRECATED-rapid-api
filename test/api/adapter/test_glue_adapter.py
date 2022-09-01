@@ -42,7 +42,7 @@ class TestGlueAdapterCrawlerMethods:
             Name=f"{RESOURCE_PREFIX}_crawler/domain/dataset",
             Role="GLUE_CRAWLER_ROLE",
             DatabaseName="GLUE_CATALOGUE_DB_NAME",
-            TablePrefix="domain_",
+            TablePrefix="domain_dataset_",
             Targets={
                 "S3Targets": [
                     {
@@ -51,6 +51,7 @@ class TestGlueAdapterCrawlerMethods:
                     },
                 ]
             },
+            Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5}}',
             Tags={
                 "tag1": "value1",
                 "tag2": "value2",

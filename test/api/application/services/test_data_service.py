@@ -71,7 +71,7 @@ class TestUploadSchema:
 
         self.s3_adapter.save_schema.assert_called_once_with(self.valid_schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
-            "some", "other", {"sensitivity": "PUBLIC"}
+            "some", "other", {"sensitivity": "PUBLIC", "no_of_versions": "1"}
         )
         assert result == "some-other.json"
 

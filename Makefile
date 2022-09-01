@@ -39,6 +39,9 @@ format: 		## Format code with Black
 test: 			## Run unit python tests
 	@./batect test-unit
 
+test-focus: 	## Run focused unit python tests
+	@./batect test-unit-focus
+
 test-e2e:		## Run E2E tests
 	@./batect test-e2e
 

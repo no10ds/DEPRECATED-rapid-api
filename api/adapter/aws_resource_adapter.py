@@ -70,7 +70,16 @@ class AWSResourceAdapter:
             resource_tag_mapping["ResourceARN"]
         )
         tags = {tag["Key"]: tag["Value"] for tag in resource_tag_mapping["Tags"]}
-        return self.EnrichedDatasetMetaData(domain, dataset, tags)
+        version = self.get_version_from_tags(resource_tag_mapping)
+        return self.EnrichedDatasetMetaData(domain, dataset, version, tags)
+
+    def get_version_from_tags(self, resource_tag_mapping):
+        version_tag = [
+            tag["Value"]
+            for tag in resource_tag_mapping["Tags"]
+            if tag["Key"] == "version"
+        ]
+        return int(version_tag[0]) if version_tag else None
 
     def _infer_domain_and_dataset_from_crawler_arn(self, arn: str) -> Tuple[str, str]:
         table_name = arn.split(f"{RESOURCE_PREFIX}_crawler/")[-1]

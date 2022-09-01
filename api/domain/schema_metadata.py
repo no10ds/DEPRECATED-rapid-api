@@ -68,7 +68,11 @@ class SchemaMetadata(BaseModel):
         return {**self.key_value_tags, **dict.fromkeys(self.key_only_tags, "")}
 
     def get_tags(self) -> Dict[str, str]:
-        return {**self.get_custom_tags(), "sensitivity": self.get_sensitivity()}
+        return {
+            **self.get_custom_tags(),
+            "sensitivity": self.get_sensitivity(),
+            "no_of_versions": str(self.get_version()),
+        }
 
     def get_owners(self) -> Optional[List[Owner]]:
         return self.owners

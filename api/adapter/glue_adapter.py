@@ -1,3 +1,4 @@
+import json
 import threading
 from time import sleep
 from typing import Dict, List
@@ -57,6 +58,9 @@ class GlueAdapter:
                         },
                     ]
                 },
+                Configuration=json.dumps(
+                    {"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5}}
+                ),
                 Tags=tags,
             )
         except ClientError as error:

@@ -5,8 +5,8 @@ import pytest
 from awswrangler.exceptions import QueryFailed
 from botocore.exceptions import ClientError
 
-from api.common.custom_exceptions import UserError
 from api.adapter.athena_adapter import AthenaAdapter
+from api.common.custom_exceptions import UserError
 from api.domain.sql_query import SQLQuery, SQLQueryOrderBy
 
 
@@ -29,7 +29,7 @@ class TestAthenaAdapter:
         result = self.athena_adapter.query("my", "table", SQLQuery())
 
         self.mock_athena_read_sql_query.assert_called_once_with(
-            sql="SELECT * FROM my_table",
+            sql="SELECT * FROM my_table_1",
             database="my_database",
             ctas_approach=False,
             workgroup="rapid_athena_workgroup",
@@ -42,7 +42,7 @@ class TestAthenaAdapter:
         self.athena_adapter.query("my", "table", SQLQuery())
 
         self.mock_athena_read_sql_query.assert_called_once_with(
-            sql="SELECT * FROM my_table",
+            sql="SELECT * FROM my_table_1",
             database="my_database",
             ctas_approach=False,
             workgroup="rapid_athena_workgroup",
@@ -62,7 +62,7 @@ class TestAthenaAdapter:
         )
 
         self.mock_athena_read_sql_query.assert_called_once_with(
-            sql="SELECT column1,column2 FROM my_table GROUP BY column2 ORDER BY column1 ASC LIMIT 2",
+            sql="SELECT column1,column2 FROM my_table_1 GROUP BY column2 ORDER BY column1 ASC LIMIT 2",
             database="my_database",
             ctas_approach=False,
             workgroup="rapid_athena_workgroup",
@@ -91,10 +91,10 @@ class TestAthenaAdapter:
 
     def test_query_fails_because_table_does_not_exist(self):
         self.mock_athena_read_sql_query.side_effect = QueryFailed(
-            "SYNTAX_ERROR: line 1:15: Table awsdatacatalog.rapid_catalogue_db.my_table does not exist"
+            "SYNTAX_ERROR: line 1:15: Table awsdatacatalog.rapid_catalogue_db.my_table_1 does not exist"
         )
 
-        expected_message = r"Query failed to execute: The table \[my_table\] does not exist. The data could be currently processing or you might need to upload it."
+        expected_message = r"Query failed to execute: The table \[my_table_1\] does not exist. The data could be currently processing or you might need to upload it."
 
         with pytest.raises(UserError, match=expected_message):
             self.athena_adapter.query("my", "table", SQLQuery())

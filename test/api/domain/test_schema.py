@@ -155,7 +155,7 @@ class TestSchemaMetadata:
             owners=[Owner(name="owner", email="owner@email.com")],
         )
 
-        assert result.get_tags() == {"sensitivity": "PUBLIC"}
+        assert result.get_tags() == {"no_of_versions": "1", "sensitivity": "PUBLIC"}
 
     def test_gets_tags(self):
         provided_key_value_tags = {
@@ -176,6 +176,7 @@ class TestSchemaMetadata:
         )
 
         assert result.get_tags() == {
+            "no_of_versions": "2",
             **provided_key_value_tags,
             **dict.fromkeys(provided_key_only_tags, ""),
             "sensitivity": "PUBLIC",

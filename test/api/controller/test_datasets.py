@@ -181,8 +181,18 @@ class TestListDatasets(BaseClientTest):
         mock_get_datasets_metadata.return_value = metadata_response
 
         expected_response = [
-            {"domain": "domain1", "dataset": "dataset1", "tags": {"tag1": "value1"}},
-            {"domain": "domain2", "dataset": "dataset2", "tags": {"tag2": "value2"}},
+            {
+                "domain": "domain1",
+                "dataset": "dataset1",
+                "version": 1,
+                "tags": {"tag1": "value1"},
+            },
+            {
+                "domain": "domain2",
+                "dataset": "dataset2",
+                "version": 1,
+                "tags": {"tag2": "value2"},
+            },
         ]
 
         expected_query = DatasetFilters()
@@ -204,18 +214,28 @@ class TestListDatasets(BaseClientTest):
     ):
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain1", dataset="dataset1", tags={"tag1": "value1"}
+                domain="domain1", dataset="dataset1", tags={"tag1": "value1"}, version=1
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain2", dataset="dataset2", tags={"tag2": "value2"}
+                domain="domain2", dataset="dataset2", tags={"tag2": "value2"}, version=1
             ),
         ]
 
         mock_get_datasets_metadata.return_value = metadata_response
 
         expected_response = [
-            {"domain": "domain1", "dataset": "dataset1", "tags": {"tag1": "value1"}},
-            {"domain": "domain2", "dataset": "dataset2", "tags": {"tag2": "value2"}},
+            {
+                "domain": "domain1",
+                "dataset": "dataset1",
+                "version": 1,
+                "tags": {"tag1": "value1"},
+            },
+            {
+                "domain": "domain2",
+                "dataset": "dataset2",
+                "version": 1,
+                "tags": {"tag2": "value2"},
+            },
         ]
 
         tag_filters = {
@@ -257,12 +277,14 @@ class TestListDatasets(BaseClientTest):
             {
                 "domain": "domain1",
                 "dataset": "dataset1",
+                "version": 1,
                 "tags": {"sensitivity": "PUBLIC", "tag1": "value1"},
             },
             {
                 "domain": "domain2",
                 "dataset": "dataset2",
                 "tags": {"sensitivity": "PUBLIC"},
+                "version": 1,
             },
         ]
 
