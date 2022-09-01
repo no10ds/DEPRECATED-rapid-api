@@ -2,116 +2,6 @@
 
 This section describes improvements that have been suggested as the rAPId service evolves.
 
-## Dataset Versioning
-
-### Problem
-
-The users need to be able to upload/query previous versions of the dataset. We need to keep track of what was modified
-in the schema whilst maintaining access to previous versions for querying and uploading.
-
-### Suggested Solution
-
-Click [here](diagrams/dataset-versioning.png) to see the diagram of the solution
-
-We can store the different schema versions of the same domain/dataset where previous files will contain a suffix of the
-version. The latest schema file should not contain a version.
-
-Example:
-
-```
-schemas/
-    {domain}_{dataset}-1.1.json
-    {domain}_{dataset}-1.2.json
-    {domain}_{dataset}-1.3.json
-    {domain}_{dataset}.json
-```
-
-For each dataset schema version, there will be a corresponding location for the data in s3
-
-Example:
-
-```
-data/
-    {domain}/{dataset}-1.1/<data_files>
-    {domain}/{dataset}-1.2/<data_files>
-    {domain}/{dataset}-1.3/<data_files>
-    {domain}/{dataset}-1.4/<data_files>
-```
-
-This way the user would be able to upload data to the latest version (or older versions) if required. At the same time
-the user would be able to query the latest and previous versions of the dataset.
-
-Additionally, the query endpoint can be utilised when the version is omitted. It will instead query the latest version
-which can be retrieved from the latest schema. This should be easy to implement because currently we retrieve the schema
-as part of the request flows and so can easily retrieve the version number from its metadata.
-
-### Considerations
-
-#### User vs. Programmatic defined versions
-
-Allowing the user to define the version number provides more flexibility and power to them in defining what a version
-increase means. e.g.: If this is a minor version change or a more major alteration.
-
-However, this also comes with some substantial drawbacks.
-
-Beyond the obvious inconsistency across different datasets, more validation would also need to be in place, including:
-
-- Checking the new version is greater than the latest one
-- Checking the new version matches the existing specified format
-- Checking the new version is not wildly ahead of the previous version (e.g.: v.1.0.0 -> v.53.4.9 makes no sense)
-
-On the other hand, having the service determine to what to increment the next version, avoids these issues and leads to
-a more uniform application of schema versioning.
-
-### Assumptions
-
-- A department is unable to update an existing schema in place
-
-### Changes to existing endpoints
-
-The following endpoints need to be created or changed to support access to data versioning by version parameter
-
-| Endpoint        | URL                                                        |
-|-----------------|------------------------------------------------------------|
-| Generate Schema | `POST /schema/{domain}/{dataset}/{sensitivity}/{version}`  |
-| Upload Schema   | This only changes internally, read upload schema below.    |
-| Query Data      | `POST /datasets/{domain}/{dataset}/{version}/query`        |
-| Upload Data     | `POST /datsets/{domain}/{dataaset}/{version}`              |
-| Info            | `GET /datasets/{domain}/{dataset}/{version}/info`          |
-| List Dataset    | Should also include datasets versions.                     |
-| List Raw Files  | `GET /datasets/{domain}/{dataset}/{version}/files`         |
-| Delete Files    | `DELETE /datasets/{domain}/{dataset}/{version}/{filename}` |
-
-If version is omitted, then the latest version is used instead.
-
-#### Upload Schema
-
-*Metadata*
-
-When a user uploads a schema they would also have to include a few more keys which would be `version` and `description`.
-
-`version` - This would be user defined and has to be unique, since previously uploaded versions cannot be overridden
-
-`description` - This would have to be specified so that upon uploading data it would be easy for a user to understand
-the difference for this version
-
-Example:
-
-```
-{
-  "metadata": {
-    "domain": "land",
-    "dataset": "train_journeys",
-    "version": "1"
-    "description": "A new column, cities, has been added with a datatype of string"
-    ...
-  },
-  "columns": [
-    ...
-  ]
-}
-```
-
 ## CSRF and XSS protection
 
 ### Problem
@@ -215,7 +105,6 @@ Currently, our custom exceptions are defined with a status code, this pollutes a
 
 Ideally we pull up assigning the status codes into the global exception handler, which already determines whether to
 return json or redirect a user.
-
 
 ## Session timeout in 2+ tabs
 

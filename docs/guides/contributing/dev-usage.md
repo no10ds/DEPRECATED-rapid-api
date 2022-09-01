@@ -7,11 +7,12 @@ This usage guide is aimed at developers maintaining the rAPId service.
 The core concept of the application is the upload and querying of data. The intention is that different departments will
 run their own instance of the application.
 
-The data that users upload is organised by `domain` and `dataset`.
+The data that users upload is organised by `domain`, `dataset` and `version`.
 
 `Domain` - Some higher level categorisation of multiple datasets, e.g.: `road_transport`, `border`, etc.
 `Dataset` - The individual dataset name as it exists within the domain, e.g.: `electric_vehicle_journeys_london`
 , `confirmed_visa_entries_dover`, etc.
+`Version` - Automatically generated version of the schema/data that is uploaded, e.g.: `1`, `2`.
 
 ### Usage flow
 

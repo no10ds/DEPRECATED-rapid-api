@@ -16,10 +16,10 @@ Overarching API functionality includes:
 ## Application usage overview
 
 The first step is to create a dataset by uploading a schema that describes the metadata including e.g.: data owner,
-tags, partition columns, data types, etc..
+tags, partition columns, data types, auto-generated version, etc..
 
 Then the data (currently only `.csv` files are supported) can be uploaded to the dataset. During the upload process, the
-service checks if the data matches the previously uploaded dataset schema definition.
+service checks if the data matches the previously uploaded dataset schema definition and transforms it into `.parquet`.
 
 During upload, a data 'crawler' is started which looks at the persisted data and infers some metadata about it. Once the
 crawler has finished running (usually around 4-5 minutes) the data can be queried.
@@ -29,7 +29,7 @@ The application can be used by both human and programmatic clients (see more bel
 - When accessing the REST API as a client application, different actions require the client to have different
   permissions e.g.:`READ`, `WRITE`, `DATA_ADMIN`, etc., and different dataset sensitivity level permissions
   e.g.: `PUBLIC`, `PRIVATE`, etc.
-- When accessing the UI as a human user, permissions are granted by the permissions database, e.g.: `WRITE_PUBLIC`
+- When accessing the UI as a human user, permissions are granted by the permissions' database, e.g.: `WRITE_PUBLIC`
 
 ## Data upload and query flows
 
@@ -334,17 +334,21 @@ Returns a list of datasets matching the query request, e.g.:
   {
     "domain": "military",
     "dataset": "purchases",
+    "version": 1,
     "tags": {
       "tag1": "weaponry",
-      "sensitivity": "PUBLIC"
+      "sensitivity": "PUBLIC",
+      "no_of_versions": "1"
     }
   },
   {
     "domain": "military",
     "dataset": "armoury",
+    "version": 1,
     "tags": {
       "tag1": "weaponry",
-      "sensitivity": "PRIVATE"
+      "sensitivity": "PRIVATE",
+      "no_of_versions": "1"
     }
   }
 ]
