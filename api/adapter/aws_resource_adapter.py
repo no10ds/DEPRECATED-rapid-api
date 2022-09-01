@@ -28,6 +28,7 @@ class AWSResourceAdapter:
         self, query: DatasetFilters = DatasetFilters()
     ) -> List[EnrichedDatasetMetaData]:
         try:
+            AppLogger.info("Getting datasets info")
             aws_resources = self._get_resources(
                 ["glue:crawler"], query.format_resource_query()
             )
@@ -59,6 +60,7 @@ class AWSResourceAdapter:
             )
 
     def _get_resources(self, resource_types: List[str], tag_filters: List[Dict]):
+        AppLogger.info(f"Getting AWS resources with tags {tag_filters}")
         return self.__resource_client.get_resources(
             ResourceTypeFilters=resource_types, TagFilters=tag_filters
         )
