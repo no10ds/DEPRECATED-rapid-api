@@ -3,6 +3,7 @@ import re
 from abc import ABC
 from typing import Optional, List
 
+import pytest
 from playwright.sync_api import sync_playwright, expect
 
 from test.test_utils import get_secret
@@ -190,6 +191,7 @@ class TestUI(BaseTestUI):
             self.click_link(page, "Log in to rAPId")
             self.assert_on_cognito_login(page)
 
+    @pytest.mark.skip("While schema versioning is implemented")
     def test_upload_journey(self):
         with sync_playwright() as playwright:
             page = self.set_up_base_page(playwright)
@@ -216,6 +218,7 @@ class TestUI(BaseTestUI):
 
             self.logout(page)
 
+    @pytest.mark.skip("While schema versioning is implemented")
     def test_download_journey(self):
         with sync_playwright() as playwright:
             page = self.set_up_base_page(playwright)
