@@ -4,7 +4,6 @@ from http import HTTPStatus
 from typing import List
 
 import boto3
-import pytest
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -229,7 +228,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         )
         assert response.status_code == HTTPStatus.OK
 
-    @pytest.mark.skip("While schema versioning is implemented")
     def test_uploads_when_authorised(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
         url = self.upload_dataset_url(self.e2e_test_domain, "upload")
@@ -241,7 +239,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
             domain=self.e2e_test_domain, dataset="upload"
         )
 
-    @pytest.mark.skip("While schema versioning is implemented")
     def test_gets_existing_dataset_info_when_authorised(self):
         url = self.info_dataset_url(domain=self.e2e_test_domain, dataset="query")
         response = requests.get(url, headers=(self.generate_auth_headers()))
@@ -252,7 +249,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         response = requests.post(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.NOT_FOUND
 
-    @pytest.mark.skip("While schema versioning is implemented")
     def test_queries_existing_dataset_as_csv_when_authorised(self):
         url = self.query_dataset_url(domain=self.e2e_test_domain, dataset="query")
         headers = {
@@ -460,8 +456,8 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
         self.assume_permissions([])
 
     # Tests -------------
-    @pytest.mark.skip("While schema versioning is implemented")
     def test_create_protected_domain(self):
+        self.reset_permissions()
         # Create protected domain
         create_url = self.create_protected_domain_url("test_e2e")
         response = requests.post(create_url, headers=self.generate_auth_headers())
@@ -479,7 +475,6 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
         response = requests.post(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
-    @pytest.mark.skip("While schema versioning is implemented")
     def test_allows_access_to_protected_domain_when_granted_permission(self):
         self.assume_permissions(["READ_PROTECTED_TEST_E2E_PROTECTED"])
 

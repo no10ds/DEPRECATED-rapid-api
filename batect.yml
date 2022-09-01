@@ -87,6 +87,16 @@ tasks:
         AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       command: "pytest test/e2e -v"
 
+  test-e2e-focus:
+    description: Run E2E tests in focus mode
+    run:
+      container: service-image
+      environment:
+        AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+        AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+        AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      command: "pytest test/e2e -v -m focus"
+
   test-coverage:
     description: Run all tests with coverage report for source code only
     run:

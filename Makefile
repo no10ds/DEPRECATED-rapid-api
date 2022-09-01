@@ -39,11 +39,14 @@ format: 		## Format code with Black
 test: 			## Run unit python tests
 	@./batect test-unit
 
-test-focus: 	## Run focused unit python tests
+test-focus: 		## Run unit python tests marked with `@pytest.mark.focus`
 	@./batect test-unit-focus
 
 test-e2e:		## Run E2E tests
 	@./batect test-e2e
+
+test-e2e-focus:		## Run E2E tests marked with `@pytest.mark.focus`
+	@./batect test-e2e-focus
 
 test-ui:		## Run UI tests
 	@playwright install --with-deps
@@ -53,11 +56,11 @@ test-headed-ui:		## Run UI tests with chrome browser window
 	@playwright install --with-deps
 	@BROWSER_MODE="HEADED" pytest test/ui -v -s
 
-test-focus-ui:		## Runs UI tests marked with `@pytest.mark.focus`
+test-ui-focus:		## Runs UI tests marked with `@pytest.mark.focus`
 	@playwright install --with-deps
 	@pytest test/ui -v -s -m focus
 
-test-focus-headed-ui:		## Runs UI tests marked with `@pytest.mark.focus` in headed mode
+test-headed-ui-focus:	## Runs UI tests marked with `@pytest.mark.focus` in headed mode
 	@playwright install --with-deps
 	@BROWSER_MODE="HEADED" pytest test/ui -v -s -m focus
 
