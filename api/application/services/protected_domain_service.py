@@ -30,7 +30,7 @@ class ProtectedDomainService:
 
         if not valid_domain_name(domain):
             raise UserError(
-                f"The value set for domain [{domain}] must be alphanumeric and start with an alphabetic character"
+                f"The value set for domain [{domain}] can only contain alphanumeric and underscore `_` characters and must start with an alphabetic character"
             )
 
         self._verify_protected_domain_does_not_exist(domain)

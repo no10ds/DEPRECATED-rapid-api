@@ -90,7 +90,7 @@ class TestSchemaValidation:
         )
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            r"The value set for domain \[test-domain\] must be alphanumeric and start with an alphabetic character",
+            r"The value set for domain \[test-domain\] can only contain alphanumeric and underscore `_` characters and must start with an alphabetic character",
         )
 
     def test_is_invalid_schema_with_dataset_name_containing_hyphen(self):
@@ -112,7 +112,7 @@ class TestSchemaValidation:
         )
         self._assert_validate_schema_raises_error(
             invalid_schema,
-            r"The value set for dataset \[test-dataset\] must be alphanumeric and start with an alphabetic character",
+            r"The value set for dataset \[test-dataset\] can only contain alphanumeric and underscore `_` characters and must start with an alphabetic character",
         )
 
     def test_is_invalid_schema_with_empty_column_name(self):
@@ -1041,11 +1041,11 @@ class TestSchemaValidation:
         "domain",
         [
             "_domain",
-            "do_main",
             "4domain",
             "&domain",
             "dom-ain",
             "domain^",
+            "1234567",
         ],
     )
     def test_is_invalid_when_domain_has_incorrect_format(self, domain):
@@ -1085,11 +1085,11 @@ class TestSchemaValidation:
         "dataset",
         [
             "_dataset",
-            "data_set",
             "4dataset",
             "&dataset",
             "data-set",
             "dataset^",
+            "12345678",
         ],
     )
     def test_is_invalid_when_dataset_has_incorrect_format(self, dataset):

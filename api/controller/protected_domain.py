@@ -39,8 +39,8 @@ def create_protected_domain(domain: str):
 
     The domain name must adhere to the following conditions:
 
-    - Alphanumeric
-    - Cannot contain `-` and `/` symbol
+    - Only alphanumeric and underscore `_` characters allowed
+    - Start with an alphabetic character
 
     ### Accepted permissions
 

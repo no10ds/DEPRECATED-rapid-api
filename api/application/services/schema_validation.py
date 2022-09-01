@@ -89,27 +89,27 @@ def schema_has_valid_metadata_values(schema: Schema):
 
     if not valid_domain_name(domain_name):
         raise SchemaValidationError(
-            f"The value set for domain [{domain_name}] must be alphanumeric and start with an alphabetic character"
+            f"The value set for domain [{domain_name}] can only contain alphanumeric and underscore `_` characters and must start with an alphabetic character"
         )
 
     if not valid_dataset_name(dataset_name):
         raise SchemaValidationError(
-            f"The value set for dataset [{dataset_name}] must be alphanumeric and start with an alphabetic character"
+            f"The value set for dataset [{dataset_name}] can only contain alphanumeric and underscore `_` characters and must start with an alphabetic character"
         )
     has_valid_sensitivity_level(schema)
     has_valid_update_behaviour(schema)
 
 
 def valid_domain_name(domain: str) -> bool:
-    return validate_alphanumeric_string(domain)
+    return validate_metadata_character_string(domain)
 
 
 def valid_dataset_name(dataset: str) -> bool:
-    return validate_alphanumeric_string(dataset)
+    return validate_metadata_character_string(dataset)
 
 
-def validate_alphanumeric_string(string_input: str) -> bool:
-    regex = re.compile("^[a-zA-Z][a-zA-Z0-9]*$", re.I)
+def validate_metadata_character_string(string_input: str) -> bool:
+    regex = re.compile("^[a-zA-Z][_a-zA-Z0-9]*$", re.I)
     match = regex.match(string_input)
     return bool(match)
 

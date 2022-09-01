@@ -170,6 +170,6 @@ class TestProtectedDomainService:
         domain = "bad-domain"
         with pytest.raises(
             UserError,
-            match=r"The value set for domain \[BAD-DOMAIN\] must be alphanumeric and start with an alphabetic character",
+            match=r"The value set for domain \[BAD-DOMAIN\] can only contain alphanumeric and underscore `_` characters and must start with an alphabetic character",
         ):
             self.protected_domain_service.create_protected_domain_permission(domain)

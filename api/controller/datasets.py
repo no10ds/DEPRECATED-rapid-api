@@ -220,8 +220,8 @@ def upload_data(
 
     The domain and dataset names must adhere to the following conditions:
 
-    - Only alphanumeric characters allowed
-    - Have to start with an alphabetic character
+    - Only alphanumeric and underscore `_` characters allowed
+    - Start with an alphabetic character
 
     ### Output
 
