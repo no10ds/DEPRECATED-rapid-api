@@ -22,7 +22,7 @@ class TestAWSResourceAdapterClientMethods:
                     "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain1/dataset1",
                     "Tags": [
                         {"Key": "sensitivity", "Value": "PUBLIC"},
-                        {"Key": "version", "Value": "1"},
+                        {"Key": "no_of_versions", "Value": "1"},
                     ],
                 },
                 {
@@ -30,7 +30,7 @@ class TestAWSResourceAdapterClientMethods:
                     "Tags": [
                         {"Key": "tag1", "Value": ""},
                         {"Key": "sensitivity", "Value": "PUBLIC"},
-                        {"Key": "version", "Value": "2"},
+                        {"Key": "no_of_versions", "Value": "2"},
                     ],
                 },
                 {
@@ -38,7 +38,7 @@ class TestAWSResourceAdapterClientMethods:
                     "Tags": [
                         {"Key": "tag5", "Value": ""},
                         {"Key": "sensitivity", "Value": "PUBLIC"},
-                        {"Key": "version", "Value": "1"},
+                        {"Key": "no_of_versions", "Value": "1"},
                     ],
                 },
                 {
@@ -46,7 +46,7 @@ class TestAWSResourceAdapterClientMethods:
                     "Tags": [
                         {"Key": "tag2", "Value": ""},
                         {"Key": "sensitivity", "Value": "PRIVATE"},
-                        {"Key": "version", "Value": "1"},
+                        {"Key": "no_of_versions", "Value": "1"},
                     ],
                 },
             ]
@@ -59,13 +59,13 @@ class TestAWSResourceAdapterClientMethods:
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
                 dataset="dataset1",
-                tags={"sensitivity": "PUBLIC", "version": "1"},
+                tags={"sensitivity": "PUBLIC", "no_of_versions": "1"},
                 version=1,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain2",
                 dataset="dataset2",
-                tags={"tag1": "", "sensitivity": "PUBLIC", "version": "2"},
+                tags={"tag1": "", "sensitivity": "PUBLIC", "no_of_versions": "2"},
                 version=2,
             ),
         ]

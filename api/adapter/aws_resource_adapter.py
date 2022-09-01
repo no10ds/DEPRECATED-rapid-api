@@ -77,7 +77,7 @@ class AWSResourceAdapter:
         version_tag = [
             tag["Value"]
             for tag in resource_tag_mapping["Tags"]
-            if tag["Key"] == "version"
+            if tag["Key"] == "no_of_versions"
         ]
         return int(version_tag[0]) if version_tag else None
 
