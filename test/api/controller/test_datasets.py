@@ -369,7 +369,7 @@ class TestDatasetInfo(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset")
+        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset", -1)
 
         assert response.status_code == 200
         assert response.json() == expected_response
@@ -388,7 +388,7 @@ class TestDatasetInfo(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset")
+        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset", -1)
 
         assert response.status_code == 404
         assert response.json() == {

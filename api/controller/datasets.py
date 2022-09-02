@@ -75,7 +75,7 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     "/{domain}/{dataset}/info",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
-async def get_dataset_info(domain: str, dataset: str):
+async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = -1):
     """
     ## Dataset info
 
@@ -103,7 +103,7 @@ async def get_dataset_info(domain: str, dataset: str):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return data_service.get_dataset_info(domain, dataset)
+    return data_service.get_dataset_info(domain, dataset, version)
 
 
 @datasets_router.get(

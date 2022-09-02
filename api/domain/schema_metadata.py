@@ -95,17 +95,19 @@ class SchemaMetadata(BaseModel):
 class SchemaMetadatas:
     metadatas: List[SchemaMetadata]
 
-    def find(self, domain: str, dataset: str) -> SchemaMetadata:
+    def find(self, domain: str, dataset: str, version: int) -> SchemaMetadata:
         try:
             return list(
                 filter(
-                    lambda data: data.domain == domain and data.dataset == dataset,
+                    lambda data: data.domain == domain
+                    and data.dataset == dataset
+                    and data.version == version,
                     self.metadatas,
                 )
             )[0]
         except IndexError:
             raise SchemaNotFoundError(
-                f"Schema not found for domain={domain} and dataset={dataset}"
+                f"Schema not found for domain={domain} and dataset={dataset} and version={version}"
             )
 
     @classmethod

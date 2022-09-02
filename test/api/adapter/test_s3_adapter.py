@@ -170,6 +170,7 @@ class TestS3AdapterDataRetrieval:
     def test_retrieve_existing_schema(self):
         domain = "test_domain"
         dataset = "test_dataset"
+        version = 1
 
         valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -190,7 +191,9 @@ class TestS3AdapterDataRetrieval:
 
         self.mock_s3_client.get_object.return_value = mock_schema_response()
         self.mock_s3_client.list_objects.return_value = mock_list_schemas_response()
-        schema = self.persistence_adapter.find_schema(domain=domain, dataset=dataset)
+        schema = self.persistence_adapter.find_schema(
+            domain=domain, dataset=dataset, version=version
+        )
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="dataset", Prefix="data/schemas"
         )
@@ -203,7 +206,7 @@ class TestS3AdapterDataRetrieval:
 
     def test_retrieve_non_existent_schema(self):
         self.mock_s3_client.list_objects.return_value = mock_list_schemas_response()
-        schema = self.persistence_adapter.find_schema("bad", "data")
+        schema = self.persistence_adapter.find_schema("bad", "data", 1)
 
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="dataset", Prefix="data/schemas"
@@ -404,7 +407,9 @@ class TestDatasetMetadataRetrieval:
         self, domain: str, dataset: str, sensitivity: str, expected: SensitivityLevel
     ):
         self.mock_s3_client.list_objects.return_value = mock_list_schemas_response(
-            domain, dataset, sensitivity
+            domain,
+            dataset,
+            sensitivity,
         )
 
         result = self.persistence_adapter.get_dataset_sensitivity(domain, dataset)
@@ -419,7 +424,7 @@ class TestDatasetMetadataRetrieval:
         domain, dataset = "test_domain", "test_dataset"
         self.mock_s3_client.list_objects.return_value = {}
 
-        result = self.persistence_adapter.find_schema(domain, dataset)
+        result = self.persistence_adapter.find_schema(domain, dataset, 1)
 
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="data-bucket", Prefix=SCHEMAS_LOCATION

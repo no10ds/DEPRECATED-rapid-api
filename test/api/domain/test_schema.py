@@ -184,11 +184,12 @@ class TestSchemaMetadata:
 
 
 class TestSchemaMetadatas:
-    def test_find_by_domain_and_dataset(self):
+    def test_find_by_domain_and_dataset_and_version(self):
         desired_metadata = SchemaMetadata(
             domain="domain2",
             dataset="dataset2",
             sensitivity="sensitivity",
+            version=1,
             owners=[Owner(name="owner", email="owner@email.com")],
         )
         data = SchemaMetadatas(
@@ -202,7 +203,7 @@ class TestSchemaMetadatas:
                 desired_metadata,
             ]
         )
-        result = data.find(domain="domain2", dataset="dataset2")
+        result = data.find(domain="domain2", dataset="dataset2", version=1)
 
         assert result is desired_metadata
 
@@ -213,6 +214,7 @@ class TestSchemaMetadatas:
                     domain="domain1",
                     dataset="dataset1",
                     sensitivity="sensitivity",
+                    version="1",
                     owners=[Owner(name="owner", email="owner@email.com")],
                 ),
                 (
@@ -220,6 +222,7 @@ class TestSchemaMetadatas:
                         domain="domain2",
                         dataset="dataset2",
                         sensitivity="sensitivity",
+                        version="1",
                         owners=[Owner(name="owner", email="owner@email.com")],
                     )
                 ),
@@ -228,6 +231,6 @@ class TestSchemaMetadatas:
 
         with pytest.raises(
             SchemaNotFoundError,
-            match="Schema not found for domain=domain3 and dataset=dataset3",
+            match="Schema not found for domain=domain3 and dataset=dataset3 and version=1",
         ):
-            data.find(domain="domain3", dataset="dataset3")
+            data.find(domain="domain3", dataset="dataset3", version="1")

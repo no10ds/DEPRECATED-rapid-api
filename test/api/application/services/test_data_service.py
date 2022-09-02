@@ -557,7 +557,7 @@ class TestUploadDataset:
         with pytest.raises(SchemaNotFoundError):
             self.data_service.upload_dataset("some", "other", "data.csv", file_contents)
 
-        self.s3_adapter.find_schema.assert_called_once_with("some", "other")
+        self.s3_adapter.find_schema.assert_called_once_with("some", "other", 1)
 
     # Crawler state and trigger ----------------------
     def test_upload_dataset_fails_when_unable_to_get_crawler_state(self):
@@ -935,12 +935,14 @@ class TestDatasetInfoRetrieval:
         self.s3_adapter = Mock()
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
+        self.aws_resource_adapter = Mock()
         self.protected_domain_service = Mock()
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=2,
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
             columns=[
@@ -948,7 +950,7 @@ class TestDatasetInfoRetrieval:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="colname2",
@@ -971,6 +973,7 @@ class TestDatasetInfoRetrieval:
             self.query_adapter,
             self.protected_domain_service,
             None,
+            self.aws_resource_adapter,
         )
         self.glue_adapter.get_table_last_updated_date.return_value = (
             "2022-03-01 11:03:49+00:00"
@@ -982,6 +985,7 @@ class TestDatasetInfoRetrieval:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=2,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 number_of_rows=48718,
                 number_of_columns=3,
@@ -992,7 +996,7 @@ class TestDatasetInfoRetrieval:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 EnrichedColumn(
                     name="colname2",
@@ -1018,7 +1022,7 @@ class TestDatasetInfoRetrieval:
                 "min_date": ["2014-01-01"],
             }
         )
-        actual_schema = self.data_service.get_dataset_info("some", "other")
+        actual_schema = self.data_service.get_dataset_info("some", "other", 2)
 
         self.query_adapter.query.assert_called_once_with(
             "some",
@@ -1031,7 +1035,6 @@ class TestDatasetInfoRetrieval:
                 ]
             ),
         )
-
         assert actual_schema == expected_schema
 
     def test_get_schema_information_for_multiple_dates(self):
@@ -1040,6 +1043,7 @@ class TestDatasetInfoRetrieval:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=1,
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
             columns=[
@@ -1047,7 +1051,7 @@ class TestDatasetInfoRetrieval:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 Column(
                     name="date",
@@ -1071,6 +1075,7 @@ class TestDatasetInfoRetrieval:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=1,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 number_of_rows=48718,
                 number_of_columns=3,
@@ -1081,7 +1086,7 @@ class TestDatasetInfoRetrieval:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 ),
                 EnrichedColumn(
                     name="date",
@@ -1111,7 +1116,9 @@ class TestDatasetInfoRetrieval:
                 "min_date2": ["2015-01-01"],
             }
         )
-        actual_schema = self.data_service.get_dataset_info("some", "other")
+
+        self.aws_resource_adapter.get_version_from_crawler_tags.return_value = 1
+        actual_schema = self.data_service.get_dataset_info("some", "other", -1)
 
         self.query_adapter.query.assert_called_once_with(
             "some",
@@ -1126,6 +1133,9 @@ class TestDatasetInfoRetrieval:
                 ]
             ),
         )
+        self.aws_resource_adapter.get_version_from_crawler_tags.assert_called_once_with(
+            "some", "other"
+        )
 
         assert actual_schema == expected_schema
 
@@ -1135,6 +1145,7 @@ class TestDatasetInfoRetrieval:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=3,
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
             columns=[
@@ -1142,7 +1153,7 @@ class TestDatasetInfoRetrieval:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 )
             ],
         )
@@ -1151,6 +1162,7 @@ class TestDatasetInfoRetrieval:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=3,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 number_of_rows=48718,
                 number_of_columns=1,
@@ -1161,13 +1173,14 @@ class TestDatasetInfoRetrieval:
                     name="colname1",
                     partition_index=0,
                     data_type="Int64",
-                    allow_null=True,
+                    allow_null=False,
                 )
             ],
         )
         self.s3_adapter.find_schema.return_value = valid_schema
         self.query_adapter.query.return_value = pd.DataFrame({"data_size": [48718]})
-        actual_schema = self.data_service.get_dataset_info("some", "other")
+
+        actual_schema = self.data_service.get_dataset_info("some", "other", 3)
 
         self.query_adapter.query.assert_called_once_with(
             "some", "other", SQLQuery(select_columns=["count(*) as data_size"])
@@ -1179,7 +1192,7 @@ class TestDatasetInfoRetrieval:
         self.s3_adapter.find_schema.return_value = None
 
         with pytest.raises(SchemaNotFoundError):
-            self.data_service.get_dataset_info("some", "other")
+            self.data_service.get_dataset_info("some", "other", 1)
 
     def test_filename_with_timestamp(self):
         filename = self.data_service.generate_raw_filename("data")

@@ -83,6 +83,25 @@ class AWSResourceAdapter:
         ]
         return int(version_tag[0]) if version_tag else None
 
+    def get_version_from_crawler_tags(self, domain: str, dataset: str) -> int:
+        aws_resources = self._get_resources(["glue:crawler"], [])
+
+        crawler_resource = None
+
+        for resource in aws_resources["ResourceTagMappingList"]:
+            if f":crawler/{RESOURCE_PREFIX}_crawler" in resource["ResourceARN"]:
+                if domain in resource["ResourceARN"]:
+                    if dataset in resource["ResourceARN"]:
+                        crawler_resource = resource
+
+        crawler_tag_version = [
+            tag["Value"]
+            for tag in crawler_resource["Tags"]
+            if tag["Key"] == "no_of_versions"
+        ]
+
+        return int(crawler_tag_version[0])
+
     def _infer_domain_and_dataset_from_crawler_arn(self, arn: str) -> Tuple[str, str]:
         table_name = arn.split(f"{RESOURCE_PREFIX}_crawler/")[-1]
         table_name_elements = table_name.split("/")

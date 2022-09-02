@@ -33,10 +33,10 @@ class S3Adapter:
         response: Dict = self.__s3_client.get_object(Bucket=self.__s3_bucket, Key=key)
         return response.get("Body")
 
-    def find_schema(self, domain: str, dataset: str) -> Optional[Schema]:
+    def find_schema(self, domain: str, dataset: str, version: int) -> Optional[Schema]:
         try:
             schema_metadata = self._retrieve_schema_metadata(
-                domain=domain, dataset=dataset
+                domain=domain, dataset=dataset, version=version
             )
             dataset = self.retrieve_data(schema_metadata.schema_path())
             return Schema.parse_raw(dataset.read())
@@ -72,7 +72,8 @@ class S3Adapter:
     ) -> SensitivityLevel:
         if not domain or not dataset:
             return SensitivityLevel.from_string("PUBLIC")
-        schema_metadata = self._retrieve_schema_metadata(domain, dataset)
+        # all datasets have the same sensitivity - take the first version
+        schema_metadata = self._retrieve_schema_metadata(domain, dataset, 1)
         return SensitivityLevel.from_string(schema_metadata.get_sensitivity())
 
     def upload_partitioned_data(
@@ -161,7 +162,7 @@ class S3Adapter:
         except KeyError:
             return []
 
-    def _map_object_list_to_filename(self, object_list) -> list[str]:
+    def _map_object_list_to_filename(self, object_list) -> List[str]:
         if len(object_list) > 0:
             return [
                 self._extract_filename(item["Key"])
@@ -194,9 +195,11 @@ class S3Adapter:
     def _delete_data(self, object_full_path: str):
         self.__s3_client.delete_object(Bucket=self.__s3_bucket, Key=object_full_path)
 
-    def _retrieve_schema_metadata(self, domain: str, dataset: str) -> SchemaMetadata:
+    def _retrieve_schema_metadata(
+        self, domain: str, dataset: str, version: int
+    ) -> SchemaMetadata:
         schemas = self._list_all_schemas()
-        return schemas.find(domain=domain, dataset=dataset)
+        return schemas.find(domain=domain, dataset=dataset, version=version)
 
     def _list_all_schemas(self) -> SchemaMetadatas:
         items = self._list_files_from_path(SCHEMAS_LOCATION)

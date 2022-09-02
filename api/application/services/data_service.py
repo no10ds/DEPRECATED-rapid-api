@@ -1,11 +1,12 @@
 import time
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import pandas as pd
 from pandas.io.parsers import TextFileReader
 
 from api.adapter.athena_adapter import AthenaAdapter
+from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
@@ -50,12 +51,14 @@ class DataService:
         athena_adapter=AthenaAdapter(),
         protected_domain_service=ProtectedDomainService(),
         cognito_adapter=CognitoAdapter(),
+        aws_resource_adapter=AWSResourceAdapter(),
     ):
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
         self.athena_adapter = athena_adapter
         self.protected_domain_service = protected_domain_service
         self.cognito_adapter = cognito_adapter
+        self.aws_resource_adapter = aws_resource_adapter
 
     def list_raw_files(self, domain: str, dataset: str) -> list[str]:
         raw_files = self.persistence_adapter.list_raw_files(domain, dataset)
@@ -89,7 +92,7 @@ class DataService:
         file_path: Path,
         filename: str,
     ) -> str:
-        schema = self._get_schema(domain, dataset)
+        schema = self._get_schema(domain, dataset, 1)
         if not schema:
             raise SchemaNotFoundError(
                 f"Could not find schema related to the dataset [{dataset}]"
@@ -127,7 +130,12 @@ class DataService:
 
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = NEW_SCHEMA_VERSION_NUMBER
-        if self._get_schema(schema.get_domain(), schema.get_dataset()) is not None:
+        if (
+            self._get_schema(
+                schema.get_domain(), schema.get_dataset(), schema.get_version()
+            )
+            is not None
+        ):
             AppLogger.warning(
                 "Schema already exists for domain=%s and dataset=%s",
                 schema.get_domain(),
@@ -156,11 +164,17 @@ class DataService:
                 )
         return schema.get_domain()
 
-    def get_dataset_info(self, domain: str, dataset: str) -> EnrichedSchema:
-        schema = self._get_schema(domain, dataset)
+    def get_dataset_info(
+        self, domain: str, dataset: str, version: Optional[int]
+    ) -> EnrichedSchema:
+        if version == -1:
+            version = self.aws_resource_adapter.get_version_from_crawler_tags(
+                domain, dataset
+            )
+        schema = self._get_schema(domain, dataset, version)
         if not schema:
             raise SchemaNotFoundError(
-                f"Could not find schema related to the domain [{domain}] and dataset [{dataset}]"
+                f"Could not find schema related to the domain [{domain}], dataset [{dataset}] and version [{version}]"
             )
         statistics_dataframe = self.athena_adapter.query(
             domain, dataset, self._build_query(schema)
@@ -181,8 +195,8 @@ class DataService:
             schema.get_domain(), schema.get_dataset(), filename, partitioned_data
         )
 
-    def _get_schema(self, domain: str, dataset: str) -> Schema:
-        return self.persistence_adapter.find_schema(domain, dataset)
+    def _get_schema(self, domain: str, dataset: str, version: int) -> Schema:
+        return self.persistence_adapter.find_schema(domain, dataset, version)
 
     def _build_query(self, schema: Schema) -> SQLQuery:
         date_columns = schema.get_columns_by_type(DataTypes.DATE)
