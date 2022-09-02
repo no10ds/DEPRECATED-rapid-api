@@ -14,9 +14,12 @@ from api.application.services.dataset_validation import (
     dataset_has_acceptable_null_values,
     dataset_has_correct_data_types,
     dataset_has_no_illegal_characters_in_partition_columns,
-    transform_and_validate,
 )
-from api.common.custom_exceptions import DatasetValidationError, UserError
+from api.common.custom_exceptions import (
+    DatasetValidationError,
+    UserError,
+    UnprocessableDatasetError,
+)
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -123,10 +126,12 @@ class TestDatasetValidation:
             }
         )
 
-        pattern = "Expected columns: \\['colname1', 'colname2', 'colname3'\\], received: \\['wrongcolumn', 'colname2', 'colname3'\\]"  # noqa: E501
-
-        with pytest.raises(DatasetValidationError, match=pattern):
+        try:
             get_validated_dataframe(self.valid_schema, dataframe)
+        except UnprocessableDatasetError as error:
+            assert error.message == [
+                "Expected columns: ['colname1', 'colname2', 'colname3'], received: ['wrongcolumn', 'colname2', 'colname3']",
+            ]
 
     def test_invalid_when_partition_column_with_illegal_characters(self):
         valid_schema = Schema(
@@ -465,7 +470,7 @@ class TestDatasetValidation:
         )
 
         with pytest.raises(
-            DatasetValidationError,
+            UnprocessableDatasetError,
             match=re.escape(
                 f"Expected columns: {schema_columns}, received: {dataframe_columns}"
             ),
@@ -688,7 +693,7 @@ class TestDatasetValidation:
         )
 
         try:
-            transform_and_validate(schema, df)
+            get_validated_dataframe(schema, df)
         except DatasetValidationError as error:
             assert error.message == [
                 "Failed to convert column [col5] to type [Int64]",

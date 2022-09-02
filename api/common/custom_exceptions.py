@@ -50,6 +50,10 @@ class DatasetValidationError(UserError):
     pass
 
 
+class UnprocessableDatasetError(UserError):
+    pass
+
+
 # Specifically handled in global handler ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 

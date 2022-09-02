@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import pandas as pd
+from pandas.io.parsers import TextFileReader
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
@@ -18,6 +19,7 @@ from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
     UserError,
+    DatasetValidationError,
 )
 from api.common.logger import AppLogger
 from api.domain.data_types import DataTypes
@@ -34,8 +36,10 @@ from api.domain.storage_metadata import StorageMetaData
 NEW_SCHEMA_VERSION_NUMBER = 1
 
 
-def construct_dataframe(file_path: Path) -> pd.DataFrame:
-    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",")
+def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
+    return pd.read_csv(
+        file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=1_000_000
+    )
 
 
 class DataService:
@@ -92,8 +96,8 @@ class DataService:
             )
         else:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
-            dataframe = construct_dataframe(file_path)
-            validated_dataframe = get_validated_dataframe(schema, dataframe)
+
+            validated_dataframe = self._validate_dataset(schema, file_path)
             (
                 raw_filename,
                 permanent_filename,
@@ -107,6 +111,19 @@ class DataService:
             self.glue_adapter.start_crawler(domain, dataset)
             self.glue_adapter.update_catalog_table_config(schema)
             return permanent_filename
+
+    def _validate_dataset(self, schema: Schema, file_path: Path) -> pd.DataFrame:
+        chunked_dataset = construct_chunked_dataframe(file_path)
+        dataset_errors = set()
+        validated_dataframes = []
+        for chunk in chunked_dataset:
+            try:
+                validated_dataframes.append(get_validated_dataframe(schema, chunk))
+            except DatasetValidationError as error:
+                dataset_errors.update(error.message)
+        if dataset_errors:
+            raise DatasetValidationError(list(dataset_errors))
+        return pd.concat(validated_dataframes)
 
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = NEW_SCHEMA_VERSION_NUMBER

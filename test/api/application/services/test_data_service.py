@@ -1,12 +1,17 @@
 import re
 from pathlib import Path
-from unittest.mock import Mock, patch
+from typing import List
+from unittest.mock import Mock, patch, MagicMock
 
 import pandas as pd
 import pytest
 from botocore.exceptions import ClientError
 
-from api.application.services.data_service import DataService
+from api.application.services.data_service import (
+    DataService,
+    construct_chunked_dataframe,
+)
+from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     CrawlerIsNotReadyError,
@@ -15,6 +20,8 @@ from api.common.custom_exceptions import (
     ConflictError,
     UserError,
     AWSServiceError,
+    UnprocessableDatasetError,
+    DatasetValidationError,
 )
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -207,11 +214,19 @@ class TestUploadDataset:
             ],
         )
 
+    def chunked_dataframe_values(
+        self, mock_construct_chunked_dataframe, dataframes: List[pd.DataFrame]
+    ):
+        mock_test_file_reader = MagicMock()
+        mock_construct_chunked_dataframe.return_value = mock_test_file_reader
+        mock_test_file_reader.__iter__.return_value = dataframes
+        return mock_test_file_reader
+
     # Happy Path -------------------------------------
-    @patch("api.application.services.data_service.construct_dataframe")
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_dataset_in_one_not_partitioned_file(
-        self, mock_partitioner, mock_construct_dataframe
+        self, mock_partitioner, mock_construct_chunked_dataframe
     ):
         schema = Schema(
             metadata=SchemaMetadata(
@@ -247,7 +262,7 @@ class TestUploadDataset:
 
         expected_df["colname1"] = expected_df["colname1"].astype(dtype=pd.Int64Dtype())
 
-        mock_construct_dataframe.return_value = expected_df
+        self.chunked_dataframe_values(mock_construct_chunked_dataframe, [expected_df])
 
         partitioned_data = [("", expected_df)]
         mock_partitioner.return_value = partitioned_data
@@ -269,10 +284,10 @@ class TestUploadDataset:
 
         self.data_service.generate_raw_filename.assert_called_once_with("data.csv")
 
-    @patch("api.application.services.data_service.construct_dataframe")
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_dataset_in_two_partitioned_files(
-        self, mock_partitioner, mock_construct_dataframe
+        self, mock_partitioner, mock_construct_chunked_dataframe
     ):
         expected = pd.DataFrame(
             {
@@ -282,7 +297,7 @@ class TestUploadDataset:
         )
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
 
-        mock_construct_dataframe.return_value = expected
+        self.chunked_dataframe_values(mock_construct_chunked_dataframe, [expected])
 
         schema = Schema(
             metadata=SchemaMetadata(
@@ -331,10 +346,10 @@ class TestUploadDataset:
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
     # Happy Path -------------------------------------
-    @patch("api.application.services.data_service.construct_dataframe")
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_dataset_with_overwrite_behaviour_with_no_partition(
-        self, mock_partitioner, mock_construct_dataframe
+        self, mock_partitioner, mock_construct_chunked_dataframe
     ):
         expected = pd.DataFrame(
             {
@@ -344,7 +359,7 @@ class TestUploadDataset:
         )
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
 
-        mock_construct_dataframe.return_value = expected
+        self.chunked_dataframe_values(mock_construct_chunked_dataframe, [expected])
 
         schema = Schema(
             metadata=SchemaMetadata(
@@ -386,10 +401,10 @@ class TestUploadDataset:
 
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
-    @patch("api.application.services.data_service.construct_dataframe")
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_dataset_with_overwrite_behaviour_with_two_partitions(
-        self, mock_partitioner, mock_construct_dataframe
+        self, mock_partitioner, mock_construct_chunked_dataframe
     ):
         expected = pd.DataFrame(
             {
@@ -399,7 +414,7 @@ class TestUploadDataset:
         )
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
 
-        mock_construct_dataframe.return_value = expected
+        self.chunked_dataframe_values(mock_construct_chunked_dataframe, [expected])
 
         schema = Schema(
             metadata=SchemaMetadata(
@@ -444,20 +459,34 @@ class TestUploadDataset:
 
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
+    @patch("api.application.services.data_service.pd")
+    def test_construct_chunked_dataframe(self, mock_pd):
+        path = Path("file/path")
+
+        construct_chunked_dataframe(path)
+        mock_pd.read_csv.assert_called_once_with(
+            path, encoding=CONTENT_ENCODING, sep=",", chunksize=1_000_000
+        )
+
     # E2E flow ---------------------------------------
-    @patch("api.application.services.data_service.construct_dataframe")
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_formatted_dataset_after_transformation_and_validation(
-        self, mock_partitioner, mock_construct_dataframe
+        self, mock_partitioner, mock_construct_chunked_dataframe
     ):
-        mock_construct_dataframe.return_value = pd.DataFrame(
-            {
-                # Incorrectly formatted column headings
-                # Date format to be transformed
-                # Entirely null row
-                "DaTe": ["12/06/2012", "12/07/2012", pd.NA],
-                "Va!lu-e": ["Carolina", "Albertine", pd.NA],
-            }
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [
+                pd.DataFrame(
+                    {
+                        # Incorrectly formatted column headings
+                        # Date format to be transformed
+                        # Entirely null row
+                        "DaTe": ["12/06/2012", "12/07/2012", pd.NA],
+                        "Va!lu-e": ["Carolina", "Albertine", pd.NA],
+                    }
+                )
+            ],
         )
 
         schema = Schema(
@@ -609,10 +638,11 @@ class TestUploadDataset:
             "some", "other"
         )
 
-    @patch("api.application.services.data_service.construct_dataframe")
-    def test_upload_dataset_starts_crawler(self, mock_construct_dataframe):
-        mock_construct_dataframe.return_value = pd.DataFrame(
-            {"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_starts_crawler(self, mock_construct_chunked_dataframe):
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]})],
         )
 
         self.s3_adapter.find_schema.return_value = Schema(
@@ -642,10 +672,13 @@ class TestUploadDataset:
 
         self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
 
-    @patch("api.application.services.data_service.construct_dataframe")
-    def test_upload_dataset_fails_to_start_crawler(self, mock_construct_dataframe):
-        mock_construct_dataframe.return_value = pd.DataFrame(
-            {"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_fails_to_start_crawler(
+        self, mock_construct_chunked_dataframe
+    ):
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]})],
         )
 
         self.s3_adapter.find_schema.return_value = Schema(
@@ -681,10 +714,13 @@ class TestUploadDataset:
             )
 
     # Persist raw copy of data -------------------------------
-    @patch("api.application.services.data_service.construct_dataframe")
-    def test_upload_dataset_persists_raw_copy_of_data(self, mock_construct_dataframe):
-        mock_construct_dataframe.return_value = pd.DataFrame(
-            {"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_persists_raw_copy_of_data(
+        self, mock_construct_chunked_dataframe
+    ):
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]})],
         )
 
         self.s3_adapter.find_schema.return_value = Schema(
@@ -742,6 +778,156 @@ class TestUploadDataset:
             self.data_service.list_raw_files("domain", "dataset")
 
         self.s3_adapter.list_raw_files.assert_called_once_with("domain", "dataset")
+
+    # Validation for chunks ---------------------------
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_in_chunks_with_invalid_column_headers(
+        self, mock_construct_chunked_dataframe
+    ):
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=None,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+        self.s3_adapter.find_schema.return_value = schema
+
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [
+                pd.DataFrame(
+                    {"colname1": [1234, 4567], "colnamewrong": ["Carlos", "Ada"]}
+                )
+            ],
+        )
+
+        with pytest.raises(UnprocessableDatasetError):
+            self.data_service.upload_dataset(
+                "some", "other", Path("data.csv"), "data.csv"
+            )
+
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_in_chunks_with_invalid_data(
+        self, mock_construct_chunked_dataframe
+    ):
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=None,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+        self.s3_adapter.find_schema.return_value = schema
+
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [
+                pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}),
+                pd.DataFrame(
+                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
+                ),
+                pd.DataFrame(
+                    {"colname1": [3543, 456743], "colname2": ["Carlos", "Ada"]}
+                ),
+            ],
+        )
+
+        try:
+            self.data_service.upload_dataset(
+                "some", "other", Path("data.csv"), "data.csv"
+            )
+        except DatasetValidationError as error:
+            assert {
+                "Failed to convert column [colname1] to type [Int64]",
+                "Column [colname1] has an incorrect data type. Expected Int64, received "
+                "object",
+            }.issubset(error.message)
+
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_in_chunks_with_invalid_data_in_multiple_chunks(
+        self, mock_construct_chunked_dataframe
+    ):
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=None,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+        self.s3_adapter.find_schema.return_value = schema
+
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [
+                pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}),
+                pd.DataFrame(
+                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
+                ),
+                pd.DataFrame(
+                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
+                ),
+                pd.DataFrame(
+                    {"colname1": [3543, 456743], "colname2": ["Carlos", "Ada"]}
+                ),
+            ],
+        )
+
+        try:
+            self.data_service.upload_dataset(
+                "some", "other", Path("data.csv"), "data.csv"
+            )
+        except DatasetValidationError as error:
+            assert {
+                "Column [colname1] has an incorrect data type. Expected Int64, received "
+                "object",
+                "Failed to convert column [colname1] to type [Int64]",
+            }.issubset(error.message)
 
 
 class TestDatasetInfoRetrieval:

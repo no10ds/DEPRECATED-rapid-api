@@ -3,7 +3,10 @@ from typing import Tuple
 import pandas as pd
 from pandas import Timestamp
 
-from api.common.custom_exceptions import DatasetValidationError
+from api.common.custom_exceptions import (
+    DatasetValidationError,
+    UnprocessableDatasetError,
+)
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema
@@ -60,8 +63,8 @@ def dataset_has_correct_columns(
 
     if not has_expected_columns or len(actual_columns) != len(expected_columns):
         # Cannot reasonably proceed with further validation if we don't even have the correct columns
-        raise DatasetValidationError(
-            f"Expected columns: {expected_columns}, received: {actual_columns}"
+        raise UnprocessableDatasetError(
+            [f"Expected columns: {expected_columns}, received: {actual_columns}"]
         )
 
     return df, error_list
