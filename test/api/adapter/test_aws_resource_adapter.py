@@ -34,6 +34,14 @@ class TestAWSResourceAdapterClientMethods:
                     ],
                 },
                 {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset",
+                    "Tags": [
+                        {"Key": "tag2", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PRIVATE"},
+                        {"Key": "no_of_versions", "Value": "3"},
+                    ],
+                },
+                {
                     "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_PREFIX_crawler/domain3/dataset3",
                     "Tags": [
                         {"Key": "tag5", "Value": ""},
@@ -42,11 +50,27 @@ class TestAWSResourceAdapterClientMethods:
                     ],
                 },
                 {
-                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_{RESOURCE_PREFIX}_crawler/domain2/dataset6",
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset3",
+                    "Tags": [
+                        {"Key": "tag5", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PUBLIC"},
+                        {"Key": "no_of_versions", "Value": "1"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_{RESOURCE_PREFIX}_crawler/domain36/dataset3",
                     "Tags": [
                         {"Key": "tag2", "Value": ""},
                         {"Key": "sensitivity", "Value": "PRIVATE"},
-                        {"Key": "no_of_versions", "Value": "1"},
+                        {"Key": "no_of_versions", "Value": "10"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain36/dataset3",
+                    "Tags": [
+                        {"Key": "tag2", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PRIVATE"},
+                        {"Key": "no_of_versions", "Value": "10"},
                     ],
                 },
             ]
@@ -67,6 +91,24 @@ class TestAWSResourceAdapterClientMethods:
                 dataset="dataset2",
                 tags={"tag1": "", "sensitivity": "PUBLIC", "no_of_versions": "2"},
                 version=2,
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain3",
+                dataset="dataset",
+                tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "3"},
+                version=3,
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain3",
+                dataset="dataset3",
+                tags={"tag5": "", "sensitivity": "PUBLIC", "no_of_versions": "1"},
+                version=1,
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain36",
+                dataset="dataset3",
+                tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "10"},
+                version=10,
             ),
         ]
 
@@ -155,3 +197,23 @@ class TestAWSResourceAdapterClientMethods:
             match="Internal server error, please contact system administrator",
         ):
             self.resource_adapter.get_datasets_metadata(query)
+
+    @pytest.mark.parametrize(
+        "domain, dataset, expected_version",
+        [
+            ("domain1", "dataset1", 1),
+            ("domain2", "dataset2", 2),
+            ("domain3", "dataset", 3),
+            ("domain3", "dataset3", 1),
+            ("domain36", "dataset3", 10),
+        ],
+    )
+    def test_get_version_from_crawler(self, domain, dataset, expected_version):
+
+        self.resource_boto_client.get_resources.return_value = self.aws_return_value
+
+        actual_version = self.resource_adapter.get_version_from_crawler_tags(
+            domain, dataset
+        )
+
+        assert actual_version == expected_version

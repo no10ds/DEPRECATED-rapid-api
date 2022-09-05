@@ -1,6 +1,7 @@
 from enum import Enum
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.common.logger import AppLogger
 
 aws_resource_adapter = AWSResourceAdapter()
 
@@ -19,5 +20,8 @@ class BaseEnum(Enum):
 
 def handle_version_retrieval(domain, dataset, version) -> int:
     if not version:
+        AppLogger.info(
+            "No version provided by the user. Retrieving the latest version from the crawler."
+        )
         version = aws_resource_adapter.get_version_from_crawler_tags(domain, dataset)
     return version

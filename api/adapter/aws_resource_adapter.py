@@ -88,19 +88,15 @@ class AWSResourceAdapter:
 
         crawler_resource = None
 
+        AppLogger.info(f"Getting version for domain {domain} and dataset {dataset}")
         for resource in aws_resources["ResourceTagMappingList"]:
-            if f":crawler/{RESOURCE_PREFIX}_crawler" in resource["ResourceARN"]:
-                if domain in resource["ResourceARN"]:
-                    if dataset in resource["ResourceARN"]:
-                        crawler_resource = resource
+            if resource["ResourceARN"].endswith(
+                f":crawler/{RESOURCE_PREFIX}_crawler/{domain}/{dataset}"
+            ):
+                AppLogger
+                crawler_resource = resource
 
-        crawler_tag_version = [
-            tag["Value"]
-            for tag in crawler_resource["Tags"]
-            if tag["Key"] == "no_of_versions"
-        ]
-
-        return int(crawler_tag_version[0])
+        return self.get_version_from_tags(crawler_resource)
 
     def _infer_domain_and_dataset_from_crawler_arn(self, arn: str) -> Tuple[str, str]:
         table_name = arn.split(f"{RESOURCE_PREFIX}_crawler/")[-1]
