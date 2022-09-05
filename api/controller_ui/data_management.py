@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Optional
 
 from dateutil import parser
 from fastapi import APIRouter, Security
@@ -55,8 +55,10 @@ def select_dataset(request: Request):
     "/download/{domain}/{dataset}",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
-def download_dataset(request: Request, domain: str, dataset: str):
-    dataset_info = data_service.get_dataset_info(domain, dataset)
+def download_dataset(
+    request: Request, domain: str, dataset: str, version: Optional[int] = None
+):
+    dataset_info = data_service.get_dataset_info(domain, dataset, version)
     date = parser.parse(dataset_info.metadata.last_updated)
     new_date = date.strftime("%-d %b %Y at %H:%M:%S")
     columns = []

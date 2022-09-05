@@ -6,7 +6,6 @@ import pandas as pd
 from pandas.io.parsers import TextFileReader
 
 from api.adapter.athena_adapter import AthenaAdapter
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
@@ -23,6 +22,7 @@ from api.common.custom_exceptions import (
     DatasetValidationError,
 )
 from api.common.logger import AppLogger
+from api.common.utilities import handle_version_retrieval
 from api.domain.data_types import DataTypes
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -51,14 +51,12 @@ class DataService:
         athena_adapter=AthenaAdapter(),
         protected_domain_service=ProtectedDomainService(),
         cognito_adapter=CognitoAdapter(),
-        aws_resource_adapter=AWSResourceAdapter(),
     ):
         self.persistence_adapter = persistence_adapter
         self.glue_adapter = glue_adapter
         self.athena_adapter = athena_adapter
         self.protected_domain_service = protected_domain_service
         self.cognito_adapter = cognito_adapter
-        self.aws_resource_adapter = aws_resource_adapter
 
     def list_raw_files(self, domain: str, dataset: str) -> list[str]:
         raw_files = self.persistence_adapter.list_raw_files(domain, dataset)
@@ -167,10 +165,7 @@ class DataService:
     def get_dataset_info(
         self, domain: str, dataset: str, version: Optional[int]
     ) -> EnrichedSchema:
-        if version == -1:
-            version = self.aws_resource_adapter.get_version_from_crawler_tags(
-                domain, dataset
-            )
+        version = handle_version_retrieval(domain, dataset, version)
         schema = self._get_schema(domain, dataset, version)
         if not schema:
             raise SchemaNotFoundError(

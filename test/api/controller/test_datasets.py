@@ -364,12 +364,12 @@ class TestDatasetInfo(BaseClientTest):
         mock_get_dataset_info.return_value = expected_response
 
         response = self.client.get(
-            "/datasets/mydomain/mydataset/info",
+            "/datasets/mydomain/mydataset/info?version=2",
             headers={"Authorization": "Bearer test-token"},
             # Not passing a JSON body here to filter by tags
         )
 
-        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset", -1)
+        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset", 2)
 
         assert response.status_code == 200
         assert response.json() == expected_response
@@ -388,7 +388,7 @@ class TestDatasetInfo(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset", -1)
+        mock_get_dataset_info.assert_called_once_with("mydomain", "mydataset", None)
 
         assert response.status_code == 404
         assert response.json() == {
@@ -406,7 +406,7 @@ class TestQuery(BaseClientTest):
         self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
 
         mock_query_method.assert_called_once_with(
-            "mydomain", "mydataset", -1, SQLQuery()
+            "mydomain", "mydataset", None, SQLQuery()
         )
 
     @patch.object(AthenaAdapter, "query")
@@ -422,8 +422,18 @@ class TestQuery(BaseClientTest):
         mock_query_method.assert_called_once_with(
             "mydomain",
             "mydataset",
-            -1,
+            None,
             SQLQuery(select_columns=["column1"], limit="10"),
+        )
+
+    @patch.object(AthenaAdapter, "query")
+    def test_call_service_version_provided(self, mock_query_method):
+        query_url = "/datasets/mydomain/mydataset/query?version=3"
+
+        self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
+
+        mock_query_method.assert_called_once_with(
+            "mydomain", "mydataset", 3, SQLQuery()
         )
 
     @patch.object(AthenaAdapter, "query")
@@ -446,7 +456,7 @@ class TestQuery(BaseClientTest):
         mock_query_method.assert_called_once_with(
             "mydomain",
             "mydataset",
-            -1,
+            None,
             SQLQuery(
                 select_columns=["column1"],
                 filter="",

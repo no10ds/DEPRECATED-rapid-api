@@ -75,7 +75,7 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     "/{domain}/{dataset}/info",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
-async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = -1):
+async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = None):
     """
     ## Dataset info
 
@@ -300,7 +300,7 @@ async def query_dataset(
     domain: str,
     dataset: str,
     request: Request,
-    version: Optional[int] = -1,
+    version: Optional[int] = None,
     query: Optional[SQLQuery] = SQLQuery(),
 ):
     """

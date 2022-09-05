@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pandas as pd
 import pytest
@@ -69,6 +69,33 @@ class TestAthenaAdapter:
             workgroup="rapid_athena_workgroup",
             s3_output="out",
         )
+
+    @patch("api.adapter.athena_adapter.handle_version_retrieval")
+    def test_version_not_provided(self, mock_handle_version_retrieval):
+
+        mock_handle_version_retrieval.return_value = 4
+
+        self.athena_adapter.query(
+            "my",
+            "table",
+            None,
+            SQLQuery(
+                select_columns=["column1", "column2"],
+                group_by_columns=["column2"],
+                order_by_columns=[SQLQueryOrderBy(column="column1")],
+                limit=2,
+            ),
+        )
+
+        self.mock_athena_read_sql_query.assert_called_once_with(
+            sql="SELECT column1,column2 FROM my_table_4 GROUP BY column2 ORDER BY column1 ASC LIMIT 2",
+            database="my_database",
+            ctas_approach=False,
+            workgroup="rapid_athena_workgroup",
+            s3_output="out",
+        )
+
+        mock_handle_version_retrieval.assert_called_once_with("my", "table", None)
 
     def test_query_fails(self):
         self.mock_athena_read_sql_query.side_effect = QueryFailed("Some error")

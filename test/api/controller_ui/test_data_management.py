@@ -169,6 +169,6 @@ class TestDownloadPage(BaseClientTest):
             context={"request": ANY, "dataset_info": expected_info},
         )
 
-        mock_get_dataset_info.assert_called_once_with("domain1", "dataset1")
+        mock_get_dataset_info.assert_called_once_with("domain1", "dataset1", None)
 
         assert response.status_code == 200

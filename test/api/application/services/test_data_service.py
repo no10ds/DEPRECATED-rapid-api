@@ -973,7 +973,6 @@ class TestDatasetInfoRetrieval:
             self.query_adapter,
             self.protected_domain_service,
             None,
-            self.aws_resource_adapter,
         )
         self.glue_adapter.get_table_last_updated_date.return_value = (
             "2022-03-01 11:03:49+00:00"
@@ -1038,7 +1037,10 @@ class TestDatasetInfoRetrieval:
         )
         assert actual_schema == expected_schema
 
-    def test_get_schema_information_for_multiple_dates(self):
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_get_schema_information_for_multiple_dates(
+        self, mock_handle_version_retrieval
+    ):
         valid_schema = Schema(
             metadata=SchemaMetadata(
                 domain="some",
@@ -1118,8 +1120,8 @@ class TestDatasetInfoRetrieval:
             }
         )
 
-        self.aws_resource_adapter.get_version_from_crawler_tags.return_value = 1
-        actual_schema = self.data_service.get_dataset_info("some", "other", -1)
+        mock_handle_version_retrieval.return_value = 1
+        actual_schema = self.data_service.get_dataset_info("some", "other", None)
 
         self.query_adapter.query.assert_called_once_with(
             "some",
@@ -1135,9 +1137,7 @@ class TestDatasetInfoRetrieval:
                 ]
             ),
         )
-        self.aws_resource_adapter.get_version_from_crawler_tags.assert_called_once_with(
-            "some", "other"
-        )
+        mock_handle_version_retrieval.assert_called_once_with("some", "other", None)
 
         assert actual_schema == expected_schema
 
