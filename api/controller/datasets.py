@@ -196,7 +196,7 @@ async def delete_data_file(
 @datasets_router.post(
     "/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
-    # dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 def upload_data(
     domain: str, dataset: str, response: Response, file: UploadFile = File(...)
