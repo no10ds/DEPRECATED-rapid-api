@@ -90,10 +90,11 @@ async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = N
 
     ### Inputs
 
-    | Parameters    | Usage                                   | Example values               | Definition            |
-    |---------------|-----------------------------------------|------------------------------|-----------------------|
-    | `domain`      | URL parameter                           | `land`                       | domain of the dataset |
-    | `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
+    | Parameters | Required | Usage             | Example values   | Definition            |
+    |------------|----------|-------------------|------------------|-----------------------|
+    | `domain`   | True     | URL parameter     | `land`           | domain of the dataset |
+    | `dataset`  | True     | URL parameter     | `train_journeys` | dataset title         |
+    | `version`  | False    | Query parameter   | `3`              | dataset version       |
 
     ### Accepted permissions
 
@@ -323,6 +324,7 @@ async def query_dataset(
     |---------------|--------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|-------------------------------|
     | `domain`      | True         | URL parameter           | `space`                                                                                                                     | domain of the dataset         |
     | `dataset`     | True         | URL parameter           | `rocket_launches`                                                                                                           | dataset title                 |
+    | `version`     | False        | Query parameter         | '3'                                                                                                                         | dataset version               |
     | `query`       | False        | JSON Request Body       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#how-to-construct-a-query-object)| the query object              |
 
 

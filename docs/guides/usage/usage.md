@@ -451,10 +451,11 @@ When a valid dataset is retrieved the available data will be the schema definiti
 
 ### Inputs
 
-| Parameters    | Usage                                   | Example values               | Definition            |
-|---------------|-----------------------------------------|------------------------------|-----------------------|
-| `domain`      | URL parameter                           | `land`                       | domain of the dataset |
-| `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
+| Parameters | Required | Usage             | Example values   | Definition            |
+|------------|----------|-------------------|------------------|-----------------------|
+| `domain`   | True     | URL parameter     | `land`           | domain of the dataset |
+| `dataset`  | True     | URL parameter     | `train_journeys` | dataset title         |
+| `version`  | False    | Query parameter   | `3`              | dataset version       |
 
 ### Outputs
 
@@ -466,6 +467,7 @@ Schema in json format in the response body:
     "domain": "dot",
     "dataset": "trains_departures",
     "sensitivity": "PUBLIC",
+    "version": 3,
     "tags": {},
     "owners": [
       {
@@ -591,11 +593,12 @@ Data can be queried provided data has been uploaded at some point in the past an
 
 ### Inputs
 
-| Parameters    | Required     | Usage                   | Example values             | Definition                    |
-|---------------|--------------|-------------------------|----------------------------|-------------------------------|
-| `domain`      | True         | URL parameter           | `space`                    | domain of the dataset         |
-| `dataset`     | True         | URL parameter           | `rocket_lauches` | dataset title                 |
-| `query`       | False        | JSON Request Body       | see below                  | the query object              |
+| Parameters | Required | Usage             | Example values   | Definition            |
+|------------|----------|-------------------|------------------|-----------------------|
+| `domain`   | True     | URL parameter     | `space`          | domain of the dataset |
+| `dataset`  | True     | URL parameter     | `rocket_lauches` | dataset title         |
+| `version`  | False    | Query parameter   | `3`              | dataset version       |
+| `query`    | False    | JSON Request Body | see below        | the query object      |
 
 #### How to construct a query object:
 
