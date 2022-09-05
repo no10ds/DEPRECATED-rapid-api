@@ -2,11 +2,12 @@ import os
 from pathlib import Path
 from typing import Optional, Tuple
 
+import boto3
 from fastapi import APIRouter, Request
 from fastapi import UploadFile, File, Response, Security
 from fastapi import status as http_status
 from pandas import DataFrame
-from starlette.responses import PlainTextResponse
+from starlette.responses import PlainTextResponse, RedirectResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
@@ -352,6 +353,33 @@ async def query_dataset(
     output_format = request.headers.get("Accept")
     mime_type = MimeType.to_mimetype(output_format)
     return _format_query_output(string_df, mime_type)
+
+
+@datasets_router.get("/large")
+def download_large_file():
+    # Perform query with Athena and retrieve the query result URI from S3
+    # Generate a temporary pre-signed URL for that object using relevant credentials
+    # Redirect to the URL to initiate download
+
+    s3_client = boto3.client(  # nosec B106
+        "s3",
+        region_name="eu-west-2",
+        config=boto3.session.Config(signature_version="s3v4"),
+        aws_access_key_id="<id>",
+        aws_secret_access_key="<key>",
+        aws_session_token="<token>",
+    )
+
+    athena_query_results_bucket = "<bucket-name>"
+    query_result_file_in_s3 = "<file_key>"
+
+    url = s3_client.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={"Bucket": athena_query_results_bucket, "Key": query_result_file_in_s3},
+        HttpMethod="GET",
+        ExpiresIn=3600,
+    )
+    return RedirectResponse(url)
 
 
 def _format_query_output(df: DataFrame, mime_type: MimeType) -> Response:
