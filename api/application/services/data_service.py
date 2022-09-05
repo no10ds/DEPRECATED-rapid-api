@@ -177,7 +177,7 @@ class DataService:
                 f"Could not find schema related to the domain [{domain}], dataset [{dataset}] and version [{version}]"
             )
         statistics_dataframe = self.athena_adapter.query(
-            domain, dataset, self._build_query(schema)
+            domain, dataset, version, self._build_query(schema)
         )
         last_updated = self.glue_adapter.get_table_last_updated_date(
             StorageMetaData(domain, dataset).glue_table_name()

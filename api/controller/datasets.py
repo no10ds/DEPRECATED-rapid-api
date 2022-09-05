@@ -297,7 +297,11 @@ def store_file_to_disk(file: UploadFile = File(...)) -> Tuple[Path, str]:
     },
 )
 async def query_dataset(
-    domain: str, dataset: str, request: Request, query: Optional[SQLQuery] = SQLQuery()
+    domain: str,
+    dataset: str,
+    request: Request,
+    version: Optional[int] = -1,
+    query: Optional[SQLQuery] = SQLQuery(),
 ):
     """
     ## Query dataset
@@ -347,7 +351,7 @@ async def query_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
-    df = athena_adapter.query(domain, dataset, query)
+    df = athena_adapter.query(domain, dataset, version, query)
     string_df = df.astype("string")
     output_format = request.headers.get("Accept")
     mime_type = MimeType.to_mimetype(output_format)

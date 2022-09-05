@@ -405,7 +405,9 @@ class TestQuery(BaseClientTest):
 
         self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
 
-        mock_query_method.assert_called_once_with("mydomain", "mydataset", SQLQuery())
+        mock_query_method.assert_called_once_with(
+            "mydomain", "mydataset", -1, SQLQuery()
+        )
 
     @patch.object(AthenaAdapter, "query")
     def test_call_service_with_sql_query_when_json_provided(self, mock_query_method):
@@ -418,7 +420,10 @@ class TestQuery(BaseClientTest):
         )
 
         mock_query_method.assert_called_once_with(
-            "mydomain", "mydataset", SQLQuery(select_columns=["column1"], limit="10")
+            "mydomain",
+            "mydataset",
+            -1,
+            SQLQuery(select_columns=["column1"], limit="10"),
         )
 
     @patch.object(AthenaAdapter, "query")
@@ -441,6 +446,7 @@ class TestQuery(BaseClientTest):
         mock_query_method.assert_called_once_with(
             "mydomain",
             "mydataset",
+            -1,
             SQLQuery(
                 select_columns=["column1"],
                 filter="",

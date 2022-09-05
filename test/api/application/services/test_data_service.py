@@ -1027,6 +1027,7 @@ class TestDatasetInfoRetrieval:
         self.query_adapter.query.assert_called_once_with(
             "some",
             "other",
+            2,
             SQLQuery(
                 select_columns=[
                     "count(*) as data_size",
@@ -1123,6 +1124,7 @@ class TestDatasetInfoRetrieval:
         self.query_adapter.query.assert_called_once_with(
             "some",
             "other",
+            1,
             SQLQuery(
                 select_columns=[
                     "count(*) as data_size",
@@ -1183,7 +1185,7 @@ class TestDatasetInfoRetrieval:
         actual_schema = self.data_service.get_dataset_info("some", "other", 3)
 
         self.query_adapter.query.assert_called_once_with(
-            "some", "other", SQLQuery(select_columns=["count(*) as data_size"])
+            "some", "other", 3, SQLQuery(select_columns=["count(*) as data_size"])
         )
 
         assert actual_schema == expected_schema

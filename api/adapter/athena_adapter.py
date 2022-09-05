@@ -6,6 +6,7 @@ from awswrangler.exceptions import QueryFailed
 from botocore.exceptions import ClientError
 from pandas import DataFrame
 
+from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.common.config.aws import ATHENA_DATABASE, OUTPUT_QUERY_BUCKET, ATHENA_WORKGROUP
 from api.common.custom_exceptions import UserError
 from api.domain.sql_query import SQLQuery
@@ -21,15 +22,23 @@ class AthenaAdapter:
         athena_read_sql_query: Callable[
             [str, str], DataFrame
         ] = wr.athena.read_sql_query,
+        aws_resource_adapter=AWSResourceAdapter(),
     ):
+        self.aws_resource_adapter = aws_resource_adapter
         self.__database = database
         self.__workgroup = workgroup
         self.__s3_output = s3_output
         self.__athena_read_sql_query = athena_read_sql_query
         self.__default_end_date = "9999-12-01"
 
-    def query(self, domain: str, dataset: str, query: SQLQuery) -> DataFrame:
-        table_name = StorageMetaData(domain, dataset).glue_table_name()
+    def query(
+        self, domain: str, dataset: str, version: int, query: SQLQuery
+    ) -> DataFrame:
+        if version == -1:
+            version = self.aws_resource_adapter.get_version_from_crawler_tags(
+                domain, dataset
+            )
+        table_name = StorageMetaData(domain, dataset, version).glue_table_name()
         try:
             return self.__athena_read_sql_query(
                 sql=query.to_sql(table_name),

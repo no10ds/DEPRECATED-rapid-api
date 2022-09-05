@@ -26,7 +26,7 @@ class TestAthenaAdapter:
 
         self.mock_athena_read_sql_query.return_value = query_result_df
 
-        result = self.athena_adapter.query("my", "table", SQLQuery())
+        result = self.athena_adapter.query("my", "table", 1, SQLQuery())
 
         self.mock_athena_read_sql_query.assert_called_once_with(
             sql="SELECT * FROM my_table_1",
@@ -39,7 +39,7 @@ class TestAthenaAdapter:
         assert result.equals(query_result_df)
 
     def test_no_query_provided(self):
-        self.athena_adapter.query("my", "table", SQLQuery())
+        self.athena_adapter.query("my", "table", 1, SQLQuery())
 
         self.mock_athena_read_sql_query.assert_called_once_with(
             sql="SELECT * FROM my_table_1",
@@ -53,6 +53,7 @@ class TestAthenaAdapter:
         self.athena_adapter.query(
             "my",
             "table",
+            1,
             SQLQuery(
                 select_columns=["column1", "column2"],
                 group_by_columns=["column2"],
@@ -73,7 +74,7 @@ class TestAthenaAdapter:
         self.mock_athena_read_sql_query.side_effect = QueryFailed("Some error")
 
         with pytest.raises(UserError, match="Query failed to execute: Some error"):
-            self.athena_adapter.query("my", "table", SQLQuery())
+            self.athena_adapter.query("my", "table", 1, SQLQuery())
 
     def test_query_fails_because_of_invalid_format(self):
         self.mock_athena_read_sql_query.side_effect = ClientError(
@@ -87,7 +88,7 @@ class TestAthenaAdapter:
         with pytest.raises(
             UserError, match="Failed to execute query: The error message"
         ):
-            self.athena_adapter.query("my", "table", SQLQuery())
+            self.athena_adapter.query("my", "table", 10, SQLQuery())
 
     def test_query_fails_because_table_does_not_exist(self):
         self.mock_athena_read_sql_query.side_effect = QueryFailed(
@@ -97,4 +98,4 @@ class TestAthenaAdapter:
         expected_message = r"Query failed to execute: The table \[my_table_1\] does not exist. The data could be currently processing or you might need to upload it."
 
         with pytest.raises(UserError, match=expected_message):
-            self.athena_adapter.query("my", "table", SQLQuery())
+            self.athena_adapter.query("my", "table", 1, SQLQuery())
