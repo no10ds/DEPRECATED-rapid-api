@@ -33,10 +33,13 @@ class TestDataUpload(BaseClientTest):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
-        file_name_with_timestamp = "2022-05-05T12:00:00-filename.parquet"
+        file_name_with_timestamp = "2022-05-05T12:00:00:123456-filename"
 
         mock_store_file_to_disk.return_value = (incoming_file_path, incoming_file_name)
-        mock_upload_dataset.return_value = file_name_with_timestamp
+        mock_upload_dataset.return_value = (
+            f"{file_name_with_timestamp}.csv",
+            [file_name_with_timestamp],
+        )
 
         response = self.client.post(
             "/datasets/domain/dataset",
@@ -51,7 +54,13 @@ class TestDataUpload(BaseClientTest):
         mock_os.remove.assert_called_once_with(incoming_file_name)
 
         assert response.status_code == 201
-        assert response.json() == {"details": "2022-05-05T12:00:00-filename"}
+        assert response.json() == {
+            "details": {
+                "original_filename": "filename.csv",
+                "raw_filename": "2022-05-05T12:00:00:123456-filename.csv",
+                "permanent_filenames": ["2022-05-05T12:00:00:123456-filename"],
+            }
+        }
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")

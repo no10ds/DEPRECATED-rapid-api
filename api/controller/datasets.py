@@ -196,7 +196,7 @@ async def delete_data_file(
 @datasets_router.post(
     "/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+    # dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 def upload_data(
     domain: str, dataset: str, response: Response, file: UploadFile = File(...)
@@ -245,10 +245,19 @@ def upload_data(
     final_filename = file.filename
     try:
         incoming_file_path, incoming_filename = store_file_to_disk(file)
-        final_filename = data_service.upload_dataset(
+        raw_filename, permanent_filenames = data_service.upload_dataset(
             domain, dataset, incoming_file_path, incoming_filename
         )
-        return {"details": final_filename.replace(".parquet", "")}
+        return {
+            "details": {
+                "original_filename": file.filename,
+                "raw_filename": raw_filename,
+                "permanent_filenames": [
+                    final_filename.replace(".parquet", "")
+                    for final_filename in permanent_filenames
+                ],
+            }
+        }
     except SchemaNotFoundError as error:
         AppLogger.warning("Schema not found: %s", error.args[0])
         raise UserError(message=error.args[0])

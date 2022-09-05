@@ -155,7 +155,7 @@ class BaseTestUI(ABC):
         self.choose_and_upload_file(page)
         self.assert_contains_label(page, FILENAME)
         self.click_button(page, "Upload dataset")
-        self.assert_contains_label(page, "File uploaded: ui_test")
+        self.assert_contains_label(page, "File uploaded: test_journey_file.csv")
 
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")

@@ -1,4 +1,4 @@
-import time
+from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple, Optional
 
@@ -9,7 +9,7 @@ from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
-from api.application.services.dataset_validation import get_validated_dataframe
+from api.application.services.dataset_validation import build_validated_dataframe
 from api.application.services.partitioning_service import generate_partitioned_data
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
@@ -68,7 +68,7 @@ class DataService:
             return raw_files
 
     def generate_raw_filename(self, filename: str) -> str:
-        return f'{time.strftime("%Y-%m-%dT%H:%M:%S")}-{filename}'
+        return f'{datetime.now().strftime("%Y-%m-%dT%H:%M:%S:%f")}-{filename}'
 
     def generate_raw_and_permanent_filenames(
         self, schema: Schema, filename: str
@@ -89,7 +89,7 @@ class DataService:
         dataset: str,
         file_path: Path,
         filename: str,
-    ) -> str:
+    ) -> Tuple[str, List[str]]:
         schema = self._get_schema(domain, dataset, 1)
         if not schema:
             raise SchemaNotFoundError(
@@ -98,33 +98,45 @@ class DataService:
         else:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
 
-            validated_dataframe = self._validate_dataset(schema, file_path)
+            # Validate chunks
+            dataset_errors = set()
+            for chunk in construct_chunked_dataframe(file_path):
+                try:
+                    build_validated_dataframe(schema, chunk)
+                except DatasetValidationError as error:
+                    dataset_errors.update(error.message)
+            if dataset_errors:
+                raise DatasetValidationError(list(dataset_errors))
+
+            # Process chunks
+            permanent_filenames, raw_filename = self.process_chunk(
+                file_path, filename, schema
+            )
+
+            self.glue_adapter.start_crawler(domain, dataset)
+            self.glue_adapter.update_catalog_table_config(schema)
+
+            # Upload raw data
+            self.persistence_adapter.upload_raw_data(
+                schema.get_domain(), schema.get_dataset(), file_path, raw_filename
+            )
+
+            return raw_filename, permanent_filenames
+
+    def process_chunk(self, file_path, filename, schema):
+        raw_filename = None
+        permanent_filenames = []
+        for chunk in construct_chunked_dataframe(file_path):
+            validated_dataframe = build_validated_dataframe(schema, chunk)
             (
                 raw_filename,
                 permanent_filename,
             ) = self.generate_raw_and_permanent_filenames(schema, filename)
 
-            self.persistence_adapter.upload_raw_data(
-                schema.get_domain(), schema.get_dataset(), file_path, raw_filename
-            )
             self._upload_data(schema, validated_dataframe, permanent_filename)
 
-            self.glue_adapter.start_crawler(domain, dataset)
-            self.glue_adapter.update_catalog_table_config(schema)
-            return permanent_filename
-
-    def _validate_dataset(self, schema: Schema, file_path: Path) -> pd.DataFrame:
-        chunked_dataset = construct_chunked_dataframe(file_path)
-        dataset_errors = set()
-        validated_dataframes = []
-        for chunk in chunked_dataset:
-            try:
-                validated_dataframes.append(get_validated_dataframe(schema, chunk))
-            except DatasetValidationError as error:
-                dataset_errors.update(error.message)
-        if dataset_errors:
-            raise DatasetValidationError(list(dataset_errors))
-        return pd.concat(validated_dataframes)
+            permanent_filenames.append(permanent_filename)
+        return permanent_filenames, raw_filename
 
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = NEW_SCHEMA_VERSION_NUMBER

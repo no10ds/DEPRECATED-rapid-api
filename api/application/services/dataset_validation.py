@@ -13,7 +13,7 @@ from api.domain.schema import Schema
 from api.domain.validation_context import ValidationContext
 
 
-def get_validated_dataframe(schema: Schema, dataframe: pd.DataFrame) -> pd.DataFrame:
+def build_validated_dataframe(schema: Schema, dataframe: pd.DataFrame) -> pd.DataFrame:
     return transform_and_validate(schema, dataframe)
 
 

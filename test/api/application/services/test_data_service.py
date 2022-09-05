@@ -1,6 +1,6 @@
 import re
 from pathlib import Path
-from typing import List
+from typing import List, Any
 from unittest.mock import Mock, patch, MagicMock
 
 import pandas as pd
@@ -268,21 +268,29 @@ class TestUploadDataset:
         mock_partitioner.return_value = partitioned_data
 
         self.data_service.generate_raw_filename = Mock(
-            return_value="2022-03-03T12:00:00-data.csv"
+            return_value="2022-03-03T12:00:00:123456-data.csv"
         )
 
-        permanent_filename = self.data_service.upload_dataset(
+        uploaded_files = self.data_service.upload_dataset(
             "some", "other", Path("data.csv"), "data.csv"
         )
-        assert permanent_filename == "2022-03-03T12:00:00-data.parquet"
-
-        self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", "2022-03-03T12:00:00-data.parquet", partitioned_data
+        assert uploaded_files == (
+            "2022-03-03T12:00:00:123456-data.csv",
+            ["2022-03-03T12:00:00:123456-data.parquet"],
         )
 
+        self.data_service.generate_raw_filename.assert_called_once_with("data.csv")
+
+        self.s3_adapter.upload_partitioned_data.assert_called_once_with(
+            "some", "other", "2022-03-03T12:00:00:123456-data.parquet", partitioned_data
+        )
+
+        self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
-        self.data_service.generate_raw_filename.assert_called_once_with("data.csv")
+        self.s3_adapter.upload_raw_data.assert_called_once_with(
+            "some", "other", Path("data.csv"), "2022-03-03T12:00:00:123456-data.csv"
+        )
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch("api.application.services.data_service.generate_partitioned_data")
@@ -331,16 +339,19 @@ class TestUploadDataset:
         mock_partitioner.return_value = partitioned_data
 
         self.data_service.generate_raw_filename = Mock(
-            return_value=("2022-03-02T12:00:00-data.csv")
+            return_value=("2022-03-02T12:00:00:123456-data.csv")
         )
 
-        permanent_filename = self.data_service.upload_dataset(
+        uploaded_files = self.data_service.upload_dataset(
             "some", "other", Path("data.csv"), "data.csv"
         )
-        assert permanent_filename == "2022-03-02T12:00:00-data.parquet"
+        assert uploaded_files == (
+            "2022-03-02T12:00:00:123456-data.csv",
+            ["2022-03-02T12:00:00:123456-data.parquet"],
+        )
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", "2022-03-02T12:00:00-data.parquet", partitioned_data
+            "some", "other", "2022-03-02T12:00:00:123456-data.parquet", partitioned_data
         )
 
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
@@ -390,10 +401,18 @@ class TestUploadDataset:
         partitioned_data = [("", expected)]
         mock_partitioner.return_value = partitioned_data
 
-        permanent_filename = self.data_service.upload_dataset(
+        self.data_service.generate_raw_filename = Mock(
+            return_value=("2022-03-02T12:00:00:123456-data.csv")
+        )
+
+        uploaded_files = self.data_service.upload_dataset(
             "some", "other", Path("data.csv"), "data.csv"
         )
-        assert permanent_filename == "some.parquet"
+
+        assert uploaded_files == (
+            "2022-03-02T12:00:00:123456-data.csv",
+            ["some.parquet"],
+        )
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
             "some", "other", "some.parquet", partitioned_data
@@ -448,10 +467,17 @@ class TestUploadDataset:
         ]
         mock_partitioner.return_value = partitioned_data
 
-        permanent_filename = self.data_service.upload_dataset(
+        self.data_service.generate_raw_filename = Mock(
+            return_value=("2022-03-02T12:00:00:123456-data.csv")
+        )
+
+        uploaded_files = self.data_service.upload_dataset(
             "some", "other", Path("data.csv"), "data.csv"
         )
-        assert permanent_filename == "some.parquet"
+        assert uploaded_files == (
+            "2022-03-02T12:00:00:123456-data.csv",
+            ["some.parquet"],
+        )
 
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
             "some", "other", "some.parquet", partitioned_data
@@ -468,26 +494,31 @@ class TestUploadDataset:
             path, encoding=CONTENT_ENCODING, sep=",", chunksize=1_000_000
         )
 
+    def generator(self, data_list: List[Any]):
+        for element in data_list:
+            yield element
+
     # E2E flow ---------------------------------------
     @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch("api.application.services.data_service.generate_partitioned_data")
     def test_upload_formatted_dataset_after_transformation_and_validation(
         self, mock_partitioner, mock_construct_chunked_dataframe
     ):
-        self.chunked_dataframe_values(
-            mock_construct_chunked_dataframe,
-            [
-                pd.DataFrame(
-                    {
-                        # Incorrectly formatted column headings
-                        # Date format to be transformed
-                        # Entirely null row
-                        "DaTe": ["12/06/2012", "12/07/2012", pd.NA],
-                        "Va!lu-e": ["Carolina", "Albertine", pd.NA],
-                    }
-                )
-            ],
-        )
+        def incorrect_dataframe():
+            return pd.DataFrame(
+                {
+                    # Incorrectly formatted column headings
+                    # Date format to be transformed
+                    # Entirely null row
+                    "DaTe": ["12/06/2012", "12/07/2012", pd.NA],
+                    "Va!lu-e": ["Carolina", "Albertine", pd.NA],
+                }
+            )
+
+        mock_construct_chunked_dataframe.side_effect = [
+            self.generator([incorrect_dataframe()]),
+            self.generator([incorrect_dataframe()]),
+        ]
 
         schema = Schema(
             metadata=SchemaMetadata(
@@ -525,13 +556,16 @@ class TestUploadDataset:
         mock_partitioner.return_value(expected_transformed_df)
 
         self.data_service.generate_raw_filename = Mock(
-            return_value="2022-03-03T12:00:00-data.csv"
+            return_value="2022-03-03T12:00:00:123456-data.csv"
         )
 
-        permanent_filename = self.data_service.upload_dataset(
+        uploaded_files = self.data_service.upload_dataset(
             "some", "other", Path("data.parquet"), "data.parquet"
         )
-        assert permanent_filename == "2022-03-03T12:00:00-data.parquet"
+        assert uploaded_files == (
+            "2022-03-03T12:00:00:123456-data.csv",
+            ["2022-03-03T12:00:00:123456-data.parquet"],
+        )
 
         #  Checking mock calls with dataframes does not work because we need to call the df.equals() method
         partitioner_args = mock_partitioner.call_args.args
@@ -541,7 +575,7 @@ class TestUploadDataset:
 
         assert upload_args[0] == "some"
         assert upload_args[1] == "other"
-        assert upload_args[2] == "2022-03-03T12:00:00-data.parquet"
+        assert upload_args[2] == "2022-03-03T12:00:00:123456-data.parquet"
         assert upload_args[3].equals(expected_transformed_df)
 
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
@@ -1198,5 +1232,5 @@ class TestDatasetInfoRetrieval:
 
     def test_filename_with_timestamp(self):
         filename = self.data_service.generate_raw_filename("data")
-        pattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}-data"
+        pattern = "\\d{4}-\\d{2}-\\d{2}T\\d{2}\\:\\d{2}\\:\\d{2}:\\d{6}-data"
         assert re.match(pattern, filename)

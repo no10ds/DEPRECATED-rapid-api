@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 from api.application.services.dataset_validation import (
-    get_validated_dataframe,
+    build_validated_dataframe,
     convert_dates_to_ymd,
     remove_empty_rows,
     clean_column_headers,
@@ -113,7 +113,7 @@ class TestDatasetValidation:
         expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
         expected["colname3"] = expected["colname3"].astype(dtype=pd.BooleanDtype())
 
-        validated_dataframe = get_validated_dataframe(full_valid_schema, dataframe)
+        validated_dataframe = build_validated_dataframe(full_valid_schema, dataframe)
 
         assert validated_dataframe.equals(expected)
 
@@ -127,7 +127,7 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(self.valid_schema, dataframe)
+            build_validated_dataframe(self.valid_schema, dataframe)
         except UnprocessableDatasetError as error:
             assert error.message == [
                 "Expected columns: ['colname1', 'colname2', 'colname3'], received: ['wrongcolumn', 'colname2', 'colname3']",
@@ -162,7 +162,7 @@ class TestDatasetValidation:
         )
 
         with pytest.raises(DatasetValidationError):
-            get_validated_dataframe(valid_schema, dataframe)
+            build_validated_dataframe(valid_schema, dataframe)
 
     def test_valid_when_date_partition_column_with_illegal_slash_character(self):
         valid_schema = Schema(
@@ -186,7 +186,7 @@ class TestDatasetValidation:
         dataframe = pd.DataFrame({"colname1": ["01/02/2021", "01/02/2021"]})
 
         try:
-            get_validated_dataframe(valid_schema, dataframe)
+            build_validated_dataframe(valid_schema, dataframe)
         except DatasetValidationError:
             pytest.fail("An unexpected InvalidDatasetError was thrown")
 
@@ -200,7 +200,7 @@ class TestDatasetValidation:
         )
 
         with pytest.raises(DatasetValidationError):
-            get_validated_dataframe(self.valid_schema, dataframe)
+            build_validated_dataframe(self.valid_schema, dataframe)
 
     def test_invalid_when_entire_column_is_different_to_expected_type(self):
         dataframe = pd.DataFrame(
@@ -212,7 +212,7 @@ class TestDatasetValidation:
             match=r"Column \[colname2\] has an incorrect data type. Expected object, received float64",
             # noqa: E501, W605
         ):
-            get_validated_dataframe(self.valid_schema, dataframe)
+            build_validated_dataframe(self.valid_schema, dataframe)
 
     def test_retains_specified_schema_data_types_when_null_values_present(self):
         schema = Schema(
@@ -248,7 +248,7 @@ class TestDatasetValidation:
             {"col1": [45, pd.NA], "col2": [pd.NA, 23.1], "col3": ["hello", pd.NA]}
         )
 
-        validated_dataset = get_validated_dataframe(schema, dataframe)
+        validated_dataset = build_validated_dataframe(schema, dataframe)
 
         actual_dtypes = list(validated_dataset.dtypes)
         expected_dtypes = ["Int64", "Float64", "object"]
@@ -300,7 +300,7 @@ class TestDatasetValidation:
         )
 
         with pytest.raises(DatasetValidationError):
-            get_validated_dataframe(schema, dataframe)
+            build_validated_dataframe(schema, dataframe)
 
     def test_validates_correct_data_types(self):
         dataframe = pd.DataFrame(
@@ -337,7 +337,7 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(schema, dataframe)
+            build_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
@@ -381,7 +381,7 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(schema, dataframe)
+            build_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
@@ -425,7 +425,7 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(schema, dataframe)
+            build_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
             pytest.fail("Unexpected InvalidDatasetError was thrown")
 
@@ -693,7 +693,7 @@ class TestDatasetValidation:
         )
 
         try:
-            get_validated_dataframe(schema, df)
+            build_validated_dataframe(schema, df)
         except DatasetValidationError as error:
             assert error.message == [
                 "Failed to convert column [col5] to type [Int64]",
