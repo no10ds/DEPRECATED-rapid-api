@@ -97,6 +97,7 @@ class TestDownloadPage(BaseClientTest):
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=2,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 number_of_rows=48718,
                 number_of_columns=3,
@@ -129,6 +130,7 @@ class TestDownloadPage(BaseClientTest):
         expected_info = {
             "domain": "domain1",
             "dataset": "dataset1",
+            "version": 2,
             "number_of_rows": 48718,
             "number_of_columns": 3,
             "last_updated": "1 Mar 2022 at 11:03:49",

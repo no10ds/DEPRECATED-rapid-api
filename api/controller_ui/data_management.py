@@ -77,6 +77,7 @@ def download_dataset(
     ui_dataset_info = {
         "domain": domain,
         "dataset": dataset,
+        "version": dataset_info.metadata.get_version(),
         "number_of_rows": dataset_info.metadata.number_of_rows,
         "number_of_columns": dataset_info.metadata.number_of_columns,
         "last_updated": new_date,
