@@ -1,6 +1,9 @@
 const goToNextStep = () => {
     const dataset = document.getElementById("select_dataset").value;
     const version = document.getElementById('select_dataset_version').value;
+    const spinner = document.getElementsByClassName("loading-spinner")[0];
+
+    spinner.style.display = "block"
     window.location.href = `download/${dataset}?version=${version}`;
 }
 

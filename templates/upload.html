@@ -6,16 +6,16 @@
     <link href="/static/main.css" rel="stylesheet">
 </head>
 <body>
-    <div class="content">
-        {% with previous_page = "/" %}
-            {% include 'component/header.html' %}
-        {% endwith %}
+<div class="content">
+    {% with previous_page = "/" %}
+    {% include 'component/header.html' %}
+    {% endwith %}
 
         <form class="form">
             <div class="form_body">
                 <div class="form-select">
-                    <label class="form-select_label">Upload</label>
-                    <label class="form_helper-text" for="dataset">Step 1: Choose the dataset you want to upload your file to:</label>
+                    <h1 class="content_header">Upload</h1>
+                    <label class="form-select_label" for="dataset">Step 1: Choose the dataset you want to upload your file to:</label>
                     <select class="form-select_dropdown" id="dataset">
                         <option value="" disabled selected hidden>Please select a dataset</option>
                         {% for domain, dataset_list in datasets.items() %}
@@ -28,16 +28,17 @@
                     </select>
                 </div>
                 <div class="form-input">
-                    <label class="form_helper-text">Step 2: Choose a file that corresponds to this dataset:</label>
+                    <label class="form-select_label">Step 2: Choose a file that corresponds to this dataset:</label>
                     <label class="form-input_label btn btn--secondary" for="file">Choose file</label>
                     <label class="form-input_filename" id="filename">No file selected</label>
                     <input class="form-input_file" name="file" id="file" type="file">
                 </div>
             </div>
             <div class="form_submit">
-                <label class="form_helper-text" id="upload-dataset">Step 3: Hit "Upload dataset" button and the data will be uploaded to {{ datasets[0] }}</label>
+                <label class="form-select_label" id="upload-dataset">Step 3: Hit "Upload dataset" button and the data will be uploaded to {{ datasets[0] }}</label>
                 <button class="btn" type="button" onclick="uploadDataset()">Upload dataset</button>
                 <label class="response-msg" id="response-title"></label>
+                <div class="loading-spinner"></div>
                 <label class="response-msg" id="response"></label>
             </div>
         </form>

@@ -25,8 +25,10 @@ function createQuery() {
 
 const downloadDataset = (domain, dataset) => {
     const selected_format = get_selected_value("select_format");
+    const spinner = document.getElementsByClassName("loading-spinner")[0];
 
-    const accept_header = selected_format == "json" ? "application/json" : "text/csv"
+    spinner.style.display = "block"
+    const accept_header = selected_format === "json" ? "application/json" : "text/csv"
 
     fetch(`/datasets/${domain}/${dataset}/query`, {
         method: "POST",
@@ -36,6 +38,7 @@ const downloadDataset = (domain, dataset) => {
         }),
         body: JSON.stringify(createQuery()),
     }).then(response => {
+        spinner.style.display = "none"
         if(response.ok) {
             return response.blob().then(blob => {
                 // disable submit button till the dataset downloads
@@ -49,6 +52,7 @@ const downloadDataset = (domain, dataset) => {
         } else {
             return response.json().then(result => showErrorMessage(result["details"]))
         }}).catch(_ => {
+        spinner.style.display = "none"
         showErrorMessage('Something went wrong. Please contact your system administrator.')
         // enable submit button back
         toggleSwitchDisable('download-dataset', false)
