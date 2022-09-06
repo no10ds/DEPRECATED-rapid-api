@@ -256,9 +256,11 @@ class TestS3Deletion:
     def test_deletion_of_raw_files_with_no_partitions(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
-                {"Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.parquet"},
-                {"Key": "data/domain/dataset/2020-01-01T12:00:00-file1.parquet"},
-                {"Key": "data/domain/dataset/2020-01-01T12:00:00-file2.parquet"},
+                {"Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet"},
+                {"Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet"},
+                {"Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet"},
+                {"Key": "data/domain/dataset/1/999-999-999_111-888-999.parquet"},
+                {"Key": "data/domain/dataset/2/888-888-888_777-888-999.parquet"},
             ],
             "Name": "data-bucket",
             "Prefix": "data/domain/dataset",
@@ -267,16 +269,22 @@ class TestS3Deletion:
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
                 {
-                    "Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.parquet",
+                    "Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet",
                 },
                 {
-                    "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
+                    "Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet",
+                },
+                {
+                    "Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet",
+                },
+                {
+                    "Key": "raw_data/domain/dataset/123-456-789.csv",
                 },
             ],
         }
 
         self.persistence_adapter.delete_dataset_files(
-            "domain", "dataset", "2022-03-10T12:00:00-test_file.csv"
+            "domain", "dataset", "123-456-789.csv"
         )
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/domain/dataset"
@@ -287,10 +295,16 @@ class TestS3Deletion:
             Delete={
                 "Objects": [
                     {
-                        "Key": "data/domain/dataset/2022-03-10T12:00:00-test_file.parquet",
+                        "Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet",
                     },
                     {
-                        "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
+                        "Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet",
+                    },
+                    {
+                        "Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet",
+                    },
+                    {
+                        "Key": "raw_data/domain/dataset/123-456-789.csv",
                     },
                 ],
             },
@@ -299,18 +313,11 @@ class TestS3Deletion:
     def test_deletion_of_raw_files_with_partitions(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
-                {
-                    "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.parquet"
-                },
-                {
-                    "Key": "data/domain/dataset/2022/03/2020-05-01T12:00:00-file1.parquet"
-                },
-                {
-                    "Key": "data/domain/dataset/2022/02/2020-01-01T12:00:00-file2.parquet"
-                },
-                {
-                    "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.parquet"
-                },
+                {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
+                {"Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"},
+                {"Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"},
+                {"Key": "data/domain/dataset/1/2019/999-999-999_111-888-999.parquet"},
+                {"Key": "data/domain/dataset/2/2022/888-888-888_777-888-999.parquet"},
             ],
             "Name": "data-bucket",
             "Prefix": "data/domain/dataset",
@@ -318,20 +325,17 @@ class TestS3Deletion:
         }
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
+                {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
+                {"Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"},
+                {"Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"},
                 {
-                    "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.parquet",
-                },
-                {
-                    "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.parquet",
-                },
-                {
-                    "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
+                    "Key": "raw_data/domain/dataset/123-456-789.csv",
                 },
             ]
         }
 
         self.persistence_adapter.delete_dataset_files(
-            "domain", "dataset", "2022-03-10T12:00:00-test_file.csv"
+            "domain", "dataset", "123-456-789.csv"
         )
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/domain/dataset"
@@ -342,13 +346,16 @@ class TestS3Deletion:
             Delete={
                 "Objects": [
                     {
-                        "Key": "data/domain/dataset/2022/03/2022-03-10T12:00:00-test_file.parquet",
+                        "Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"
                     },
                     {
-                        "Key": "data/domain/dataset/2022/02/2022-03-10T12:00:00-test_file.parquet",
+                        "Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"
                     },
                     {
-                        "Key": "raw_data/domain/dataset/2022-03-10T12:00:00-test_file.csv",
+                        "Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
+                    },
+                    {
+                        "Key": "raw_data/domain/dataset/123-456-789.csv",
                     },
                 ],
             },
@@ -373,11 +380,11 @@ class TestS3Deletion:
                 },
             ]
         }
-        msg = "The file \\[2022-03-10T12:00:00-test_file.csv\\] could not be deleted. Please contact your administrator."
+        msg = "The file \\[123-456-789.csv\\] could not be deleted. Please contact your administrator."
 
         with pytest.raises(AWSServiceError, match=msg):
             self.persistence_adapter.delete_dataset_files(
-                "domain", "dataset", "2022-03-10T12:00:00-test_file.csv"
+                "domain", "dataset", "123-456-789.csv"
             )
 
         self.mock_s3_client.list_objects.assert_called_once_with(

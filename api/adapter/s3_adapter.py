@@ -105,21 +105,23 @@ class S3Adapter:
         )
         AppLogger.info(f"Raw data upload for {domain}/{dataset} completed")
 
-    def list_raw_files(self, domain: str, dataset: str):
+    def list_raw_files(self, domain: str, dataset: str) -> List[str]:
         object_list = self._list_files_from_path(
             StorageMetaData(domain, dataset).raw_data_location()
         )
         return self._map_object_list_to_filename(object_list)
 
-    def delete_dataset_files(self, domain: str, dataset: str, raw_data_filename: str):
+    def delete_dataset_files(
+        self, domain: str, dataset: str, raw_data_filename: str
+    ) -> None:
         dataset_metadata = StorageMetaData(domain, dataset)
         files = self._list_files_from_path(dataset_metadata.location())
+        raw_file_identifier = self._clean_filename(raw_data_filename)
 
         files_to_delete = [
             {"Key": data_file["Key"]}
             for data_file in files
-            if self._clean_filename(data_file["Key"])
-            == self._clean_filename(raw_data_filename)
+            if self._clean_filename(data_file["Key"]).startswith(raw_file_identifier)
         ]
 
         files_to_delete.append(

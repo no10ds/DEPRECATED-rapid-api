@@ -358,18 +358,11 @@ class TestUploadDataset:
         )
         mock_os.remove.assert_called_once_with("data.csv")
 
-    # Upload Dataset OVERWRITE behaviour -------------------------------------
-    @pytest.mark.skip("Behaviour TBC")
-    def test_upload_dataset_with_overwrite_behaviour_with_no_partition(self):
-        pass
-
-    @pytest.mark.skip("Behaviour TBC")
-    def test_upload_dataset_with_overwrite_behaviour_with_two_partitions(self):
-        pass
-
     # Process Chunks -----------------------------------------
     @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_processes_each_dataset_chunk(self, mock_construct_chunked_dataframe):
+    def test_processes_each_dataset_chunk_with_append_behaviour(
+        self, mock_construct_chunked_dataframe
+    ):
         # Given
         schema = self.valid_schema
 
@@ -400,6 +393,169 @@ class TestUploadDataset:
             call(schema, "123-456-789", chunk2),
         ]
         self.data_service.process_chunk.assert_has_calls(expected_calls)
+        self.s3_adapter.list_raw_files.assert_not_called()
+        self.s3_adapter.delete_dataset_files.assert_not_called()
+
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_processes_each_dataset_chunk_with_overwrite_behaviour(
+        self, mock_construct_chunked_dataframe
+    ):
+        # Given
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                update_behaviour="OVERWRITE",
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+
+        def dataset_chunk():
+            return pd.DataFrame(
+                {
+                    "col1": ["one", "two", "three"],
+                    "col2": [1, 2, 3],
+                }
+            )
+
+        chunk1 = dataset_chunk()
+        chunk2 = dataset_chunk()
+
+        mock_construct_chunked_dataframe.return_value = [
+            chunk1,
+            chunk2,
+        ]
+
+        self.data_service.process_chunk = Mock()
+
+        self.s3_adapter.list_raw_files.return_value = [
+            "123-456-789.csv",
+            "987-654-321.csv",
+        ]
+
+        # When
+        self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
+
+        # Then
+        expected_calls = [
+            call(schema, "123-456-789", chunk1),
+            call(schema, "123-456-789", chunk2),
+        ]
+        self.data_service.process_chunk.assert_has_calls(expected_calls)
+        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other")
+        self.s3_adapter.delete_dataset_files.assert_called_once_with(
+            "some", "other", "987-654-321.csv"
+        )
+
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_processes_each_dataset_chunk_with_overwrite_behaviour_has_no_files_to_override(
+        self, mock_construct_chunked_dataframe
+    ):
+        # Given
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                update_behaviour="OVERWRITE",
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+
+        mock_construct_chunked_dataframe.return_value = []
+
+        self.data_service.process_chunk = Mock()
+
+        self.s3_adapter.list_raw_files.return_value = ["123-456-789.csv"]
+
+        # When
+        self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
+
+        # Then
+        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other")
+        self.s3_adapter.delete_dataset_files.assert_not_called()
+
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_processes_each_dataset_chunk_with_overwrite_behaviour_fails_to_delete_overidden_files(
+        self, mock_construct_chunked_dataframe
+    ):
+        # Given
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                update_behaviour="OVERWRITE",
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+
+        mock_construct_chunked_dataframe.return_value = []
+
+        self.data_service.process_chunk = Mock()
+
+        self.s3_adapter.list_raw_files.return_value = [
+            "123-456-789.csv",
+            "987-654-321.csv",
+        ]
+
+        self.s3_adapter.delete_dataset_files.side_effect = AWSServiceError("something")
+
+        # When
+        with pytest.raises(
+            AWSServiceError,
+            match=r"Overriding existing data failed for domain \[some\] and dataset \[other\]. Raw file identifier: 123-456-789",
+        ):
+            self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
+
+        # Then
+        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other")
+        self.s3_adapter.delete_dataset_files.assert_called_once_with(
+            "some", "other", "987-654-321.csv"
+        )
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
     def test_starts_crawler_and_updates_catalog_table_config(

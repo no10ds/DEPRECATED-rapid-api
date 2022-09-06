@@ -23,6 +23,7 @@ from api.common.custom_exceptions import (
     ConflictError,
     UserError,
     DatasetValidationError,
+    AWSServiceError,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval
@@ -156,6 +157,9 @@ class DataService:
         for chunk in construct_chunked_dataframe(file_path):
             self.process_chunk(schema, raw_file_identifier, chunk)
 
+        if schema.has_overwrite_behaviour():
+            self._overwrite_existing_data(schema, raw_file_identifier)
+
         self.glue_adapter.start_crawler(schema.get_domain(), schema.get_dataset())
         self.glue_adapter.update_catalog_table_config(schema)
         AppLogger.info(
@@ -166,10 +170,36 @@ class DataService:
         self, schema: Schema, raw_file_identifier: str, chunk: pd.DataFrame
     ) -> None:
         validated_dataframe = build_validated_dataframe(schema, chunk)
-        permanent_filename = self.generate_permanent_filename(
-            schema, raw_file_identifier
-        )
+        permanent_filename = self.generate_permanent_filename(raw_file_identifier)
         self.upload_data(schema, validated_dataframe, permanent_filename)
+
+    def _overwrite_existing_data(
+        self, schema: Schema, raw_file_identifier: str
+    ) -> None:
+        AppLogger.info(
+            f"Overwriting existing data for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
+        )
+        raw_files = self.s3_adapter.list_raw_files(
+            schema.get_domain(), schema.get_dataset()
+        )
+        try:
+            file_to_delete = [
+                file for file in raw_files if not file.startswith(raw_file_identifier)
+            ][0]
+            self.s3_adapter.delete_dataset_files(
+                schema.get_domain(), schema.get_dataset(), file_to_delete
+            )
+        except IndexError:
+            AppLogger.warning(
+                f"No data to override for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
+            )
+        except AWSServiceError as error:
+            AppLogger.error(
+                f"Overriding existing data failed for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]. Raw file identifier: {raw_file_identifier}. {error}"
+            )
+            raise AWSServiceError(
+                f"Overriding existing data failed for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]. Raw file identifier: {raw_file_identifier}"
+            )
 
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = NEW_SCHEMA_VERSION_NUMBER
