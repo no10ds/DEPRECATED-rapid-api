@@ -114,8 +114,8 @@ async def update_schema(schema: Schema):
     """
     ## Update Schema
 
-    When you have a schema definition you can use this endpoint to upload it. This will allow you to subsequently upload
-    datasets that match the schema. If you do not yet have a schema definition, you can craft this yourself (see
+    This endpoint is for uploading an updated schema definition. This will allow you to subsequently upload
+    datasets that match the updated schema. To create a schema definition (see
     the [schema writing guide](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md)) or use the Schema Generation endpoint (see above).
 
     ### Inputs
@@ -126,10 +126,15 @@ async def update_schema(schema: Schema):
 
     #### Domain and dataset
 
-    The domain and dataset names must adhere to the following conditions:
+    The domain and dataset names must match the original schema that is being updated
 
-    - Only alphanumeric characters allowed
-    - Have to start with an alphabetic character
+    #### Sensitivity
+
+    The sensitivity for an updated schema will be taken from the original schema
+
+    #### Version
+
+    The version of the updated schema is automatically generated
 
     ### Accepted permissions
 

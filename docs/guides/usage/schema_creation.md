@@ -11,6 +11,7 @@ The schema will have the following structure:
   - `domain` - String value, is the name of the domain that owns the dataset, it could be for example the name of the department that handles the data.
   - `dataset` - String value, is the name of the dataset. e.g.: "receipts" or "address".
   - `sensitivity` - String value, is the sensitivity level of the dataset. e.g.: "PUBLIC", "PRIVATE", "PROTECTED"
+  - `version` - int value, denotes the schema version
   - `key_value_tags` - Dictionary of string keys and values to associate to the dataset. e.g.: `{"school_level": "primary", "school_type": "private"}`
   - `key_only_tags` - List of strings of tags to associate to the dataset. e.g.: `["schooling", "benefits", "archive", "historic"]`
   - `update_behaviour` - String value, the action to take when a new file is uploaded. e.g.: `APPEND`, `OVERWRITE`.
@@ -25,7 +26,12 @@ The schema will have the following structure:
 The sensitivity level of a dataset can be described by one of three values: `PUBLIC`, `PRIVATE` and `PROTECTED`.
 These determine the access level that different clients will have to the data depending on their permissions.
 
-Note: If you wish to use the sensitivity level `PROTECTED` then you must first create a Protected Domain for your Dataset. See the [data access docs](data_access.md)
+Notes:
+- If you wish to use the sensitivity level `PROTECTED` then you must first create a Protected Domain for your Dataset. See the [data access docs](data_access.md)
+- Sensitivity is taken from the original schema definition when an updated version of the schema is uploaded
+
+### Version
+The schema version is automatically generated and cannot be updated by the user
 
 ### Tags 🏷
 You can add up to 30 custom tags to a dataset. These are in a key: value format which allow for identification and categorisation of the datasets.

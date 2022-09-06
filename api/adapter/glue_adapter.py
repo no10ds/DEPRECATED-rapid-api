@@ -84,7 +84,9 @@ class GlueAdapter:
         except ClientError:
             raise AWSServiceError("Failed to delete crawler")
 
-    def set_crawler_version_tag(self, domain: str, dataset: str, new_version: int):
+    def set_crawler_version_tag(
+        self, domain: str, dataset: str, new_version: int
+    ) -> None:
         try:
             glue_crawler_arn = (
                 "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(

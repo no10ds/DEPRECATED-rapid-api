@@ -227,6 +227,71 @@ None
 
 In order to use this endpoint you need the `DATA_ADMIN` permission.
 
+## Update schema
+
+### General structure
+
+This endpoint is for uploading an updated schema definition. This will allow you to subsequently upload datasets that
+match the updated schema. To create a schema definition (see the
+[schema writing guide](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md)) or use the
+Schema Generation endpoint (see above).
+
+### General structure
+
+`PUT /schema`
+
+### Inputs
+
+| Parameters    | Usage                                   | Example values               | Definition            |
+|---------------|-----------------------------------------|------------------------------|-----------------------|
+| schema        | JSON request body                       | see below                    | the schema definition |
+
+Example schema JSON body:
+
+```json
+{
+  "metadata": {
+    "domain": "land",
+    "dataset": "train_journeys",
+    "key_value_tags": {
+      "train": "passenger"
+    },
+    "key_only_tags": [
+      "land"
+    ],
+    "owners": [
+      {
+        "name": "Stanley Shunpike",
+        "email": "stan.shunpike@email.com"
+      }
+    ]
+  },
+  "columns": [
+    {
+      "name": "date",
+      "partition_index": 0,
+      "data_type": "date",
+      "format": "%d/%m/%Y",
+      "allow_null": false
+    },
+    {
+      "name": "num_journeys",
+      "partition_index": null,
+      "data_type": "Int64",
+      "allow_null": false
+    }
+  ]
+}
+```
+
+### Outputs
+
+The schema path
+
+### Accepted permissions
+
+In order to use this endpoint you need the `DATA_ADMIN` permission.
+
 ## Upload dataset
 
 Given a schema has been uploaded you can upload data which matches that schema. Uploading a CSV file via this endpoint

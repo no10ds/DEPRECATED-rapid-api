@@ -241,10 +241,6 @@ class DataService:
                     f"Could not find schema for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
                 )
                 raise SchemaNotFoundError("Previous version of schema not found")
-            self.check_for_protected_domain(schema)
-            self.glue_adapter.check_crawler_is_ready(
-                schema.get_domain(), schema.get_dataset()
-            )
 
             new_version = (
                 handle_version_retrieval(
@@ -254,6 +250,10 @@ class DataService:
             )
             schema.metadata.version = new_version
             schema.metadata.sensitivity = original_schema.get_sensitivity()
+            self.check_for_protected_domain(schema)
+            self.glue_adapter.check_crawler_is_ready(
+                schema.get_domain(), schema.get_dataset()
+            )
             validate_schema_for_upload(schema)
 
             schema_name = self.s3_adapter.save_schema(schema)
@@ -272,7 +272,7 @@ class DataService:
             )
             raise error
 
-    def check_for_protected_domain(self, schema: Schema):
+    def check_for_protected_domain(self, schema: Schema) -> str:
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
             if (
                 schema.get_domain().lower()
