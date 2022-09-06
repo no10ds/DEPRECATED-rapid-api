@@ -21,7 +21,7 @@
                         {% for domain, dataset_list in datasets.items() %}
                             <optgroup label="{{domain}}">
                                 {% for dataset in dataset_list %}
-                                    <option value="{{ domain }}/{{ dataset }}">{{ dataset }}</option>
+                                    <option data-versions='{{dataset["version"]}}' value="{{ domain }}/{{ dataset['dataset']}}">{{dataset['dataset']}}</option>
                                 {% endfor %}
                             </optgroup>
                         {% endfor %}
