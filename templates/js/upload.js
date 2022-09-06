@@ -17,7 +17,7 @@ const uploadDataset = () => {
     }).then(response => response.json()
     .then(result => {
         if(response.ok) {
-            response_text_element.innerHTML = `File uploaded: ${result['details']['original_filename']}`
+            response_text_element.innerHTML = `File accepted: ${result['details']['original_filename']}. Status: ${result['details']['status']}`
             response_text_element.classList.add("response-msg--success");
             response_text_element.classList.remove("response-msg--error");
         } else {

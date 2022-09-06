@@ -233,7 +233,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         url = self.upload_dataset_url(self.e2e_test_domain, "upload")
         response = requests.post(url, headers=self.generate_auth_headers(), files=files)
 
-        assert response.status_code == HTTPStatus.CREATED
+        assert response.status_code == HTTPStatus.ACCEPTED
 
         self.delete_all_data_and_raw_files_for_(
             domain=self.e2e_test_domain, dataset="upload"

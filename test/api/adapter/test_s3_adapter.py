@@ -143,13 +143,13 @@ class TestS3AdapterUpload:
             domain="some",
             dataset="values",
             file_path=Path("filename.csv"),
-            filename="custom-filename.csv",
+            raw_file_identifier="123-456-789",
         )
 
         self.mock_s3_client.upload_file.assert_called_with(
             Filename="filename.csv",
             Bucket="dataset",
-            Key="raw_data/some/values/custom-filename.csv",
+            Key="raw_data/some/values/123-456-789.csv",
         )
 
 

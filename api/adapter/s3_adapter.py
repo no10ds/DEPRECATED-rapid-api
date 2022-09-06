@@ -95,8 +95,9 @@ class S3Adapter:
             self.store_data(upload_path, data_content)
 
     def upload_raw_data(
-        self, domain: str, dataset: str, file_path: Path, filename: str
+        self, domain: str, dataset: str, file_path: Path, raw_file_identifier: str
     ):
+        filename = f"{raw_file_identifier}.csv"
         raw_data_path = StorageMetaData(domain, dataset).raw_data_path(filename)
         self.__s3_client.upload_file(
             Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path

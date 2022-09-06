@@ -1,6 +1,9 @@
-from datetime import datetime
+import os
+import uuid
 from pathlib import Path
-from typing import List, Tuple, Optional
+from threading import Thread
+from time import sleep
+from typing import List, Optional
 
 import pandas as pd
 from pandas.io.parsers import TextFileReader
@@ -46,20 +49,20 @@ def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
 class DataService:
     def __init__(
         self,
-        persistence_adapter=S3Adapter(),
+        s3_adapter=S3Adapter(),
         glue_adapter=GlueAdapter(),
         athena_adapter=AthenaAdapter(),
         protected_domain_service=ProtectedDomainService(),
         cognito_adapter=CognitoAdapter(),
     ):
-        self.persistence_adapter = persistence_adapter
+        self.s3_adapter = s3_adapter
         self.glue_adapter = glue_adapter
         self.athena_adapter = athena_adapter
         self.protected_domain_service = protected_domain_service
         self.cognito_adapter = cognito_adapter
 
     def list_raw_files(self, domain: str, dataset: str) -> list[str]:
-        raw_files = self.persistence_adapter.list_raw_files(domain, dataset)
+        raw_files = self.s3_adapter.list_raw_files(domain, dataset)
         if len(raw_files) == 0:
             raise UserError(
                 f"There are no uploaded files for the domain [{domain}] or dataset [{dataset}]"
@@ -67,29 +70,22 @@ class DataService:
         else:
             return raw_files
 
-    def generate_raw_filename(self, filename: str) -> str:
-        return f'{datetime.now().strftime("%Y-%m-%dT%H:%M:%S:%f")}-{filename}'
+    def generate_raw_file_identifier(self) -> str:
+        return str(uuid.uuid4())
 
-    def generate_raw_and_permanent_filenames(
-        self, schema: Schema, filename: str
-    ) -> Tuple[str, str]:
+    def generate_permanent_filename(
+        self, schema: Schema, raw_file_identifier: str
+    ) -> str:
         behaviour = schema.get_update_behaviour()
 
-        raw_filename = self.generate_raw_filename(filename)
         converter = {
-            UpdateBehaviour.APPEND.value: raw_filename.replace(".csv", ".parquet"),
+            UpdateBehaviour.APPEND.value: f"{raw_file_identifier}_{uuid.uuid4()}.parquet",
             UpdateBehaviour.OVERWRITE.value: f"{schema.get_domain()}.parquet",
         }
         permanent_filename = converter[behaviour]
-        return raw_filename, permanent_filename
+        return permanent_filename
 
-    def upload_dataset(
-        self,
-        domain: str,
-        dataset: str,
-        file_path: Path,
-        filename: str,
-    ) -> Tuple[str, List[str]]:
+    def upload_dataset(self, domain: str, dataset: str, file_path: Path) -> str:
         schema = self._get_schema(domain, dataset, 1)
         if not schema:
             raise SchemaNotFoundError(
@@ -108,35 +104,66 @@ class DataService:
             if dataset_errors:
                 raise DatasetValidationError(list(dataset_errors))
 
-            # Process chunks
-            permanent_filenames, raw_filename = self.process_chunk(
-                file_path, filename, schema
-            )
+            raw_file_identifier = self.generate_raw_file_identifier()
 
-            self.glue_adapter.start_crawler(domain, dataset)
-            self.glue_adapter.update_catalog_table_config(schema)
+            Thread(
+                target=self.manage_processing,
+                args=(schema, file_path, raw_file_identifier),
+            ).start()
 
-            # Upload raw data
-            self.persistence_adapter.upload_raw_data(
-                schema.get_domain(), schema.get_dataset(), file_path, raw_filename
-            )
+            return f"{raw_file_identifier}.csv"
 
-            return raw_filename, permanent_filenames
-
-    def process_chunk(self, file_path, filename, schema):
-        raw_filename = None
-        permanent_filenames = []
-        for chunk in construct_chunked_dataframe(file_path):
-            validated_dataframe = build_validated_dataframe(schema, chunk)
+    def manage_processing(
+        self, schema: Schema, file_path: Path, raw_file_identifier: str
+    ) -> None:
+        processing_threads = [
             (
-                raw_filename,
-                permanent_filename,
-            ) = self.generate_raw_and_permanent_filenames(schema, filename)
+                Thread(
+                    target=self.process_chunks,
+                    args=(schema, file_path, raw_file_identifier),
+                )
+            ),
+            (
+                Thread(
+                    target=self.s3_adapter.upload_raw_data,
+                    args=(
+                        schema.get_domain(),
+                        schema.get_dataset(),
+                        file_path,
+                        raw_file_identifier,
+                    ),
+                )
+            ),
+        ]
 
-            self._upload_data(schema, validated_dataframe, permanent_filename)
+        for thread in processing_threads:
+            thread.start()
 
-            permanent_filenames.append(permanent_filename)
-        return permanent_filenames, raw_filename
+        while any(thread.is_alive() for thread in processing_threads):
+            sleep(30)
+
+        try:
+            os.remove(file_path.name)
+        except (FileNotFoundError, TypeError):
+            pass
+
+    def process_chunks(
+        self, schema: Schema, file_path: Path, raw_file_identifier: str
+    ) -> None:
+        for chunk in construct_chunked_dataframe(file_path):
+            self.process_chunk(schema, raw_file_identifier, chunk)
+
+        self.glue_adapter.start_crawler(schema.get_domain(), schema.get_dataset())
+        self.glue_adapter.update_catalog_table_config(schema)
+
+    def process_chunk(
+        self, schema: Schema, raw_file_identifier: str, chunk: pd.DataFrame
+    ) -> None:
+        validated_dataframe = build_validated_dataframe(schema, chunk)
+        permanent_filename = self.generate_permanent_filename(
+            schema, raw_file_identifier
+        )
+        self.upload_data(schema, validated_dataframe, permanent_filename)
 
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = NEW_SCHEMA_VERSION_NUMBER
@@ -155,7 +182,7 @@ class DataService:
 
         self.check_for_protected_domain(schema)
         validate_schema_for_upload(schema)
-        schema_name = self.persistence_adapter.save_schema(schema)
+        schema_name = self.s3_adapter.save_schema(schema)
         self.glue_adapter.create_crawler(
             schema.get_domain(),
             schema.get_dataset(),
@@ -194,16 +221,16 @@ class DataService:
             columns=self._enrich_columns(schema, statistics_dataframe),
         )
 
-    def _upload_data(
+    def upload_data(
         self, schema: Schema, validated_dataframe: pd.DataFrame, filename: str
     ):
         partitioned_data = generate_partitioned_data(schema, validated_dataframe)
-        self.persistence_adapter.upload_partitioned_data(
+        self.s3_adapter.upload_partitioned_data(
             schema.get_domain(), schema.get_dataset(), filename, partitioned_data
         )
 
     def _get_schema(self, domain: str, dataset: str, version: int) -> Schema:
-        return self.persistence_adapter.find_schema(domain, dataset, version)
+        return self.s3_adapter.find_schema(domain, dataset, version)
 
     def _build_query(self, schema: Schema) -> SQLQuery:
         date_columns = schema.get_columns_by_type(DataTypes.DATE)

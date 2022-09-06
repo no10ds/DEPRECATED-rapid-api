@@ -1,6 +1,5 @@
-import os
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 from fastapi import APIRouter, Request
 from fastapi import UploadFile, File, Response, Security
@@ -242,41 +241,24 @@ def upload_data(
     ### Click  `Try it out` to use the endpoint
 
     """
-    incoming_filename = None
-    final_filename = file.filename
     try:
-        incoming_file_path, incoming_filename = store_file_to_disk(file)
-        raw_filename, permanent_filenames = data_service.upload_dataset(
-            domain, dataset, incoming_file_path, incoming_filename
-        )
+        incoming_file_path = store_file_to_disk(file)
+        raw_filename = data_service.upload_dataset(domain, dataset, incoming_file_path)
+        response.status_code = http_status.HTTP_202_ACCEPTED
         return {
             "details": {
-                "original_filename": file.filename,
+                "original_filename": incoming_file_path.name,
                 "raw_filename": raw_filename,
-                "permanent_filenames": [
-                    final_filename.replace(".parquet", "")
-                    for final_filename in permanent_filenames
-                ],
+                "status": "Data processing",
             }
         }
     except SchemaNotFoundError as error:
         AppLogger.warning("Schema not found: %s", error.args[0])
         raise UserError(message=error.args[0])
-    except CrawlerStartFailsError as error:
-        AppLogger.warning("Failed to start crawler: %s", error.args[0])
-        response.status_code = http_status.HTTP_202_ACCEPTED
-        return {"details": final_filename}
-    finally:
-        # Temporarily delete uploaded file here
-        try:
-            os.remove(incoming_filename)
-        except (FileNotFoundError, TypeError):
-            pass
 
 
-def store_file_to_disk(file: UploadFile = File(...)) -> Tuple[Path, str]:
-    filename = file.filename
-    file_path = Path(filename)
+def store_file_to_disk(file: UploadFile = File(...)) -> Path:
+    file_path = Path(file.filename)
     chunk_size_mb = 50
     mb_1 = 1024 * 1024
 
@@ -284,7 +266,7 @@ def store_file_to_disk(file: UploadFile = File(...)) -> Tuple[Path, str]:
         while contents := file.file.read(mb_1 * chunk_size_mb):
             incoming_file.write(contents)
 
-    return file_path, filename
+    return file_path
 
 
 @datasets_router.post(

@@ -26,20 +26,16 @@ from test.api.common.controller_test_utils import BaseClientTest
 class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.os")
     def test_calls_data_upload_service_successfully(
-        self, mock_os, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
-        file_name_with_timestamp = "2022-05-05T12:00:00:123456-filename"
+        raw_file_identifier = "123-456-789"
 
-        mock_store_file_to_disk.return_value = (incoming_file_path, incoming_file_name)
-        mock_upload_dataset.return_value = (
-            f"{file_name_with_timestamp}.csv",
-            [file_name_with_timestamp],
-        )
+        mock_store_file_to_disk.return_value = incoming_file_path
+        mock_upload_dataset.return_value = f"{raw_file_identifier}.csv"
 
         response = self.client.post(
             "/datasets/domain/dataset",
@@ -49,30 +45,28 @@ class TestDataUpload(BaseClientTest):
 
         mock_store_file_to_disk.assert_called_once_with(ANY)
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path, incoming_file_name
+            "domain", "dataset", incoming_file_path
         )
-        mock_os.remove.assert_called_once_with(incoming_file_name)
 
-        assert response.status_code == 201
+        assert response.status_code == 202
         assert response.json() == {
             "details": {
                 "original_filename": "filename.csv",
-                "raw_filename": "2022-05-05T12:00:00:123456-filename.csv",
-                "permanent_filenames": ["2022-05-05T12:00:00:123456-filename"],
+                "raw_filename": "123-456-789.csv",
+                "status": "Data processing",
             }
         }
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.os")
     def test_calls_data_upload_service_fails_when_invalid_dataset_is_uploaded(
-        self, mock_os, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
 
-        mock_store_file_to_disk.return_value = (incoming_file_path, incoming_file_name)
+        mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = DatasetValidationError(
             "Expected 3 columns, received 4"
         )
@@ -84,39 +78,11 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path, incoming_file_name
+            "domain", "dataset", incoming_file_path
         )
-        mock_os.remove.assert_called_once_with(incoming_file_name)
 
         assert response.status_code == 400
         assert response.json() == {"details": "Expected 3 columns, received 4"}
-
-    @patch.object(DataService, "upload_dataset")
-    @patch("api.controller.datasets.store_file_to_disk")
-    def test_succeeds_to_upload_data_and_fails_to_start_crawler(
-        self, mock_store_file_to_disk, mock_upload_dataset
-    ):
-        file_content = b"some,content"
-        incoming_file_path = Path("filename.csv")
-        incoming_file_name = "filename.csv"
-
-        mock_store_file_to_disk.return_value = (incoming_file_path, incoming_file_name)
-        mock_upload_dataset.side_effect = CrawlerStartFailsError(
-            "Failed to start crawler"
-        )
-
-        response = self.client.post(
-            "/datasets/domain/dataset",
-            files={"file": (incoming_file_name, file_content, "text/csv")},
-            headers={"Authorization": "Bearer test-token"},
-        )
-
-        mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path, incoming_file_name
-        )
-
-        assert response.status_code == 202
-        assert response.json() == {"details": "filename.csv"}
 
     def test_calls_data_fails_with_missing_path(self):
         file_content = b"some,content"
@@ -165,7 +131,7 @@ class TestDataUpload(BaseClientTest):
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
 
-        mock_store_file_to_disk.return_value = (incoming_file_path, incoming_file_name)
+        mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = CrawlerIsNotReadyError("Some message")
 
         response = self.client.post(
@@ -175,7 +141,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path, incoming_file_name
+            "domain", "dataset", incoming_file_path
         )
 
         assert response.status_code == 429
@@ -190,7 +156,7 @@ class TestDataUpload(BaseClientTest):
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
 
-        mock_store_file_to_disk.return_value = (incoming_file_path, incoming_file_name)
+        mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = AWSServiceError("Some message")
 
         response = self.client.post(
@@ -200,7 +166,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path, incoming_file_name
+            "domain", "dataset", incoming_file_path
         )
 
         assert response.status_code == 500
