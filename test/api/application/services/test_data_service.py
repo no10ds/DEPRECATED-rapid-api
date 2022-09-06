@@ -482,48 +482,17 @@ class TestUploadDataset:
 
     # Generate Permanent Filename ----------------------------
     @patch("api.application.services.data_service.uuid")
-    def test_generates_permanent_filename_for_append_behaviour(self, mock_uuid):
+    def test_generates_permanent_filename(self, mock_uuid):
         # Given
-        schema = self.valid_schema
-
         raw_file_identifier = "123-456-789"
 
         mock_uuid.uuid4.return_value = "111-222-333"
 
         # When
-        result = self.data_service.generate_permanent_filename(
-            schema, raw_file_identifier
-        )
+        result = self.data_service.generate_permanent_filename(raw_file_identifier)
 
         # Then
         assert result == "123-456-789_111-222-333.parquet"
-
-    def test_generates_permanent_filename_for_overwrite_behaviour(self):
-        schema = Schema(
-            metadata=SchemaMetadata(
-                domain="some",
-                dataset="other",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-                update_behaviour="OVERWRITE",
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=None,
-                    data_type="Int64",
-                    allow_null=True,
-                )
-            ],
-        )
-
-        raw_file_identifier = "123-456-789"
-
-        result = self.data_service.generate_permanent_filename(
-            schema, raw_file_identifier
-        )
-
-        assert result == "some.parquet"
 
     # Dataset chunk validation -------------------------------
     @patch("api.application.services.data_service.construct_chunked_dataframe")

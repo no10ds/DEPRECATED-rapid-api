@@ -33,7 +33,6 @@ from api.domain.enriched_schema import (
     EnrichedColumn,
 )
 from api.domain.schema import Schema
-from api.domain.schema_metadata import UpdateBehaviour
 from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import StorageMetaData
 
@@ -73,17 +72,8 @@ class DataService:
     def generate_raw_file_identifier(self) -> str:
         return str(uuid.uuid4())
 
-    def generate_permanent_filename(
-        self, schema: Schema, raw_file_identifier: str
-    ) -> str:
-        behaviour = schema.get_update_behaviour()
-
-        converter = {
-            UpdateBehaviour.APPEND.value: f"{raw_file_identifier}_{uuid.uuid4()}.parquet",
-            UpdateBehaviour.OVERWRITE.value: f"{schema.get_domain()}.parquet",
-        }
-        permanent_filename = converter[behaviour]
-        return permanent_filename
+    def generate_permanent_filename(self, raw_file_identifier: str) -> str:
+        return f"{raw_file_identifier}_{uuid.uuid4()}.parquet"
 
     def upload_dataset(self, domain: str, dataset: str, file_path: Path) -> str:
         schema = self._get_schema(domain, dataset, 1)
