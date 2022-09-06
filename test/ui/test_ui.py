@@ -150,7 +150,7 @@ class BaseTestUI(ABC):
         assert dataset in option_text
 
     def assert_can_upload(self, page, dropdown_id, upload_dataset):
-        print(f"Trying uploading to '{upload_dataset}'")
+        print(f"Trying to upload to '{upload_dataset}'")
         self.select_from_dropdown(page, dropdown_id, upload_dataset)
         self.choose_and_upload_file(page)
         self.assert_contains_label(page, FILENAME)

@@ -4,6 +4,7 @@ from http import HTTPStatus
 from typing import List
 
 import boto3
+import pytest
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -228,6 +229,9 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         )
         assert response.status_code == HTTPStatus.OK
 
+    @pytest.mark.skip(
+        "Reinstate when version upload has been implemented. File delete logic also needs to be updated."
+    )
     def test_uploads_when_authorised(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
         url = self.upload_dataset_url(self.e2e_test_domain, "upload")
