@@ -7,6 +7,8 @@ from api.adapter.glue_adapter import GlueAdapter
 from api.common.config.aws import (
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     DATA_BUCKET,
+    AWS_REGION,
+    AWS_ACCOUNT,
 )
 from api.common.config.aws import RESOURCE_PREFIX
 from api.common.custom_exceptions import (
@@ -15,6 +17,7 @@ from api.common.custom_exceptions import (
     CrawlerAlreadyExistsError,
     CrawlerCreationError,
     AWSServiceError,
+    CrawlerUpdateError,
 )
 from api.domain.schema import Column, Schema
 from api.domain.schema_metadata import SchemaMetadata
@@ -57,6 +60,42 @@ class TestGlueAdapterCrawlerMethods:
                 "tag2": "value2",
                 "tag3": "value3",
             },
+        )
+
+    def test_set_crawler_version_tag(self):
+        domain = "testdomain323"
+        dataset = "testdataset4243"
+        glue_crawler_arn = f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/rapid_crawler/{domain}/{dataset}"
+        self.glue_adapter.set_crawler_version_tag(
+            domain,
+            dataset,
+            42,
+        )
+        self.glue_boto_client.tag_resource.assert_called_once_with(
+            ResourceArn=glue_crawler_arn, TagsToAdd={"no_of_versions": "42"}
+        )
+
+    def test_set_crawler_version_tag_failure(self):
+        domain = "testdomain323"
+        dataset = "testdataset4243"
+        new_version = 42
+        glue_crawler_arn = f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/rapid_crawler/{domain}/{dataset}"
+        self.glue_boto_client.tag_resource.side_effect = ClientError(
+            error_response={"Error": {"Code": "SomeProblem"}},
+            operation_name="tag_resource",
+        )
+        with pytest.raises(
+            CrawlerUpdateError,
+            match=f"Failed to update crawler version tag for domain = {domain} dataset = {dataset} version = {new_version}",
+        ):
+            self.glue_adapter.set_crawler_version_tag(
+                domain,
+                dataset,
+                new_version,
+            )
+
+        self.glue_boto_client.tag_resource.assert_called_once_with(
+            ResourceArn=glue_crawler_arn, TagsToAdd={"no_of_versions": "42"}
         )
 
     def test_create_crawler_fails_already_exists(self):

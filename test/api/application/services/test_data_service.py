@@ -11,6 +11,7 @@ from api.application.services.data_service import (
     DataService,
     construct_chunked_dataframe,
 )
+from api.common.config.auth import SensitivityLevel
 from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
@@ -21,6 +22,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     UnprocessableDatasetError,
     DatasetValidationError,
+    CrawlerUpdateError,
 )
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -174,6 +176,258 @@ class TestUploadSchema:
 
         with pytest.raises(SchemaValidationError):
             self.data_service.upload_schema(invalid_schema)
+
+
+class TestUpdateSchema:
+    def setup_method(self):
+        self.s3_adapter = Mock()
+        self.glue_adapter = Mock()
+        self.query_adapter = Mock()
+        self.protected_domain_service = Mock()
+        self.cognito_adapter = Mock()
+        self.delete_service = Mock()
+        self.data_service = DataService(
+            self.s3_adapter,
+            self.glue_adapter,
+            self.query_adapter,
+            self.protected_domain_service,
+            self.cognito_adapter,
+            self.delete_service,
+        )
+        self.valid_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=False,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=True,
+                ),
+            ],
+        )
+        self.valid_updated_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Float64",
+                    allow_null=False,
+                ),
+                Column(
+                    name="colname_new",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=True,
+                ),
+            ],
+        )
+
+    def test_update_schema_throws_error_when_schema_does_not_exist(self):
+        self.s3_adapter.find_schema.return_value = None
+
+        with pytest.raises(
+            SchemaNotFoundError, match="Previous version of schema not found"
+        ):
+            self.data_service.update_schema(self.valid_schema)
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_throws_error_when_schema_invalid(
+        self, mock_handle_version_retrieval
+    ):
+        invalid_partition_index = -1
+        invalid_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=invalid_partition_index,
+                    data_type="Int64",
+                    allow_null=True,
+                )
+            ],
+        )
+        self.s3_adapter.find_schema.return_value = self.valid_schema
+        mock_handle_version_retrieval.return_value = 1
+
+        with pytest.raises(SchemaValidationError):
+            self.data_service.update_schema(invalid_schema)
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_for_protected_domain_failure(
+        self, mock_handle_version_retrieval
+    ):
+        original_schema = self.valid_schema.copy(deep=True)
+        original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        new_schema = self.valid_updated_schema.copy(deep=True)
+        new_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+
+        self.glue_adapter.check_crawler_is_ready.return_value = None
+        self.s3_adapter.find_schema.return_value = original_schema
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+        mock_handle_version_retrieval.return_value = 1
+        self.protected_domain_service.list_protected_domains.return_value = ["other"]
+
+        with pytest.raises(
+            UserError,
+            match=f"The protected domain '{new_schema.get_domain()}' does not exist.",
+        ):
+            self.data_service.update_schema(new_schema)
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_when_crawler_raises_error(
+        self, mock_handle_version_retrieval
+    ):
+        new_schema = self.valid_updated_schema
+        expected_schema = self.valid_updated_schema.copy(deep=True)
+        expected_schema.metadata.version = 2
+
+        self.glue_adapter.check_crawler_is_ready.return_value = None
+        self.s3_adapter.find_schema.return_value = self.valid_schema
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+        mock_handle_version_retrieval.return_value = 1
+        self.glue_adapter.set_crawler_version_tag.side_effect = CrawlerUpdateError(
+            "error occurred"
+        )
+
+        with pytest.raises(CrawlerUpdateError, match="error occurred"):
+            self.data_service.update_schema(new_schema)
+
+        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
+            new_schema.get_domain(), new_schema.get_dataset()
+        )
+        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
+        self.delete_service.delete_schema.assert_called_once_with(
+            expected_schema.get_domain(),
+            expected_schema.get_dataset(),
+            expected_schema.get_sensitivity(),
+            expected_schema.get_version(),
+        )
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_success(self, mock_handle_version_retrieval):
+        original_schema = self.valid_schema
+        new_schema = self.valid_updated_schema
+        expected_schema = self.valid_updated_schema.copy(deep=True)
+        expected_schema.metadata.version = 2
+
+        self.glue_adapter.check_crawler_is_ready.return_value = None
+        self.s3_adapter.find_schema.return_value = original_schema
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+        mock_handle_version_retrieval.return_value = 1
+
+        result = self.data_service.update_schema(new_schema)
+
+        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
+            new_schema.get_domain(), new_schema.get_dataset()
+        )
+        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
+        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
+            expected_schema.get_domain(),
+            expected_schema.get_dataset(),
+            expected_schema.metadata.version,
+        )
+        assert result == "some-other.json"
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_maintains_original_sensitivity(
+        self, mock_handle_version_retrieval
+    ):
+        original_schema = self.valid_schema
+        original_schema.metadata.sensitivity = SensitivityLevel.PUBLIC.value
+        new_schema = self.valid_updated_schema.copy(deep=True)
+        new_schema.metadata.sensitivity = SensitivityLevel.PRIVATE.value
+        expected_schema = self.valid_updated_schema.copy(deep=True)
+        expected_schema.metadata.version = 2
+        expected_schema.metadata.sensitivity = SensitivityLevel.PUBLIC.value
+
+        self.glue_adapter.check_crawler_is_ready.return_value = None
+        self.s3_adapter.find_schema.return_value = original_schema
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+        mock_handle_version_retrieval.return_value = 1
+
+        result = self.data_service.update_schema(new_schema)
+
+        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
+            new_schema.get_domain(), new_schema.get_dataset()
+        )
+        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
+        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
+            expected_schema.get_domain(),
+            expected_schema.get_dataset(),
+            expected_schema.metadata.version,
+        )
+        assert result == "some-other.json"
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_for_protected_domain_success(
+        self, mock_handle_version_retrieval
+    ):
+        original_schema = self.valid_schema.copy(deep=True)
+        original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        new_schema = self.valid_updated_schema.copy(deep=True)
+        new_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        expected_schema = self.valid_updated_schema.copy(deep=True)
+        expected_schema.metadata.version = 2
+        expected_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+
+        self.glue_adapter.check_crawler_is_ready.return_value = None
+        self.s3_adapter.find_schema.return_value = original_schema
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+        mock_handle_version_retrieval.return_value = 1
+        self.protected_domain_service.list_protected_domains = Mock(
+            return_value=[original_schema.get_domain(), "other"]
+        )
+
+        result = self.data_service.update_schema(new_schema)
+
+        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
+            new_schema.get_domain(), new_schema.get_dataset()
+        )
+        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
+        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
+            expected_schema.get_domain(),
+            expected_schema.get_dataset(),
+            expected_schema.metadata.version,
+        )
+        assert result == "some-other.json"
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_aborts_updating_if_schema_update_fails(
+        self, mock_handle_version_retrieval
+    ):
+        self.s3_adapter.find_schema.return_value = self.valid_schema
+        self.s3_adapter.save_schema.side_effect = ClientError(
+            error_response={"Error": {"Code": "Failed"}}, operation_name="PutObject"
+        )
+        mock_handle_version_retrieval.return_value = 1
+
+        with pytest.raises(ClientError):
+            self.data_service.update_schema(self.valid_schema)
+
+        self.cognito_adapter.create_user_groups.assert_not_called()
+        self.glue_adapter.create_crawler.assert_not_called()
 
 
 class TestUploadDataset:

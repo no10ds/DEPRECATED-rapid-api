@@ -45,7 +45,6 @@ class SchemaValidationError(UserError):
     pass
 
 
-# Could just be UserError
 class DatasetValidationError(UserError):
     pass
 
@@ -73,6 +72,10 @@ class CrawlerAlreadyExistsError(ConflictError):
 
 
 class CrawlerCreationError(AWSServiceError):
+    pass
+
+
+class CrawlerUpdateError(AWSServiceError):
     pass
 
 

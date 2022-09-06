@@ -105,6 +105,42 @@ async def upload_schema(schema: Schema):
         raise error
 
 
+@schema_router.put(
+    "",
+    status_code=http_status.HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
+)
+async def update_schema(schema: Schema):
+    """
+    ## Update Schema
+
+    When you have a schema definition you can use this endpoint to upload it. This will allow you to subsequently upload
+    datasets that match the schema. If you do not yet have a schema definition, you can craft this yourself (see
+    the [schema writing guide](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md)) or use the Schema Generation endpoint (see above).
+
+    ### Inputs
+
+    | Parameters    | Usage                                   | Example values               | Definition            |
+    |---------------|-----------------------------------------|------------------------------|-----------------------|
+    | schema        | JSON request body                       | see below                    | the schema definition |
+
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Only alphanumeric characters allowed
+    - Have to start with an alphabetic character
+
+    ### Accepted permissions
+
+    In order to use this endpoint you need the `DATA_ADMIN` permission.
+
+    ### Click  `Try it out` to use the endpoint
+    """
+    schema_file_name = data_service.update_schema(schema)
+    return {"details": schema_file_name}
+
+
 def _delete_uploaded_schema(schema: Schema):
     delete_service.delete_schema(
         schema.get_domain(),

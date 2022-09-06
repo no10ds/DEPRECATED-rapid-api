@@ -233,4 +233,4 @@ class TestSchemaMetadatas:
             SchemaNotFoundError,
             match="Schema not found for domain=domain3 and dataset=dataset3 and version=1",
         ):
-            data.find(domain="domain3", dataset="dataset3", version="1")
+            data.find(domain="domain3", dataset="dataset3", version=1)

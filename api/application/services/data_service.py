@@ -13,6 +13,7 @@ from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.dataset_validation import build_validated_dataframe
+from api.application.services.delete_service import DeleteService
 from api.application.services.partitioning_service import generate_partitioned_data
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
@@ -24,6 +25,7 @@ from api.common.custom_exceptions import (
     UserError,
     DatasetValidationError,
     AWSServiceError,
+    CrawlerUpdateError,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval
@@ -38,6 +40,7 @@ from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import StorageMetaData
 
 NEW_SCHEMA_VERSION_NUMBER = 1
+NEW_SCHEMA_VERSION_INCREMENT = 1
 
 
 def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
@@ -54,12 +57,14 @@ class DataService:
         athena_adapter=AthenaAdapter(),
         protected_domain_service=ProtectedDomainService(),
         cognito_adapter=CognitoAdapter(),
+        delete_service=DeleteService(),
     ):
         self.s3_adapter = s3_adapter
         self.glue_adapter = glue_adapter
         self.athena_adapter = athena_adapter
         self.protected_domain_service = protected_domain_service
         self.cognito_adapter = cognito_adapter
+        self.delete_service = delete_service
 
     def list_raw_files(self, domain: str, dataset: str) -> list[str]:
         raw_files = self.s3_adapter.list_raw_files(domain, dataset)
@@ -225,6 +230,47 @@ class DataService:
             schema.get_tags(),
         )
         return schema_name
+
+    def update_schema(self, schema: Schema) -> str:
+        try:
+            original_schema = self._get_schema(
+                schema.get_domain(), schema.get_dataset(), NEW_SCHEMA_VERSION_NUMBER
+            )
+            if original_schema is None:
+                AppLogger.error(
+                    f"Could not find schema for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
+                )
+                raise SchemaNotFoundError("Previous version of schema not found")
+            self.check_for_protected_domain(schema)
+            self.glue_adapter.check_crawler_is_ready(
+                schema.get_domain(), schema.get_dataset()
+            )
+
+            new_version = (
+                handle_version_retrieval(
+                    schema.get_domain(), schema.get_dataset(), version=None
+                )
+                + NEW_SCHEMA_VERSION_INCREMENT
+            )
+            schema.metadata.version = new_version
+            schema.metadata.sensitivity = original_schema.get_sensitivity()
+            validate_schema_for_upload(schema)
+
+            schema_name = self.s3_adapter.save_schema(schema)
+            self.glue_adapter.set_crawler_version_tag(
+                schema.get_domain(),
+                schema.get_dataset(),
+                new_version,
+            )
+            return schema_name
+        except CrawlerUpdateError as error:
+            self.delete_service.delete_schema(
+                schema.get_domain(),
+                schema.get_dataset(),
+                schema.get_sensitivity(),
+                schema.get_version(),
+            )
+            raise error
 
     def check_for_protected_domain(self, schema: Schema):
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():

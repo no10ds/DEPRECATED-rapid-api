@@ -14,6 +14,7 @@ from api.common.config.aws import (
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     GLUE_TABLE_PRESENCE_CHECK_INTERVAL,
     RESOURCE_PREFIX,
+    AWS_ACCOUNT,
 )
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
@@ -22,6 +23,7 @@ from api.common.custom_exceptions import (
     CrawlerAlreadyExistsError,
     CrawlerCreationError,
     AWSServiceError,
+    CrawlerUpdateError,
 )
 from api.common.logger import AppLogger
 from api.domain.data_types import DataTypes
@@ -81,6 +83,25 @@ class GlueAdapter:
             )
         except ClientError:
             raise AWSServiceError("Failed to delete crawler")
+
+    def set_crawler_version_tag(self, domain: str, dataset: str, new_version: int):
+        try:
+            glue_crawler_arn = (
+                "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(
+                    region=AWS_REGION,
+                    account_id=AWS_ACCOUNT,
+                    glue_crawler=self._generate_crawler_name(domain, dataset),
+                )
+            )
+            self.glue_client.tag_resource(
+                ResourceArn=glue_crawler_arn,
+                TagsToAdd={"no_of_versions": str(new_version)},
+            )
+
+        except ClientError:
+            raise CrawlerUpdateError(
+                f"Failed to update crawler version tag for domain = {domain} dataset = {dataset} version = {new_version}"
+            )
 
     def check_crawler_is_ready(self, domain: str, dataset: str) -> None:
         if self._get_crawler_state(domain, dataset) != "READY":
