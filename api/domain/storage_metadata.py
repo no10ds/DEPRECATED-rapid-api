@@ -24,7 +24,7 @@ class StorageMetaData:
         return f"{self.domain}_{self.dataset}_"
 
     def get_ui_upload_path(self):
-        return f"{self.domain}/{self.dataset}"
+        return f"{self.domain}/{self.dataset}/{self.version}"
 
     def glue_table_name(self) -> str:
         return f"{self.glue_table_prefix()}{self.version}"

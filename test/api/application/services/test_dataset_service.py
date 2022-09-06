@@ -21,10 +21,10 @@ class TestWriteDatasets:
         query_public = DatasetFilters(sensitivity="PUBLIC")
         query_private = DatasetFilters(sensitivity="PRIVATE")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_dataset_1", domain="test_domain_1"
+            dataset="test_dataset_1", domain="test_domain_1", version=1
         )
         enriched_dataset_metadata_2 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_dataset_2", domain="test_domain_2"
+            dataset="test_dataset_2", domain="test_domain_2", version=2
         )
 
         mock_get_permissions_for_subject.return_value = permissions
@@ -36,8 +36,8 @@ class TestWriteDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 2
-        assert "test_domain_1/test_dataset_1" in result
-        assert "test_domain_2/test_dataset_2" in result
+        assert "test_domain_1/test_dataset_1/1" in result
+        assert "test_domain_2/test_dataset_2/2" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(
@@ -59,11 +59,11 @@ class TestWriteDatasets:
             dataset="test_public_dataset", domain="test_domain_1"
         )
         enriched_dataset_metadata_2 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_private_dataset", domain="test_domain_2"
+            dataset="test_private_dataset", domain="test_domain_2", version=2
         )
 
         enriched_dataset_metadata_3 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_protected_dataset", domain="test_domain_3"
+            dataset="test_protected_dataset", domain="test_domain_3", version=3
         )
 
         mock_get_permissions_for_subject.return_value = permissions
@@ -76,9 +76,9 @@ class TestWriteDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 3
-        assert "test_domain_1/test_public_dataset" in result
-        assert "test_domain_2/test_private_dataset" in result
-        assert "test_domain_3/test_protected_dataset" in result
+        assert "test_domain_1/test_public_dataset/1" in result
+        assert "test_domain_2/test_private_dataset/2" in result
+        assert "test_domain_3/test_protected_dataset/3" in result
         assert mock_get_datasets_metadata.call_count == 3
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(
@@ -96,7 +96,7 @@ class TestWriteDatasets:
         permissions = ["READ_ALL", "WRITE_PUBLIC"]
         query_public = DatasetFilters(sensitivity="PUBLIC")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_dataset_1", domain="test_domain_1"
+            dataset="test_dataset_1", domain="test_domain_1", version=3
         )
         enriched_dataset_metadata_list = [
             enriched_dataset_metadata_1,
@@ -107,7 +107,7 @@ class TestWriteDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 1
-        assert "test_domain_1/test_dataset_1" in result
+        assert "test_domain_1/test_dataset_1/3" in result
         assert mock_get_datasets_metadata.call_count == 1
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_called_once_with(query_public)
@@ -140,8 +140,8 @@ class TestWriteDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 2
-        assert "some_domain/test_dataset_1" in result
-        assert "test2domain/test_dataset_2" in result
+        assert "some_domain/test_dataset_1/1" in result
+        assert "test2domain/test_dataset_2/1" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(
@@ -167,7 +167,7 @@ class TestReadDatasets:
             dataset="test_dataset_1", domain="test_domain_1"
         )
         enriched_dataset_metadata_2 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_dataset_2", domain="test_domain_2"
+            dataset="test_dataset_2", domain="test_domain_2", version=2
         )
 
         mock_get_permissions_for_subject.return_value = permissions
@@ -179,8 +179,8 @@ class TestReadDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 2
-        assert "test_domain_1/test_dataset_1" in result
-        assert "test_domain_2/test_dataset_2" in result
+        assert "test_domain_1/test_dataset_1/1" in result
+        assert "test_domain_2/test_dataset_2/2" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(
@@ -200,13 +200,13 @@ class TestReadDatasets:
         query_protected = DatasetFilters(sensitivity="PROTECTED")
 
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_public_dataset", domain="test_domain_1"
+            dataset="test_public_dataset", domain="test_domain_1", version=2
         )
         enriched_dataset_metadata_2 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_private_dataset", domain="test_domain_2"
+            dataset="test_private_dataset", domain="test_domain_2", version=2
         )
         enriched_dataset_metadata_3 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_protected_dataset", domain="test_domain_3"
+            dataset="test_protected_dataset", domain="test_domain_3", version=2
         )
 
         mock_get_permissions_for_subject.return_value = permissions
@@ -219,9 +219,9 @@ class TestReadDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 3
-        assert "test_domain_1/test_public_dataset" in result
-        assert "test_domain_2/test_private_dataset" in result
-        assert "test_domain_3/test_protected_dataset" in result
+        assert "test_domain_1/test_public_dataset/2" in result
+        assert "test_domain_2/test_private_dataset/2" in result
+        assert "test_domain_3/test_protected_dataset/2" in result
         assert mock_get_datasets_metadata.call_count == 3
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(
@@ -239,7 +239,7 @@ class TestReadDatasets:
         permissions = ["WRITE_ALL", "READ_PUBLIC"]
         query_public = DatasetFilters(sensitivity="PUBLIC")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_dataset_1", domain="test_domain_1"
+            dataset="test_dataset_1", domain="test_domain_1", version=100
         )
         enriched_dataset_metadata_list = [
             enriched_dataset_metadata_1,
@@ -250,7 +250,7 @@ class TestReadDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 1
-        assert "test_domain_1/test_dataset_1" in result
+        assert "test_domain_1/test_dataset_1/100" in result
         assert mock_get_datasets_metadata.call_count == 1
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_called_once_with(query_public)
@@ -266,11 +266,11 @@ class TestReadDatasets:
         query_public = DatasetFilters(sensitivity="PUBLIC")
         query_protected_protected_domain = DatasetFilters(sensitivity="PROTECTED")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
-            dataset="test_dataset_1", domain="some_domain"
+            dataset="test_dataset_1", domain="some_domain", version=2
         )
         enriched_dataset_metadata_protected_domain = (
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                dataset="test_dataset_2", domain="test2domain"
+                dataset="test_dataset_2", domain="test2domain", version=1
             )
         )
 
@@ -283,8 +283,8 @@ class TestReadDatasets:
         result = self.upload_service.get_authorised_datasets(subject_id, action)
 
         assert len(result) == 2
-        assert "some_domain/test_dataset_1" in result
-        assert "test2domain/test_dataset_2" in result
+        assert "some_domain/test_dataset_1/2" in result
+        assert "test2domain/test_dataset_2/1" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
         mock_get_datasets_metadata.assert_has_calls(

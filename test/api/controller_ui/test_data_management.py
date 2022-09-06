@@ -22,7 +22,7 @@ class TestUploadPage(BaseClientTest):
         self, mock_templates_response, mock_get_authorised_datasets, mock_parse_token
     ):
         upload_template_filename = "upload.html"
-        datasets = ["domain1/dataset1.csv", "domain2/dataset2.csv"]
+        datasets = ["domain1/dataset/1", "domain1/dataset/2", "domain2/dataset2/1"]
         subject_id = "subject_id"
 
         mock_token = Mock()
@@ -31,8 +31,11 @@ class TestUploadPage(BaseClientTest):
         mock_get_authorised_datasets.return_value = datasets
 
         expected_datasets = {
-            "domain1": ["dataset1.csv"],
-            "domain2": ["dataset2.csv"],
+            "domain1": [
+                {"dataset": "dataset", "version": "1"},
+                {"dataset": "dataset", "version": "2"},
+            ],
+            "domain2": [{"dataset": "dataset2", "version": "1"}],
         }
 
         response = self.client.get("/upload", cookies={"rat": "user_token"})
@@ -65,14 +68,17 @@ class TestSelectDatasetPage(BaseClientTest):
         mock_parse_token.return_value = mock_token
 
         mock_get_authorised_datasets.return_value = [
-            "domain1/dataset1",
-            "domain1/dataset2",
-            "domain2/dataset3",
+            "domain1/dataset1/1",
+            "domain1/dataset2/1",
+            "domain2/dataset3/1",
         ]
 
         expected_datasets = {
-            "domain1": ["dataset1", "dataset2"],
-            "domain2": ["dataset3"],
+            "domain1": [
+                {"dataset": "dataset1", "version": "1"},
+                {"dataset": "dataset2", "version": "1"},
+            ],
+            "domain2": [{"dataset": "dataset3", "version": "1"}],
         }
 
         response = self.client.get("/download", cookies={"rat": "user_token"})

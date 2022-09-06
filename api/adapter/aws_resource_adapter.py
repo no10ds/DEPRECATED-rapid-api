@@ -93,7 +93,6 @@ class AWSResourceAdapter:
             if resource["ResourceARN"].endswith(
                 f":crawler/{RESOURCE_PREFIX}_crawler/{domain}/{dataset}"
             ):
-                AppLogger
                 crawler_resource = resource
 
         return self.get_version_from_tags(crawler_resource)

@@ -29,11 +29,12 @@ data_service = DataService()
 def group_datasets_by_domain(datasets: List[str]):
     grouped_datasets = {}
     for dataset in datasets:
-        domain, dataset = dataset.split("/")[0], dataset.split("/")[1]
+        dataset_data = dataset.split("/")
+        domain, dataset, version = dataset_data[0], dataset_data[1], dataset_data[2]
         if domain not in grouped_datasets:
-            grouped_datasets[domain] = [dataset]
+            grouped_datasets[domain] = [{"dataset": dataset, "version": version}]
         else:
-            grouped_datasets[domain].append(dataset)
+            grouped_datasets[domain].append({"dataset": dataset, "version": version})
     return grouped_datasets
 
 

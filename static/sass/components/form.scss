@@ -53,9 +53,11 @@
 }
 
 .form-select {
-  display: grid;
-  justify-items: center;
-  align-items: center;
+  &:not([hidden]) {
+    display: grid;
+    justify-items: center;
+    align-items: center;
+  }
 
   &_dropdown {
     border-radius: .5rem;
