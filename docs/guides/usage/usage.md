@@ -1312,6 +1312,7 @@ To download a dataset just follow these simple steps.
 1) Log in
 2) Click on the `Download Data` link
 3) Select a dataset from the list
+4) Select a dataset version from the list
 4) Click `Next`
 5) View the dataset specific information
 6) Select the format of the output file (`csv` or `json`)
