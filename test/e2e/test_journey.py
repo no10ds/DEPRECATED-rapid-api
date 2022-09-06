@@ -4,7 +4,6 @@ from http import HTTPStatus
 from typing import List
 
 import boto3
-import pytest
 import requests
 from requests.auth import HTTPBasicAuth
 
@@ -49,8 +48,8 @@ class BaseJourneyTest(ABC):
     def modify_subjects_permissions_url(self) -> str:
         return f"{self.base_url}/subjects/permissions"
 
-    def delete_raw_data_url(self, domain: str, dataset: str, filename: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/{filename}"
+    def delete_data_url(self, domain: str, dataset: str, raw_filename: str) -> str:
+        return f"{self.datasets_endpoint}/{domain}/{dataset}/{raw_filename}"
 
     def permissions_url(self) -> str:
         return f"{self.base_url}/permissions"
@@ -182,36 +181,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
     def generate_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"}
 
-    def delete_all_data_and_raw_files_for_(self, domain: str, dataset: str):
-        raw_data_filetype = "csv"
-        data_filetype = "parquet"
-
-        raw_files = self.s3_client.list_objects_v2(
-            Bucket=DATA_BUCKET, Prefix=f"{self.raw_data_directory}/{dataset}"
-        )
-
-        filenames_to_delete = [
-            file["Key"].rsplit("/", 1)[-1].split(".")[0]
-            for file in raw_files.get("Contents", [])
-            if file["Key"].endswith(".csv")
-        ]
-
-        filepaths_to_delete = []
-
-        for filename in filenames_to_delete:
-            filepaths_to_delete.append(
-                {
-                    "Key": f"{self.raw_data_directory}/{dataset}/{filename}.{raw_data_filetype}"
-                }
-            )
-            filepaths_to_delete.append(
-                {"Key": f"{self.data_directory}/{dataset}/{domain}.{data_filetype}"}
-            )
-
-        self.s3_client.delete_objects(
-            Bucket=DATA_BUCKET, Delete={"Objects": filepaths_to_delete}
-        )
-
     def upload_test_file_to_(self, data_directory: str, domain: str, filename: str):
         self.s3_client.put_object(
             Bucket=DATA_BUCKET,
@@ -229,19 +198,18 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         )
         assert response.status_code == HTTPStatus.OK
 
-    @pytest.mark.skip(
-        "Reinstate when version upload has been implemented. File delete logic also needs to be updated."
-    )
     def test_uploads_when_authorised(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
-        url = self.upload_dataset_url(self.e2e_test_domain, "upload")
-        response = requests.post(url, headers=self.generate_auth_headers(), files=files)
+        upload_url = self.upload_dataset_url(self.e2e_test_domain, "upload")
+        response = requests.post(
+            upload_url, headers=self.generate_auth_headers(), files=files
+        )
 
         assert response.status_code == HTTPStatus.ACCEPTED
 
-        self.delete_all_data_and_raw_files_for_(
-            domain=self.e2e_test_domain, dataset="upload"
-        )
+        raw_filename = json.loads(response.text)["details"]["raw_filename"]
+        delete_url = self.delete_data_url(self.e2e_test_domain, "upload", raw_filename)
+        requests.delete(delete_url, headers=self.generate_auth_headers())
 
     def test_gets_existing_dataset_info_when_authorised(self):
         url = self.info_dataset_url(domain=self.e2e_test_domain, dataset="query")
@@ -297,8 +265,10 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
 
         # Delete chosen dataset file (raw file and actual data file)
         first_dataset_file = response_list[0]
-        delete_raw_data_url = self.delete_raw_data_url(
-            domain=self.e2e_test_domain, dataset="delete", filename=first_dataset_file
+        delete_raw_data_url = self.delete_data_url(
+            domain=self.e2e_test_domain,
+            dataset="delete",
+            raw_filename=first_dataset_file,
         )
 
         response2 = requests.delete(
