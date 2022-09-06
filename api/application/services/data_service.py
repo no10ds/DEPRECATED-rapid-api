@@ -95,6 +95,7 @@ class DataService:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
 
             # Validate chunks
+            AppLogger.info(f"Validating dataset for {domain}/{dataset}")
             dataset_errors = set()
             for chunk in construct_chunked_dataframe(file_path):
                 try:
@@ -116,6 +117,9 @@ class DataService:
     def manage_processing(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
+        AppLogger.info(
+            f"Upload processing started for {schema.get_domain()}/{schema.get_dataset()}"
+        )
         processing_threads = [
             (
                 Thread(
@@ -144,17 +148,29 @@ class DataService:
 
         try:
             os.remove(file_path.name)
-        except (FileNotFoundError, TypeError):
+            AppLogger.info(
+                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} deleted. Raw file identifier: {raw_file_identifier}"
+            )
+        except (FileNotFoundError, TypeError) as error:
+            AppLogger.error(
+                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
+            )
             pass
 
     def process_chunks(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
+        AppLogger.info(
+            f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}"
+        )
         for chunk in construct_chunked_dataframe(file_path):
             self.process_chunk(schema, raw_file_identifier, chunk)
 
         self.glue_adapter.start_crawler(schema.get_domain(), schema.get_dataset())
         self.glue_adapter.update_catalog_table_config(schema)
+        AppLogger.info(
+            f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()} completed"
+        )
 
     def process_chunk(
         self, schema: Schema, raw_file_identifier: str, chunk: pd.DataFrame

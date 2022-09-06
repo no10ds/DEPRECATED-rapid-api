@@ -97,11 +97,13 @@ class S3Adapter:
     def upload_raw_data(
         self, domain: str, dataset: str, file_path: Path, raw_file_identifier: str
     ):
+        AppLogger.info(f"Raw data upload for {domain}/{dataset} started")
         filename = f"{raw_file_identifier}.csv"
         raw_data_path = StorageMetaData(domain, dataset).raw_data_path(filename)
         self.__s3_client.upload_file(
             Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path
         )
+        AppLogger.info(f"Raw data upload for {domain}/{dataset} completed")
 
     def list_raw_files(self, domain: str, dataset: str):
         object_list = self._list_files_from_path(
