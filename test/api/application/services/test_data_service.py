@@ -196,10 +196,13 @@ class TestUpdateSchema:
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
-                domain="some",
-                dataset="other",
+                domain="testdomain",
+                dataset="testdataset",
                 sensitivity="PUBLIC",
                 owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags={"key1": "val1", "testkey2": "testval2"},
+                key_only_tags=["ktag1", "ktag2"],
+                update_behaviour="APPEND",
             ),
             columns=[
                 Column(
@@ -218,10 +221,13 @@ class TestUpdateSchema:
         )
         self.valid_updated_schema = Schema(
             metadata=SchemaMetadata(
-                domain="some",
-                dataset="other",
+                domain="testdomain",
+                dataset="testdataset",
                 sensitivity="PUBLIC",
                 owners=[Owner(name="owner", email="owner@email.com")],
+                key_value_tags={"key1": "val1", "testkey2": "testval2"},
+                key_only_tags=["ktag1", "ktag2"],
+                update_behaviour="APPEND",
             ),
             columns=[
                 Column(
@@ -351,16 +357,17 @@ class TestUpdateSchema:
         assert result == "some-other.json"
 
     @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_update_schema_maintains_original_sensitivity(
+    def test_update_schema_maintains_original_metadata(
         self, mock_handle_version_retrieval
     ):
         original_schema = self.valid_schema
-        original_schema.metadata.sensitivity = SensitivityLevel.PUBLIC.value
         new_schema = self.valid_updated_schema.copy(deep=True)
         new_schema.metadata.sensitivity = SensitivityLevel.PRIVATE.value
+        new_schema.metadata.key_value_tags = {"new_key": "new_val"}
+        new_schema.metadata.key_only_tags = ["new_k_tag"]
+        new_schema.metadata.update_behaviour = "OVERWRITE"
         expected_schema = self.valid_updated_schema.copy(deep=True)
         expected_schema.metadata.version = 2
-        expected_schema.metadata.sensitivity = SensitivityLevel.PUBLIC.value
 
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema

@@ -128,13 +128,9 @@ async def update_schema(schema: Schema):
 
     The domain and dataset names must match the original schema that is being updated
 
-    #### Sensitivity
+    #### Schema metadata
 
-    The sensitivity for an updated schema will be taken from the original schema
-
-    #### Version
-
-    The version of the updated schema is automatically generated
+    Metadata information for an updated schema will be taken from the original schema
 
     ### Accepted permissions
 

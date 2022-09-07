@@ -39,8 +39,8 @@ from api.domain.schema import Schema
 from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import StorageMetaData
 
-NEW_SCHEMA_VERSION_NUMBER = 1
-NEW_SCHEMA_VERSION_INCREMENT = 1
+FIRST_SCHEMA_VERSION_NUMBER = 1
+SCHEMA_VERSION_INCREMENT = 1
 
 
 def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
@@ -207,7 +207,7 @@ class DataService:
             )
 
     def upload_schema(self, schema: Schema) -> str:
-        schema.metadata.version = NEW_SCHEMA_VERSION_NUMBER
+        schema.metadata.version = FIRST_SCHEMA_VERSION_NUMBER
         if (
             self._get_schema(
                 schema.get_domain(), schema.get_dataset(), schema.get_version()
@@ -234,7 +234,7 @@ class DataService:
     def update_schema(self, schema: Schema) -> str:
         try:
             original_schema = self._get_schema(
-                schema.get_domain(), schema.get_dataset(), NEW_SCHEMA_VERSION_NUMBER
+                schema.get_domain(), schema.get_dataset(), FIRST_SCHEMA_VERSION_NUMBER
             )
             if original_schema is None:
                 AppLogger.error(
@@ -246,10 +246,10 @@ class DataService:
                 handle_version_retrieval(
                     schema.get_domain(), schema.get_dataset(), version=None
                 )
-                + NEW_SCHEMA_VERSION_INCREMENT
+                + SCHEMA_VERSION_INCREMENT
             )
+            schema.metadata = original_schema.metadata
             schema.metadata.version = new_version
-            schema.metadata.sensitivity = original_schema.get_sensitivity()
             self.check_for_protected_domain(schema)
             self.glue_adapter.check_crawler_is_ready(
                 schema.get_domain(), schema.get_dataset()
