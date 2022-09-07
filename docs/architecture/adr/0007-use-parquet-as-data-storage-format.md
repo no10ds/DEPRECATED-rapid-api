@@ -1,5 +1,5 @@
 # 0007 - Use Parquet as data storage format
-Date: 2022-26-08
+Date: 2022-08-26
 
 ## Status
 Accepted

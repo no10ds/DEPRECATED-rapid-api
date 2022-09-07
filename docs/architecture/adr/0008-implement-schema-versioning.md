@@ -1,6 +1,6 @@
 # 0008 - Implement Schema Versioning
 
-Date: 2022-28-08
+Date: 2022-08-28
 
 ## Status
 
