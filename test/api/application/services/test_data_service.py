@@ -508,6 +508,7 @@ class TestUploadDataset:
         self.s3_adapter.find_schema.assert_called_once_with("some", "other", 1)
 
     # Upload Dataset APPEND behaviour  -------------------------------------
+    @pytest.mark.skip("Story 413 - Testing")
     @patch("api.application.services.data_service.handle_version_retrieval")
     @patch("api.application.services.data_service.Thread")
     @patch("api.application.services.data_service.build_validated_dataframe")
@@ -923,6 +924,7 @@ class TestUploadDataset:
         assert result == "123-456-789_111-222-333.parquet"
 
     # Dataset chunk validation -------------------------------
+    @pytest.mark.skip("Story 413 - Testing")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
     def test_upload_dataset_in_chunks_with_invalid_column_headers(
         self, mock_construct_chunked_dataframe
