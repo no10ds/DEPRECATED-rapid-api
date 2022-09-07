@@ -44,9 +44,7 @@ SCHEMA_VERSION_INCREMENT = 1
 
 
 def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
-    return pd.read_csv(
-        file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=1_000_000
-    )
+    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=200_000)
 
 
 class DataService:
@@ -160,6 +158,9 @@ class DataService:
             f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}"
         )
         for chunk in construct_chunked_dataframe(file_path):
+            AppLogger.info(
+                f"Processing dataset chunk for {schema.get_domain()}/{schema.get_dataset()}"
+            )
             self.process_chunk(schema, raw_file_identifier, chunk)
 
         if schema.has_overwrite_behaviour():

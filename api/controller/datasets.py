@@ -264,6 +264,9 @@ def store_file_to_disk(file: UploadFile = File(...)) -> Path:
 
     with open(file_path, "wb") as incoming_file:
         while contents := file.file.read(mb_1 * chunk_size_mb):
+            AppLogger.info(
+                f"Writing incoming file chunk ({chunk_size_mb}MB) to disk [{file.filename}]"
+            )
             incoming_file.write(contents)
 
     return file_path
