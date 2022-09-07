@@ -45,7 +45,40 @@ class TestDataUpload(BaseClientTest):
 
         mock_store_file_to_disk.assert_called_once_with(ANY)
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path
+            "domain", "dataset", None, incoming_file_path
+        )
+
+        assert response.status_code == 202
+        assert response.json() == {
+            "details": {
+                "original_filename": "filename.csv",
+                "raw_filename": "123-456-789.csv",
+                "status": "Data processing",
+            }
+        }
+
+    @patch.object(DataService, "upload_dataset")
+    @patch("api.controller.datasets.store_file_to_disk")
+    def test_calls_data_upload_service_with_version_successfully(
+        self, mock_store_file_to_disk, mock_upload_dataset
+    ):
+        file_content = b"some,content"
+        incoming_file_path = Path("filename.csv")
+        incoming_file_name = "filename.csv"
+        raw_file_identifier = "123-456-789"
+
+        mock_store_file_to_disk.return_value = incoming_file_path
+        mock_upload_dataset.return_value = f"{raw_file_identifier}.csv"
+
+        response = self.client.post(
+            "/datasets/domain/dataset?version=2",
+            files={"file": (incoming_file_name, file_content, "text/csv")},
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        mock_store_file_to_disk.assert_called_once_with(ANY)
+        mock_upload_dataset.assert_called_once_with(
+            "domain", "dataset", 2, incoming_file_path
         )
 
         assert response.status_code == 202
@@ -78,7 +111,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path
+            "domain", "dataset", None, incoming_file_path
         )
 
         assert response.status_code == 400
@@ -141,7 +174,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path
+            "domain", "dataset", None, incoming_file_path
         )
 
         assert response.status_code == 429
@@ -160,13 +193,13 @@ class TestDataUpload(BaseClientTest):
         mock_upload_dataset.side_effect = AWSServiceError("Some message")
 
         response = self.client.post(
-            "/datasets/domain/dataset",
+            "/datasets/domain/dataset?version=3",
             files={"file": (incoming_file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
 
         mock_upload_dataset.assert_called_once_with(
-            "domain", "dataset", incoming_file_path
+            "domain", "dataset", 3, incoming_file_path
         )
 
         assert response.status_code == 500
@@ -575,12 +608,12 @@ class TestDeleteFiles(BaseClientTest):
     @patch.object(DeleteService, "delete_dataset_file")
     def test_returns_204_when_file_is_deleted(self, mock_delete_dataset_file):
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/2022-01-01T00:00:00-file.csv",
+            "/datasets/mydomain/mydataset/3/2022-01-01T00:00:00-file.csv",
             headers={"Authorization": "Bearer test-token"},
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", 3, "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 204
@@ -592,12 +625,12 @@ class TestDeleteFiles(BaseClientTest):
         mock_delete_dataset_file.side_effect = CrawlerIsNotReadyError("Some message")
 
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/2022-01-01T00:00:00-file.csv",
+            "/datasets/mydomain/mydataset/3/2022-01-01T00:00:00-file.csv?",
             headers={"Authorization": "Bearer test-token"},
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", 3, "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 429
@@ -612,12 +645,12 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/2022-01-01T00:00:00-file.csv",
+            "/datasets/mydomain/mydataset/2/2022-01-01T00:00:00-file.csv?",
             headers={"Authorization": "Bearer test-token"},
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", 2, "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 202
@@ -630,12 +663,12 @@ class TestDeleteFiles(BaseClientTest):
         mock_delete_dataset_file.side_effect = UserError("Some random message")
 
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/2022-01-01T00:00:00-file.csv",
+            "/datasets/mydomain/mydataset/5/2022-01-01T00:00:00-file.csv",
             headers={"Authorization": "Bearer test-token"},
         )
 
         mock_delete_dataset_file.assert_called_once_with(
-            "mydomain", "mydataset", "2022-01-01T00:00:00-file.csv"
+            "mydomain", "mydataset", 5, "2022-01-01T00:00:00-file.csv"
         )
 
         assert response.status_code == 400

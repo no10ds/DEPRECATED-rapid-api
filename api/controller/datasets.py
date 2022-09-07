@@ -151,11 +151,11 @@ async def list_raw_files(domain: str, dataset: str):
 
 
 @datasets_router.delete(
-    "/{domain}/{dataset}/{filename}",
+    "/{domain}/{dataset}/{version}/{filename}",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 async def delete_data_file(
-    domain: str, dataset: str, filename: str, response: Response
+    domain: str, dataset: str, version: int, filename: str, response: Response
 ):
     """
     ## Delete Data File
@@ -186,7 +186,7 @@ async def delete_data_file(
 
     """
     try:
-        delete_service.delete_dataset_file(domain, dataset, filename)
+        delete_service.delete_dataset_file(domain, dataset, version, filename)
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
     except CrawlerStartFailsError as error:
         AppLogger.warning("Failed to start crawler: %s", error.args[0])
@@ -200,7 +200,11 @@ async def delete_data_file(
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 def upload_data(
-    domain: str, dataset: str, response: Response, file: UploadFile = File(...)
+    domain: str,
+    dataset: str,
+    response: Response,
+    version: Optional[int] = None,
+    file: UploadFile = File(...),
 ):
     """
     ## Upload dataset
@@ -244,7 +248,9 @@ def upload_data(
     """
     try:
         incoming_file_path = store_file_to_disk(file)
-        raw_filename = data_service.upload_dataset(domain, dataset, incoming_file_path)
+        raw_filename = data_service.upload_dataset(
+            domain, dataset, version, incoming_file_path
+        )
         response.status_code = http_status.HTTP_202_ACCEPTED
         return {
             "details": {

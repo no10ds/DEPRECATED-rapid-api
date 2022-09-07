@@ -46,9 +46,11 @@ class S3Adapter:
             if error.response["Error"]["Code"] == "NoSuchKey":
                 return None
 
-    def find_raw_file(self, domain: str, dataset: str, filename: str):
+    def find_raw_file(self, domain: str, dataset: str, version: int, filename: str):
         try:
-            self.retrieve_data(StorageMetaData(domain, dataset).raw_data_path(filename))
+            self.retrieve_data(
+                StorageMetaData(domain, dataset, version).raw_data_path(filename)
+            )
         except ClientError as error:
             if error.response["Error"]["Code"] == "NoSuchKey":
                 raise UserError(f"The file [{filename}] does not exist")
@@ -80,30 +82,36 @@ class S3Adapter:
         self,
         domain: str,
         dataset: str,
+        version: int,
         filename: str,
         partitioned_data: List[Tuple[str, pd.DataFrame]],
     ):
 
         for index, (partition_path, data) in enumerate(partitioned_data):
             AppLogger.info(
-                f"Uploading partition {index + 1}/{len(partitioned_data)} for {domain}/{dataset}"
+                f"Uploading partition {index + 1}/{len(partitioned_data)} for {domain}/{dataset}/{version}"
             )
             upload_path = self._construct_partitioned_data_path(
-                partition_path, filename, domain, dataset
+                partition_path, filename, domain, dataset, version
             )
             data_content = data.to_parquet(compression="gzip", index=False)
             self.store_data(upload_path, data_content)
 
     def upload_raw_data(
-        self, domain: str, dataset: str, file_path: Path, raw_file_identifier: str
+        self, schema: Schema, file_path: Path, raw_file_identifier: str
     ):
-        AppLogger.info(f"Raw data upload for {domain}/{dataset} started")
+        domain = schema.get_domain()
+        dataset = schema.get_dataset()
+        version = schema.get_version()
+        AppLogger.info(f"Raw data upload for {domain}/{dataset}/{version} started")
         filename = f"{raw_file_identifier}.csv"
-        raw_data_path = StorageMetaData(domain, dataset).raw_data_path(filename)
+        raw_data_path = StorageMetaData(domain, dataset, version).raw_data_path(
+            filename
+        )
         self.__s3_client.upload_file(
             Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path
         )
-        AppLogger.info(f"Raw data upload for {domain}/{dataset} completed")
+        AppLogger.info(f"Raw data upload for {domain}/{dataset}/{version} completed")
 
     def list_raw_files(self, domain: str, dataset: str) -> List[str]:
         object_list = self._list_files_from_path(
@@ -112,10 +120,10 @@ class S3Adapter:
         return self._map_object_list_to_filename(object_list)
 
     def delete_dataset_files(
-        self, domain: str, dataset: str, raw_data_filename: str
+        self, domain: str, dataset: str, version: int, raw_data_filename: str
     ) -> None:
-        dataset_metadata = StorageMetaData(domain, dataset)
-        files = self._list_files_from_path(dataset_metadata.location())
+        dataset_metadata = StorageMetaData(domain, dataset, version)
+        files = self._list_files_from_path(dataset_metadata.file_location())
         raw_file_identifier = self._clean_filename(raw_data_filename)
 
         files_to_delete = [
@@ -134,10 +142,15 @@ class S3Adapter:
         return file_key.rsplit("/", 1)[-1].split(".")[0]
 
     def _construct_partitioned_data_path(
-        self, partition_path: str, filename: str, domain: str, dataset: str
+        self,
+        partition_path: str,
+        filename: str,
+        domain: str,
+        dataset: str,
+        version: int,
     ) -> str:
-        dataset_meta_data = StorageMetaData(domain, dataset)
-        return os.path.join(dataset_meta_data.location(), partition_path, filename)
+        dataset_meta_data = StorageMetaData(domain, dataset, version)
+        return os.path.join(dataset_meta_data.file_location(), partition_path, filename)
 
     def _delete_objects(self, files_to_delete: List[Dict], filename: str):
         response = self.__s3_client.delete_objects(

@@ -49,7 +49,7 @@ class BaseJourneyTest(ABC):
         return f"{self.base_url}/subjects/permissions"
 
     def delete_data_url(self, domain: str, dataset: str, raw_filename: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/{raw_filename}"
+        return f"{self.datasets_endpoint}/{domain}/{dataset}/1/{raw_filename}"
 
     def permissions_url(self) -> str:
         return f"{self.base_url}/permissions"
@@ -184,7 +184,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
     def upload_test_file_to_(self, data_directory: str, domain: str, filename: str):
         self.s3_client.put_object(
             Bucket=DATA_BUCKET,
-            Key=f"{data_directory}/{domain}/{filename}",
+            Key=f"{data_directory}/{domain}/1/{filename}",
             Body=open("./test/e2e/" + self.filename, "rb"),
         )
 

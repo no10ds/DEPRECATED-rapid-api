@@ -79,8 +79,11 @@ class DataService:
     def generate_permanent_filename(self, raw_file_identifier: str) -> str:
         return f"{raw_file_identifier}_{uuid.uuid4()}.parquet"
 
-    def upload_dataset(self, domain: str, dataset: str, file_path: Path) -> str:
-        schema = self._get_schema(domain, dataset, 1)
+    def upload_dataset(
+        self, domain: str, dataset: str, version: Optional[int], file_path: Path
+    ) -> str:
+        version = handle_version_retrieval(domain, dataset, version)
+        schema = self._get_schema(domain, dataset, version)
         if not schema:
             raise SchemaNotFoundError(
                 f"Could not find schema related to the dataset [{dataset}]"
@@ -126,8 +129,7 @@ class DataService:
             #     Thread(
             #         target=self.s3_adapter.upload_raw_data,
             #         args=(
-            #             schema.get_domain(),
-            #             schema.get_dataset(),
+            #             schema,
             #             file_path,
             #             raw_file_identifier,
             #         ),
@@ -150,27 +152,27 @@ class DataService:
             os.remove(file_path.name)
             if raw_file_identifier:
                 AppLogger.info(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} deleted. Raw file identifier: {raw_file_identifier}"
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted. Raw file identifier: {raw_file_identifier}"
                 )
             else:
                 AppLogger.info(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} deleted"
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted"
                 )
         except (FileNotFoundError, TypeError) as error:
             if raw_file_identifier:
                 AppLogger.error(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
                 )
             else:
                 AppLogger.error(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} not deleted. Detail: {error}"
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Detail: {error}"
                 )
 
     def process_chunks(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
         AppLogger.info(
-            f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}"
+            f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()}"
         )
         for chunk in construct_chunked_dataframe(file_path):
             AppLogger.info(
@@ -184,7 +186,7 @@ class DataService:
         self.glue_adapter.start_crawler(schema.get_domain(), schema.get_dataset())
         self.glue_adapter.update_catalog_table_config(schema)
         AppLogger.info(
-            f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()} completed"
+            f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} completed"
         )
 
     def process_chunk(
@@ -324,7 +326,11 @@ class DataService:
     ):
         partitioned_data = generate_partitioned_data(schema, validated_dataframe)
         self.s3_adapter.upload_partitioned_data(
-            schema.get_domain(), schema.get_dataset(), filename, partitioned_data
+            schema.get_domain(),
+            schema.get_dataset(),
+            schema.get_version(),
+            filename,
+            partitioned_data,
         )
 
     def _get_schema(self, domain: str, dataset: str, version: int) -> Schema:

@@ -454,6 +454,7 @@ class TestUploadDataset:
             metadata=SchemaMetadata(
                 domain="some",
                 dataset="other",
+                version="2",
                 sensitivity="PUBLIC",
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
@@ -496,15 +497,18 @@ class TestUploadDataset:
         )
 
     # Schema retrieval -------------------------------
-    def test_raises_error_when_schema_does_not_exist(self):
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_raises_error_when_schema_does_not_exist(self, mock_get_version):
         self.s3_adapter.find_schema.return_value = None
+        mock_get_version.return_value = 1
 
         with pytest.raises(SchemaNotFoundError):
-            self.data_service.upload_dataset("some", "other", Path("data.csv"))
+            self.data_service.upload_dataset("some", "other", None, Path("data.csv"))
 
         self.s3_adapter.find_schema.assert_called_once_with("some", "other", 1)
 
     # Upload Dataset APPEND behaviour  -------------------------------------
+    @patch("api.application.services.data_service.handle_version_retrieval")
     @patch("api.application.services.data_service.Thread")
     @patch("api.application.services.data_service.build_validated_dataframe")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -513,10 +517,12 @@ class TestUploadDataset:
         mock_construct_chunked_dataframe,
         mock_build_validated_dataframe,
         _mock_thread,
+        mock_get_version,
     ):
         # Given
         schema = self.valid_schema
         self.s3_adapter.find_schema.return_value = schema
+        mock_get_version.return_value = 1
 
         chunk1 = pd.DataFrame({})
         chunk2 = pd.DataFrame({})
@@ -535,18 +541,21 @@ class TestUploadDataset:
         ]
 
         # When
-        self.data_service.upload_dataset("domain1", "dataset1", Path("data.csv"))
+        self.data_service.upload_dataset("domain1", "dataset1", None, Path("data.csv"))
 
         mock_build_validated_dataframe.assert_has_calls(expected_calls)
 
+    @patch("api.application.services.data_service.handle_version_retrieval")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
     def test_upload_dataset_triggers_processing_manager(
-        self, _mock_construct_chunked_dataframe
+        self, _mock_construct_chunked_dataframe, mock_get_version
     ):
         # GIVEN
         schema = self.valid_schema
 
         self.s3_adapter.find_schema.return_value = schema
+
+        mock_get_version.return_value = 1
 
         self.data_service.generate_raw_file_identifier = Mock(
             return_value="123-456-789"
@@ -556,7 +565,7 @@ class TestUploadDataset:
 
         # WHEN
         uploaded_raw_file = self.data_service.upload_dataset(
-            "some", "other", Path("data.csv")
+            "some", "other", None, Path("data.csv")
         )
 
         # THEN
@@ -617,7 +626,7 @@ class TestUploadDataset:
             schema, Path("data.csv"), "123-456-789"
         )
         self.s3_adapter.upload_raw_data.assert_called_once_with(
-            "some", "other", Path("data.csv"), "123-456-789"
+            schema, Path("data.csv"), "123-456-789"
         )
         mock_os.remove.assert_called_once_with("data.csv")
 
@@ -896,7 +905,7 @@ class TestUploadDataset:
 
         # Then
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", filename, partitioned_dataframe
+            "some", "other", 2, filename, partitioned_dataframe
         )
 
     # Generate Permanent Filename ----------------------------
@@ -932,7 +941,7 @@ class TestUploadDataset:
         )
 
         with pytest.raises(UnprocessableDatasetError):
-            self.data_service.upload_dataset("some", "other", Path("data.csv"))
+            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
     def test_upload_dataset_in_chunks_with_invalid_data(
@@ -956,7 +965,7 @@ class TestUploadDataset:
         )
 
         try:
-            self.data_service.upload_dataset("some", "other", Path("data.csv"))
+            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
         except DatasetValidationError as error:
             assert {
                 "Failed to convert column [colname1] to type [Int64]",
@@ -989,7 +998,7 @@ class TestUploadDataset:
         )
 
         try:
-            self.data_service.upload_dataset("some", "other", Path("data.csv"))
+            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
         except DatasetValidationError as error:
             assert {
                 "Column [colname1] has an incorrect data type. Expected Int64, received "
@@ -1006,7 +1015,7 @@ class TestUploadDataset:
         )
 
         with pytest.raises(AWSServiceError, match="Some message"):
-            self.data_service.upload_dataset("some", "other", Path("data.csv"))
+            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
             "some", "other"
@@ -1020,7 +1029,7 @@ class TestUploadDataset:
         )
 
         with pytest.raises(CrawlerIsNotReadyError):
-            self.data_service.upload_dataset("some", "other", Path("data.csv"))
+            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
             "some", "other"

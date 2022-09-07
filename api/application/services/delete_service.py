@@ -14,11 +14,15 @@ class DeleteService:
     def delete_schema(self, domain: str, dataset: str, sensitivity: str, version: int):
         self.persistence_adapter.delete_schema(domain, dataset, sensitivity, version)
 
-    def delete_dataset_file(self, domain: str, dataset: str, filename: str):
+    def delete_dataset_file(
+        self, domain: str, dataset: str, version: int, filename: str
+    ):
         self._validate_filename(filename)
-        self.persistence_adapter.find_raw_file(domain, dataset, filename)
+        self.persistence_adapter.find_raw_file(domain, dataset, version, filename)
         self.glue_adapter.check_crawler_is_ready(domain, dataset)
-        self.persistence_adapter.delete_dataset_files(domain, dataset, filename)
+        self.persistence_adapter.delete_dataset_files(
+            domain, dataset, version, filename
+        )
         self.glue_adapter.start_crawler(domain, dataset)
 
     def _validate_filename(self, filename: str):

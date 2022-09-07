@@ -77,6 +77,7 @@ class TestS3AdapterUpload:
     def test_upload_partitioned_data(self):
         domain = "domain"
         dataset = "dataset"
+        version = 1
         filename = "data.parquet"
 
         partition_1 = pd.DataFrame({"colname2": ["user1"]})
@@ -88,7 +89,7 @@ class TestS3AdapterUpload:
         ]
 
         self.persistence_adapter.upload_partitioned_data(
-            domain, dataset, filename, partitioned_data
+            domain, dataset, version, filename, partitioned_data
         )
 
         partition_1_parquet = partition_1.to_parquet(compression="gzip", index=False)
@@ -97,12 +98,12 @@ class TestS3AdapterUpload:
         calls = [
             call(
                 Bucket="dataset",
-                Key="data/domain/dataset/year=2020/month=1/data.parquet",
+                Key="data/domain/dataset/1/year=2020/month=1/data.parquet",
                 Body=partition_1_parquet,
             ),
             call(
                 Bucket="dataset",
-                Key="data/domain/dataset/year=2020/month=2/data.parquet",
+                Key="data/domain/dataset/1/year=2020/month=2/data.parquet",
                 Body=partition_2_parquet,
             ),
         ]
@@ -139,9 +140,25 @@ class TestS3AdapterUpload:
         assert result == "test_domain/test_dataset/1/schema.json"
 
     def test_raw_data_upload(self):
+        valid_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="some",
+                dataset="values",
+                sensitivity="PUBLIC",
+                version=2,
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                )
+            ],
+        )
+
         self.persistence_adapter.upload_raw_data(
-            domain="some",
-            dataset="values",
+            valid_schema,
             file_path=Path("filename.csv"),
             raw_file_identifier="123-456-789",
         )
@@ -149,7 +166,7 @@ class TestS3AdapterUpload:
         self.mock_s3_client.upload_file.assert_called_with(
             Filename="filename.csv",
             Bucket="dataset",
-            Key="raw_data/some/values/123-456-789.csv",
+            Key="raw_data/some/values/2/123-456-789.csv",
         )
 
 
@@ -215,9 +232,9 @@ class TestS3AdapterDataRetrieval:
         assert schema is None
 
     def test_find_raw_file_when_file_exists(self):
-        self.persistence_adapter.find_raw_file("domain", "dataset", "filename.csv")
+        self.persistence_adapter.find_raw_file("domain", "dataset", 1, "filename.csv")
         self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="raw_data/domain/dataset/filename.csv"
+            Bucket="dataset", Key="raw_data/domain/dataset/1/filename.csv"
         )
 
     def test_throws_error_for_find_raw_file_when_file__does_not_exist(self):
@@ -229,10 +246,10 @@ class TestS3AdapterDataRetrieval:
         )
 
         with pytest.raises(UserError, match="The file \\[bad_file\\] does not exist"):
-            self.persistence_adapter.find_raw_file("domain", "dataset", "bad_file")
+            self.persistence_adapter.find_raw_file("domain", "dataset", 2, "bad_file")
 
         self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="raw_data/domain/dataset/bad_file"
+            Bucket="dataset", Key="raw_data/domain/dataset/2/bad_file"
         )
 
 
@@ -284,10 +301,10 @@ class TestS3Deletion:
         }
 
         self.persistence_adapter.delete_dataset_files(
-            "domain", "dataset", "123-456-789.csv"
+            "domain", "dataset", 1, "123-456-789.csv"
         )
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="data-bucket", Prefix="data/domain/dataset"
+            Bucket="data-bucket", Prefix="data/domain/dataset/1"
         )
 
         self.mock_s3_client.delete_objects.assert_called_once_with(
@@ -304,7 +321,7 @@ class TestS3Deletion:
                         "Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet",
                     },
                     {
-                        "Key": "raw_data/domain/dataset/123-456-789.csv",
+                        "Key": "raw_data/domain/dataset/1/123-456-789.csv",
                     },
                 ],
             },
@@ -329,16 +346,16 @@ class TestS3Deletion:
                 {"Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"},
                 {"Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"},
                 {
-                    "Key": "raw_data/domain/dataset/123-456-789.csv",
+                    "Key": "raw_data/domain/dataset/1/123-456-789.csv",
                 },
             ]
         }
 
         self.persistence_adapter.delete_dataset_files(
-            "domain", "dataset", "123-456-789.csv"
+            "domain", "dataset", 1, "123-456-789.csv"
         )
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="data-bucket", Prefix="data/domain/dataset"
+            Bucket="data-bucket", Prefix="data/domain/dataset/1"
         )
 
         self.mock_s3_client.delete_objects.assert_called_once_with(
@@ -355,7 +372,7 @@ class TestS3Deletion:
                         "Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
                     },
                     {
-                        "Key": "raw_data/domain/dataset/123-456-789.csv",
+                        "Key": "raw_data/domain/dataset/1/123-456-789.csv",
                     },
                 ],
             },
@@ -384,11 +401,11 @@ class TestS3Deletion:
 
         with pytest.raises(AWSServiceError, match=msg):
             self.persistence_adapter.delete_dataset_files(
-                "domain", "dataset", "123-456-789.csv"
+                "domain", "dataset", 3, "123-456-789.csv"
             )
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="data-bucket", Prefix="data/domain/dataset"
+            Bucket="data-bucket", Prefix="data/domain/dataset/3"
         )
 
 
@@ -488,7 +505,7 @@ class TestS3FileList:
         ]
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"
+            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
         )
 
     def test_list_raw_files_when_empty(self):
@@ -502,7 +519,7 @@ class TestS3FileList:
         assert raw_files == []
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"
+            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
         )
 
     def test_list_raw_files_when_empty_response(self):
@@ -512,5 +529,5 @@ class TestS3FileList:
         assert raw_files == []
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"
+            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
         )
