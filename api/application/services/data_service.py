@@ -123,17 +123,17 @@ class DataService:
                     args=(schema, file_path, raw_file_identifier),
                 )
             ),
-            (
-                Thread(
-                    target=self.s3_adapter.upload_raw_data,
-                    args=(
-                        schema.get_domain(),
-                        schema.get_dataset(),
-                        file_path,
-                        raw_file_identifier,
-                    ),
-                )
-            ),
+            # (
+            #     Thread(
+            #         target=self.s3_adapter.upload_raw_data,
+            #         args=(
+            #             schema.get_domain(),
+            #             schema.get_dataset(),
+            #             file_path,
+            #             raw_file_identifier,
+            #         ),
+            #     )
+            # ),
         ]
 
         for thread in processing_threads:
