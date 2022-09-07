@@ -155,9 +155,12 @@ class BaseTestUI(ABC):
         self.choose_and_upload_file(page)
         self.assert_contains_label(page, FILENAME)
         self.click_button(page, "Upload dataset")
-        self.assert_contains_label(
-            page, "File accepted: test_journey_file.csv. Status: Data processing"
+        self.assert_contains_text_by_regex(page, "File accepted: test_journey_file.csv")
+        self.assert_contains_text_by_regex(
+            page,
+            r"Raw file name: [a-z\d]{8}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{12}.csv",
         )
+        self.assert_contains_text_by_regex(page, "Status: Data processing")
 
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")
@@ -170,6 +173,13 @@ class BaseTestUI(ABC):
         for row in rows_in_table:
             print(f"Checking row '{row}' exists in table")
             expect(page.locator(f'tr:has-text("{row}")')).to_have_count(1)
+
+    def assert_contains_text_by_regex(self, page, regex: str, re_flags: str = "i"):
+        print(
+            f"Checking for text on page matching {regex} with regex flags: {re_flags}"
+        )
+        locator = page.locator(f"text=/{regex}/{re_flags}")
+        assert len(locator.all_text_contents()) == 1
 
 
 class TestUI(BaseTestUI):
