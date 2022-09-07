@@ -25,6 +25,7 @@ from api.common.custom_exceptions import (
     UserError,
     AWSServiceError,
     CrawlerUpdateError,
+    DatasetValidationError,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval
@@ -90,17 +91,17 @@ class DataService:
         else:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
 
-            # # Validate chunks
-            # AppLogger.info(f"Validating dataset for {domain}/{dataset}")
-            # dataset_errors = set()
-            # for chunk in construct_chunked_dataframe(file_path):
-            #     try:
-            #         build_validated_dataframe(schema, chunk)
-            #     except DatasetValidationError as error:
-            #         dataset_errors.update(error.message)
-            # if dataset_errors:
-            #     self.delete_incoming_raw_file(file_path, schema, None)
-            #     raise DatasetValidationError(list(dataset_errors))
+            # Validate chunks
+            AppLogger.info(f"Validating dataset for {domain}/{dataset}")
+            dataset_errors = set()
+            for chunk in construct_chunked_dataframe(file_path):
+                try:
+                    build_validated_dataframe(schema, chunk)
+                except DatasetValidationError as error:
+                    dataset_errors.update(error.message)
+            if dataset_errors:
+                self.delete_incoming_raw_file(file_path, schema, None)
+                raise DatasetValidationError(list(dataset_errors))
 
             raw_file_identifier = self.generate_raw_file_identifier()
 
