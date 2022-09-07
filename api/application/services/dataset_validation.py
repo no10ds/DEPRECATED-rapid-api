@@ -1,12 +1,14 @@
 from typing import Tuple
 
 import pandas as pd
+import psutil
 from pandas import Timestamp
 
 from api.common.custom_exceptions import (
     DatasetValidationError,
     UnprocessableDatasetError,
 )
+from api.common.logger import AppLogger
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema
@@ -14,6 +16,10 @@ from api.domain.validation_context import ValidationContext
 
 
 def build_validated_dataframe(schema: Schema, dataframe: pd.DataFrame) -> pd.DataFrame:
+    AppLogger.info(
+        f"Validating dataset chunk for {schema.get_domain()}/{schema.get_dataset()}"
+    )
+    AppLogger.info(f"CPU utilisation: {psutil.cpu_percent()}%")
     return transform_and_validate(schema, dataframe)
 
 

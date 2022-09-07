@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Optional
 
+import psutil
 from fastapi import APIRouter, Request
 from fastapi import UploadFile, File, Response, Security
 from fastapi import status as http_status
@@ -266,6 +267,9 @@ def store_file_to_disk(file: UploadFile = File(...)) -> Path:
         while contents := file.file.read(mb_1 * chunk_size_mb):
             AppLogger.info(
                 f"Writing incoming file chunk ({chunk_size_mb}MB) to disk [{file.filename}]"
+            )
+            AppLogger.info(
+                f"Available disk space: {psutil.disk_usage('/').free / (2**30)}GB"
             )
             incoming_file.write(contents)
 

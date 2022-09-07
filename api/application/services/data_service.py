@@ -97,6 +97,7 @@ class DataService:
                 except DatasetValidationError as error:
                     dataset_errors.update(error.message)
             if dataset_errors:
+                self.delete_incoming_raw_file(file_path, schema, None)
                 raise DatasetValidationError(list(dataset_errors))
 
             raw_file_identifier = self.generate_raw_file_identifier()
@@ -140,16 +141,30 @@ class DataService:
         while any(thread.is_alive() for thread in processing_threads):
             sleep(30)
 
+        self.delete_incoming_raw_file(file_path, schema, raw_file_identifier)
+
+    def delete_incoming_raw_file(
+        self, file_path: Path, schema: Schema, raw_file_identifier: Optional[str] = None
+    ):
         try:
             os.remove(file_path.name)
-            AppLogger.info(
-                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} deleted. Raw file identifier: {raw_file_identifier}"
-            )
+            if raw_file_identifier:
+                AppLogger.info(
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} deleted. Raw file identifier: {raw_file_identifier}"
+                )
+            else:
+                AppLogger.info(
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} deleted"
+                )
         except (FileNotFoundError, TypeError) as error:
-            AppLogger.error(
-                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
-            )
-            pass
+            if raw_file_identifier:
+                AppLogger.error(
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
+                )
+            else:
+                AppLogger.error(
+                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()} not deleted. Detail: {error}"
+                )
 
     def process_chunks(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
