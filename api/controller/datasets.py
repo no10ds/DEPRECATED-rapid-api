@@ -160,23 +160,23 @@ async def delete_data_file(
     """
     ## Delete Data File
 
-    Use this endpoint to delete a specific file linked to a domain/dataset. If there is no data stored for the
-    domain/dataset or the file name is invalid an error will be thrown.
+    Use this endpoint to delete a specific file linked to a domain/dataset/version. If there is no data stored for the
+    domain/dataset/version or the file name is invalid an error will be thrown.
 
-    When a valid file in the domain/dataset is deleted, a success message will be displayed.
+    When a valid file in the domain/dataset/version is deleted, a success message will be displayed.
 
     ### General structure
 
-    `GET /datasets/{domain}/{dataset}/{filename}`
+    `GET /datasets/{domain}/{dataset}/{version}/{filename}`
 
     ### Inputs
 
-    | Parameters | Usage                                   | Example values                  | Definition                    |
-    |------------|-----------------------------------------|---------------------------------|-------------------------------|
-    | `domain`   | URL parameter                           | `land`                          | domain of the dataset         |
-    | `dataset`  | URL parameter                           | `train_journeys`                | dataset title                 |
-    | `filename` | URL parameter                           | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
-
+    | Parameters | Required | Usage         | Example values                  | Definition                    |
+    |------------|----------|---------------|---------------------------------|-------------------------------|
+    | `domain`   | True     | URL parameter | `land`                          | domain of the dataset         |
+    | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
+    | `version`  | True     | URL parameter | `3`                             | dataset version               |
+    | `filename` | True     | URL parameter | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
 
     ### Accepted permissions
     In order to use this endpoint you need a relevant WRITE permission that matches the dataset sensitivity level,
@@ -215,11 +215,12 @@ def upload_data(
 
     ### Inputs
 
-    | Parameters    | Usage                                   | Example values               | Definition              |
-    |---------------|-----------------------------------------|------------------------------|-------------------------|
-    | `domain`      | URL parameter                           | `air`                        | domain of the dataset   |
-    | `dataset`     | URL parameter                           | `passengers_by_airport`      | dataset title           |
-    | `file`        | File in form data with key value `file` | `passengers_by_airport.csv`  | the dataset file itself |
+    | Parameters | Required | Usage                                   | Example values              | Definition              |
+    |------------|----------|-----------------------------------------|-----------------------------|-------------------------|
+    | `domain`   | True     | URL parameter                           | `air`                       | domain of the dataset   |
+    | `dataset`  | True     | URL parameter                           | `passengers_by_airport`     | dataset title           |
+    | `version`  | False    | Query parameter                         | `3`                         | dataset version         |
+    | `file`     | True     | File in form data with key value `file` | `passengers_by_airport.csv` | the dataset file itself |
 
     #### Domain and dataset
 
@@ -248,7 +249,7 @@ def upload_data(
     """
     try:
         incoming_file_path = store_file_to_disk(file)
-        raw_filename = data_service.upload_dataset(
+        raw_filename, version = data_service.upload_dataset(
             domain, dataset, version, incoming_file_path
         )
         response.status_code = http_status.HTTP_202_ACCEPTED
@@ -256,6 +257,7 @@ def upload_data(
             "details": {
                 "original_filename": incoming_file_path.name,
                 "raw_filename": raw_filename,
+                "dataset_version": version,
                 "status": "Data processing",
             }
         }

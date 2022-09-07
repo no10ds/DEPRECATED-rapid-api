@@ -577,7 +577,7 @@ class TestUploadDataset:
         self.data_service.manage_processing.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
-        assert uploaded_raw_file == "123-456-789.csv"
+        assert uploaded_raw_file == ("123-456-789.csv", 1)
 
     @pytest.mark.skip("Story 413 - Testing")
     @patch("api.application.services.data_service.Thread")

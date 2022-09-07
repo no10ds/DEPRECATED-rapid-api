@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from threading import Thread
 from time import sleep
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 from pandas.io.parsers import TextFileReader
@@ -81,12 +81,12 @@ class DataService:
 
     def upload_dataset(
         self, domain: str, dataset: str, version: Optional[int], file_path: Path
-    ) -> str:
+    ) -> Tuple[str, int]:
         version = handle_version_retrieval(domain, dataset, version)
         schema = self._get_schema(domain, dataset, version)
         if not schema:
             raise SchemaNotFoundError(
-                f"Could not find schema related to the dataset [{dataset}]"
+                f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
             )
         else:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
@@ -110,7 +110,7 @@ class DataService:
                 args=(schema, file_path, raw_file_identifier),
             ).start()
 
-            return f"{raw_file_identifier}.csv"
+            return f"{raw_file_identifier}.csv", version
 
     def manage_processing(
         self, schema: Schema, file_path: Path, raw_file_identifier: str

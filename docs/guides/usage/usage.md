@@ -304,11 +304,12 @@ upload, these are sent back in the response to facilitate you fixing the issues.
 
 ### Inputs
 
-| Parameters    | Usage                                   | Example values               | Definition              |
-|---------------|-----------------------------------------|------------------------------|-------------------------|
-| `domain`      | URL parameter                           | `air`                        | domain of the dataset   |
-| `dataset`     | URL parameter                           | `passengers_by_airport`      | dataset title           |
-| `file`        | File in form data with key value `file` | `passengers_by_airport.csv`  | the dataset file itself |
+| Parameters | Required | Usage                                   | Example values              | Definition              |
+|------------|----------|-----------------------------------------|-----------------------------|-------------------------|
+| `domain`   | True     | URL parameter                           | `air`                       | domain of the dataset   |
+| `dataset`  | True     | URL parameter                           | `passengers_by_airport`     | dataset title           |
+| `version`  | False    | Query parameter                         | `3`                         | dataset version         |
+| `file`     | True     | File in form data with key value `file` | `passengers_by_airport.csv` | the dataset file itself |
 
 ### Output
 
@@ -329,12 +330,12 @@ e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
 
 #### Example 1:
 
-- Request url: `/datasets/land/train_journeys/`
+- Request url: `/datasets/land/train_journeys?version=3`
 - Form data: `file=train_journeys.csv`
 
 #### Example 2:
 
-- Request url: `/datasets/air/passengers_by_airport`
+- Request url: `/datasets/air/passengers_by_airport?version=2`
 - Form data: `file=passengers_by_airport.csv`
 
 ## List datasets
@@ -627,15 +628,16 @@ When a valid file in the domain/dataset is deleted success message will be displ
 
 ### General structure
 
-`GET /datasets/{domain}/{dataset}/{filename}`
+`GET /datasets/{domain}/{dataset}/{version}/{filename}`
 
 ### Inputs
 
-| Parameters | Usage                                   | Example values                  | Definition                    |
-|------------|-----------------------------------------|---------------------------------|-------------------------------|
-| `domain`   | URL parameter                           | `land`                          | domain of the dataset         |
-| `dataset`  | URL parameter                           | `train_journeys`                | dataset title                 |
-| `filename` | URL parameter                           | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
+| Parameters | Required | Usage         | Example values                  | Definition                    |
+|------------|----------|---------------|---------------------------------|-------------------------------|
+| `domain`   | True     | URL parameter | `land`                          | domain of the dataset         |
+| `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
+| `version`  | True     | URL parameter | `3`                             | dataset version               |
+| `filename` | True     | URL parameter | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
 
 ### Accepted permissions
 
@@ -646,7 +648,7 @@ e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
 #### Example 1:
 
-- Request url: `/datasets/land/train_journeys/2022-01-21T17:12:31-file1.csv`
+- Request url: `/datasets/land/train_journeys/3/2022-01-21T17:12:31-file1.csv`
 
 ## Query dataset
 
