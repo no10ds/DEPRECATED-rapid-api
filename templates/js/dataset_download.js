@@ -23,14 +23,14 @@ function createQuery() {
    return queryBody
 }
 
-const downloadDataset = (domain, dataset) => {
+const downloadDataset = (domain, dataset, version) => {
     const selected_format = get_selected_value("select_format");
     const spinner = document.getElementsByClassName("loading-spinner")[0];
 
     spinner.style.display = "block"
     const accept_header = selected_format === "json" ? "application/json" : "text/csv"
 
-    fetch(`/datasets/${domain}/${dataset}/query`, {
+    fetch(`/datasets/${domain}/${dataset}/query?version=${version}`, {
         method: "POST",
         headers: new Headers({
             "Accept": accept_header,
@@ -44,7 +44,7 @@ const downloadDataset = (domain, dataset) => {
                 // disable submit button till the dataset downloads
                 toggleSwitchDisable('download-dataset', true)
 
-                downloadFile(blob, domain, dataset, selected_format)
+                downloadFile(blob, domain, dataset, version, selected_format)
                 // enable submit button back
                 toggleSwitchDisable('download-dataset', false)
                 }
@@ -64,12 +64,12 @@ function toggleSwitchDisable(elementId, isDisabled) {
     elementToToggle.disabled = isDisabled
 }
 
-function downloadFile(blob, domain, dataset, selected_format) {
+function downloadFile(blob, domain, dataset, version, selected_format) {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = `${domain}_${dataset}.${selected_format}`;
+                a.download = `${domain}_${dataset}_${version}.${selected_format}`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
