@@ -102,11 +102,18 @@ class DataService:
     def process_upload(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
-        self.wait_until_crawler_is_ready(schema)
-        self.validate_incoming_data(schema, file_path, raw_file_identifier)
-        self.s3_adapter.upload_raw_data(schema, file_path, raw_file_identifier)
-        self.process_chunks(schema, file_path, raw_file_identifier)
-        self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+        try:
+            self.wait_until_crawler_is_ready(schema)
+            self.validate_incoming_data(schema, file_path, raw_file_identifier)
+            self.s3_adapter.upload_raw_data(schema, file_path, raw_file_identifier)
+            self.process_chunks(schema, file_path, raw_file_identifier)
+            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+        except Exception as error:
+            AppLogger.error(
+                f"Processing upload failed for {schema.get_domain()}, dataset {schema.get_dataset()}, and version {schema.get_version()}: {error}"
+            )
+            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            raise error
 
     def wait_until_crawler_is_ready(self, schema: Schema) -> None:
         remaining_retries = 20

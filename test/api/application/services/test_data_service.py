@@ -637,6 +637,28 @@ class TestUploadDataset:
         self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
+    @patch.object(DataService, "delete_incoming_raw_file")
+    @patch.object(DataService, "validate_incoming_data")
+    @patch.object(DataService, "wait_until_crawler_is_ready")
+    def test_deletes_incoming_file_from_disk_if_any_error_during_processing(
+        self,
+        _mock_wait_until_crawler_is_ready,
+        mock_validate_incoming_data,
+        mock_delete_incoming_raw_file,
+    ):
+        # Given
+        schema = self.valid_schema
+
+        mock_validate_incoming_data.side_effect = DatasetValidationError("some message")
+
+        # When/Then
+        with pytest.raises(DatasetValidationError, match="some message"):
+            self.data_service.process_upload(schema, Path("data.csv"), "123-456-789")
+
+        mock_delete_incoming_raw_file.assert_called_once_with(
+            schema, Path("data.csv"), "123-456-789"
+        )
+
     # Validate dataset ---------------------------------------
     @patch("api.application.services.data_service.build_validated_dataframe")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
