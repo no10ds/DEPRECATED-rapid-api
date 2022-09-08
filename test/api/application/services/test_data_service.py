@@ -493,7 +493,7 @@ class TestUploadDataset:
 
         construct_chunked_dataframe(path)
         mock_pd.read_csv.assert_called_once_with(
-            path, encoding=CONTENT_ENCODING, sep=",", chunksize=200_000
+            path, encoding=CONTENT_ENCODING, sep=",", chunksize=500_000
         )
 
     # Schema retrieval -------------------------------

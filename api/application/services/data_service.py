@@ -44,7 +44,7 @@ SCHEMA_VERSION_INCREMENT = 1
 
 
 def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
-    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=200_000)
+    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=500_000)
 
 
 class DataService:
