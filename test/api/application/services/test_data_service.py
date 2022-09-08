@@ -817,6 +817,7 @@ class TestUploadDataset:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=4,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 update_behaviour="OVERWRITE",
             ),
@@ -868,9 +869,9 @@ class TestUploadDataset:
             call(schema, "123-456-789", chunk2),
         ]
         self.data_service.process_chunk.assert_has_calls(expected_calls)
-        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other")
+        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other", 4)
         self.s3_adapter.delete_dataset_files.assert_called_once_with(
-            "some", "other", "987-654-321.csv"
+            "some", "other", 4, "987-654-321.csv"
         )
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -883,6 +884,7 @@ class TestUploadDataset:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=6,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 update_behaviour="OVERWRITE",
             ),
@@ -912,7 +914,7 @@ class TestUploadDataset:
         self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
 
         # Then
-        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other")
+        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other", 6)
         self.s3_adapter.delete_dataset_files.assert_not_called()
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -925,6 +927,7 @@ class TestUploadDataset:
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=12,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 update_behaviour="OVERWRITE",
             ),
@@ -963,9 +966,9 @@ class TestUploadDataset:
             self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
 
         # Then
-        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other")
+        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other", 12)
         self.s3_adapter.delete_dataset_files.assert_called_once_with(
-            "some", "other", "987-654-321.csv"
+            "some", "other", 12, "987-654-321.csv"
         )
 
     # Process Chunks -----------------------------------------

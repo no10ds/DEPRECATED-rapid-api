@@ -183,14 +183,17 @@ class DataService:
             f"Overwriting existing data for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
         )
         raw_files = self.s3_adapter.list_raw_files(
-            schema.get_domain(), schema.get_dataset()
+            schema.get_domain(), schema.get_dataset(), schema.get_version()
         )
         try:
             file_to_delete = [
                 file for file in raw_files if not file.startswith(raw_file_identifier)
             ][0]
             self.s3_adapter.delete_dataset_files(
-                schema.get_domain(), schema.get_dataset(), file_to_delete
+                schema.get_domain(),
+                schema.get_dataset(),
+                schema.get_version(),
+                file_to_delete,
             )
         except IndexError:
             AppLogger.warning(
