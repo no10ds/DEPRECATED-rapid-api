@@ -507,23 +507,147 @@ class TestUploadDataset:
 
         self.s3_adapter.find_schema.assert_called_once_with("some", "other", 1)
 
-    # Upload Dataset APPEND behaviour  -------------------------------------
-    @pytest.mark.skip("Story 413 - Testing")
+    # Upload Dataset  -------------------------------------
+
     @patch("api.application.services.data_service.handle_version_retrieval")
-    @patch("api.application.services.data_service.Thread")
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_triggers_process_upload(
+        self, _mock_construct_chunked_dataframe, mock_get_version
+    ):
+        # GIVEN
+        schema = self.valid_schema
+
+        self.s3_adapter.find_schema.return_value = schema
+
+        mock_get_version.return_value = 1
+
+        self.data_service.generate_raw_file_identifier = Mock(
+            return_value="123-456-789"
+        )
+
+        self.data_service.process_upload = Mock()
+
+        # WHEN
+        uploaded_raw_file = self.data_service.upload_dataset(
+            "some", "other", None, Path("data.csv")
+        )
+
+        # THEN
+        self.data_service.generate_raw_file_identifier.assert_called_once()
+        self.data_service.process_upload.assert_called_once_with(
+            schema, Path("data.csv"), "123-456-789"
+        )
+        assert uploaded_raw_file == ("123-456-789.csv", 1)
+
+    # Generate Permanent Filename ----------------------------
+    @patch("api.application.services.data_service.uuid")
+    def test_generates_permanent_filename(self, mock_uuid):
+        # Given
+        raw_file_identifier = "123-456-789"
+
+        mock_uuid.uuid4.return_value = "111-222-333"
+
+        # When
+        result = self.data_service.generate_permanent_filename(raw_file_identifier)
+
+        # Then
+        assert result == "123-456-789_111-222-333.parquet"
+
+    # Process Upload
+    @patch.object(DataService, "wait_until_crawler_is_ready")
+    @patch.object(DataService, "validate_incoming_data")
+    @patch.object(DataService, "process_chunks")
+    @patch.object(DataService, "delete_incoming_raw_file")
+    def test_process_upload_calls_relevant_methods(
+        self,
+        mock_delete_incoming_raw_file,
+        mock_process_chunks,
+        mock_validate_incoming_data,
+        mock_wait_until_crawler_is_ready,
+    ):
+        # GIVEN
+        schema = self.valid_schema
+
+        # WHEN
+        self.data_service.process_upload(schema, Path("data.csv"), "123-456-789")
+
+        # THEN
+        mock_wait_until_crawler_is_ready.assert_called_once_with(schema)
+        mock_validate_incoming_data.assert_called_once_with(
+            schema, Path("data.csv"), "123-456-789"
+        )
+        self.s3_adapter.upload_raw_data.assert_called_once_with(
+            schema, Path("data.csv"), "123-456-789"
+        )
+        mock_process_chunks.assert_called_once_with(
+            schema, Path("data.csv"), "123-456-789"
+        )
+        mock_delete_incoming_raw_file.assert_called_once_with(
+            schema, Path("data.csv"), "123-456-789"
+        )
+
+    @patch("api.application.services.data_service.sleep")
+    def test_wait_until_crawler_is_ready_returns_none_when_crawler_is_ready_after_waiting(
+        self, mock_sleep
+    ):
+        # GIVEN
+        schema = self.valid_schema
+
+        self.glue_adapter.check_crawler_is_ready.side_effect = [
+            CrawlerIsNotReadyError("some message"),
+            None,
+        ]
+
+        # WHEN/THEN
+        try:
+            self.data_service.wait_until_crawler_is_ready(schema)
+        except Exception as error:
+            pytest.fail("Unexpected failure occurred", error)
+
+        mock_sleep.assert_called_once_with(30)
+
+    @patch("api.application.services.data_service.sleep")
+    def test_retries_getting_crawler_state_until_retries_exhausted(self, mock_sleep):
+        # GIVEN
+        schema = self.valid_schema
+
+        self.glue_adapter.check_crawler_is_ready.side_effect = [
+            CrawlerIsNotReadyError("some message")
+        ] * 21
+
+        # WHEN/THEN
+        with pytest.raises(CrawlerIsNotReadyError, match="some message"):
+            self.data_service.wait_until_crawler_is_ready(schema)
+
+        assert mock_sleep.call_count == 19
+
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_starts_crawler_and_updates_catalog_table_config(
+        self, mock_construct_chunked_dataframe
+    ):
+        # Given
+        schema = self.valid_schema
+
+        mock_construct_chunked_dataframe.return_value = []
+
+        # When
+        self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
+
+        # Then
+        self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
+
+    # Validate dataset ---------------------------------------
     @patch("api.application.services.data_service.build_validated_dataframe")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_upload_dataset_validates_each_chunk_of_the_dataset(
+    def test_process_upload_validates_each_chunk_of_the_dataset(
         self,
         mock_construct_chunked_dataframe,
         mock_build_validated_dataframe,
-        _mock_thread,
-        mock_get_version,
     ):
         # Given
         schema = self.valid_schema
         self.s3_adapter.find_schema.return_value = schema
-        mock_get_version.return_value = 1
 
         chunk1 = pd.DataFrame({})
         chunk2 = pd.DataFrame({})
@@ -542,94 +666,108 @@ class TestUploadDataset:
         ]
 
         # When
-        self.data_service.upload_dataset("domain1", "dataset1", None, Path("data.csv"))
+        self.data_service.validate_incoming_data(
+            schema, Path("data.csv"), "123-456-789"
+        )
 
         mock_build_validated_dataframe.assert_has_calls(expected_calls)
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
+    # Dataset chunk validation -------------------------------
     @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_upload_dataset_triggers_processing_manager(
-        self, _mock_construct_chunked_dataframe, mock_get_version
+    def test_validates_dataset_in_chunks_with_invalid_column_headers(
+        self, mock_construct_chunked_dataframe
     ):
-        # GIVEN
         schema = self.valid_schema
 
         self.s3_adapter.find_schema.return_value = schema
 
-        mock_get_version.return_value = 1
-
-        self.data_service.generate_raw_file_identifier = Mock(
-            return_value="123-456-789"
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [
+                pd.DataFrame(
+                    {"colname1": [1234, 4567], "colnamewrong": ["Carlos", "Ada"]}
+                )
+            ],
         )
 
-        self.data_service.manage_processing = Mock()
+        with pytest.raises(UnprocessableDatasetError):
+            self.data_service.validate_incoming_data(
+                schema, Path("data.csv"), "123-456-789"
+            )
 
-        # WHEN
-        uploaded_raw_file = self.data_service.upload_dataset(
-            "some", "other", None, Path("data.csv")
-        )
-
-        # THEN
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "some", "other"
-        )
-
-        self.data_service.generate_raw_file_identifier.assert_called_once()
-        self.data_service.manage_processing.assert_called_once_with(
-            schema, Path("data.csv"), "123-456-789"
-        )
-        assert uploaded_raw_file == ("123-456-789.csv", 1)
-
-    @pytest.mark.skip("Story 413 - Testing")
-    @patch("api.application.services.data_service.Thread")
-    @patch("api.application.services.data_service.os")
-    def test_upload_processing_manager_starts_threads_and_deletes_raw_file(
-        self, mock_os, mock_thread
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_in_chunks_with_invalid_data(
+        self, mock_construct_chunked_dataframe
     ):
-        # GIVEN
         schema = self.valid_schema
 
-        mock_thread_1 = Mock()
-        mock_thread_2 = Mock()
+        self.s3_adapter.find_schema.return_value = schema
 
-        mock_thread_1.is_alive.return_value = False
-        mock_thread_2.is_alive.return_value = False
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [
+                pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}),
+                pd.DataFrame(
+                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
+                ),
+                pd.DataFrame(
+                    {"colname1": [3543, 456743], "colname2": ["Carlos", "Ada"]}
+                ),
+            ],
+        )
 
-        mock_thread.side_effect = [mock_thread_1, mock_thread_2]
+        try:
+            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
+        except DatasetValidationError as error:
+            assert {
+                "Failed to convert column [colname1] to type [Int64]",
+                "Column [colname1] has an incorrect data type. Expected Int64, received "
+                "object",
+            }.issubset(error.message)
 
-        # WHEN
-        self.data_service.manage_processing(schema, Path("data.csv"), "123-456-789")
-
-        # THEN
-        mock_thread_1.start.assert_called_once()
-        mock_thread_2.start.assert_called_once()
-
-        mock_thread_1.is_alive.assert_called_once()
-        mock_thread_2.is_alive.assert_called_once()
-
-        mock_os.remove.assert_called_once_with("data.csv")
-
-    @pytest.mark.skip("Story 413 - Testing")
-    @patch("api.application.services.data_service.sleep")
-    @patch("api.application.services.data_service.os")
-    @patch.object(DataService, "process_chunks")
-    def test_upload_processing_manager_calls_correct_processing_functions(
-        self, mock_process_chunks, mock_os, _mock_sleep
+    @patch("api.application.services.data_service.construct_chunked_dataframe")
+    def test_upload_dataset_in_chunks_with_invalid_data_in_multiple_chunks(
+        self, mock_construct_chunked_dataframe
     ):
-        # GIVEN
         schema = self.valid_schema
 
-        # WHEN
-        self.data_service.manage_processing(schema, Path("data.csv"), "123-456-789")
+        self.s3_adapter.find_schema.return_value = schema
 
-        # THEN
-        mock_process_chunks.assert_called_once_with(
-            schema, Path("data.csv"), "123-456-789"
+        self.chunked_dataframe_values(
+            mock_construct_chunked_dataframe,
+            [
+                pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}),
+                pd.DataFrame(
+                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
+                ),
+                pd.DataFrame(
+                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
+                ),
+                pd.DataFrame(
+                    {"colname1": [3543, 456743], "colname2": ["Carlos", "Ada"]}
+                ),
+            ],
         )
-        self.s3_adapter.upload_raw_data.assert_called_once_with(
-            schema, Path("data.csv"), "123-456-789"
+
+        try:
+            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
+        except DatasetValidationError as error:
+            assert {
+                "Column [colname1] has an incorrect data type. Expected Int64, received "
+                "object",
+                "Failed to convert column [colname1] to type [Int64]",
+            }.issubset(error.message)
+
+    # Crawler state and trigger errors ----------------------
+    def test_upload_dataset_fails_when_unable_to_get_crawler_state(self):
+        schema = self.valid_schema
+
+        self.glue_adapter.check_crawler_is_ready.side_effect = AWSServiceError(
+            "Some message"
         )
-        mock_os.remove.assert_called_once_with("data.csv")
+
+        with pytest.raises(AWSServiceError, match="Some message"):
+            self.data_service.wait_until_crawler_is_ready(schema)
 
     # Process Chunks -----------------------------------------
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -830,22 +968,6 @@ class TestUploadDataset:
             "some", "other", "987-654-321.csv"
         )
 
-    @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_starts_crawler_and_updates_catalog_table_config(
-        self, mock_construct_chunked_dataframe
-    ):
-        # Given
-        schema = self.valid_schema
-
-        mock_construct_chunked_dataframe.return_value = []
-
-        # When
-        self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
-
-        # Then
-        self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
-
     # Process Chunks -----------------------------------------
     @patch("api.application.services.data_service.build_validated_dataframe")
     def test_validates_and_uploads_chunk(self, mock_build_validated_dataframe):
@@ -907,134 +1029,6 @@ class TestUploadDataset:
         # Then
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
             "some", "other", 2, filename, partitioned_dataframe
-        )
-
-    # Generate Permanent Filename ----------------------------
-    @patch("api.application.services.data_service.uuid")
-    def test_generates_permanent_filename(self, mock_uuid):
-        # Given
-        raw_file_identifier = "123-456-789"
-
-        mock_uuid.uuid4.return_value = "111-222-333"
-
-        # When
-        result = self.data_service.generate_permanent_filename(raw_file_identifier)
-
-        # Then
-        assert result == "123-456-789_111-222-333.parquet"
-
-    # Dataset chunk validation -------------------------------
-    @pytest.mark.skip("Story 413 - Testing")
-    @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_upload_dataset_in_chunks_with_invalid_column_headers(
-        self, mock_construct_chunked_dataframe
-    ):
-        schema = self.valid_schema
-
-        self.s3_adapter.find_schema.return_value = schema
-
-        self.chunked_dataframe_values(
-            mock_construct_chunked_dataframe,
-            [
-                pd.DataFrame(
-                    {"colname1": [1234, 4567], "colnamewrong": ["Carlos", "Ada"]}
-                )
-            ],
-        )
-
-        with pytest.raises(UnprocessableDatasetError):
-            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
-
-    @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_upload_dataset_in_chunks_with_invalid_data(
-        self, mock_construct_chunked_dataframe
-    ):
-        schema = self.valid_schema
-
-        self.s3_adapter.find_schema.return_value = schema
-
-        self.chunked_dataframe_values(
-            mock_construct_chunked_dataframe,
-            [
-                pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}),
-                pd.DataFrame(
-                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
-                ),
-                pd.DataFrame(
-                    {"colname1": [3543, 456743], "colname2": ["Carlos", "Ada"]}
-                ),
-            ],
-        )
-
-        try:
-            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
-        except DatasetValidationError as error:
-            assert {
-                "Failed to convert column [colname1] to type [Int64]",
-                "Column [colname1] has an incorrect data type. Expected Int64, received "
-                "object",
-            }.issubset(error.message)
-
-    @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_upload_dataset_in_chunks_with_invalid_data_in_multiple_chunks(
-        self, mock_construct_chunked_dataframe
-    ):
-        schema = self.valid_schema
-
-        self.s3_adapter.find_schema.return_value = schema
-
-        self.chunked_dataframe_values(
-            mock_construct_chunked_dataframe,
-            [
-                pd.DataFrame({"colname1": [1234, 4567], "colname2": ["Carlos", "Ada"]}),
-                pd.DataFrame(
-                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
-                ),
-                pd.DataFrame(
-                    {"colname1": [4332, "s2134"], "colname2": ["Carlos", "Ada"]}
-                ),
-                pd.DataFrame(
-                    {"colname1": [3543, 456743], "colname2": ["Carlos", "Ada"]}
-                ),
-            ],
-        )
-
-        try:
-            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
-        except DatasetValidationError as error:
-            assert {
-                "Column [colname1] has an incorrect data type. Expected Int64, received "
-                "object",
-                "Failed to convert column [colname1] to type [Int64]",
-            }.issubset(error.message)
-
-    # Crawler state and trigger errors ----------------------
-    def test_upload_dataset_fails_when_unable_to_get_crawler_state(self):
-        self.s3_adapter.find_schema.return_value = self.valid_schema
-
-        self.glue_adapter.check_crawler_is_ready.side_effect = AWSServiceError(
-            "Some message"
-        )
-
-        with pytest.raises(AWSServiceError, match="Some message"):
-            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
-
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "some", "other"
-        )
-
-    def test_upload_dataset_fails_when_crawler_is_not_ready(self):
-        self.s3_adapter.find_schema.return_value = self.valid_schema
-
-        self.glue_adapter.check_crawler_is_ready.side_effect = CrawlerIsNotReadyError(
-            "msg"
-        )
-
-        with pytest.raises(CrawlerIsNotReadyError):
-            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
-
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            "some", "other"
         )
 
 

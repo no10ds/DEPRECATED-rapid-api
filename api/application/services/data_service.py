@@ -2,6 +2,7 @@ import os
 import uuid
 from pathlib import Path
 from threading import Thread
+from time import sleep
 from typing import List, Optional, Tuple
 
 import pandas as pd
@@ -25,6 +26,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerUpdateError,
     DatasetValidationError,
+    CrawlerIsNotReadyError,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval
@@ -88,31 +90,41 @@ class DataService:
                 f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
             )
         else:
-            self.glue_adapter.check_crawler_is_ready(domain, dataset)
-
             raw_file_identifier = self.generate_raw_file_identifier()
 
             Thread(
-                target=self.manage_processing,
+                target=self.process_upload,
                 args=(schema, file_path, raw_file_identifier),
             ).start()
 
             return f"{raw_file_identifier}.csv", version
 
-    def manage_processing(
+    def process_upload(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
+        self.wait_until_crawler_is_ready(schema)
         self.validate_incoming_data(schema, file_path, raw_file_identifier)
-
         self.s3_adapter.upload_raw_data(schema, file_path, raw_file_identifier)
-
         self.process_chunks(schema, file_path, raw_file_identifier)
+        self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
 
-        self.delete_incoming_raw_file(file_path, schema, raw_file_identifier)
+    def wait_until_crawler_is_ready(self, schema: Schema) -> None:
+        remaining_retries = 20
+        while remaining_retries > 0:
+            try:
+                self.glue_adapter.check_crawler_is_ready(
+                    schema.get_domain(), schema.get_dataset()
+                )
+                return
+            except CrawlerIsNotReadyError as error:
+                remaining_retries -= 1
+                if remaining_retries == 0:
+                    raise error
+                sleep(30)
 
     def validate_incoming_data(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
-    ):
+    ) -> None:
         AppLogger.info(
             f"Validating dataset for {schema.get_domain()}/{schema.get_dataset()}"
         )
@@ -123,31 +135,8 @@ class DataService:
             except DatasetValidationError as error:
                 dataset_errors.update(error.message)
         if dataset_errors:
-            self.delete_incoming_raw_file(file_path, schema, raw_file_identifier)
+            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             raise DatasetValidationError(list(dataset_errors))
-
-    def delete_incoming_raw_file(
-        self, file_path: Path, schema: Schema, raw_file_identifier: Optional[str] = None
-    ):
-        try:
-            os.remove(file_path.name)
-            if raw_file_identifier:
-                AppLogger.info(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted. Raw file identifier: {raw_file_identifier}"
-                )
-            else:
-                AppLogger.info(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted"
-                )
-        except (FileNotFoundError, TypeError) as error:
-            if raw_file_identifier:
-                AppLogger.error(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
-                )
-            else:
-                AppLogger.error(
-                    f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Detail: {error}"
-                )
 
     def process_chunks(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
@@ -173,6 +162,19 @@ class DataService:
         validated_dataframe = build_validated_dataframe(schema, chunk)
         permanent_filename = self.generate_permanent_filename(raw_file_identifier)
         self.upload_data(schema, validated_dataframe, permanent_filename)
+
+    def delete_incoming_raw_file(
+        self, schema: Schema, file_path: Path, raw_file_identifier: str
+    ):
+        try:
+            os.remove(file_path.name)
+            AppLogger.info(
+                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted. Raw file identifier: {raw_file_identifier}"
+            )
+        except (FileNotFoundError, TypeError) as error:
+            AppLogger.error(
+                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
+            )
 
     def _overwrite_existing_data(
         self, schema: Schema, raw_file_identifier: str
