@@ -3,7 +3,6 @@ import re
 from abc import ABC
 from typing import Optional, List
 
-import pytest
 from playwright.sync_api import sync_playwright, expect
 
 from test.test_utils import get_secret
@@ -203,7 +202,6 @@ class TestUI(BaseTestUI):
             self.click_link(page, "Log in to rAPId")
             self.assert_on_cognito_login(page)
 
-    @pytest.mark.skip("Story 413 - Testing")
     def test_upload_journey(self):
         with sync_playwright() as playwright:
             page = self.set_up_base_page(playwright)

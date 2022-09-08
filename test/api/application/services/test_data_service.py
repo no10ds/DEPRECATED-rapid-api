@@ -609,7 +609,6 @@ class TestUploadDataset:
 
         mock_os.remove.assert_called_once_with("data.csv")
 
-    @pytest.mark.skip("Story 413 - Testing")
     @patch("api.application.services.data_service.sleep")
     @patch("api.application.services.data_service.os")
     @patch.object(DataService, "process_chunks")
