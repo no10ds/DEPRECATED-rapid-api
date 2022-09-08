@@ -1,5 +1,5 @@
 var sessionTimer = function () {
-    const FIVE_MINUTES = 300000;
+    const LONG_TIMEOUT_PAGES = ["/upload", "/download/"];
     let time;
     window.onload = resetTimer;
     // DOM Events
@@ -15,7 +15,20 @@ var sessionTimer = function () {
 
     function resetTimer() {
         clearTimeout(time);
-        time = setTimeout(logout, FIVE_MINUTES)
+        time = setTimeout(logout, setTimeoutForPages());
+    }
+
+    function setTimeoutForPages() {
+    //  300000ms == 5min
+      let timeoutInMs = 300000;
+      LONG_TIMEOUT_PAGES.forEach((page_uri) => {
+          if(window.location.pathname.startsWith(page_uri)) {
+          //  1800000ms == 30min
+          timeoutInMs = 1800000;
+        }
+      })
+
+      return timeoutInMs;
     }
 };
 
