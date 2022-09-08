@@ -7,7 +7,13 @@ import boto3
 import requests
 from requests.auth import HTTPBasicAuth
 
-from api.common.config.aws import DATA_BUCKET, DOMAIN_NAME, AWS_REGION, AWS_ACCOUNT
+from api.common.config.aws import (
+    DATA_BUCKET,
+    DOMAIN_NAME,
+    AWS_REGION,
+    AWS_ACCOUNT,
+    RESOURCE_PREFIX,
+)
 from api.common.config.constants import CONTENT_ENCODING
 from test.e2e.e2e_test_utils import get_secret, AuthenticationFailedError
 from test.scripts.delete_protected_domain_permission import (
@@ -321,7 +327,7 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
             "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(
                 region=AWS_REGION,
                 account_id=AWS_ACCOUNT,
-                glue_crawler="rapid_crawler/test_e2e/upload",
+                glue_crawler=f"{RESOURCE_PREFIX}_crawler/test_e2e/upload",
             )
         )
         current_tags: dict = self.glue_client.get_tags(ResourceArn=glue_crawler_arn)[

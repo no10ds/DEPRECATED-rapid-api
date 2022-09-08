@@ -235,7 +235,7 @@ class DataService:
                 schema.get_domain(), schema.get_dataset(), FIRST_SCHEMA_VERSION_NUMBER
             )
             if original_schema is None:
-                AppLogger.error(
+                AppLogger.warning(
                     f"Could not find schema for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
                 )
                 raise SchemaNotFoundError("Previous version of schema not found")
