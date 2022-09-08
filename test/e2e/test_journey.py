@@ -7,7 +7,7 @@ import boto3
 import requests
 from requests.auth import HTTPBasicAuth
 
-from api.common.config.aws import DATA_BUCKET, DOMAIN_NAME
+from api.common.config.aws import DATA_BUCKET, DOMAIN_NAME, AWS_REGION, AWS_ACCOUNT
 from api.common.config.constants import CONTENT_ENCODING
 from test.e2e.e2e_test_utils import get_secret, AuthenticationFailedError
 from test.scripts.delete_protected_domain_permission import (
@@ -18,10 +18,11 @@ from test.scripts.delete_protected_domain_permission import (
 class BaseJourneyTest(ABC):
     base_url = f"https://{DOMAIN_NAME}"
     datasets_endpoint = f"{base_url}/datasets"
+    schema_endpoint = f"{base_url}/schema"
 
     e2e_test_domain = "test_e2e"
 
-    schemas_directory = "data/schemas/PUBLIC"
+    schemas_directory = "data/schemas"
     data_directory = f"data/{e2e_test_domain}"
     raw_data_directory = f"raw_data/{e2e_test_domain}"
 
@@ -276,6 +277,70 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         )
 
         assert response2.status_code == HTTPStatus.NO_CONTENT
+
+
+class TestAuthenticatedSchemaJourney(BaseJourneyTest):
+    glue_client = boto3.client("glue")
+    s3_client = boto3.client("s3")
+
+    def generate_auth_headers(self):
+        token_url = f"https://{DOMAIN_NAME}/oauth2/token"
+        data_admin_credentials = get_secret(
+            secret_name="E2E_TEST_CLIENT_DATA_ADMIN"  # pragma: allowlist secret
+        )
+        cognito_client_id = data_admin_credentials["CLIENT_ID"]
+        cognito_client_secret = data_admin_credentials[
+            "CLIENT_SECRET"
+        ]  # pragma: allowlist secret
+
+        auth = HTTPBasicAuth(cognito_client_id, cognito_client_secret)
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        payload = {
+            "grant_type": "client_credentials",
+            "client_id": cognito_client_id,
+        }
+        response = requests.post(token_url, auth=auth, headers=headers, json=payload)
+        print(response.content)
+        if response.status_code != HTTPStatus.OK:
+            raise AuthenticationFailedError(f"{response.status_code}")
+
+        token = json.loads(response.content.decode(CONTENT_ENCODING))["access_token"]
+        return {"Authorization": f"Bearer {token}"}
+
+    def test_uploads_new_schema_version(self):
+        with open("./test/e2e/test_files/schemas/test_e2e-update.json") as f:
+            schema_json = json.load(f)
+        response = requests.put(
+            self.schema_endpoint,
+            headers=self.generate_auth_headers(),
+            json=schema_json,
+        )
+        assert response.status_code == HTTPStatus.OK
+
+        glue_crawler_arn = (
+            "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(
+                region=AWS_REGION,
+                account_id=AWS_ACCOUNT,
+                glue_crawler="rapid_crawler/test_e2e/upload",
+            )
+        )
+        current_tags: dict = self.glue_client.get_tags(ResourceArn=glue_crawler_arn)[
+            "Tags"
+        ]
+
+        try:
+            assert current_tags["no_of_versions"] == "2"
+            assert current_tags["sensitivity"] == "PUBLIC"
+            assert "new_tag" not in current_tags.keys()
+        finally:
+            self.glue_client.tag_resource(
+                ResourceArn=glue_crawler_arn,
+                TagsToAdd={"no_of_versions": str(1)},
+            )
+            self.s3_client.delete_object(
+                Bucket=DATA_BUCKET,
+                Key=f"{self.schemas_directory}/PUBLIC/test_e2e/upload/2/schema.json",
+            )
 
 
 class TestAuthenticatedSubjectJourneys(BaseJourneyTest):
