@@ -44,7 +44,7 @@ SCHEMA_VERSION_INCREMENT = 1
 
 
 def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
-    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=500_000)
+    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=200_000)
 
 
 class DataService:
@@ -91,18 +91,6 @@ class DataService:
         else:
             self.glue_adapter.check_crawler_is_ready(domain, dataset)
 
-            # Validate chunks
-            AppLogger.info(f"Validating dataset for {domain}/{dataset}")
-            dataset_errors = set()
-            for chunk in construct_chunked_dataframe(file_path):
-                try:
-                    build_validated_dataframe(schema, chunk)
-                except DatasetValidationError as error:
-                    dataset_errors.update(error.message)
-            if dataset_errors:
-                self.delete_incoming_raw_file(file_path, schema, None)
-                raise DatasetValidationError(list(dataset_errors))
-
             raw_file_identifier = self.generate_raw_file_identifier()
 
             Thread(
@@ -115,6 +103,25 @@ class DataService:
     def manage_processing(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
+        AppLogger.info(
+            f"Upload file validation started for {schema.get_domain()}/{schema.get_dataset()}"
+        )
+
+        validation_threads = [
+            (
+                Thread(
+                    target=self.validate_incoming_data,
+                    args=(schema, file_path, raw_file_identifier),
+                )
+            )
+        ]
+
+        for thread in validation_threads:
+            thread.start()
+
+        while any(thread.is_alive() for thread in validation_threads):
+            sleep(10)
+
         AppLogger.info(
             f"Upload processing started for {schema.get_domain()}/{schema.get_dataset()}"
         )
@@ -141,9 +148,25 @@ class DataService:
             thread.start()
 
         while any(thread.is_alive() for thread in processing_threads):
-            sleep(30)
+            sleep(20)
 
         self.delete_incoming_raw_file(file_path, schema, raw_file_identifier)
+
+    def validate_incoming_data(
+        self, schema: Schema, file_path: Path, raw_file_identifier: str
+    ):
+        AppLogger.info(
+            f"Validating dataset for {schema.get_domain()}/{schema.get_dataset()}"
+        )
+        dataset_errors = set()
+        for chunk in construct_chunked_dataframe(file_path):
+            try:
+                build_validated_dataframe(schema, chunk)
+            except DatasetValidationError as error:
+                dataset_errors.update(error.message)
+        if dataset_errors:
+            self.delete_incoming_raw_file(file_path, schema, raw_file_identifier)
+            raise DatasetValidationError(list(dataset_errors))
 
     def delete_incoming_raw_file(
         self, file_path: Path, schema: Schema, raw_file_identifier: Optional[str] = None
