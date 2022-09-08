@@ -330,11 +330,11 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
                 glue_crawler=f"{RESOURCE_PREFIX}_crawler/test_e2e/upload",
             )
         )
-        current_tags: dict = self.glue_client.get_tags(ResourceArn=glue_crawler_arn)[
-            "Tags"
-        ]
 
         try:
+            current_tags = self.glue_client.get_tags(ResourceArn=glue_crawler_arn)[
+                "Tags"
+            ]
             assert current_tags["no_of_versions"] == "2"
             assert current_tags["sensitivity"] == "PUBLIC"
             assert "new_tag" not in current_tags.keys()
