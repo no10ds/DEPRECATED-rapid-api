@@ -1,7 +1,6 @@
 from typing import Tuple
 
 import pandas as pd
-import psutil
 from pandas import Timestamp
 
 from api.common.custom_exceptions import (
@@ -19,7 +18,6 @@ def build_validated_dataframe(schema: Schema, dataframe: pd.DataFrame) -> pd.Dat
     AppLogger.info(
         f"Validating dataset chunk for {schema.get_domain()}/{schema.get_dataset()}"
     )
-    AppLogger.info(f"CPU utilisation: {psutil.cpu_percent()}%")
     return transform_and_validate(schema, dataframe)
 
 

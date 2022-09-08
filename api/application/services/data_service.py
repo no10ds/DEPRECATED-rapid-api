@@ -2,7 +2,6 @@ import os
 import uuid
 from pathlib import Path
 from threading import Thread
-from time import sleep
 from typing import List, Optional, Tuple
 
 import pandas as pd
@@ -103,52 +102,11 @@ class DataService:
     def manage_processing(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
-        AppLogger.info(
-            f"Upload file validation started for {schema.get_domain()}/{schema.get_dataset()}"
-        )
+        self.validate_incoming_data(schema, file_path, raw_file_identifier)
 
-        validation_threads = [
-            (
-                Thread(
-                    target=self.validate_incoming_data,
-                    args=(schema, file_path, raw_file_identifier),
-                )
-            )
-        ]
+        self.s3_adapter.upload_raw_data(schema, file_path, raw_file_identifier)
 
-        for thread in validation_threads:
-            thread.start()
-
-        while any(thread.is_alive() for thread in validation_threads):
-            sleep(10)
-
-        AppLogger.info(
-            f"Upload processing started for {schema.get_domain()}/{schema.get_dataset()}"
-        )
-        processing_threads = [
-            (
-                Thread(
-                    target=self.process_chunks,
-                    args=(schema, file_path, raw_file_identifier),
-                )
-            ),
-            (
-                Thread(
-                    target=self.s3_adapter.upload_raw_data,
-                    args=(
-                        schema,
-                        file_path,
-                        raw_file_identifier,
-                    ),
-                )
-            ),
-        ]
-
-        for thread in processing_threads:
-            thread.start()
-
-        while any(thread.is_alive() for thread in processing_threads):
-            sleep(20)
+        self.process_chunks(schema, file_path, raw_file_identifier)
 
         self.delete_incoming_raw_file(file_path, schema, raw_file_identifier)
 
@@ -198,9 +156,6 @@ class DataService:
             f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()}"
         )
         for chunk in construct_chunked_dataframe(file_path):
-            AppLogger.info(
-                f"Processing dataset chunk for {schema.get_domain()}/{schema.get_dataset()}"
-            )
             self.process_chunk(schema, raw_file_identifier, chunk)
 
         if schema.has_overwrite_behaviour():
