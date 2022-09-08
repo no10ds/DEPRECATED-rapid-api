@@ -37,7 +37,7 @@ class BaseJourneyTest(ABC):
         return f"{self.datasets_endpoint}/{domain}/{dataset}/info"
 
     def list_dataset_raw_files_url(self, domain: str, dataset: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/files"
+        return f"{self.datasets_endpoint}/{domain}/{dataset}/1/files"
 
     def create_protected_domain_url(self, domain: str) -> str:
         return f"{self.base_url}/protected_domains/{domain}"
