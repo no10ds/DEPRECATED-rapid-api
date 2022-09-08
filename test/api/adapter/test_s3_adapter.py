@@ -497,7 +497,9 @@ class TestS3FileList:
             "EncodingType": "url",
         }
 
-        raw_files = self.persistence_adapter.list_raw_files("my_domain", "my_dataset")
+        raw_files = self.persistence_adapter.list_raw_files(
+            "my_domain", "my_dataset", 1
+        )
         assert raw_files == [
             "2020-01-01T12:00:00-file1.csv",
             "2020-06-01T15:00:00-file2.csv",
@@ -515,17 +517,21 @@ class TestS3FileList:
             "EncodingType": "url",
         }
 
-        raw_files = self.persistence_adapter.list_raw_files("my_domain", "my_dataset")
+        raw_files = self.persistence_adapter.list_raw_files(
+            "my_domain", "my_dataset", 2
+        )
         assert raw_files == []
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
+            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/2"
         )
 
     def test_list_raw_files_when_empty_response(self):
         self.mock_s3_client.list_objects.return_value = {}
 
-        raw_files = self.persistence_adapter.list_raw_files("my_domain", "my_dataset")
+        raw_files = self.persistence_adapter.list_raw_files(
+            "my_domain", "my_dataset", 1
+        )
         assert raw_files == []
 
         self.mock_s3_client.list_objects.assert_called_once_with(

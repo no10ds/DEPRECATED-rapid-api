@@ -113,9 +113,9 @@ class S3Adapter:
         )
         AppLogger.info(f"Raw data upload for {domain}/{dataset}/{version} completed")
 
-    def list_raw_files(self, domain: str, dataset: str) -> List[str]:
+    def list_raw_files(self, domain: str, dataset: str, version: int) -> List[str]:
         object_list = self._list_files_from_path(
-            StorageMetaData(domain, dataset).raw_data_location()
+            StorageMetaData(domain, dataset, version).raw_data_location()
         )
         return self._map_object_list_to_filename(object_list)
 

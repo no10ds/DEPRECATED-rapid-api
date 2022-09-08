@@ -108,24 +108,26 @@ async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = N
 
 
 @datasets_router.get(
-    "/{domain}/{dataset}/files",
+    "/{domain}/{dataset}/{version}/files",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
-async def list_raw_files(domain: str, dataset: str):
+async def list_raw_files(domain: str, dataset: str, version: int):
     """
     ## List Raw Files
 
-    Use this endpoint to retrieve all raw files linked to a specific domain/dataset, if there is no data stored for the
-    domain/dataset an error will be thrown.
+    Use this endpoint to retrieve all raw files linked to a specific domain/dataset/version, if there is no data stored for the
+    domain/dataset/version an error will be thrown.
 
-    When a valid domain/dataset is retrieved the available raw file uploads will be displayed in list format.
+    When a valid domain/dataset/version is retrieved the available raw file uploads will be displayed in list format.
 
     ### Inputs
 
-    | Parameters    | Usage                                   | Example values               | Definition            |
-    |---------------|-----------------------------------------|------------------------------|-----------------------|
-    | `domain`      | URL parameter                           | `land`                       | domain of the dataset |
-    | `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
+    | Parameters    | Required  | Usage                                   | Example values               | Definition            |
+    |---------------|-----------|-----------------------------------------|------------------------------|-----------------------|
+    | `domain`      | True      | URL parameter                           | `land`                       | domain of the dataset |
+    | `dataset`     | True      | URL parameter                           | `train_journeys`             | dataset title         |
+    | `version`     | True      | URL parameter                           | `3`                          | dataset version       |
+
 
     ### Outputs
 
@@ -146,7 +148,7 @@ async def list_raw_files(domain: str, dataset: str):
     ### Click  `Try it out` to use the endpoint
 
     """
-    raw_files = data_service.list_raw_files(domain, dataset)
+    raw_files = data_service.list_raw_files(domain, dataset, version)
     return raw_files
 
 

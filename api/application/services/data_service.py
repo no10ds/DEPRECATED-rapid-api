@@ -63,8 +63,8 @@ class DataService:
         self.cognito_adapter = cognito_adapter
         self.delete_service = delete_service
 
-    def list_raw_files(self, domain: str, dataset: str) -> list[str]:
-        raw_files = self.s3_adapter.list_raw_files(domain, dataset)
+    def list_raw_files(self, domain: str, dataset: str, version: int) -> list[str]:
+        raw_files = self.s3_adapter.list_raw_files(domain, dataset, version)
         if len(raw_files) == 0:
             raise UserError(
                 f"There are no uploaded files for the domain [{domain}] or dataset [{dataset}]"

@@ -581,21 +581,22 @@ a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROT
 
 ## List Raw Files
 
-Use this endpoint to retrieve all raw files linked to a specific domain/dataset, if there is no data stored for the
-domain/dataset an error will be thrown.
+Use this endpoint to retrieve all raw files linked to a specific domain/dataset/version, if there is no data stored for the
+domain/dataset/version an error will be thrown.
 
-When a valid domain/dataset is retrieved the available raw file uploads will be displayed in list format.
+When a valid domain/dataset/version is retrieved the available raw file uploads will be displayed in list format.
 
 ### General structure
 
-`GET /datasets/{domain}/{dataset}/files`
+`GET /datasets/{domain}/{dataset}/{version}/files`
 
 ### Inputs
 
-| Parameters    | Usage                                   | Example values               | Definition            |
-|---------------|-----------------------------------------|------------------------------|-----------------------|
-| `domain`      | URL parameter                           | `land`                       | domain of the dataset |
-| `dataset`     | URL parameter                           | `train_journeys`             | dataset title         |
+| Parameters    | Required  | Usage                                   | Example values               | Definition            |
+|---------------|-----------|-----------------------------------------|------------------------------|-----------------------|
+| `domain`      | True      | URL parameter                           | `land`                       | domain of the dataset |
+| `dataset`     | True      | URL parameter                           | `train_journeys`             | dataset title         |
+| `version`     | True      | URL parameter                           | `3`                          | dataset version       |
 
 ### Outputs
 
@@ -617,14 +618,14 @@ a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROT
 
 #### Example 1:
 
-- Request url: `/datasets/land/train_journeys/files`
+- Request url: `/datasets/land/train_journeys/3/files`
 
 ## Delete Data File
 
-Use this endpoint to delete raw files linked to a specific domain/dataset, if there is no data stored for the
-domain/dataset or the file name is invalid an error will be thrown.
+Use this endpoint to delete raw files linked to a specific domain/dataset/version, if there is no data stored for the
+domain/dataset/version or the file name is invalid an error will be thrown.
 
-When a valid file in the domain/dataset is deleted success message will be displayed
+When a valid file in the domain/dataset/version is deleted success message will be displayed
 
 ### General structure
 

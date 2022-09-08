@@ -1055,13 +1055,13 @@ class TestListRawFiles:
             "2022-02-10T15:00:00-my_second_file.csv",
             "2022-03-03T16:00:00-my_third_file.csv",
         ]
-        list_raw_files = self.data_service.list_raw_files("domain", "dataset")
+        list_raw_files = self.data_service.list_raw_files("domain", "dataset", 2)
         assert list_raw_files == [
             "2022-01-01T12:00:00-my_first_file.csv",
             "2022-02-10T15:00:00-my_second_file.csv",
             "2022-03-03T16:00:00-my_third_file.csv",
         ]
-        self.s3_adapter.list_raw_files.assert_called_once_with("domain", "dataset")
+        self.s3_adapter.list_raw_files.assert_called_once_with("domain", "dataset", 2)
 
     def test_raises_exception_when_no_raw_files_found_for_domain_and_dataset(self):
         self.s3_adapter.list_raw_files.return_value = []
@@ -1069,9 +1069,9 @@ class TestListRawFiles:
             UserError,
             match="There are no uploaded files for the domain \\[domain\\] or dataset \\[dataset\\]",
         ):
-            self.data_service.list_raw_files("domain", "dataset")
+            self.data_service.list_raw_files("domain", "dataset", 1)
 
-        self.s3_adapter.list_raw_files.assert_called_once_with("domain", "dataset")
+        self.s3_adapter.list_raw_files.assert_called_once_with("domain", "dataset", 1)
 
 
 class TestDatasetInfoRetrieval:

@@ -597,11 +597,11 @@ class TestListFilesFromDataset(BaseClientTest):
         ]
 
         response = self.client.get(
-            "/datasets/mydomain/mydataset/files",
+            "/datasets/mydomain/mydataset/2/files",
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_list_raw_files.assert_called_once_with("mydomain", "mydataset")
+        mock_list_raw_files.assert_called_once_with("mydomain", "mydataset", 2)
 
         assert response.status_code == 200
 
