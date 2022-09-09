@@ -30,6 +30,7 @@ from api.common.custom_exceptions import (
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval
+from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.data_types import DataTypes
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -90,16 +91,16 @@ class DataService:
                 f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
             )
         else:
-            job_id = str(uuid.uuid4())
+            upload_job = UploadJob(file_path.name)
             raw_file_identifier = self.generate_raw_file_identifier()
 
             Thread(
                 target=self.process_upload,
                 args=(schema, file_path, raw_file_identifier),
-                name=job_id,
+                name=upload_job.job_id,
             ).start()
 
-            return f"{raw_file_identifier}.csv", version, job_id
+            return f"{raw_file_identifier}.csv", version, upload_job.job_id
 
     def process_upload(
         self, schema: Schema, file_path: Path, raw_file_identifier: str

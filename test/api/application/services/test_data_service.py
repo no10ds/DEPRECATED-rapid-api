@@ -510,7 +510,7 @@ class TestUploadDataset:
 
     # Upload Dataset  -------------------------------------
 
-    @patch("api.application.services.data_service.uuid")
+    @patch("api.domain.Jobs.Job.uuid")
     @patch("api.application.services.data_service.Thread")
     @patch("api.application.services.data_service.handle_version_retrieval")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
