@@ -510,7 +510,7 @@ class TestUploadDataset:
 
     # Upload Dataset  -------------------------------------
 
-    @patch("api.domain.Jobs.Job.uuid")
+    @patch("api.application.services.data_service.UploadJob")
     @patch("api.application.services.data_service.Thread")
     @patch("api.application.services.data_service.handle_version_retrieval")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -521,7 +521,7 @@ class TestUploadDataset:
         _mock_construct_chunked_dataframe,
         mock_get_version,
         mock_thread,
-        mock_uuid,
+        mock_upload_job,
     ):
         # GIVEN
         schema = self.valid_schema
@@ -534,7 +534,9 @@ class TestUploadDataset:
             return_value="123-456-789"
         )
 
-        mock_uuid.uuid4.return_value = "abc-123"
+        mock_job = Mock()
+        mock_job.job_id = "abc-123"
+        mock_upload_job.return_value = mock_job
 
         # WHEN
         uploaded_raw_file = self.data_service.upload_dataset(
@@ -545,7 +547,7 @@ class TestUploadDataset:
         self.data_service.generate_raw_file_identifier.assert_called_once()
         mock_thread.assert_called_once_with(
             target=mock_process_upload,
-            args=(schema, Path("data.csv"), "123-456-789"),
+            args=(mock_job, schema, Path("data.csv"), "123-456-789"),
             name="abc-123",
         )
         assert uploaded_raw_file == ("123-456-789.csv", 1, "abc-123")
@@ -578,9 +580,12 @@ class TestUploadDataset:
     ):
         # GIVEN
         schema = self.valid_schema
+        upload_job = Mock()
 
         # WHEN
-        self.data_service.process_upload(schema, Path("data.csv"), "123-456-789")
+        self.data_service.process_upload(
+            upload_job, schema, Path("data.csv"), "123-456-789"
+        )
 
         # THEN
         mock_wait_until_crawler_is_ready.assert_called_once_with(schema)
@@ -659,12 +664,15 @@ class TestUploadDataset:
     ):
         # Given
         schema = self.valid_schema
+        upload_job = Mock()
 
         mock_validate_incoming_data.side_effect = DatasetValidationError("some message")
 
         # When/Then
         with pytest.raises(DatasetValidationError, match="some message"):
-            self.data_service.process_upload(schema, Path("data.csv"), "123-456-789")
+            self.data_service.process_upload(
+                upload_job, schema, Path("data.csv"), "123-456-789"
+            )
 
         mock_delete_incoming_raw_file.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"

@@ -96,14 +96,14 @@ class DataService:
 
             Thread(
                 target=self.process_upload,
-                args=(schema, file_path, raw_file_identifier),
+                args=(upload_job, schema, file_path, raw_file_identifier),
                 name=upload_job.job_id,
             ).start()
 
             return f"{raw_file_identifier}.csv", version, upload_job.job_id
 
     def process_upload(
-        self, schema: Schema, file_path: Path, raw_file_identifier: str
+        self, job: UploadJob, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
         try:
             self.wait_until_crawler_is_ready(schema)
