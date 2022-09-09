@@ -32,6 +32,7 @@ from api.domain.enriched_schema import (
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 from api.domain.sql_query import SQLQuery
+from api.domain.storage_metadata import StorageMetaData
 
 
 class TestUploadSchema:
@@ -1199,6 +1200,9 @@ class TestDatasetInfoRetrieval:
             ),
         )
         assert actual_schema == expected_schema
+        self.glue_adapter.get_table_last_updated_date.assert_called_once_with(
+            StorageMetaData("some", "other", 2).glue_table_name()
+        )
 
     @patch("api.application.services.data_service.handle_version_retrieval")
     def test_get_schema_information_for_multiple_dates(

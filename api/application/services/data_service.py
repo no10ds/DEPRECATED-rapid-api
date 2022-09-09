@@ -304,7 +304,7 @@ class DataService:
             domain, dataset, version, self._build_query(schema)
         )
         last_updated = self.glue_adapter.get_table_last_updated_date(
-            StorageMetaData(domain, dataset).glue_table_name()
+            StorageMetaData(domain, dataset, version).glue_table_name()
         )
         return EnrichedSchema(
             metadata=self._enrich_metadata(schema, statistics_dataframe, last_updated),
