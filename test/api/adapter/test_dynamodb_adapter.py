@@ -10,7 +10,8 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     UserError,
 )
-from api.domain.Jobs.UploadJob import UploadJob
+from api.domain.Jobs.Job import JobStatus
+from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
 
@@ -629,3 +630,80 @@ class TestDynamoDBAdapterServiceTable:
             AWSServiceError, match="Error fetching jobs from the database"
         ):
             self.dynamo_adapter.get_jobs()
+
+    @patch("api.domain.Jobs.Job.uuid")
+    def test_update_job(self, mock_uuid):
+        mock_uuid.uuid4.return_value = "abc-123"
+
+        job = UploadJob("file1.csv")
+        job.set_step(UploadStep.VALIDATION)
+        job.set_status(JobStatus.FAILED)
+        job.set_errors({"error1", "error2"})
+
+        self.dynamo_adapter.update_job(job)
+
+        self.service_table.update_item.assert_called_once_with(
+            Key={
+                "PK": "UPLOAD",
+                "SK": "abc-123",
+            },
+            ConditionExpression="SK = :jid",
+            UpdateExpression="set #A = :a, #B = :b, #C = :c",
+            ExpressionAttributeNames={
+                "#A": "Step",
+                "#B": "Status",
+                "#C": "Errors",
+            },
+            ExpressionAttributeValues={
+                ":a": "VALIDATION",
+                ":b": "FAILED",
+                ":c": {"error1", "error2"},
+                ":jid": "abc-123",
+            },
+        )
+
+    @patch("api.domain.Jobs.Job.uuid")
+    def test_update_job_without_errors(self, mock_uuid):
+        mock_uuid.uuid4.return_value = "abc-123"
+
+        job = UploadJob("file1.csv")
+        job.set_step(UploadStep.VALIDATION)
+        job.set_status(JobStatus.FAILED)
+
+        self.dynamo_adapter.update_job(job)
+
+        self.service_table.update_item.assert_called_once_with(
+            Key={
+                "PK": "UPLOAD",
+                "SK": "abc-123",
+            },
+            ConditionExpression="SK = :jid",
+            UpdateExpression="set #A = :a, #B = :b, #C = :c",
+            ExpressionAttributeNames={
+                "#A": "Step",
+                "#B": "Status",
+                "#C": "Errors",
+            },
+            ExpressionAttributeValues={
+                ":a": "VALIDATION",
+                ":b": "FAILED",
+                ":c": None,
+                ":jid": "abc-123",
+            },
+        )
+
+    @patch("api.domain.Jobs.Job.uuid")
+    def test_update_job_raises_error_when_fails(self, mock_uuid):
+        mock_uuid.uuid4.return_value = "abc-123"
+
+        job = UploadJob("file1.csv")
+
+        self.service_table.update_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
+            operation_name="UpdateItem",
+        )
+
+        with pytest.raises(
+            AWSServiceError, match="There was an error updating job status"
+        ):
+            self.dynamo_adapter.update_job(job)

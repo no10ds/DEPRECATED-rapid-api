@@ -29,3 +29,12 @@ class Job:
         self.status: JobStatus = JobStatus.IN_PROGRESS
         self.job_id: str = generate_uuid()
         self.errors: Set[str] = set()
+
+    def set_step(self, step: JobStep) -> None:
+        self.step = step
+
+    def set_status(self, status: JobStatus):
+        self.status = status
+
+    def set_errors(self, errors: Set[str]):
+        self.errors = errors

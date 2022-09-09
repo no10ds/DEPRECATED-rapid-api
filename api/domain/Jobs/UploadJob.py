@@ -3,6 +3,7 @@ from api.domain.Jobs.Job import Job, JobType, JobStep
 
 class UploadStep(JobStep):
     VALIDATION = "VALIDATION"
+    PARTITIONING = "PARTITIONING"
 
 
 class UploadJob(Job):

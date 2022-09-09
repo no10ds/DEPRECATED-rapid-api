@@ -62,6 +62,10 @@ class DatabaseAdapter(ABC):
     def get_jobs(self) -> List[Job]:
         pass
 
+    @abstractmethod
+    def update_job(self, job: Job) -> None:
+        pass
+
 
 class DynamoDBAdapter(DatabaseAdapter):
     def __init__(self, data_source=boto3.resource("dynamodb", region_name=AWS_REGION)):
@@ -225,6 +229,30 @@ class DynamoDBAdapter(DatabaseAdapter):
             return [self._map_job(job) for job in self.service_table.scan()["Items"]]
         except ClientError as error:
             self._handle_client_error("Error fetching jobs from the database", error)
+
+    def update_job(self, job: Job) -> None:
+        try:
+            self.service_table.update_item(
+                Key={
+                    "PK": job.job_type.value,
+                    "SK": job.job_id,
+                },
+                ConditionExpression="SK = :jid",
+                UpdateExpression="set #A = :a, #B = :b, #C = :c",
+                ExpressionAttributeNames={
+                    "#A": "Step",
+                    "#B": "Status",
+                    "#C": "Errors",
+                },
+                ExpressionAttributeValues={
+                    ":a": job.step.value,
+                    ":b": job.status.value,
+                    ":c": job.errors if job.errors else None,
+                    ":jid": job.job_id,
+                },
+            )
+        except ClientError as error:
+            self._handle_client_error("There was an error updating job status", error)
 
     def _map_job(self, job: Dict) -> Dict:
         name_map = {"PK": "type", "SK": "job_id"}
