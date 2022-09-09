@@ -13,6 +13,6 @@ def test_initialise_upload_job(mock_uuid):
     assert job.job_id == "abc-123"
     assert job.job_type == JobType.UPLOAD
     assert job.status == JobStatus.IN_PROGRESS
-    assert job.step == UploadStep.VALIDATION
+    assert job.step == UploadStep.INITIALISATION
     assert job.errors == set()
     assert job.filename == "some-filename.csv"

@@ -564,7 +564,7 @@ class TestDynamoDBAdapterServiceTable:
                 "PK": "UPLOAD",
                 "SK": "abc-123",
                 "Status": "IN PROGRESS",
-                "Step": "VALIDATION",
+                "Step": "INITIALISATION",
                 "Errors": None,
                 "Filename": "filename.csv",
             },
