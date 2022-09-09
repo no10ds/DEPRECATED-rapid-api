@@ -14,6 +14,7 @@ from api.common.config.aws import (
 )
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
+from api.domain.Jobs.Job import Job
 from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -53,6 +54,14 @@ class DatabaseAdapter(ABC):
     def delete_subject(self, subject_id: str) -> None:
         pass
 
+    @abstractmethod
+    def store_upload_job(self, upload_job: UploadJob) -> None:
+        pass
+
+    @abstractmethod
+    def get_jobs(self) -> List[Job]:
+        pass
+
 
 class DynamoDBAdapter(DatabaseAdapter):
     def __init__(self, data_source=boto3.resource("dynamodb", region_name=AWS_REGION)):
@@ -74,8 +83,10 @@ class DynamoDBAdapter(DatabaseAdapter):
                     "Permissions": set(permissions),
                 },
             )
-        except ClientError:
-            self._handle_client_error(f"Error storing the {subject_type}: {subject_id}")
+        except ClientError as error:
+            self._handle_client_error(
+                f"Error storing the {subject_type}: {subject_id}", error
+            )
 
     def store_protected_permissions(
         self, permissions: List[PermissionItem], domain: str
@@ -94,9 +105,9 @@ class DynamoDBAdapter(DatabaseAdapter):
                             "Domain": permission.domain,
                         }
                     )
-        except ClientError:
+        except ClientError as error:
             self._handle_client_error(
-                f"Error storing the protected domain permission for {domain}"
+                f"Error storing the protected domain permission for {domain}", error
             )
 
     def validate_permissions(self, subject_permissions: List[str]) -> None:
@@ -191,25 +202,36 @@ class DynamoDBAdapter(DatabaseAdapter):
                 AppLogger.error(message)
                 raise UserError(message)
             self._handle_client_error(
-                f"Error updating permissions for {subject_permissions.subject_id}"
+                f"Error updating permissions for {subject_permissions.subject_id}",
+                error,
             )
 
     def delete_subject(self, subject_id: str) -> None:
         self.permissions_table.delete_item(Key={"PK": "SUBJECT", "SK": subject_id})
 
-    def _store_job(self, item: Dict):
-        self.service_table.put_item(Item=item)
-
-    def store_upload_job(self, job: UploadJob) -> None:
+    def store_upload_job(self, upload_job: UploadJob) -> None:
         item_config = {
-            "PK": job.job_type.value,
-            "SK": job.job_id,
-            "Status": job.status.value,
-            "Step": job.step.value,
-            "Errors": job.errors if job.errors else None,
-            "Filename": job.filename,
+            "PK": upload_job.job_type.value,
+            "SK": upload_job.job_id,
+            "Status": upload_job.status.value,
+            "Step": upload_job.step.value,
+            "Errors": upload_job.errors if upload_job.errors else None,
+            "Filename": upload_job.filename,
         }
         self._store_job(item_config)
+
+    def get_jobs(self) -> List[Dict]:
+        try:
+            return [self._map_job(job) for job in self.service_table.scan()["Items"]]
+        except ClientError as error:
+            self._handle_client_error("Error fetching jobs from the database", error)
+
+    def _map_job(self, job: Dict) -> Dict:
+        name_map = {"PK": "type", "SK": "job_id"}
+        return {name_map.get(key, key.lower()): value for key, value in job.items()}
+
+    def _store_job(self, item: Dict):
+        self.service_table.put_item(Item=item)
 
     def _find_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:
@@ -219,8 +241,10 @@ class DynamoDBAdapter(DatabaseAdapter):
                     Or, ([Attr("Id").eq(value) for value in permissions])
                 ),
             )
-        except ClientError:
-            self._handle_client_error("Error fetching permissions from the database")
+        except ClientError as error:
+            self._handle_client_error(
+                "Error fetching permissions from the database", error
+            )
 
     def _failed_conditions(self, error):
         return (
@@ -228,8 +252,8 @@ class DynamoDBAdapter(DatabaseAdapter):
         )
 
     @staticmethod
-    def _handle_client_error(message: str) -> None:
-        AppLogger.error(message)
+    def _handle_client_error(message: str, error: Any) -> None:
+        AppLogger.error(f"{message}: {error}")
         raise AWSServiceError(message)
 
     def _generate_protected_permission_item(self, item: dict) -> PermissionItem:

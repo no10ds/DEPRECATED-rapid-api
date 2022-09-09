@@ -570,3 +570,62 @@ class TestDynamoDBAdapterServiceTable:
         )
 
         self.permissions_table.assert_not_called()
+
+    def test_get_jobs(self):
+        self.service_table.scan.return_value = {
+            "Items": [
+                {
+                    "Step": "VALIDATION",
+                    "SK": "113e0baf-5302-4b79-9902-ad620e8e531b",
+                    "Status": "IN PROGRESS",
+                    "Filename": "file1.csv",
+                    "Errors": None,
+                    "PK": "UPLOAD",
+                },
+                {
+                    "Step": "VALIDATION",
+                    "SK": "3f0baed7-8618-4517-97bd-d5a384053ca4",
+                    "Status": "FAILED",
+                    "Filename": "file2.csv",
+                    "Errors": {"error2", "error1"},
+                    "PK": "UPLOAD",
+                },
+            ],
+            "Count": 2,
+        }
+
+        expected = [
+            {
+                "step": "VALIDATION",
+                "job_id": "113e0baf-5302-4b79-9902-ad620e8e531b",
+                "status": "IN PROGRESS",
+                "filename": "file1.csv",
+                "errors": None,
+                "type": "UPLOAD",
+            },
+            {
+                "step": "VALIDATION",
+                "job_id": "3f0baed7-8618-4517-97bd-d5a384053ca4",
+                "status": "FAILED",
+                "filename": "file2.csv",
+                "errors": {"error2", "error1"},
+                "type": "UPLOAD",
+            },
+        ]
+
+        result = self.dynamo_adapter.get_jobs()
+
+        assert result == expected
+
+        self.permissions_table.assert_not_called()
+
+    def test_raises_error_when_get_jobs_fails(self):
+        self.service_table.scan.side_effect = ClientError(
+            error_response={"Error": {"Code": "DatabaseConnectionError"}},
+            operation_name="Scan",
+        )
+
+        with pytest.raises(
+            AWSServiceError, match="Error fetching jobs from the database"
+        ):
+            self.dynamo_adapter.get_jobs()
