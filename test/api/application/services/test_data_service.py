@@ -510,10 +510,18 @@ class TestUploadDataset:
 
     # Upload Dataset  -------------------------------------
 
+    @patch("api.application.services.data_service.uuid")
+    @patch("api.application.services.data_service.Thread")
     @patch("api.application.services.data_service.handle_version_retrieval")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_upload_dataset_triggers_process_upload(
-        self, _mock_construct_chunked_dataframe, mock_get_version
+    @patch.object(DataService, "process_upload")
+    def test_upload_dataset_triggers_process_upload_and_returns_expected_data(
+        self,
+        mock_process_upload,
+        _mock_construct_chunked_dataframe,
+        mock_get_version,
+        mock_thread,
+        mock_uuid,
     ):
         # GIVEN
         schema = self.valid_schema
@@ -526,7 +534,7 @@ class TestUploadDataset:
             return_value="123-456-789"
         )
 
-        self.data_service.process_upload = Mock()
+        mock_uuid.uuid4.return_value = "abc-123"
 
         # WHEN
         uploaded_raw_file = self.data_service.upload_dataset(
@@ -535,10 +543,12 @@ class TestUploadDataset:
 
         # THEN
         self.data_service.generate_raw_file_identifier.assert_called_once()
-        self.data_service.process_upload.assert_called_once_with(
-            schema, Path("data.csv"), "123-456-789"
+        mock_thread.assert_called_once_with(
+            target=mock_process_upload,
+            args=(schema, Path("data.csv"), "123-456-789"),
+            name="abc-123",
         )
-        assert uploaded_raw_file == ("123-456-789.csv", 1)
+        assert uploaded_raw_file == ("123-456-789.csv", 1, "abc-123")
 
     # Generate Permanent Filename ----------------------------
     @patch("api.application.services.data_service.uuid")

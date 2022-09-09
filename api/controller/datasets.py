@@ -251,7 +251,7 @@ def upload_data(
     """
     try:
         incoming_file_path = store_file_to_disk(file)
-        raw_filename, version = data_service.upload_dataset(
+        raw_filename, version, job_id = data_service.upload_dataset(
             domain, dataset, version, incoming_file_path
         )
         response.status_code = http_status.HTTP_202_ACCEPTED
@@ -261,6 +261,7 @@ def upload_data(
                 "raw_filename": raw_filename,
                 "dataset_version": version,
                 "status": "Data processing",
+                "job_id": job_id,
             }
         }
     except SchemaNotFoundError as error:

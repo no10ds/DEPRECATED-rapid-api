@@ -82,7 +82,7 @@ class DataService:
 
     def upload_dataset(
         self, domain: str, dataset: str, version: Optional[int], file_path: Path
-    ) -> Tuple[str, int]:
+    ) -> Tuple[str, int, str]:
         version = handle_version_retrieval(domain, dataset, version)
         schema = self._get_schema(domain, dataset, version)
         if not schema:
@@ -90,14 +90,16 @@ class DataService:
                 f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
             )
         else:
+            job_id = str(uuid.uuid4())
             raw_file_identifier = self.generate_raw_file_identifier()
 
             Thread(
                 target=self.process_upload,
                 args=(schema, file_path, raw_file_identifier),
+                name=job_id,
             ).start()
 
-            return f"{raw_file_identifier}.csv", version
+            return f"{raw_file_identifier}.csv", version, job_id
 
     def process_upload(
         self, schema: Schema, file_path: Path, raw_file_identifier: str

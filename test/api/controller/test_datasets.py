@@ -35,7 +35,7 @@ class TestDataUpload(BaseClientTest):
         raw_file_identifier = "123-456-789"
 
         mock_store_file_to_disk.return_value = incoming_file_path
-        mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 5
+        mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 5, "abc-123"
 
         response = self.client.post(
             "/datasets/domain/dataset",
@@ -55,6 +55,7 @@ class TestDataUpload(BaseClientTest):
                 "raw_filename": "123-456-789.csv",
                 "dataset_version": 5,
                 "status": "Data processing",
+                "job_id": "abc-123",
             }
         }
 
@@ -69,7 +70,7 @@ class TestDataUpload(BaseClientTest):
         raw_file_identifier = "123-456-789"
 
         mock_store_file_to_disk.return_value = incoming_file_path
-        mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 2
+        mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 2, "abc-123"
 
         response = self.client.post(
             "/datasets/domain/dataset?version=2",
@@ -89,6 +90,7 @@ class TestDataUpload(BaseClientTest):
                 "raw_filename": "123-456-789.csv",
                 "dataset_version": 2,
                 "status": "Data processing",
+                "job_id": "abc-123",
             }
         }
 
