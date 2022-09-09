@@ -126,7 +126,8 @@ Schema in json format in the response body:
         "name": "change_me",
         "email": "change_me@email.com"
       }
-    ]
+    ],
+    "update_behaviour": "APPEND"
   },
   "columns": [
     {
@@ -199,7 +200,8 @@ Example schema JSON body:
         "name": "Stanley Shunpike",
         "email": "stan.shunpike@email.com"
       }
-    ]
+    ],
+    "update_behaviour": "APPEND"
   },
   "columns": [
     {
@@ -264,7 +266,8 @@ Example schema JSON body:
         "name": "Stanley Shunpike",
         "email": "stan.shunpike@email.com"
       }
-    ]
+    ],
+    "update_behaviour": "APPEND"
   },
   "columns": [
     {
@@ -541,6 +544,7 @@ Schema in json format in the response body:
         "email": "user@email.email"
       }
     ],
+    "update_behaviour": "APPEND",
     "number_of_rows": 123,
     "number_of_columns": 2,
     "last_updated": "2022-03-01 11:03:49+00:00"
