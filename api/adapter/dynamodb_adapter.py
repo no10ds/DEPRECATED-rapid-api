@@ -7,9 +7,14 @@ from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
 from api.common.config.auth import DatabaseItem, SubjectType, SensitivityLevel
-from api.common.config.aws import AWS_REGION, DYNAMO_PERMISSIONS_TABLE_NAME
+from api.common.config.aws import (
+    AWS_REGION,
+    DYNAMO_PERMISSIONS_TABLE_NAME,
+    SERVICE_TABLE_NAME,
+)
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
+from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
 
@@ -50,13 +55,9 @@ class DatabaseAdapter(ABC):
 
 
 class DynamoDBAdapter(DatabaseAdapter):
-    def __init__(
-        self,
-        dynamodb_table=boto3.resource("dynamodb", region_name=AWS_REGION).Table(
-            DYNAMO_PERMISSIONS_TABLE_NAME
-        ),
-    ):
-        self.dynamodb_table = dynamodb_table
+    def __init__(self, data_source=boto3.resource("dynamodb", region_name=AWS_REGION)):
+        self.permissions_table = data_source.Table(DYNAMO_PERMISSIONS_TABLE_NAME)
+        self.service_table = data_source.Table(SERVICE_TABLE_NAME)
 
     def store_subject_permissions(
         self, subject_type: SubjectType, subject_id: str, permissions: List[str]
@@ -64,7 +65,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         subject_type = subject_type.value
         try:
             AppLogger.info(f"Storing permissions for {subject_type}: {subject_id}")
-            self.dynamodb_table.put_item(
+            self.permissions_table.put_item(
                 Item={
                     "PK": DatabaseItem.SUBJECT.value,
                     "SK": subject_id,
@@ -81,7 +82,7 @@ class DynamoDBAdapter(DatabaseAdapter):
     ) -> None:
         try:
             AppLogger.info(f"Storing protected permissions for {domain}")
-            with self.dynamodb_table.batch_writer() as batch:
+            with self.permissions_table.batch_writer() as batch:
                 for permission in permissions:
                     batch.put_item(
                         Item={
@@ -110,7 +111,7 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def get_all_permissions(self) -> List[str]:
         try:
-            permissions = self.dynamodb_table.query(
+            permissions = self.permissions_table.query(
                 KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
             )
             return [permission["SK"] for permission in permissions["Items"]]
@@ -123,7 +124,7 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def get_all_protected_permissions(self) -> List[PermissionItem]:
         try:
-            list_of_items = self.dynamodb_table.query(
+            list_of_items = self.permissions_table.query(
                 KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
                 FilterExpression=Attr("Sensitivity").eq(
                     SensitivityLevel.PROTECTED.value
@@ -143,7 +144,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         try:
             return [
                 permission
-                for permission in self.dynamodb_table.query(
+                for permission in self.permissions_table.query(
                     KeyConditionExpression=Key("PK").eq(DatabaseItem.SUBJECT.value),
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
@@ -165,7 +166,7 @@ class DynamoDBAdapter(DatabaseAdapter):
     ) -> SubjectPermissions:
         try:
             unique_permissions = set(subject_permissions.permissions)
-            self.dynamodb_table.update_item(
+            self.permissions_table.update_item(
                 Key={
                     "PK": DatabaseItem.SUBJECT.value,
                     "SK": subject_permissions.subject_id,
@@ -194,11 +195,25 @@ class DynamoDBAdapter(DatabaseAdapter):
             )
 
     def delete_subject(self, subject_id: str) -> None:
-        self.dynamodb_table.delete_item(Key={"PK": "SUBJECT", "SK": subject_id})
+        self.permissions_table.delete_item(Key={"PK": "SUBJECT", "SK": subject_id})
+
+    def _store_job(self, item: Dict):
+        self.service_table.put_item(Item=item)
+
+    def store_upload_job(self, job: UploadJob) -> None:
+        item_config = {
+            "PK": job.job_type.value,
+            "SK": job.job_id,
+            "Status": job.status.value,
+            "Step": job.step.value,
+            "Errors": job.errors if job.errors else None,
+            "Filename": job.filename,
+        }
+        self._store_job(item_config)
 
     def _find_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:
-            return self.dynamodb_table.query(
+            return self.permissions_table.query(
                 KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
                 FilterExpression=reduce(
                     Or, ([Attr("Id").eq(value) for value in permissions])

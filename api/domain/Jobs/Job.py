@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+from typing import Set
 
 from api.common.utilities import BaseEnum
 
@@ -7,11 +7,15 @@ from api.common.utilities import BaseEnum
 class JobStatus(BaseEnum):
     SUCCESS = "SUCCESS"
     FAILED = "FAILED"
-    IN_PROGRESS = "IN_PROGRESS"
+    IN_PROGRESS = "IN PROGRESS"
 
 
 class JobType(BaseEnum):
     UPLOAD = "UPLOAD"
+
+
+class JobStep(BaseEnum):
+    pass
 
 
 def generate_uuid() -> str:
@@ -19,8 +23,9 @@ def generate_uuid() -> str:
 
 
 class Job:
-    def __init__(self, job_type: JobType):
+    def __init__(self, job_type: JobType, step: JobStep):
+        self.step: JobStep = step
         self.job_type: JobType = job_type
         self.status: JobStatus = JobStatus.IN_PROGRESS
         self.job_id: str = generate_uuid()
-        self.errors: List[str] = list()
+        self.errors: Set[str] = set()

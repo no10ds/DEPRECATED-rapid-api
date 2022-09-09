@@ -14,6 +14,7 @@ GLUE_CRAWLER_ROLE = RESOURCE_PREFIX + "-glue_services_access"
 GLUE_CONNECTION_NAME = RESOURCE_PREFIX + "-s3-network-connection"
 GLUE_CSV_CLASSIFIER = RESOURCE_PREFIX + "-single_column_csv_classifier"
 DYNAMO_PERMISSIONS_TABLE_NAME = RESOURCE_PREFIX + "_users_permissions"
+SERVICE_TABLE_NAME = RESOURCE_PREFIX + "_service_table"
 
 SCHEMAS_LOCATION = "data/schemas"
 

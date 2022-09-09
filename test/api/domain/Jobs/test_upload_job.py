@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from api.domain.Jobs.Job import JobType, JobStatus
-from api.domain.Jobs.UploadJob import UploadJob
+from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 
 
 @patch("api.domain.Jobs.Job.uuid")
@@ -13,5 +13,6 @@ def test_initialise_upload_job(mock_uuid):
     assert job.job_id == "abc-123"
     assert job.job_type == JobType.UPLOAD
     assert job.status == JobStatus.IN_PROGRESS
-    assert job.errors == []
+    assert job.step == UploadStep.VALIDATION
+    assert job.errors == set()
     assert job.filename == "some-filename.csv"
