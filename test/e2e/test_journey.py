@@ -5,6 +5,7 @@ from typing import List
 
 import boto3
 import requests
+from requests import Response
 from requests.auth import HTTPBasicAuth
 
 from api.common.config.aws import (
@@ -313,21 +314,38 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
         token = json.loads(response.content.decode(CONTENT_ENCODING))["access_token"]
         return {"Authorization": f"Bearer {token}"}
 
-    def test_uploads_new_schema_version(self):
-        with open("./test/e2e/test_files/schemas/test_e2e-update.json") as f:
-            schema_json = json.load(f)
-        response = requests.put(
+    def upload_schema_version1(self) -> Response:
+        with open("./test/e2e/test_files/schemas/test_e2e-update_v1.json") as f:
+            schema_v1_json = json.load(f)
+
+        return requests.post(
             self.schema_endpoint,
             headers=self.generate_auth_headers(),
-            json=schema_json,
+            json=schema_v1_json,
         )
-        assert response.status_code == HTTPStatus.OK
+
+    def upload_schema_version2(self) -> Response:
+        with open("./test/e2e/test_files/schemas/test_e2e-update_v2.json") as f:
+            schema_v2_json = json.load(f)
+
+        return requests.put(
+            self.schema_endpoint,
+            headers=self.generate_auth_headers(),
+            json=schema_v2_json,
+        )
+
+    def test_uploads_new_schema_version(self):
+        response1 = self.upload_schema_version1()
+        assert response1.status_code == HTTPStatus.CREATED
+
+        response2 = self.upload_schema_version2()
+        assert response2.status_code == HTTPStatus.OK
 
         glue_crawler_arn = (
             "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(
                 region=AWS_REGION,
                 account_id=AWS_ACCOUNT,
-                glue_crawler=f"{RESOURCE_PREFIX}_crawler/test_e2e/upload",
+                glue_crawler=f"{RESOURCE_PREFIX}_crawler/test_e2e/update",
             )
         )
 
@@ -339,13 +357,21 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
             assert current_tags["sensitivity"] == "PUBLIC"
             assert "new_tag" not in current_tags.keys()
         finally:
-            self.glue_client.tag_resource(
-                ResourceArn=glue_crawler_arn,
-                TagsToAdd={"no_of_versions": str(1)},
-            )
-            self.s3_client.delete_object(
+            self.s3_client.delete_objects(
                 Bucket=DATA_BUCKET,
-                Key=f"{self.schemas_directory}/PUBLIC/test_e2e/upload/2/schema.json",
+                Delete={
+                    "Objects": [
+                        {
+                            "Key": f"{self.schemas_directory}/PUBLIC/test_e2e/update/1/schema.json"
+                        },
+                        {
+                            "Key": f"{self.schemas_directory}/PUBLIC/test_e2e/update/2/schema.json"
+                        },
+                    ]
+                },
+            )
+            self.glue_client.delete_crawler(
+                Name=f"{RESOURCE_PREFIX}_crawler/test_e2e/update"
             )
 
 

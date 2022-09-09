@@ -1,7 +1,7 @@
 {
   "metadata": {
     "domain": "test_e2e",
-    "dataset": "upload",
+    "dataset": "update",
     "sensitivity": "PRIVATE",
     "tags": {
       "test_e2e": "upload",
@@ -11,7 +11,7 @@
     "owners": [
       {
         "name": "upload",
-        "email": "upload@test.com"
+        "email": "upload1@test.com"
       }
     ],
     "update_behaviour": "OVERWRITE"
