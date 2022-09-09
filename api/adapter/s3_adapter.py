@@ -75,7 +75,7 @@ class S3Adapter:
         if not domain or not dataset:
             return SensitivityLevel.from_string("PUBLIC")
         # all datasets have the same sensitivity - take the first version
-        schema_metadata = self._retrieve_schema_metadata(domain, dataset, 1)
+        schema_metadata = self._retrieve_schema_metadata(domain, dataset, version=1)
         return SensitivityLevel.from_string(schema_metadata.get_sensitivity())
 
     def upload_partitioned_data(
@@ -86,11 +86,7 @@ class S3Adapter:
         filename: str,
         partitioned_data: List[Tuple[str, pd.DataFrame]],
     ):
-
         for index, (partition_path, data) in enumerate(partitioned_data):
-            AppLogger.info(
-                f"Uploading partition {index + 1}/{len(partitioned_data)} for {domain}/{dataset}/{version}"
-            )
             upload_path = self._construct_partitioned_data_path(
                 partition_path, filename, domain, dataset, version
             )
