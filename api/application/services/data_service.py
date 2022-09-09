@@ -14,6 +14,7 @@ from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.dataset_validation import build_validated_dataframe
 from api.application.services.delete_service import DeleteService
+from api.application.services.job_service import JobService
 from api.application.services.partitioning_service import generate_partitioned_data
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
@@ -30,7 +31,7 @@ from api.common.custom_exceptions import (
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval
-from api.domain.Jobs.UploadJob import UploadJob
+from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.data_types import DataTypes
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -58,6 +59,7 @@ class DataService:
         protected_domain_service=ProtectedDomainService(),
         cognito_adapter=CognitoAdapter(),
         delete_service=DeleteService(),
+        job_service=JobService(),
     ):
         self.s3_adapter = s3_adapter
         self.glue_adapter = glue_adapter
@@ -65,6 +67,7 @@ class DataService:
         self.protected_domain_service = protected_domain_service
         self.cognito_adapter = cognito_adapter
         self.delete_service = delete_service
+        self.job_service = job_service
 
     def list_raw_files(self, domain: str, dataset: str, version: int) -> list[str]:
         raw_files = self.s3_adapter.list_raw_files(domain, dataset, version)
@@ -91,7 +94,7 @@ class DataService:
                 f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
             )
         else:
-            upload_job = UploadJob(file_path.name)
+            upload_job = self.job_service.create_upload_job(file_path.name)
             raw_file_identifier = self.generate_raw_file_identifier()
 
             Thread(
@@ -106,10 +109,15 @@ class DataService:
         self, job: UploadJob, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
         try:
+            self.job_service.update_step(job, UploadStep.INITIALISATION)
             self.wait_until_crawler_is_ready(schema)
+            self.job_service.update_step(job, UploadStep.VALIDATION)
             self.validate_incoming_data(schema, file_path, raw_file_identifier)
+            self.job_service.update_step(job, UploadStep.RAW_DATA_UPLOAD)
             self.s3_adapter.upload_raw_data(schema, file_path, raw_file_identifier)
+            self.job_service.update_step(job, UploadStep.DATA_UPLOAD)
             self.process_chunks(schema, file_path, raw_file_identifier)
+            self.job_service.update_step(job, UploadStep.CLEAN_UP)
             self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
         except Exception as error:
             AppLogger.error(

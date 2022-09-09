@@ -11,6 +11,7 @@ from api.application.services.data_service import (
     DataService,
     construct_chunked_dataframe,
 )
+from api.application.services.job_service import JobService
 from api.common.config.auth import SensitivityLevel
 from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import (
@@ -24,6 +25,7 @@ from api.common.custom_exceptions import (
     DatasetValidationError,
     CrawlerUpdateError,
 )
+from api.domain.Jobs.UploadJob import UploadStep
 from api.domain.enriched_schema import (
     EnrichedSchema,
     EnrichedSchemaMetadata,
@@ -444,12 +446,15 @@ class TestUploadDataset:
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
         self.protected_domain_service = Mock()
+        self.job_service = Mock()
         self.data_service = DataService(
             self.s3_adapter,
             self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
             None,
+            None,
+            self.job_service,
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -535,6 +540,8 @@ class TestUploadDataset:
         )
 
         mock_job = Mock()
+        self.job_service.create_upload_job.return_value = mock_job
+
         mock_job.job_id = "abc-123"
         mock_upload_job.return_value = mock_job
 
@@ -544,6 +551,7 @@ class TestUploadDataset:
         )
 
         # THEN
+        self.job_service.create_upload_job.assert_called_once_with("data.csv")
         self.data_service.generate_raw_file_identifier.assert_called_once()
         mock_thread.assert_called_once_with(
             target=mock_process_upload,
@@ -567,6 +575,7 @@ class TestUploadDataset:
         assert result == "123-456-789_111-222-333.parquet"
 
     # Process Upload
+    @patch.object(JobService, "update_step")
     @patch.object(DataService, "wait_until_crawler_is_ready")
     @patch.object(DataService, "validate_incoming_data")
     @patch.object(DataService, "process_chunks")
@@ -577,10 +586,19 @@ class TestUploadDataset:
         mock_process_chunks,
         mock_validate_incoming_data,
         mock_wait_until_crawler_is_ready,
+        mock_update_step,
     ):
         # GIVEN
         schema = self.valid_schema
         upload_job = Mock()
+
+        expected_update_step_calls = [
+            call(upload_job, UploadStep.INITIALISATION),
+            call(upload_job, UploadStep.VALIDATION),
+            call(upload_job, UploadStep.RAW_DATA_UPLOAD),
+            call(upload_job, UploadStep.DATA_UPLOAD),
+            call(upload_job, UploadStep.CLEAN_UP),
+        ]
 
         # WHEN
         self.data_service.process_upload(
@@ -601,6 +619,7 @@ class TestUploadDataset:
         mock_delete_incoming_raw_file.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
+        mock_update_step.assert_has_calls(expected_update_step_calls)
 
     @patch("api.application.services.data_service.sleep")
     def test_wait_until_crawler_is_ready_returns_none_when_crawler_is_ready_after_waiting(
