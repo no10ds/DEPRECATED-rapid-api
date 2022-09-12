@@ -563,8 +563,9 @@ class TestDynamoDBAdapterServiceTable:
 
         self.service_table.put_item.assert_called_once_with(
             Item={
-                "PK": "UPLOAD",
+                "PK": "JOB",
                 "SK": "abc-123",
+                "Type": "UPLOAD",
                 "Status": "IN PROGRESS",
                 "Step": "INITIALISATION",
                 "Errors": None,
@@ -582,17 +583,19 @@ class TestDynamoDBAdapterServiceTable:
                     "Step": "VALIDATION",
                     "SK": "113e0baf-5302-4b79-9902-ad620e8e531b",
                     "Status": "IN PROGRESS",
+                    "Type": "UPLOAD",
                     "Filename": "file1.csv",
                     "Errors": None,
-                    "PK": "UPLOAD",
+                    "PK": "JOB",
                 },
                 {
                     "Step": "VALIDATION",
                     "SK": "3f0baed7-8618-4517-97bd-d5a384053ca4",
                     "Status": "FAILED",
+                    "Type": "UPLOAD",
                     "Filename": "file2.csv",
                     "Errors": {"error2", "error1"},
-                    "PK": "UPLOAD",
+                    "PK": "JOB",
                 },
             ],
             "Count": 2,
@@ -630,9 +633,10 @@ class TestDynamoDBAdapterServiceTable:
                     "Step": "VALIDATION",
                     "SK": "113e0baf-5302-4b79-9902-ad620e8e531b",
                     "Status": "IN PROGRESS",
+                    "Type": "UPLOAD",
                     "Filename": "file1.csv",
                     "Errors": None,
-                    "PK": "UPLOAD",
+                    "PK": "JOB",
                 }
             ],
             "Count": 1,
@@ -650,6 +654,10 @@ class TestDynamoDBAdapterServiceTable:
         result = self.dynamo_adapter.get_job("113e0baf-5302-4b79-9902-ad620e8e531b")
 
         assert result == expected
+        self.service_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("JOB")
+            & Key("SK").eq("113e0baf-5302-4b79-9902-ad620e8e531b")
+        )
 
         self.permissions_table.assert_not_called()
 
@@ -704,7 +712,7 @@ class TestDynamoDBAdapterServiceTable:
 
         self.service_table.update_item.assert_called_once_with(
             Key={
-                "PK": "UPLOAD",
+                "PK": "JOB",
                 "SK": "abc-123",
             },
             ConditionExpression="SK = :jid",
@@ -734,7 +742,7 @@ class TestDynamoDBAdapterServiceTable:
 
         self.service_table.update_item.assert_called_once_with(
             Key={
-                "PK": "UPLOAD",
+                "PK": "JOB",
                 "SK": "abc-123",
             },
             ConditionExpression="SK = :jid",

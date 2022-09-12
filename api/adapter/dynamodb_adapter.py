@@ -14,7 +14,7 @@ from api.common.config.aws import (
 )
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
-from api.domain.Jobs.Job import Job, JobType
+from api.domain.Jobs.Job import Job
 from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -219,8 +219,9 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def store_upload_job(self, upload_job: UploadJob) -> None:
         item_config = {
-            "PK": upload_job.job_type.value,
+            "PK": "JOB",
             "SK": upload_job.job_id,
+            "Type": upload_job.job_type.value,
             "Status": upload_job.status.value,
             "Step": upload_job.step.value,
             "Errors": upload_job.errors if upload_job.errors else None,
@@ -239,8 +240,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         try:
             return self._map_job(
                 self.service_table.query(
-                    KeyConditionExpression=Key("PK").eq(JobType.UPLOAD.value)
-                    & Key("SK").eq(job_id)
+                    KeyConditionExpression=Key("PK").eq("JOB") & Key("SK").eq(job_id)
                 )["Items"][0]
             )
         except IndexError:
@@ -252,7 +252,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         try:
             self.service_table.update_item(
                 Key={
-                    "PK": job.job_type.value,
+                    "PK": "JOB",
                     "SK": job.job_id,
                 },
                 ConditionExpression="SK = :jid",
@@ -273,8 +273,12 @@ class DynamoDBAdapter(DatabaseAdapter):
             self._handle_client_error("There was an error updating job status", error)
 
     def _map_job(self, job: Dict) -> Dict:
-        name_map = {"PK": "type", "SK": "job_id"}
-        return {name_map.get(key, key.lower()): value for key, value in job.items()}
+        name_map = {"SK": "job_id"}
+        return {
+            name_map.get(key, key.lower()): value
+            for key, value in job.items()
+            if key != "PK"
+        }
 
     def _store_job(self, item: Dict):
         self.service_table.put_item(Item=item)
