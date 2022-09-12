@@ -83,7 +83,7 @@ token.
 ### Via the UI
 
 Clicking 'Login' on the `/login` page will redirect the user to Cognito, whereupon they will be prompted to enter their
-username and password. This will grant them a temporary access token and redirect them to the `/upload` page.
+username and password. This will grant them a temporary access token and redirect them to the home page.
 
 # Endpoint usage
 
@@ -585,8 +585,8 @@ a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROT
 
 ## List Raw Files
 
-Use this endpoint to retrieve all raw files linked to a specific domain/dataset/version, if there is no data stored for the
-domain/dataset/version an error will be thrown.
+Use this endpoint to retrieve all raw files linked to a specific domain/dataset/version, if there is no data stored for
+the domain/dataset/version an error will be thrown.
 
 When a valid domain/dataset/version is retrieved the available raw file uploads will be displayed in list format.
 
@@ -1222,10 +1222,12 @@ In order to use this endpoint you need the `USER_ADMIN` permission
 # UI usage
 
 ## Credentials
+
 For most of the UI endpoint user credentials will be required, therefore, a user must exist in cognito and the relevant
 permissions have to be stored in DynamoDB to be grated access.
 
 A user can log out at any point by:
+
 1. Calling `/logout`.
 2. Clicking on the "logout" button.
 
@@ -1233,6 +1235,7 @@ If a user stays idle for 5 minutes, the logout process will be triggered automat
 to the login endpoint.
 
 ### Gotchas
+
 If the user has the application opened in 2 tabs and leaves 1 idle while works in another, the logout process will be
 triggered.
 
@@ -1339,12 +1342,14 @@ To upload dataset just follow these simple steps.
 3) Select a dataset from the list
 4) Choose a valid file for the selected dataset
 5) Click on upload button
+6) Make a note of the Job ID for the processing upload in the response (you can use this to track the status of the
+   upload)
 
 ### Response
 
 When uploading the datasets there are 2 possible responses:
 
-- Success: A message with the uploaded filename will be shown to the user
+- Success: A message with the uploaded filename and Job ID will be shown to the user
 - Failure: An error message will be shown to the user
 
 ## Download
@@ -1410,7 +1415,7 @@ When downloading the datasets there are 2 possible responses:
 
 ### Query structure
 
-  Returns a list of datasets matching the query request, e.g.:
+Returns a list of datasets matching the query request, e.g.:
 
 | Query Field              | Example values                                          | SQL Equivalent                                                        | Additional Notes                                                                         |
 |--------------------------|---------------------------------------------------------|-----------------------------------------------------------------------|------------------------------------------------------------------------------------------|
@@ -1419,7 +1424,6 @@ When downloading the datasets there are 2 possible responses:
 | `group by columns`       | - `col1`                                                | - `GROUP BY col1`                                                     |                                                                                          |
 | `aggregation conditions` | - `avg(col1) > 10`                                      | - `HAVING avg(col1) > 10`                                             |                                                                                          |
 | `row limit`              | - `10`                                                  | - `LIMIT 10`                                                          | This value is capped at the number of rows in the table, displayed in dataset details    |
-
 
 ## Modify Subject Permissions
 
