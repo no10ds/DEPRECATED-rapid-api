@@ -1,5 +1,6 @@
 import sass
 from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
@@ -59,3 +60,8 @@ async def request_middleware(request: Request, call_next):
 def status():
     """The endpoint used for service health check"""
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
+
+
+@app.get("/favicon.ico")
+async def favicon():
+    return FileResponse("static/favicon.ico")
