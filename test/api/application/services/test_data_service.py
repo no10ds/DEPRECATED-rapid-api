@@ -1403,3 +1403,39 @@ class TestDatasetInfoRetrieval:
         filename = self.data_service.generate_raw_file_identifier()
         pattern = "[\\d\\w]{8}-[\\d\\w]{4}-[\\d\\w]{4}-[\\d\\w]{4}-[\\d\\w]{12}"
         assert re.match(pattern, filename)
+
+
+class TestQueryDataset:
+    def setup_method(self):
+        self.athena_adapter = Mock()
+        self.glue_adapter = Mock()
+        self.data_service = DataService(
+            None,
+            self.glue_adapter,
+            self.athena_adapter,
+            None,
+            None,
+        )
+
+    def test_query_data_success(self):
+        query = SQLQuery()
+        expected_response = pd.DataFrame().empty
+        self.glue_adapter.get_no_of_rows.return_value = 48293
+        self.athena_adapter.query.return_value = expected_response
+
+        response = self.data_service.query_data("domain1", "dataset1", 1, query)
+
+        assert response == expected_response
+        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_1")
+        self.athena_adapter.query.assert_called_once_with(
+            "domain1", "dataset1", 1, query
+        )
+
+    def test_query_data_for_large_no_of_rows(self):
+        query = SQLQuery()
+        self.glue_adapter.get_no_of_rows.return_value = 100_001
+
+        self.data_service.query_data("domain1", "dataset1", 1, query)
+
+        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_1")
+        self.athena_adapter.query.assert_not_called()

@@ -185,7 +185,7 @@ class TestGlueAdapterCrawlerMethods:
             )
 
 
-class TestGlueAdapterCatalogTableMethods:
+class TestGlueAdapterTableMethods:
     glue_boto_client = None
 
     def setup_method(self):
@@ -350,6 +350,31 @@ class TestGlueAdapterCatalogTableMethods:
         result = self.glue_adapter.get_table_last_updated_date("table_name")
 
         assert result == "2022-03-03 11:03:49+00:00"
+
+    def test_get_no_of_rows_in_table(self):
+        table_properties = {
+            "Table": {
+                "Name": "qa_carsales_25_1",
+                "DatabaseName": "rapid_catalogue_db",
+                "Owner": "owner",
+                "StorageDescriptor": {
+                    "Parameters": {
+                        "averageRecordSize": "17",
+                        "classification": "parquet",
+                        "compressionType": "none",
+                        "objectCount": "5",
+                        "recordCount": "990300",
+                        "sizeKey": "4762462",
+                        "typeOfData": "file",
+                    },
+                },
+            }
+        }
+        self.glue_boto_client.get_table.return_value = table_properties
+
+        result = self.glue_adapter.get_no_of_rows("qa_carsales_25_1")
+
+        assert result == 990300
 
     @patch("api.adapter.glue_adapter.sleep")
     def test_raises_error_when_table_does_not_exist_and_retries_exhausted(

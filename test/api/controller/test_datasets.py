@@ -4,7 +4,6 @@ from unittest.mock import patch, ANY
 import pandas as pd
 import pytest
 
-from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
@@ -409,7 +408,7 @@ class TestDatasetInfo(BaseClientTest):
 
 
 class TestQuery(BaseClientTest):
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_call_service_with_only_domain_dataset_when_no_json_provided(
         self, mock_query_method
     ):
@@ -421,7 +420,7 @@ class TestQuery(BaseClientTest):
             "mydomain", "mydataset", None, SQLQuery()
         )
 
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_call_service_with_sql_query_when_json_provided(self, mock_query_method):
         request_json = {"select_columns": ["column1"], "limit": "10"}
 
@@ -438,7 +437,7 @@ class TestQuery(BaseClientTest):
             SQLQuery(select_columns=["column1"], limit="10"),
         )
 
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_call_service_version_provided(self, mock_query_method):
         query_url = "/datasets/mydomain/mydataset/query?version=3"
 
@@ -448,7 +447,7 @@ class TestQuery(BaseClientTest):
             "mydomain", "mydataset", 3, SQLQuery()
         )
 
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_calls_service_with_sql_query_when_empty_json_values_provided(
         self, mock_query_method
     ):
@@ -477,7 +476,7 @@ class TestQuery(BaseClientTest):
             ),
         )
 
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_returns_formatted_json_from_query_result(self, mock_query_method):
         mock_query_method.return_value = pd.DataFrame(
             {
@@ -504,7 +503,7 @@ class TestQuery(BaseClientTest):
             "1": {"column1": "2", "column2": "item2", "area": "area_2"},
         }
 
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_request_query_in_csv_is_successful(self, mock_query_method):
         mock_query_method.return_value = pd.DataFrame(
             {
@@ -523,7 +522,7 @@ class TestQuery(BaseClientTest):
 
         assert response.status_code == 200
 
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_returns_formatted_json_from_query_if_format_is_not_provided(
         self, mock_query_method
     ):
@@ -547,7 +546,7 @@ class TestQuery(BaseClientTest):
             "1": {"column1": "2", "column2": "item2", "area": "area_2"},
         }
 
-    @patch.object(AthenaAdapter, "query")
+    @patch.object(DataService, "query_data")
     def test_returns_error_from_query_request_when_format_is_unsupported(
         self, mock_query_method
     ):

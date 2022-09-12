@@ -149,6 +149,10 @@ class GlueAdapter:
         table = self._get_table(table_name)
         return str(table["Table"]["UpdateTime"])
 
+    def get_no_of_rows(self, table_name) -> int:
+        table = self._get_table(table_name)
+        return int(table["Table"]["StorageDescriptor"]["Parameters"]["recordCount"])
+
     def update_glue_table_partition_column_types(
         self, table_definition: Dict, partition_columns: List[Column]
     ) -> Dict:

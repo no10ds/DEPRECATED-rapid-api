@@ -19,7 +19,7 @@ from api.application.services.partitioning_service import generate_partitioned_d
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
 from api.common.config.auth import SensitivityLevel
-from api.common.config.constants import CONTENT_ENCODING
+from api.common.config.constants import CONTENT_ENCODING, DATASET_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
@@ -335,6 +335,17 @@ class DataService:
             filename,
             partitioned_data,
         )
+
+    def query_data(
+        self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
+    ) -> pd.DataFrame:
+        no_of_rows_in_table = self.glue_adapter.get_no_of_rows(
+            StorageMetaData(
+                domain=domain, dataset=dataset, version=version
+            ).glue_table_name()
+        )
+        if no_of_rows_in_table <= DATASET_QUERY_LIMIT:
+            return self.athena_adapter.query(domain, dataset, version, query)
 
     def _get_schema(self, domain: str, dataset: str, version: int) -> Schema:
         return self.s3_adapter.find_schema(domain, dataset, version)

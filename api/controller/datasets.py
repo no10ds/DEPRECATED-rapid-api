@@ -362,7 +362,7 @@ async def query_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
-    df = athena_adapter.query(domain, dataset, version, query)
+    df = data_service.query_data(domain, dataset, version, query)
     string_df = df.astype("string")
     output_format = request.headers.get("Accept")
     mime_type = MimeType.to_mimetype(output_format)
