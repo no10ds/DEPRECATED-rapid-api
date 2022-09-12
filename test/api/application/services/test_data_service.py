@@ -617,6 +617,7 @@ class TestUploadDataset:
             schema, Path("data.csv"), "123-456-789"
         )
         self.job_service.update_step.assert_has_calls(expected_update_step_calls)
+        self.job_service.succeed.assert_called_once_with(upload_job)
 
     @patch("api.application.services.data_service.sleep")
     def test_wait_until_crawler_is_ready_returns_none_when_crawler_is_ready_after_waiting(

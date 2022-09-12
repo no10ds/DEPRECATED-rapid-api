@@ -6,7 +6,7 @@ from api.domain.Jobs.Job import JobStatus
 from api.domain.Jobs.UploadJob import UploadStep, UploadJob
 
 
-class TestListAllJobs:
+class TestGetAllJobs:
     def setup(self):
         self.job_service = JobService()
 
@@ -69,7 +69,7 @@ class TestUpdateJob:
 
     @patch("api.domain.Jobs.Job.uuid")
     @patch.object(DynamoDBAdapter, "update_job")
-    def test_get_all_jobs(self, mock_update_job, mock_uuid):
+    def test_updates_job(self, mock_update_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
         job = UploadJob("file1.csv")
@@ -81,4 +81,25 @@ class TestUpdateJob:
 
         # THEN
         assert job.step == UploadStep.CLEAN_UP
+        mock_update_job.assert_called_once_with(job)
+
+
+class TestSucceedsJob:
+    def setup(self):
+        self.job_service = JobService()
+
+    @patch("api.domain.Jobs.Job.uuid")
+    @patch.object(DynamoDBAdapter, "update_job")
+    def test_updates_job(self, mock_update_job, mock_uuid):
+        # GIVEN
+        mock_uuid.uuid4.return_value = "abc-123"
+        job = UploadJob("file1.csv")
+
+        assert job.step == UploadStep.INITIALISATION
+
+        # WHEN
+        self.job_service.succeed(job)
+
+        # THEN
+        assert job.status == JobStatus.SUCCESS
         mock_update_job.assert_called_once_with(job)
