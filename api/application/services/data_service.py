@@ -30,7 +30,7 @@ from api.common.custom_exceptions import (
     CrawlerIsNotReadyError,
 )
 from api.common.logger import AppLogger
-from api.common.utilities import handle_version_retrieval
+from api.common.utilities import handle_version_retrieval, build_error_message_list
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.data_types import DataTypes
 from api.domain.enriched_schema import (
@@ -125,6 +125,7 @@ class DataService:
                 f"Processing upload failed for {schema.get_domain()}, dataset {schema.get_dataset()}, and version {schema.get_version()}: {error}"
             )
             self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            self.job_service.fail(job, build_error_message_list(error))
             raise error
 
     def wait_until_crawler_is_ready(self, schema: Schema) -> None:

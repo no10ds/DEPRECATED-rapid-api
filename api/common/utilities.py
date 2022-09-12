@@ -1,6 +1,8 @@
 from enum import Enum
+from typing import List, Union
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.common.custom_exceptions import BaseAppException
 from api.common.logger import AppLogger
 
 aws_resource_adapter = AWSResourceAdapter()
@@ -25,3 +27,13 @@ def handle_version_retrieval(domain, dataset, version) -> int:
         )
         version = aws_resource_adapter.get_version_from_crawler_tags(domain, dataset)
     return version
+
+
+def build_error_message_list(error: Union[Exception, BaseAppException]) -> List[str]:
+    try:
+        if isinstance(error.message, list):
+            return error.message
+        else:
+            return [error.message]
+    except AttributeError:
+        return [str(error)]

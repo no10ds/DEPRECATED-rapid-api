@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.common.logger import AppLogger
@@ -26,4 +26,10 @@ class JobService:
     def succeed(self, job: Job) -> None:
         AppLogger.info(f"Job {job.job_id} has succeeded")
         job.set_status(JobStatus.SUCCESS)
+        self.db_adapter.update_job(job)
+
+    def fail(self, job: Job, errors: List[str]) -> None:
+        AppLogger.info(f"Job {job.job_id} has failed")
+        job.set_status(JobStatus.FAILED)
+        job.set_errors(set(errors))
         self.db_adapter.update_job(job)

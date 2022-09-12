@@ -673,7 +673,7 @@ class TestUploadDataset:
     @patch.object(DataService, "delete_incoming_raw_file")
     @patch.object(DataService, "validate_incoming_data")
     @patch.object(DataService, "wait_until_crawler_is_ready")
-    def test_deletes_incoming_file_from_disk_if_any_error_during_processing(
+    def test_deletes_incoming_file_from_disk_and_fails_job_if_any_error_during_processing(
         self,
         _mock_wait_until_crawler_is_ready,
         mock_validate_incoming_data,
@@ -694,6 +694,7 @@ class TestUploadDataset:
         mock_delete_incoming_raw_file.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
+        self.job_service.fail.assert_called_once_with(upload_job, ["some message"])
 
     # Validate dataset ---------------------------------------
     @patch("api.application.services.data_service.build_validated_dataframe")

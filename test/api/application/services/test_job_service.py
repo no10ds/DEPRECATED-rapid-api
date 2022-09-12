@@ -95,11 +95,33 @@ class TestSucceedsJob:
         mock_uuid.uuid4.return_value = "abc-123"
         job = UploadJob("file1.csv")
 
-        assert job.step == UploadStep.INITIALISATION
+        assert job.status == JobStatus.IN_PROGRESS
 
         # WHEN
         self.job_service.succeed(job)
 
         # THEN
         assert job.status == JobStatus.SUCCESS
+        mock_update_job.assert_called_once_with(job)
+
+
+class TestFailsJob:
+    def setup(self):
+        self.job_service = JobService()
+
+    @patch("api.domain.Jobs.Job.uuid")
+    @patch.object(DynamoDBAdapter, "update_job")
+    def test_updates_job(self, mock_update_job, mock_uuid):
+        # GIVEN
+        mock_uuid.uuid4.return_value = "abc-123"
+        job = UploadJob("file1.csv")
+
+        assert job.status == JobStatus.IN_PROGRESS
+
+        # WHEN
+        self.job_service.fail(job, ["error1", "error2"])
+
+        # THEN
+        assert job.status == JobStatus.FAILED
+        assert job.errors == {"error1", "error2"}
         mock_update_job.assert_called_once_with(job)
