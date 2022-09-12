@@ -1,6 +1,8 @@
+import time
 import uuid
 from typing import Set
 
+from api.common.config.constants import DEFAULT_JOB_EXPIRY_DAYS
 from api.common.utilities import BaseEnum
 
 
@@ -29,6 +31,9 @@ class Job:
         self.status: JobStatus = JobStatus.IN_PROGRESS
         self.job_id: str = generate_uuid()
         self.errors: Set[str] = set()
+        self.expiry_time: int = int(
+            time.time() + DEFAULT_JOB_EXPIRY_DAYS * 24 * 60 * 60
+        )
 
     def set_step(self, step: JobStep) -> None:
         self.step = step

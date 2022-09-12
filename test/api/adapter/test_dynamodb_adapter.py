@@ -554,7 +554,9 @@ class TestDynamoDBAdapterServiceTable:
         self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
 
     @patch("api.domain.Jobs.Job.uuid")
-    def test_store_async_job(self, mock_uuid):
+    @patch("api.domain.Jobs.UploadJob.time")
+    def test_store_async_job(self, mock_time, mock_uuid):
+        mock_time.time.return_value = 1000
         mock_uuid.uuid4.return_value = "abc-123"
 
         self.dynamo_adapter.store_upload_job(UploadJob("filename.csv"))
@@ -567,6 +569,7 @@ class TestDynamoDBAdapterServiceTable:
                 "Step": "INITIALISATION",
                 "Errors": None,
                 "Filename": "filename.csv",
+                "TTL": 605800,
             },
         )
 
