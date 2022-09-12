@@ -10,13 +10,14 @@ def test_initialise_upload_job(mock_time, mock_uuid):
     mock_time.time.return_value = 1000
     mock_uuid.uuid4.return_value = "abc-123"
 
-    job = QueryJob("111222333")
+    job = QueryJob("domain1", "dataset1")
 
     assert job.job_id == "abc-123"
     assert job.job_type == JobType.QUERY
     assert job.status == JobStatus.IN_PROGRESS
     assert job.step == QueryStep.INITIALISATION
     assert job.errors == set()
-    assert job.subject_id == "111222333"
+    assert job.domain == "domain1"
+    assert job.dataset == "dataset1"
     assert job.results_url is None
     assert job.expiry_time == 87400

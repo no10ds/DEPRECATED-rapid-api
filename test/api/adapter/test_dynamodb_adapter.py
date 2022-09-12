@@ -583,7 +583,7 @@ class TestDynamoDBAdapterServiceTable:
         mock_time.time.return_value = 2000
         mock_uuid.uuid4.return_value = "abc-123"
 
-        self.dynamo_adapter.store_query_job(QueryJob("111222333"))
+        self.dynamo_adapter.store_query_job(QueryJob("domain1", "dataset1"))
 
         self.service_table.put_item.assert_called_once_with(
             Item={
@@ -593,7 +593,8 @@ class TestDynamoDBAdapterServiceTable:
                 "Status": "IN PROGRESS",
                 "Step": "INITIALISATION",
                 "Errors": None,
-                "SubjectId": "111222333",
+                "Domain": "domain1",
+                "Dataset": "dataset1",
                 "ResultsURL": None,
                 "TTL": 88400,
             },

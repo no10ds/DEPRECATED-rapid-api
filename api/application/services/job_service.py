@@ -1,8 +1,13 @@
 from typing import Dict, List
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
+from api.application.services.authorisation.authorisation_service import (
+    match_permissions,
+)
+from api.common.config.auth import Action
+from api.common.custom_exceptions import AuthorisationError
 from api.common.logger import AppLogger
-from api.domain.Jobs.Job import JobStep, Job, JobStatus
+from api.domain.Jobs.Job import JobStep, Job, JobStatus, JobType
 from api.domain.Jobs.UploadJob import UploadJob
 
 
@@ -10,8 +15,33 @@ class JobService:
     def __init__(self, db_adapter=DynamoDBAdapter()):
         self.db_adapter = db_adapter
 
-    def get_all_jobs(self) -> list[Dict]:
-        return self.db_adapter.get_jobs()
+    def get_all_jobs(self, subject_id: str) -> list[Dict]:
+        subject_permissions = self.db_adapter.get_permissions_for_subject(subject_id)
+        all_jobs = self.db_adapter.get_jobs()
+        return self.filter_permitted_jobs(subject_permissions, all_jobs)
+
+    def filter_permitted_jobs(
+        self, permissions: List[str], jobs: List[Dict]
+    ) -> List[Dict]:
+        if Action.DATA_ADMIN.value in permissions:
+            return jobs
+
+        permitted_jobs = [
+            job for job in jobs if job.get("type", None) == JobType.UPLOAD.value
+        ]
+        for job in jobs:
+            if job.get("domain", None) and job.get("dataset", None):
+                try:
+                    match_permissions(
+                        permissions,
+                        [Action.READ.value],
+                        job.get("domain", None),
+                        job.get("dataset", None),
+                    )
+                    permitted_jobs.append(job)
+                except AuthorisationError:
+                    pass
+        return permitted_jobs
 
     def get_job(self, job_id: str) -> Dict:
         return self.db_adapter.get_job(job_id)

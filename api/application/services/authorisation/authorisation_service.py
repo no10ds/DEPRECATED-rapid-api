@@ -46,16 +46,12 @@ class OAuth2ClientCredentials(OAuth2):
         super().__init__(flows=flows, scheme_name=scheme_name, auto_error=auto_error)
 
     async def __call__(self, request: Request) -> Optional[str]:
-        authorization: str = request.headers.get("Authorization")
-        scheme, jwt_token = get_authorization_scheme_param(authorization)
-        if not authorization or scheme.lower() != "bearer":
-            return None
-        return jwt_token
+        return get_client_token(request)
 
 
 class OAuth2UserCredentials:
     async def __call__(self, request: Request) -> Optional[str]:
-        return request.cookies.get(RAPID_ACCESS_TOKEN, None)
+        return get_user_token(request)
 
 
 oauth2_scheme = OAuth2ClientCredentials(token_url=IDENTITY_PROVIDER_TOKEN_URL)
@@ -106,6 +102,26 @@ def secure_dataset_endpoint(
             raise error
 
 
+def get_subject_id(request: Request):
+    client_token = get_client_token(request)
+    user_token = get_user_token(request)
+    token = client_token if client_token else user_token
+    token = parse_token(token)
+    return token.subject
+
+
+def get_client_token(request: Request) -> Optional[str]:
+    authorization: str = request.headers.get("Authorization")
+    scheme, jwt_token = get_authorization_scheme_param(authorization)
+    if not authorization or scheme.lower() != "bearer":
+        return None
+    return jwt_token
+
+
+def get_user_token(request: Request) -> Optional[str]:
+    return request.cookies.get(RAPID_ACCESS_TOKEN, None)
+
+
 def check_credentials_availability(
     browser_request: bool, user_token: Optional[str], client_token: Optional[str]
 ) -> None:
@@ -144,7 +160,10 @@ def retrieve_permissions(token: Token) -> List[str]:
 
 
 def match_permissions(
-    permissions: list, endpoint_scopes: list, domain: str = None, dataset: str = None
+    permissions: list,
+    endpoint_scopes: list[str],
+    domain: str = None,
+    dataset: str = None,
 ):
     sensitivity = s3_adapter.get_dataset_sensitivity(domain, dataset)
     acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)

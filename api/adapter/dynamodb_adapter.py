@@ -239,7 +239,8 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Status": query_job.status.value,
             "Step": query_job.step.value,
             "Errors": query_job.errors if query_job.errors else None,
-            "SubjectId": query_job.subject_id,
+            "Domain": query_job.domain,
+            "Dataset": query_job.dataset,
             "ResultsURL": query_job.results_url,
             "TTL": query_job.expiry_time,
         }

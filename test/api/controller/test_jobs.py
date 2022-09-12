@@ -6,7 +6,12 @@ from test.api.common.controller_test_utils import BaseClientTest
 
 class TestListJob(BaseClientTest):
     @patch.object(JobService, "get_all_jobs")
-    def test_returns_list_of_all_currently_tracked_jobs(self, mock_get_all_jobs):
+    @patch("api.controller.jobs.get_subject_id")
+    def test_returns_list_of_all_currently_tracked_jobs(
+        self, mock_get_subject_id, mock_get_all_jobs
+    ):
+        mock_get_subject_id.return_value = "111222333"
+
         expected_response = [
             {
                 "job_id": "abc-123",
@@ -32,7 +37,7 @@ class TestListJob(BaseClientTest):
             "/jobs", headers={"Authorization": "Bearer test-token"}
         )
 
-        mock_get_all_jobs.assert_called_once()
+        mock_get_all_jobs.assert_called_once_with("111222333")
 
         assert response.status_code == 200
         assert response.json() == expected_response

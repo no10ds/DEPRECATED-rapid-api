@@ -11,8 +11,9 @@ class QueryStep(JobStep):
 
 
 class QueryJob(Job):
-    def __init__(self, subject_id: str):
+    def __init__(self, domain: str, dataset: str):
         super().__init__(JobType.QUERY, QueryStep.INITIALISATION)
-        self.subject_id: str = subject_id
+        self.domain: str = domain
+        self.dataset: str = dataset
         self.results_url: Optional[str] = None
         self.expiry_time: int = int(time.time() + QUERY_JOB_EXPIRY_DAYS * 24 * 60 * 60)
