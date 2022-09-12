@@ -262,7 +262,7 @@ class TestUI(BaseTestUI):
                 page, "select_format", visible_text="json", expected_value="json"
             )
 
-            self.download_file(page, "download-dataset", "test_e2e_query.json")
+            self.download_file(page, "download-dataset", "test_e2e_query_1.json")
 
             self.logout(page)
 
