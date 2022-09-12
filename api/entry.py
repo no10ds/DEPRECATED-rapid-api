@@ -62,6 +62,6 @@ def status():
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
 
 
-@app.get("/favicon.ico")
+@app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse("static/favicon.ico")
