@@ -623,6 +623,63 @@ class TestDynamoDBAdapterServiceTable:
 
         self.permissions_table.assert_not_called()
 
+    def test_get_job(self):
+        self.service_table.query.return_value = {
+            "Items": [
+                {
+                    "Step": "VALIDATION",
+                    "SK": "113e0baf-5302-4b79-9902-ad620e8e531b",
+                    "Status": "IN PROGRESS",
+                    "Filename": "file1.csv",
+                    "Errors": None,
+                    "PK": "UPLOAD",
+                }
+            ],
+            "Count": 1,
+        }
+
+        expected = {
+            "step": "VALIDATION",
+            "job_id": "113e0baf-5302-4b79-9902-ad620e8e531b",
+            "status": "IN PROGRESS",
+            "filename": "file1.csv",
+            "errors": None,
+            "type": "UPLOAD",
+        }
+
+        result = self.dynamo_adapter.get_job("113e0baf-5302-4b79-9902-ad620e8e531b")
+
+        assert result == expected
+
+        self.permissions_table.assert_not_called()
+
+    def test_get_job_fails_if_no_job_found(self):
+        self.service_table.query.return_value = {
+            "Items": [],
+            "Count": 0,
+        }
+
+        with pytest.raises(
+            UserError,
+            match="Could not find job with id 113e0baf-5302-4b79-9902-ad620e8e531b",
+        ):
+            self.dynamo_adapter.get_job("113e0baf-5302-4b79-9902-ad620e8e531b")
+
+        self.permissions_table.assert_not_called()
+
+    def test_get_job_fails_if_aws_fails(self):
+        self.service_table.query.side_effect = ClientError(
+            error_response={"Error": {"Code": "DatabaseConnectionError"}},
+            operation_name="Query",
+        )
+
+        with pytest.raises(
+            AWSServiceError, match="Error fetching job from the database"
+        ):
+            self.dynamo_adapter.get_job("113e0baf-5302-4b79-9902-ad620e8e531b")
+
+        self.permissions_table.assert_not_called()
+
     def test_raises_error_when_get_jobs_fails(self):
         self.service_table.scan.side_effect = ClientError(
             error_response={"Error": {"Code": "DatabaseConnectionError"}},

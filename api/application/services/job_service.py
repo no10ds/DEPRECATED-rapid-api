@@ -13,6 +13,9 @@ class JobService:
     def get_all_jobs(self) -> list[Dict]:
         return self.db_adapter.get_jobs()
 
+    def get_job(self, job_id: str) -> Dict:
+        return self.db_adapter.get_job(job_id)
+
     def create_upload_job(self, filename: str) -> UploadJob:
         job = UploadJob(filename)
         self.db_adapter.store_upload_job(job)

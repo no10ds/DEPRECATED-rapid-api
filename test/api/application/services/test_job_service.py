@@ -42,6 +42,32 @@ class TestGetAllJobs:
         mock_get_jobs.assert_called_once()
 
 
+class TestGetJob:
+    def setup(self):
+        self.job_service = JobService()
+
+    @patch.object(DynamoDBAdapter, "get_job")
+    def test_get_single_job(self, mock_get_job):
+        # GIVEN
+        expected = {
+            "type": "UPLOAD",
+            "job_id": "abc-123",
+            "status": "IN PROGRESS",
+            "step": "VALIDATION",
+            "errors": None,
+            "filename": "filename1.csv",
+        }
+
+        mock_get_job.return_value = expected
+
+        # WHEN
+        result = self.job_service.get_job("abc-123")
+
+        # THEN
+        assert result == expected
+        mock_get_job.assert_called_once_with("abc-123")
+
+
 class TestCreateUploadJob:
     def setup(self):
         self.job_service = JobService()

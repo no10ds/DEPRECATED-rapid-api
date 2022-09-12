@@ -37,3 +37,25 @@ async def list_all_jobs():
 
     """
     return jobs_service.get_all_jobs()
+
+
+@jobs_router.get(
+    "/{job_id}",
+    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
+    status_code=http_status.HTTP_200_OK,
+)
+async def get_job(job_id: str):
+    """
+    ## Get single job
+
+    Use this endpoint to retrieve the status of a tracked asynchronous processing job.
+
+    ### Accepted permissions
+
+    You will always be able to list all jobs, provided you have
+    a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
+    return jobs_service.get_job(job_id)

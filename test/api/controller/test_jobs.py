@@ -36,3 +36,27 @@ class TestListJob(BaseClientTest):
 
         assert response.status_code == 200
         assert response.json() == expected_response
+
+
+class TestGetJob(BaseClientTest):
+    @patch.object(JobService, "get_job")
+    def test_returns_single_currently_tracked_job(self, mock_get_job):
+        expected_response = {
+            "job_id": "abc-123",
+            "job_type": "UPLOAD",
+            "status": "IN PROGRESS",
+            "step": "VALIDATION",
+            "errors": [],
+            "filename": "UPLOAD",
+        }
+
+        mock_get_job.return_value = expected_response
+
+        response = self.client.get(
+            "/jobs/abc-123", headers={"Authorization": "Bearer test-token"}
+        )
+
+        mock_get_job.assert_called_once_with("abc-123")
+
+        assert response.status_code == 200
+        assert response.json() == expected_response

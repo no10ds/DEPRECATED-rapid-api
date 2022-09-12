@@ -14,7 +14,7 @@ from api.common.config.aws import (
 )
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
-from api.domain.Jobs.Job import Job
+from api.domain.Jobs.Job import Job, JobType
 from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -60,6 +60,10 @@ class DatabaseAdapter(ABC):
 
     @abstractmethod
     def get_jobs(self) -> List[Job]:
+        pass
+
+    @abstractmethod
+    def get_job(self, job_id: str) -> Dict:
         pass
 
     @abstractmethod
@@ -230,6 +234,19 @@ class DynamoDBAdapter(DatabaseAdapter):
             return [self._map_job(job) for job in self.service_table.scan()["Items"]]
         except ClientError as error:
             self._handle_client_error("Error fetching jobs from the database", error)
+
+    def get_job(self, job_id: str) -> Dict:
+        try:
+            return self._map_job(
+                self.service_table.query(
+                    KeyConditionExpression=Key("PK").eq(JobType.UPLOAD.value)
+                    & Key("SK").eq(job_id)
+                )["Items"][0]
+            )
+        except IndexError:
+            raise UserError(f"Could not find job with id {job_id}")
+        except ClientError as error:
+            self._handle_client_error("Error fetching job from the database", error)
 
     def update_job(self, job: Job) -> None:
         try:
