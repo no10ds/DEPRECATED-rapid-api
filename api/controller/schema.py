@@ -40,6 +40,10 @@ async def generate_schema(
     the [schema writing guide](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md) if you would like to create the schema yourself. You can then use the
     output of this endpoint in the Schema Upload endpoint.
 
+    ⚠️ WARNING:
+    - The first 50MB of the uploaded file (regardless of size) are used to infer the schema
+    - Consider uploading a representative sample of your dataset (e.g.: the first 10,000 rows) instead of uploading the entire large file which could take a long time
+
     ### Inputs
 
     | Parameters    | Usage                                   | Example values               | Definition                 |
@@ -59,10 +63,15 @@ async def generate_schema(
     ### Click  `Try it out` to use the endpoint
 
     """
-    file_contents = await file.read()
+    infer_contents = get_first_mb_of_file(file)
     return schema_infer_service.infer_schema(
-        domain, dataset, sensitivity, file_contents
+        domain, dataset, sensitivity, infer_contents
     )
+
+
+def get_first_mb_of_file(file: UploadFile, chunk_size_mb: int = 50) -> bytes:
+    mb_1 = 1024 * 1024
+    return file.file.read(mb_1 * chunk_size_mb)
 
 
 @schema_router.post(
