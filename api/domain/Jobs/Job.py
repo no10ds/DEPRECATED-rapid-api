@@ -13,6 +13,7 @@ class JobStatus(BaseEnum):
 
 
 class JobType(BaseEnum):
+    QUERY = "QUERY"
     UPLOAD = "UPLOAD"
 
 

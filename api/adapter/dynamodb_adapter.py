@@ -15,6 +15,7 @@ from api.common.config.aws import (
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
 from api.domain.Jobs.Job import Job
+from api.domain.Jobs.QueryJob import QueryJob
 from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -227,6 +228,20 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Errors": upload_job.errors if upload_job.errors else None,
             "Filename": upload_job.filename,
             "TTL": upload_job.expiry_time,
+        }
+        self._store_job(item_config)
+
+    def store_query_job(self, query_job: QueryJob) -> None:
+        item_config = {
+            "PK": "JOB",
+            "SK": query_job.job_id,
+            "Type": query_job.job_type.value,
+            "Status": query_job.status.value,
+            "Step": query_job.step.value,
+            "Errors": query_job.errors if query_job.errors else None,
+            "SubjectId": query_job.subject_id,
+            "ResultsURL": query_job.results_url,
+            "TTL": query_job.expiry_time,
         }
         self._store_job(item_config)
 

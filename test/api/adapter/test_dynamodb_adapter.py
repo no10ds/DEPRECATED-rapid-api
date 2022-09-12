@@ -11,6 +11,7 @@ from api.common.custom_exceptions import (
     UserError,
 )
 from api.domain.Jobs.Job import JobStatus
+from api.domain.Jobs.QueryJob import QueryJob
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -555,7 +556,7 @@ class TestDynamoDBAdapterServiceTable:
 
     @patch("api.domain.Jobs.Job.uuid")
     @patch("api.domain.Jobs.UploadJob.time")
-    def test_store_async_job(self, mock_time, mock_uuid):
+    def test_store_async_upload_job(self, mock_time, mock_uuid):
         mock_time.time.return_value = 1000
         mock_uuid.uuid4.return_value = "abc-123"
 
@@ -571,6 +572,30 @@ class TestDynamoDBAdapterServiceTable:
                 "Errors": None,
                 "Filename": "filename.csv",
                 "TTL": 605800,
+            },
+        )
+
+        self.permissions_table.assert_not_called()
+
+    @patch("api.domain.Jobs.Job.uuid")
+    @patch("api.domain.Jobs.QueryJob.time")
+    def test_store_async_query_job(self, mock_time, mock_uuid):
+        mock_time.time.return_value = 2000
+        mock_uuid.uuid4.return_value = "abc-123"
+
+        self.dynamo_adapter.store_query_job(QueryJob("111222333"))
+
+        self.service_table.put_item.assert_called_once_with(
+            Item={
+                "PK": "JOB",
+                "SK": "abc-123",
+                "Type": "QUERY",
+                "Status": "IN PROGRESS",
+                "Step": "INITIALISATION",
+                "Errors": None,
+                "SubjectId": "111222333",
+                "ResultsURL": None,
+                "TTL": 88400,
             },
         )
 
