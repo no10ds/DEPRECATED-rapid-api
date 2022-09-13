@@ -11,7 +11,7 @@ from api.common.custom_exceptions import (
     UserError,
 )
 from api.domain.Jobs.Job import JobStatus
-from api.domain.Jobs.QueryJob import QueryJob
+from api.domain.Jobs.QueryJob import QueryJob, QueryStep
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
@@ -809,3 +809,52 @@ class TestDynamoDBAdapterServiceTable:
             AWSServiceError, match="There was an error updating job status"
         ):
             self.dynamo_adapter.update_job(job)
+
+    @patch("api.domain.Jobs.Job.uuid")
+    def test_update_query_job(self, mock_uuid):
+        mock_uuid.uuid4.return_value = "abc-123"
+
+        job = QueryJob("domain1", "dataset2", 4)
+        job.set_results_url("https://some-url.com")
+        job.set_status(JobStatus.SUCCESS)
+        job.set_step(QueryStep.NONE)
+
+        self.dynamo_adapter.update_query_job(job)
+
+        self.service_table.update_item.assert_called_once_with(
+            Key={
+                "PK": "JOB",
+                "SK": job.job_id,
+            },
+            ConditionExpression="SK = :jid",
+            UpdateExpression="set #A = :a, #B = :b, #C = :c, #D = :d",
+            ExpressionAttributeNames={
+                "#A": "Step",
+                "#B": "Status",
+                "#C": "Errors",
+                "#D": "ResultsURL",
+            },
+            ExpressionAttributeValues={
+                ":a": "-",
+                ":b": "SUCCESS",
+                ":c": None,
+                ":d": "https://some-url.com",
+                ":jid": "abc-123",
+            },
+        )
+
+    @patch("api.domain.Jobs.Job.uuid")
+    def test_update_query_job_raises_error_when_fails(self, mock_uuid):
+        mock_uuid.uuid4.return_value = "abc-123"
+
+        job = QueryJob("domain1", "dataset2", 4)
+
+        self.service_table.update_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
+            operation_name="UpdateItem",
+        )
+
+        with pytest.raises(
+            AWSServiceError, match="There was an error updating job status"
+        ):
+            self.dynamo_adapter.update_query_job(job)

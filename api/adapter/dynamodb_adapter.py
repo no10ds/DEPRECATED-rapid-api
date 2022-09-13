@@ -293,10 +293,37 @@ class DynamoDBAdapter(DatabaseAdapter):
         except ClientError as error:
             self._handle_client_error("There was an error updating job status", error)
 
+    def update_query_job(self, job: QueryJob) -> None:
+        try:
+            self.service_table.update_item(
+                Key={
+                    "PK": "JOB",
+                    "SK": job.job_id,
+                },
+                ConditionExpression="SK = :jid",
+                UpdateExpression="set #A = :a, #B = :b, #C = :c, #D = :d",
+                ExpressionAttributeNames={
+                    "#A": "Step",
+                    "#B": "Status",
+                    "#C": "Errors",
+                    "#D": "ResultsURL",
+                },
+                ExpressionAttributeValues={
+                    ":a": job.step.value,
+                    ":b": job.status.value,
+                    ":c": job.errors if job.errors else None,
+                    ":d": job.results_url if job.results_url else None,
+                    ":jid": job.job_id,
+                },
+            )
+        except ClientError as error:
+            self._handle_client_error("There was an error updating job status", error)
+
     def _map_job(self, job: Dict) -> Dict:
         name_map = {
             "SK": "job_id",
             "RawFileIdentifier": "raw_file_identifier",
+            "ResultsURL": "result_url",
         }
         return {
             name_map.get(key, key.lower()): value
