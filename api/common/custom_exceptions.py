@@ -34,6 +34,11 @@ class TooManyRequestsError(UserError):
         super().__init__(message, status_code)
 
 
+class QueryExecutionError(AWSServiceError):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 # Could become a generic NotFoundError
 class SchemaNotFoundError(UserError):
     def __init__(self, message, status_code: int = 404):

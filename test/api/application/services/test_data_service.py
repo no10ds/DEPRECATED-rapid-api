@@ -1464,11 +1464,12 @@ class TestQueryDataset:
 
 class TestQueryLargeDataset:
     def setup_method(self):
+        self.s3_adapter = Mock()
         self.athena_adapter = Mock()
         self.glue_adapter = Mock()
         self.job_service = Mock()
         self.data_service = DataService(
-            None,
+            self.s3_adapter,
             self.glue_adapter,
             self.athena_adapter,
             None,
@@ -1477,7 +1478,8 @@ class TestQueryLargeDataset:
             self.job_service,
         )
 
-    def test_query_large_data_success(self):
+    @patch("api.application.services.data_service.Thread")
+    def test_query_large_creates_query_job_and_triggers_async_query(self, mock_thread):
         domain = "domain1"
         dataset = "dataset1"
         version = 4
@@ -1485,6 +1487,8 @@ class TestQueryLargeDataset:
         query_job = Mock()
         query_job.job_id = "12838"
         self.job_service.create_query_job.return_value = query_job
+        query_execution_id = "111-222-333"
+        self.athena_adapter.query_async.return_value = query_execution_id
 
         response = self.data_service.query_large_data(domain, dataset, version, query)
 
@@ -1492,10 +1496,22 @@ class TestQueryLargeDataset:
         self.job_service.create_query_job.assert_called_once_with(
             domain, dataset, version
         )
+        self.athena_adapter.query_async.assert_called_once_with(
+            domain, dataset, version, query
+        )
 
+        mock_thread.assert_called_once_with(
+            target=self.data_service.generate_results_download_url_async,
+            args=(
+                query_job,
+                query_execution_id,
+            ),
+        )
+
+    @patch("api.application.services.data_service.Thread")
     @patch("api.application.services.data_service.handle_version_retrieval")
     def test_query_large_data_for_version_not_specified(
-        self, mock_handle_version_retrieval
+        self, mock_handle_version_retrieval, mock_thread
     ):
         domain = "domain1"
         dataset = "dataset1"
@@ -1505,9 +1521,44 @@ class TestQueryLargeDataset:
         query_job.job_id = "12838"
         mock_handle_version_retrieval.return_value = 3
         self.job_service.create_query_job.return_value = query_job
+        query_execution_id = "111-222-333"
+        self.athena_adapter.query_async.return_value = query_execution_id
 
         response = self.data_service.query_large_data(domain, dataset, version, query)
 
         assert response == "12838"
         self.job_service.create_query_job.assert_called_once_with(domain, dataset, 3)
         mock_handle_version_retrieval.assert_called_once_with(domain, dataset, version)
+        mock_thread.assert_called_once_with(
+            target=self.data_service.generate_results_download_url_async,
+            args=(
+                query_job,
+                query_execution_id,
+            ),
+        )
+
+    def test_updates_query_job_with_presigned_s3_url_when_querying_is_complete(self):
+        # GIVEN
+        query_job = Mock()
+        query_execution_id = "111-222-333"
+        download_url = "https://the-url.com"
+
+        self.s3_adapter.generate_query_result_download_url.return_value = download_url
+
+        # WHEN
+        self.data_service.generate_results_download_url_async(
+            query_job, query_execution_id
+        )
+
+        # THEN
+        self.s3_adapter.wait_for_query_to_complete.assert_called_once_with(
+            query_execution_id
+        )
+        self.s3_adapter.generate_query_result_download_url.assert_called_once_with(
+            query_execution_id
+        )
+
+        self.job_service.set_results_url.assert_called_once_with(
+            query_job, download_url
+        )
+        self.job_service.succeed.assert_called_once_with(query_job)

@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from time import sleep
 from typing import Union, Optional, List, Tuple, Dict
 
 import boto3
@@ -15,7 +16,12 @@ from api.common.config.aws import (
     AWS_REGION,
 )
 from api.common.config.constants import CONTENT_ENCODING
-from api.common.custom_exceptions import SchemaNotFoundError, UserError, AWSServiceError
+from api.common.custom_exceptions import (
+    SchemaNotFoundError,
+    UserError,
+    AWSServiceError,
+    QueryExecutionError,
+)
 from api.common.logger import AppLogger
 from api.domain.schema import Schema
 from api.domain.schema_metadata import SchemaMetadata, SchemaMetadatas
@@ -147,19 +153,53 @@ class S3Adapter:
 
         self._delete_objects(files_to_delete, raw_data_filename)
 
-    def generate_query_result_download_url(self, key: str) -> str:
+    def generate_query_result_download_url(self, query_execution_id: str) -> str:
         try:
             return self.__s3_client.generate_presigned_url(
                 ClientMethod="get_object",
-                Params={"Bucket": OUTPUT_QUERY_BUCKET, "Key": key},
+                Params={
+                    "Bucket": OUTPUT_QUERY_BUCKET,
+                    "Key": f"{query_execution_id}.csv",
+                },
                 HttpMethod="GET",
                 ExpiresIn=86400,
             )
         except ClientError as error:
             AppLogger.error(
-                f"Unable to generate pre-signed URL for execution ID {key}, {error}"
+                f"Unable to generate pre-signed URL for execution ID {query_execution_id}, {error}"
             )
             raise AWSServiceError("Unable to generate download URL")
+
+    def wait_for_query_to_complete(self, query_execution_id: str) -> None:
+        retry_interval_seconds = 30
+        num_retries = 8
+
+        while num_retries > 0:
+            try:
+                response = self.__s3_client.get_query_execution(
+                    QueryExecutionId=query_execution_id
+                )
+                state = (
+                    response.get("QueryExecution", {})
+                    .get("Status", {})
+                    .get("State", None)
+                )
+
+                if state == "SUCCEEDED":
+                    return
+                elif state in ["FAILED", "CANCELLED"]:
+                    AppLogger.error(f"Query {query_execution_id} failed to complete")
+                    raise QueryExecutionError(f"Query did not complete: {state}")
+            except ClientError:
+                pass
+            num_retries -= 1
+            sleep(retry_interval_seconds)
+            retry_interval_seconds *= 2
+
+        AppLogger.error(
+            f"Retries exhausted when waiting for query with ID {query_execution_id} to complete"
+        )
+        raise AWSServiceError("Query took too long to execute")
 
     def _clean_filename(self, file_key: str) -> str:
         return file_key.rsplit("/", 1)[-1].split(".")[0]

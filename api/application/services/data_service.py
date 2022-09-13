@@ -32,6 +32,7 @@ from api.common.custom_exceptions import (
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval, build_error_message_list
+from api.domain.Jobs.QueryJob import QueryJob
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.data_types import DataTypes
 from api.domain.enriched_schema import (
@@ -359,8 +360,28 @@ class DataService:
     ) -> str:
         version = handle_version_retrieval(domain, dataset, version)
         query_job = self.job_service.create_query_job(domain, dataset, version)
-        self.job_service.succeed(query_job)
+
+        query_execution_id = self.athena_adapter.query_async(
+            domain, dataset, version, query
+        )
+
+        Thread(
+            target=self.generate_results_download_url_async,
+            args=(
+                query_job,
+                query_execution_id,
+            ),
+        ).start()
+
         return query_job.job_id
+
+    def generate_results_download_url_async(
+        self, query_job: QueryJob, query_execution_id: str
+    ) -> None:
+        self.s3_adapter.wait_for_query_to_complete(query_execution_id)
+        url = self.s3_adapter.generate_query_result_download_url(query_execution_id)
+        self.job_service.set_results_url(query_job, url)
+        self.job_service.succeed(query_job)
 
     def _get_schema(self, domain: str, dataset: str, version: int) -> Schema:
         return self.s3_adapter.find_schema(domain, dataset, version)

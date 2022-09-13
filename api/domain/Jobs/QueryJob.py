@@ -19,3 +19,6 @@ class QueryJob(Job):
         self.version: int = version
         self.results_url: Optional[str] = None
         self.expiry_time: int = int(time.time() + QUERY_JOB_EXPIRY_DAYS * 24 * 60 * 60)
+
+    def set_results_url(self, url: str) -> None:
+        self.results_url = url
