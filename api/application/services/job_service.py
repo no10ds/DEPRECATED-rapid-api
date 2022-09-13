@@ -46,8 +46,15 @@ class JobService:
     def get_job(self, job_id: str) -> Dict:
         return self.db_adapter.get_job(job_id)
 
-    def create_upload_job(self, filename: str) -> UploadJob:
-        job = UploadJob(filename)
+    def create_upload_job(
+        self,
+        filename: str,
+        raw_file_identifier: str,
+        domain: str,
+        dataset: str,
+        version: int,
+    ) -> UploadJob:
+        job = UploadJob(filename, raw_file_identifier, domain, dataset, version)
         self.db_adapter.store_upload_job(job)
         return job
 

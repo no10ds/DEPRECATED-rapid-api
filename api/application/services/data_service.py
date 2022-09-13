@@ -95,8 +95,10 @@ class DataService:
                 f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
             )
         else:
-            upload_job = self.job_service.create_upload_job(file_path.name)
             raw_file_identifier = self.generate_raw_file_identifier()
+            upload_job = self.job_service.create_upload_job(
+                file_path.name, raw_file_identifier, domain, dataset, version
+            )
 
             Thread(
                 target=self.process_upload,

@@ -227,6 +227,10 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Step": upload_job.step.value,
             "Errors": upload_job.errors if upload_job.errors else None,
             "Filename": upload_job.filename,
+            "RawFileIdentifier": upload_job.raw_file_identifier,
+            "Domain": upload_job.domain,
+            "Dataset": upload_job.dataset,
+            "Version": upload_job.version,
             "TTL": upload_job.expiry_time,
         }
         self._store_job(item_config)
@@ -289,7 +293,10 @@ class DynamoDBAdapter(DatabaseAdapter):
             self._handle_client_error("There was an error updating job status", error)
 
     def _map_job(self, job: Dict) -> Dict:
-        name_map = {"SK": "job_id"}
+        name_map = {
+            "SK": "job_id",
+            "RawFileIdentifier": "raw_file_identifier",
+        }
         return {
             name_map.get(key, key.lower()): value
             for key, value in job.items()

@@ -560,7 +560,9 @@ class TestDynamoDBAdapterServiceTable:
         mock_time.time.return_value = 1000
         mock_uuid.uuid4.return_value = "abc-123"
 
-        self.dynamo_adapter.store_upload_job(UploadJob("filename.csv"))
+        self.dynamo_adapter.store_upload_job(
+            UploadJob("filename.csv", "111-222-333", "domain1", "dataset2", 4)
+        )
 
         self.service_table.put_item.assert_called_once_with(
             Item={
@@ -571,6 +573,10 @@ class TestDynamoDBAdapterServiceTable:
                 "Step": "INITIALISATION",
                 "Errors": None,
                 "Filename": "filename.csv",
+                "RawFileIdentifier": "111-222-333",
+                "Domain": "domain1",
+                "Dataset": "dataset2",
+                "Version": 4,
                 "TTL": 605800,
             },
         )
@@ -729,7 +735,7 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_job(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = UploadJob("file1.csv")
+        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
         job.set_errors({"error1", "error2"})
@@ -760,7 +766,7 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_job_without_errors(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = UploadJob("file1.csv")
+        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
 
@@ -790,7 +796,7 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_job_raises_error_when_fails(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = UploadJob("file1.csv")
+        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
 
         self.service_table.update_item.side_effect = ClientError(
             error_response={"Error": {"Code": "ConditionalCheckFailedException"}},

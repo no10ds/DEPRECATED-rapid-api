@@ -550,7 +550,9 @@ class TestUploadDataset:
         )
 
         # THEN
-        self.job_service.create_upload_job.assert_called_once_with("data.csv")
+        self.job_service.create_upload_job.assert_called_once_with(
+            "data.csv", "123-456-789", "some", "other", 1
+        )
         self.data_service.generate_raw_file_identifier.assert_called_once()
         mock_thread.assert_called_once_with(
             target=mock_process_upload,

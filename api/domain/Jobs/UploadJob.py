@@ -14,7 +14,18 @@ class UploadStep(JobStep):
 
 
 class UploadJob(Job):
-    def __init__(self, filename: str):
+    def __init__(
+        self,
+        filename: str,
+        raw_file_identifier: str,
+        domain: str,
+        dataset: str,
+        version: int,
+    ):
         super().__init__(JobType.UPLOAD, UploadStep.INITIALISATION)
         self.filename: str = filename
+        self.raw_file_identifier: str = raw_file_identifier
+        self.domain: str = domain
+        self.dataset: str = dataset
+        self.version: int = version
         self.expiry_time: int = int(time.time() + UPLOAD_JOB_EXPIRY_DAYS * 24 * 60 * 60)
