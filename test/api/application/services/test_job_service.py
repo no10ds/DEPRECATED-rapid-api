@@ -6,7 +6,7 @@ from api.application.services.job_service import JobService
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.config.auth import SensitivityLevel
 from api.domain.Jobs.Job import JobStatus
-from api.domain.Jobs.QueryJob import QueryStep
+from api.domain.Jobs.QueryJob import QueryStep, QueryJob
 from api.domain.Jobs.UploadJob import UploadStep, UploadJob
 
 
@@ -444,6 +444,22 @@ class TestUpdateJob:
         # THEN
         assert job.step == UploadStep.CLEAN_UP
         mock_update_job.assert_called_once_with(job)
+
+    @patch("api.domain.Jobs.Job.uuid")
+    @patch.object(DynamoDBAdapter, "update_query_job")
+    def test_sets_results_url_on_query_job(self, mock_update_query_job, mock_uuid):
+        # GIVEN
+        mock_uuid.uuid4.return_value = "abc-123"
+        job = QueryJob("domain1", "dataset2", 4)
+
+        assert job.results_url is None
+
+        # WHEN
+        self.job_service.set_results_url(job, "https://hello-there.com")
+
+        # THEN
+        assert job.results_url == "https://hello-there.com"
+        mock_update_query_job.assert_called_once_with(job)
 
 
 class TestSucceedsJob:

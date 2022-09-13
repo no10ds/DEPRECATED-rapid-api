@@ -79,3 +79,8 @@ class JobService:
         job.set_status(JobStatus.FAILED)
         job.set_errors(set(errors))
         self.db_adapter.update_job(job)
+
+    def set_results_url(self, query_job: QueryJob, url: str):
+        AppLogger.info(f"Setting query results URL on {query_job.job_id}")
+        query_job.set_results_url(url)
+        self.db_adapter.update_query_job(query_job)
