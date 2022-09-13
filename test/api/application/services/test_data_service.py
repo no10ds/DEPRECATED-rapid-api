@@ -1423,19 +1423,37 @@ class TestQueryDataset:
         self.glue_adapter.get_no_of_rows.return_value = 48293
         self.athena_adapter.query.return_value = expected_response
 
-        response = self.data_service.query_data("domain1", "dataset1", 1, query)
+        response = self.data_service.query_data("domain1", "dataset1", 2, query)
 
         assert response == expected_response
-        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_1")
+        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_2")
         self.athena_adapter.query.assert_called_once_with(
-            "domain1", "dataset1", 1, query
+            "domain1", "dataset1", 2, query
         )
 
     def test_query_data_for_large_no_of_rows(self):
         query = SQLQuery()
         self.glue_adapter.get_no_of_rows.return_value = 100_001
 
-        self.data_service.query_data("domain1", "dataset1", 1, query)
+        with pytest.raises(UnprocessableDatasetError):
+            self.data_service.query_data("domain1", "dataset1", 1, query)
 
         self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_1")
         self.athena_adapter.query.assert_not_called()
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_query_data_for_version_not_specified(self, mock_handle_version_retrieval):
+        domain = "domain1"
+        dataset = "dataset1"
+        version = None
+        query = SQLQuery()
+        self.glue_adapter.get_no_of_rows.return_value = 2343
+        mock_handle_version_retrieval.return_value = 3
+
+        self.data_service.query_data(domain, dataset, version, query)
+
+        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_3")
+        self.athena_adapter.query.assert_called_once_with(
+            "domain1", "dataset1", 3, query
+        )
+        mock_handle_version_retrieval.assert_called_once_with(domain, dataset, version)

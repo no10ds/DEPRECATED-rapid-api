@@ -28,6 +28,7 @@ from api.common.custom_exceptions import (
     CrawlerUpdateError,
     DatasetValidationError,
     CrawlerIsNotReadyError,
+    UnprocessableDatasetError,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval, build_error_message_list
@@ -339,6 +340,7 @@ class DataService:
     def query_data(
         self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
     ) -> pd.DataFrame:
+        version = handle_version_retrieval(domain, dataset, version)
         no_of_rows_in_table = self.glue_adapter.get_no_of_rows(
             StorageMetaData(
                 domain=domain, dataset=dataset, version=version
@@ -346,6 +348,8 @@ class DataService:
         )
         if no_of_rows_in_table <= DATASET_QUERY_LIMIT:
             return self.athena_adapter.query(domain, dataset, version, query)
+        else:
+            raise UnprocessableDatasetError("Dataset too large")
 
     def _get_schema(self, domain: str, dataset: str, version: int) -> Schema:
         return self.s3_adapter.find_schema(domain, dataset, version)
