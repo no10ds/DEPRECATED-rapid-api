@@ -12,10 +12,10 @@ class QueryStep(JobStep):
 
 
 class QueryJob(Job):
-    def __init__(self, domain: str, dataset: str, version):
+    def __init__(self, domain: str, dataset: str, version: int):
         super().__init__(JobType.QUERY, QueryStep.INITIALISATION)
         self.domain: str = domain
         self.dataset: str = dataset
-        self.version: str = version
+        self.version: int = version
         self.results_url: Optional[str] = None
         self.expiry_time: int = int(time.time() + QUERY_JOB_EXPIRY_DAYS * 24 * 60 * 60)

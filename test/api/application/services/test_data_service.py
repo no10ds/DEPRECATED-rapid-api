@@ -1460,3 +1460,54 @@ class TestQueryDataset:
             "domain1", "dataset1", 3, query
         )
         mock_handle_version_retrieval.assert_called_once_with(domain, dataset, version)
+
+
+class TestQueryLargeDataset:
+    def setup_method(self):
+        self.athena_adapter = Mock()
+        self.glue_adapter = Mock()
+        self.job_service = Mock()
+        self.data_service = DataService(
+            None,
+            self.glue_adapter,
+            self.athena_adapter,
+            None,
+            None,
+            None,
+            self.job_service,
+        )
+
+    def test_query_large_data_success(self):
+        domain = "domain1"
+        dataset = "dataset1"
+        version = 4
+        query = SQLQuery()
+        query_job = Mock()
+        query_job.job_id = "12838"
+        self.job_service.create_query_job.return_value = query_job
+
+        response = self.data_service.query_large_data(domain, dataset, version, query)
+
+        assert response == "12838"
+        self.job_service.create_query_job.assert_called_once_with(
+            domain, dataset, version
+        )
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_query_large_data_for_version_not_specified(
+        self, mock_handle_version_retrieval
+    ):
+        domain = "domain1"
+        dataset = "dataset1"
+        version = None
+        query = SQLQuery()
+        query_job = Mock()
+        query_job.job_id = "12838"
+        mock_handle_version_retrieval.return_value = 3
+        self.job_service.create_query_job.return_value = query_job
+
+        response = self.data_service.query_large_data(domain, dataset, version, query)
+
+        assert response == "12838"
+        self.job_service.create_query_job.assert_called_once_with(domain, dataset, 3)
+        mock_handle_version_retrieval.assert_called_once_with(domain, dataset, version)

@@ -8,6 +8,7 @@ from api.common.config.auth import Action
 from api.common.custom_exceptions import AuthorisationError
 from api.common.logger import AppLogger
 from api.domain.Jobs.Job import JobStep, Job, JobStatus, JobType
+from api.domain.Jobs.QueryJob import QueryJob
 from api.domain.Jobs.UploadJob import UploadJob
 
 
@@ -56,6 +57,11 @@ class JobService:
     ) -> UploadJob:
         job = UploadJob(filename, raw_file_identifier, domain, dataset, version)
         self.db_adapter.store_upload_job(job)
+        return job
+
+    def create_query_job(self, domain: str, dataset: str, version: int) -> QueryJob:
+        job = QueryJob(domain, dataset, version)
+        self.db_adapter.store_query_job(job)
         return job
 
     def update_step(self, job: Job, step: JobStep) -> None:

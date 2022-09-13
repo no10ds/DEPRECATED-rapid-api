@@ -588,6 +588,109 @@ class TestQuery(BaseClientTest):
         }
 
 
+class TestLargeDatasetQuery(BaseClientTest):
+    @patch.object(DataService, "query_large_data")
+    def test_call_service_with_only_domain_dataset_when_no_json_provided(
+        self, mock_large_query_method
+    ):
+        query_url = "/datasets/mydomain/mydataset/query/large"
+
+        self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
+
+        mock_large_query_method.assert_called_once_with(
+            "mydomain", "mydataset", None, SQLQuery()
+        )
+
+    @patch.object(DataService, "query_large_data")
+    def test_call_service_with_sql_query_when_json_provided(
+        self, mock_large_query_method
+    ):
+        request_json = {"select_columns": ["column1"], "limit": "10"}
+
+        query_url = "/datasets/mydomain/mydataset/query/large"
+
+        self.client.post(
+            query_url, headers={"Authorization": "Bearer test-token"}, json=request_json
+        )
+
+        mock_large_query_method.assert_called_once_with(
+            "mydomain",
+            "mydataset",
+            None,
+            SQLQuery(select_columns=["column1"], limit="10"),
+        )
+
+    @patch.object(DataService, "query_large_data")
+    def test_call_service_version_provided(self, mock_large_query_method):
+        query_url = "/datasets/mydomain/mydataset/query/large?version=3"
+
+        self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
+
+        mock_large_query_method.assert_called_once_with(
+            "mydomain", "mydataset", 3, SQLQuery()
+        )
+
+    @patch.object(DataService, "query_large_data")
+    def test_calls_service_with_sql_query_when_empty_json_values_provided(
+        self, mock_large_query_method
+    ):
+        request_json = {
+            "select_columns": ["column1"],
+            "filter": "",
+            "aggregation_conditions": "",
+            "limit": "10",
+        }
+
+        query_url = "/datasets/mydomain/mydataset/query/large"
+
+        self.client.post(
+            query_url, headers={"Authorization": "Bearer test-token"}, json=request_json
+        )
+
+        mock_large_query_method.assert_called_once_with(
+            "mydomain",
+            "mydataset",
+            None,
+            SQLQuery(
+                select_columns=["column1"],
+                filter="",
+                aggregation_conditions="",
+                limit="10",
+            ),
+        )
+
+    @patch.object(DataService, "query_large_data")
+    def test_request_query_is_successful(self, mock_large_query_method):
+        mock_large_query_method.return_value = "5462433"
+
+        query_url = "/datasets/mydomain/mydataset/query/large"
+
+        response = self.client.post(
+            query_url,
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 202
+        assert response.json() == {"details": "5462433"}
+
+    @pytest.mark.parametrize(
+        "input_key", ["select_column", "invalid_key", "another_invalid_key"]
+    )
+    def test_returns_error_from_query_request_when_invalid_key(self, input_key: str):
+        query_url = "/datasets/mydomain/mydataset/query/large"
+
+        response = self.client.post(
+            query_url,
+            headers={"Authorization": "Bearer test-token"},
+            json={input_key: "some_value"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": [f"{input_key} -> extra fields not permitted"]
+        }
+
+
 class TestListFilesFromDataset(BaseClientTest):
     @patch.object(DataService, "list_raw_files")
     def test_returns_metadata_for_all_datasets(self, mock_list_raw_files):

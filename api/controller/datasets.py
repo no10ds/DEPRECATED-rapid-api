@@ -316,7 +316,7 @@ async def query_dataset(
     """
     ## Query dataset
 
-    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run.
+    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run. Large datasets are not supported by this endpoint.
 
     ### Inputs
 
@@ -367,6 +367,56 @@ async def query_dataset(
     output_format = request.headers.get("Accept")
     mime_type = MimeType.to_mimetype(output_format)
     return _format_query_output(string_df, mime_type)
+
+
+@datasets_router.post(
+    "/{domain}/{dataset}/query/large",
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
+    status_code=http_status.HTTP_202_ACCEPTED,
+)
+async def query_large_dataset(
+    domain: str,
+    dataset: str,
+    version: Optional[int] = None,
+    query: Optional[SQLQuery] = SQLQuery(),
+):
+    """
+    ## Query large dataset
+
+    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run.
+
+    ### Inputs
+
+    | Parameters    | Required     | Usage                   | Example values                                                                                                              | Definition                    |
+    |---------------|--------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+    | `domain`      | True         | URL parameter           | `space`                                                                                                                     | domain of the dataset         |
+    | `dataset`     | True         | URL parameter           | `rocket_launches`                                                                                                           | dataset title                 |
+    | `version`     | False        | Query parameter         | '3'                                                                                                                         | dataset version               |
+    | `query`       | False        | JSON Request Body       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#how-to-construct-a-query-object)| the query object              |
+
+
+    ### Outputs
+
+    #### CSV
+
+    The response will come as a table, e.g.:
+
+    ```csv
+    "","column1","column2"
+    0,"value1","value2"
+    ...
+    ```
+
+    ### Accepted permissions
+
+    In order to use this endpoint you need a `READ` permission with appropriate sensitivity level permission,
+    e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+
+    ### Click  `Try it out` to use the endpoint
+
+    """
+    result = data_service.query_large_data(domain, dataset, version, query)
+    return {"details": result}
 
 
 def _format_query_output(df: DataFrame, mime_type: MimeType) -> Response:

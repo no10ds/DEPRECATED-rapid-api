@@ -354,6 +354,14 @@ class DataService:
         else:
             raise UnprocessableDatasetError("Dataset too large")
 
+    def query_large_data(
+        self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
+    ) -> str:
+        version = handle_version_retrieval(domain, dataset, version)
+        query_job = self.job_service.create_query_job(domain, dataset, version)
+        self.job_service.succeed(query_job)
+        return query_job.job_id
+
     def _get_schema(self, domain: str, dataset: str, version: int) -> Schema:
         return self.s3_adapter.find_schema(domain, dataset, version)
 

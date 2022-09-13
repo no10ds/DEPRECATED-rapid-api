@@ -6,6 +6,7 @@ from api.application.services.job_service import JobService
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.config.auth import SensitivityLevel
 from api.domain.Jobs.Job import JobStatus
+from api.domain.Jobs.QueryJob import QueryStep
 from api.domain.Jobs.UploadJob import UploadStep, UploadJob
 
 
@@ -399,6 +400,29 @@ class TestCreateUploadJob:
         assert result.step == UploadStep.INITIALISATION
         assert result.status == JobStatus.IN_PROGRESS
         mock_store_upload_job.assert_called_once_with(result)
+
+
+class TestCreateQueryJob:
+    def setup(self):
+        self.job_service = JobService()
+
+    @patch("api.domain.Jobs.Job.uuid")
+    @patch.object(DynamoDBAdapter, "store_query_job")
+    def test_creates_query_job(self, mock_store_query_job, mock_uuid):
+        # GIVEN
+        mock_uuid.uuid4.return_value = "abc-123"
+        domain = "test_domain"
+        dataset = "test_dataset"
+        version = 43
+
+        # WHEN
+        result = self.job_service.create_query_job(domain, dataset, version)
+
+        # THEN
+        assert result.job_id == "abc-123"
+        assert result.step == QueryStep.INITIALISATION
+        assert result.status == JobStatus.IN_PROGRESS
+        mock_store_query_job.assert_called_once_with(result)
 
 
 class TestUpdateJob:
