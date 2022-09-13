@@ -8,7 +8,12 @@ from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
 from api.common.config.auth import SensitivityLevel
-from api.common.config.aws import DATA_BUCKET, SCHEMAS_LOCATION
+from api.common.config.aws import (
+    DATA_BUCKET,
+    SCHEMAS_LOCATION,
+    OUTPUT_QUERY_BUCKET,
+    AWS_REGION,
+)
 from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import SchemaNotFoundError, UserError, AWSServiceError
 from api.common.logger import AppLogger
@@ -18,7 +23,15 @@ from api.domain.storage_metadata import StorageMetaData
 
 
 class S3Adapter:
-    def __init__(self, s3_client=boto3.client("s3"), s3_bucket=DATA_BUCKET):
+    def __init__(
+        self,
+        s3_client=boto3.client(
+            "s3",
+            region_name=AWS_REGION,
+            config=boto3.session.Config(signature_version="s3v4"),
+        ),
+        s3_bucket=DATA_BUCKET,
+    ):
         self.__s3_client = s3_client
         self.__s3_bucket = s3_bucket
 
@@ -133,6 +146,20 @@ class S3Adapter:
         )
 
         self._delete_objects(files_to_delete, raw_data_filename)
+
+    def generate_query_result_download_url(self, key: str) -> str:
+        try:
+            return self.__s3_client.generate_presigned_url(
+                ClientMethod="get_object",
+                Params={"Bucket": OUTPUT_QUERY_BUCKET, "Key": key},
+                HttpMethod="GET",
+                ExpiresIn=86400,
+            )
+        except ClientError as error:
+            AppLogger.error(
+                f"Unable to generate pre-signed URL for execution ID {key}, {error}"
+            )
+            raise AWSServiceError("Unable to generate download URL")
 
     def _clean_filename(self, file_key: str) -> str:
         return file_key.rsplit("/", 1)[-1].split(".")[0]

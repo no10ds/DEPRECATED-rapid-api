@@ -7,7 +7,7 @@ from botocore.exceptions import ClientError
 
 from api.adapter.s3_adapter import S3Adapter
 from api.common.config.auth import SensitivityLevel
-from api.common.config.aws import SCHEMAS_LOCATION
+from api.common.config.aws import SCHEMAS_LOCATION, OUTPUT_QUERY_BUCKET
 from api.common.custom_exceptions import (
     UserError,
     AWSServiceError,
@@ -537,3 +537,44 @@ class TestS3FileList:
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
         )
+
+
+class TestGenerateS3PreSignedUrl:
+    mock_s3_client = None
+    persistence_adapter = None
+
+    def setup_method(self):
+        self.mock_s3_client = Mock()
+        self.persistence_adapter = S3Adapter(
+            s3_client=self.mock_s3_client, s3_bucket="my-bucket"
+        )
+
+    def test_generate_presigned_download_url(self):
+        self.mock_s3_client.generate_presigned_url.return_value = (
+            "https://aws.the-s3-url.com"
+        )
+
+        url = self.persistence_adapter.generate_query_result_download_url(
+            "the-file-key.csv"
+        )
+
+        assert url == "https://aws.the-s3-url.com"
+        self.mock_s3_client.generate_presigned_url.assert_called_once_with(
+            ClientMethod="get_object",
+            Params={"Bucket": OUTPUT_QUERY_BUCKET, "Key": "the-file-key.csv"},
+            HttpMethod="GET",
+            ExpiresIn=86400,
+        )
+
+    def test_raises_error_when_generation_fails(self):
+        self.mock_s3_client.generate_presigned_url.side_effect = ClientError(
+            error_response={
+                "Error": {"Code": "NoSuchKey"},
+            },
+            operation_name="GeneratePresignedURL",
+        )
+
+        with pytest.raises(AWSServiceError, match="Unable to generate download URL"):
+            self.persistence_adapter.generate_query_result_download_url(
+                "the-file-key.csv"
+            )
