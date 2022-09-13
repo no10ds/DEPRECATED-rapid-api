@@ -23,8 +23,8 @@ a {
     color: var(--pink);
 
     &:focus,
-     :active,
-     :hover {
+    :active,
+    :hover {
       color: var(--dark-pink);
     }
   }
@@ -59,7 +59,7 @@ ul {
 
     &.center {
       text-align: center;
-  }
+    }
   }
 }
 
@@ -150,4 +150,18 @@ ul {
 .status-icon {
   width: 4.5rem;
   height: 4.5rem;
+}
+
+.rotating {
+  animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
