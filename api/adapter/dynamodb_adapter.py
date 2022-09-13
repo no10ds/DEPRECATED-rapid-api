@@ -245,6 +245,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Errors": query_job.errors if query_job.errors else None,
             "Domain": query_job.domain,
             "Dataset": query_job.dataset,
+            "Version": query_job.version,
             "ResultsURL": query_job.results_url,
             "TTL": query_job.expiry_time,
         }

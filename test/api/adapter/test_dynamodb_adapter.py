@@ -588,8 +588,9 @@ class TestDynamoDBAdapterServiceTable:
     def test_store_async_query_job(self, mock_time, mock_uuid):
         mock_time.time.return_value = 2000
         mock_uuid.uuid4.return_value = "abc-123"
+        version = 5
 
-        self.dynamo_adapter.store_query_job(QueryJob("domain1", "dataset1"))
+        self.dynamo_adapter.store_query_job(QueryJob("domain1", "dataset1", version))
 
         self.service_table.put_item.assert_called_once_with(
             Item={
@@ -601,6 +602,7 @@ class TestDynamoDBAdapterServiceTable:
                 "Errors": None,
                 "Domain": "domain1",
                 "Dataset": "dataset1",
+                "Version": 5,
                 "ResultsURL": None,
                 "TTL": 88400,
             },
