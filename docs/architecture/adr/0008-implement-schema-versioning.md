@@ -33,4 +33,4 @@ datasets definitions.
 ## Consequences
 1. Major changes in the code and structure leading to breaking changes for the application.
 2. Crawlers performance will be impacted for big datasets when adding more versions.
-3. Old users will have to migrate to new structure.
+3. Users with older version (before release v3.0.0) will have to migrate to a new structure (we created [script](test/scripts/migrate_datasets_to_new_versioning_structure.py) to support this)
