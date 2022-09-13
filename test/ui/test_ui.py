@@ -160,11 +160,8 @@ class BaseTestUI(ABC):
             page,
             r"Raw file name: [a-z\d]{8}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{12}.csv",
         )
-        self.assert_contains_text_by_regex(
-            page,
-            r"Job ID: [a-z\d]{8}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{4}-[a-z\d]{12}",
-        )
         self.assert_contains_text_by_regex(page, "Status: Data processing")
+        self.assert_contains_text_by_regex(page, "Track upload progress")
 
     def assert_on_cognito_login(self, page):
         print("Checking that we are on the Cognito login page")
