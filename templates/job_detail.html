@@ -40,6 +40,13 @@
                         <td>{{ job.filename }}</td>
                     </tr>
                 {% endif %}
+                {% if job.raw_file_identifier %}
+                    <tr>
+                        <td class="bold">Raw Filename</td>
+                        <td>{{ job.raw_file_identifier }}.csv</td>
+                    </tr>
+                {% endif %}
+
                 {% if job.domain %}
                     <tr>
                         <td class="bold">Domain</td>
@@ -50,6 +57,12 @@
                     <tr>
                         <td class="bold">Dataset</td>
                         <td>{{ job.dataset }}</td>
+                    </tr>
+                {% endif %}
+                {% if job.version %}
+                    <tr>
+                        <td class="bold">Version</td>
+                        <td>{{ job.version }}</td>
                     </tr>
                 {% endif %}
                 {% if job.result_url %}
@@ -63,7 +76,9 @@
                 <h3>Errors</h3>
                 <table>
                     {% for error in job.errors %}
-                        <tr class="left"><td class="response-msg--error">{{ error }}</td></tr>
+                        <tr class="left">
+                            <td class="response-msg--error">{{ error }}</td>
+                        </tr>
                     {% endfor %}
                 </table>
             {% endif %}
