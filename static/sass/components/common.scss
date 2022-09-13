@@ -13,6 +13,10 @@ a {
 
       align-self: center;
     }
+
+    &--discreet {
+      color: var(--dark-grey-2);
+    }
   }
 
   &.link {
@@ -141,4 +145,9 @@ ul {
   &--success {
     color: var(--success-text);
   }
+}
+
+.status-icon {
+  width: 4.5rem;
+  height: 4.5rem;
 }

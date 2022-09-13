@@ -10,6 +10,7 @@ class UploadStep(JobStep):
     RAW_DATA_UPLOAD = "RAW_DATA_UPLOAD"
     DATA_UPLOAD = "DATA_UPLOAD"
     CLEAN_UP = "CLEAN_UP"
+    NONE = "-"
 
 
 class UploadJob(Job):

@@ -20,7 +20,7 @@ const uploadDataset = () => {
         .then(result => {
             spinner.style.display = "none"
             if (response.ok) {
-                response_text_element.innerHTML = `File accepted: ${result['details']['original_filename']}<br>Raw file name: ${result['details']['raw_filename']}<br>Job ID: ${result['details']['job_id']}<br>Status: ${result['details']['status']}`
+                response_text_element.innerHTML = `File accepted: ${result['details']['original_filename']}<br>Raw file name: ${result['details']['raw_filename']}<br>Job ID: <a class="btn--discreet" href="/tasks/${result['details']['job_id']}">${result['details']['job_id']}</a><br>Status: ${result['details']['status']}`
                 response_text_element.classList.add("response-msg--success");
                 response_text_element.classList.remove("response-msg--error");
             } else {

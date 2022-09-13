@@ -21,4 +21,16 @@
   th {
     padding: .25rem 1rem;
   }
+
+  &_status-container {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &_status-icon {
+    max-height: 3.25rem;
+    aspect-ratio: 1;
+  }
 }

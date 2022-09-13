@@ -120,6 +120,7 @@ class DataService:
             self.process_chunks(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.CLEAN_UP)
             self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            self.job_service.update_step(job, UploadStep.NONE)
             self.job_service.succeed(job)
         except Exception as error:
             AppLogger.error(

@@ -15,6 +15,7 @@ from api.controller.schema import schema_router
 from api.controller.subjects import subjects_router
 from api.controller.user import user_router
 from api.controller_ui.data_management import data_management_router
+from api.controller_ui.task_management import jobs_ui_router
 from api.controller_ui.landing import landing_router
 from api.controller_ui.login import login_router
 from api.controller_ui.subject_management import subject_management_router
@@ -39,6 +40,7 @@ app.include_router(data_management_router)
 app.include_router(subject_management_router)
 app.include_router(subjects_router)
 app.include_router(jobs_router)
+app.include_router(jobs_ui_router)
 
 
 @app.on_event("startup")

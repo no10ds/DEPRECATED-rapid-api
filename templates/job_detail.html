@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <title>rAPId - Jobs</title>
+    <link href="/static/main.css" rel="stylesheet"/>
+</head>
+<body>
+<div class="content">
+    {% with previous_page = "/tasks" %} {% include 'component/header.html' %} {% endwith %}
+
+    <form class="form">
+        <div class="form_body form_body--headed">
+            <div class="form-select">
+                <h1 class="content_header">Job Detail</h1>
+            </div>
+            <div>
+                {% if job.status == "SUCCESS" %}
+                    <img class="status-icon" src="/static/icons/success.svg" alt="success">
+                {% elif job.status == "FAILED" %}
+                    <img class="status-icon" src="/static/icons/failure.svg" alt="success">
+                {% elif job.status == "IN PROGRESS" %}
+                    <img class="status-icon" src="/static/icons/in_progress.svg" alt="success">
+                {% endif %}
+            </div>
+            <h4>{{ job.status }}</h4>
+            <h3 class="bold">{{ job.job_id }}</h3>
+            <table class="info-table">
+                <tr>
+                    <td class="bold">Status</td>
+                    <td class="bold">{{ job.status }}</td>
+                </tr>
+                <tr>
+                    <td class="bold">Step</td>
+                    <td class="bold">{{ job.step }}</td>
+                </tr>
+                {% if job.filename %}
+                    <tr>
+                        <td class="bold">Filename</td>
+                        <td>{{ job.filename }}</td>
+                    </tr>
+                {% endif %}
+                {% if job.domain %}
+                    <tr>
+                        <td class="bold">Domain</td>
+                        <td>{{ job.domain }}</td>
+                    </tr>
+                {% endif %}
+                {% if job.dataset %}
+                    <tr>
+                        <td class="bold">Dataset</td>
+                        <td>{{ job.dataset }}</td>
+                    </tr>
+                {% endif %}
+                {% if job.result_url %}
+                    <tr>
+                        <td class="bold">Results</td>
+                        <td><a href="{{ job.result_url }}">Get Results</a></td>
+                    </tr>
+                {% endif %}
+            </table>
+            {% if job.errors %}
+                <h3>Errors</h3>
+                <table>
+                    {% for error in job.errors %}
+                        <tr class="left"><td class="response-msg--error">{{ error }}</td></tr>
+                    {% endfor %}
+                </table>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% block javascript %}
+    <script type="text/javascript">
+        {% include "./js/common.js" %}
+    </script>
+{% endblock %}
+</body>
+</html>

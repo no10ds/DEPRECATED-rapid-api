@@ -8,6 +8,7 @@ from api.domain.Jobs.Job import Job, JobType, JobStep
 class QueryStep(JobStep):
     INITIALISATION = "INITIALISATION"
     QUERY = "QUERY"
+    NONE = "-"
 
 
 class QueryJob(Job):

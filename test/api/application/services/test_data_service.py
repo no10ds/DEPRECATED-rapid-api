@@ -595,6 +595,7 @@ class TestUploadDataset:
             call(upload_job, UploadStep.RAW_DATA_UPLOAD),
             call(upload_job, UploadStep.DATA_UPLOAD),
             call(upload_job, UploadStep.CLEAN_UP),
+            call(upload_job, UploadStep.NONE),
         ]
 
         # WHEN
