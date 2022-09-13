@@ -6,11 +6,11 @@ from awswrangler.exceptions import QueryFailed
 from botocore.exceptions import ClientError
 
 from api.adapter.athena_adapter import AthenaAdapter
-from api.common.custom_exceptions import UserError
+from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.sql_query import SQLQuery, SQLQueryOrderBy
 
 
-class TestAthenaAdapter:
+class TestQuery:
     def setup_method(self):
         self.mock_athena_read_sql_query = Mock()
         self.athena_adapter = AthenaAdapter(
@@ -72,7 +72,6 @@ class TestAthenaAdapter:
 
     @patch("api.adapter.athena_adapter.handle_version_retrieval")
     def test_version_not_provided(self, mock_handle_version_retrieval):
-
         mock_handle_version_retrieval.return_value = 4
 
         self.athena_adapter.query(
@@ -126,3 +125,163 @@ class TestAthenaAdapter:
 
         with pytest.raises(UserError, match=expected_message):
             self.athena_adapter.query("my", "table", 1, SQLQuery())
+
+
+class TestLargeQuery:
+    def setup_method(self):
+        self.mock_athena_read_sql_query = Mock()
+        self.mock_athena_client = Mock()
+        self.athena_adapter = AthenaAdapter(
+            database="my_database",
+            athena_read_sql_query=self.mock_athena_read_sql_query,
+            s3_output="out",
+            athena_client=self.mock_athena_client,
+        )
+
+    def test_returns_query_execution_id(self):
+        self.mock_athena_client.start_query_execution.return_value = {
+            "QueryExecutionId": "111-222-333"
+        }
+
+        result = self.athena_adapter.query_async("my", "table", 1, SQLQuery())
+
+        self.mock_athena_client.start_query_execution.assert_called_once_with(
+            QueryString="SELECT * FROM my_table_1",
+            WorkGroup="rapid_athena_workgroup",
+            QueryExecutionContext={"Database": "my_database"},
+            ResultConfiguration={"OutputLocation": "out"},
+        )
+
+        assert result == "111-222-333"
+
+    def test_uses_the_query_provided(self):
+        self.mock_athena_client.start_query_execution.return_value = {
+            "QueryExecutionId": "111-222-333"
+        }
+
+        self.athena_adapter.query_async(
+            "my",
+            "table",
+            1,
+            SQLQuery(
+                select_columns=["column1", "column2"],
+                group_by_columns=["column2"],
+                order_by_columns=[SQLQueryOrderBy(column="column1")],
+                limit=2,
+            ),
+        )
+
+        self.mock_athena_client.start_query_execution.assert_called_once_with(
+            QueryString="SELECT column1,column2 FROM my_table_1 GROUP BY column2 ORDER BY column1 ASC LIMIT 2",
+            WorkGroup="rapid_athena_workgroup",
+            QueryExecutionContext={"Database": "my_database"},
+            ResultConfiguration={"OutputLocation": "out"},
+        )
+
+    @patch("api.adapter.athena_adapter.handle_version_retrieval")
+    def test_version_not_provided(self, mock_handle_version_retrieval):
+        self.mock_athena_client.start_query_execution.return_value = {
+            "QueryExecutionId": "111-222-333"
+        }
+        mock_handle_version_retrieval.return_value = 4
+
+        self.athena_adapter.query_async(
+            "my",
+            "table",
+            None,
+            SQLQuery(
+                select_columns=["column1", "column2"],
+                group_by_columns=["column2"],
+                order_by_columns=[SQLQueryOrderBy(column="column1")],
+                limit=2,
+            ),
+        )
+
+        mock_handle_version_retrieval.assert_called_once_with("my", "table", None)
+
+        self.mock_athena_client.start_query_execution.assert_called_once_with(
+            QueryString="SELECT column1,column2 FROM my_table_4 GROUP BY column2 ORDER BY column1 ASC LIMIT 2",
+            WorkGroup="rapid_athena_workgroup",
+            QueryExecutionContext={"Database": "my_database"},
+            ResultConfiguration={"OutputLocation": "out"},
+        )
+
+    def test_query_fails(self):
+        self.mock_athena_client.start_query_execution.side_effect = QueryFailed(
+            "Some error"
+        )
+
+        with pytest.raises(UserError, match="Query failed to execute: Some error"):
+            self.athena_adapter.query_async("my", "table", 1, SQLQuery())
+
+    def test_query_fails_because_of_invalid_format(self):
+        self.mock_athena_client.start_query_execution.side_effect = ClientError(
+            error_response={
+                "Error": {"Code": "InvalidRequestException"},
+                "Message": "Failed to execute query: The error message",
+            },
+            operation_name="StartQueryExecution",
+        )
+
+        with pytest.raises(
+            UserError, match="Failed to execute query: The error message"
+        ):
+            self.athena_adapter.query_async("my", "table", 10, SQLQuery())
+
+    def test_query_fails_because_table_does_not_exist(self):
+        self.mock_athena_client.start_query_execution.side_effect = QueryFailed(
+            "SYNTAX_ERROR: line 1:15: Table awsdatacatalog.rapid_catalogue_db.my_table_1 does not exist"
+        )
+
+        expected_message = r"Query failed to execute: The table \[my_table_1\] does not exist. The data could be currently processing or you might need to upload it."
+
+        with pytest.raises(UserError, match=expected_message):
+            self.athena_adapter.query_async("my", "table", 1, SQLQuery())
+
+
+class TestQueryExecution:
+    def setup_method(self):
+        self.mock_athena_read_sql_query = Mock()
+        self.mock_athena_client = Mock()
+        self.athena_adapter = AthenaAdapter(
+            database="my_database",
+            athena_read_sql_query=self.mock_athena_read_sql_query,
+            s3_output="out",
+            athena_client=self.mock_athena_client,
+        )
+
+    def test_returns_query_execution_details(self):
+        expected = {
+            "QueryExecution": {
+                "QueryExecutionId": "111-222-333",
+                "Status": {
+                    "State": "SUCCEEDED",
+                    "AthenaError": {
+                        "ErrorCategory": 123,
+                        "ErrorType": 123,
+                        "Retryable": False,
+                        "ErrorMessage": "the error message",
+                    },
+                },
+            }
+        }
+        self.mock_athena_client.get_query_execution.return_value = expected
+
+        result = self.athena_adapter.get_query_execution("111-222-333")
+
+        assert result == expected
+
+    def test_raises_error_when_failing_to_retrieve_information(self):
+        self.mock_athena_client.get_query_execution.side_effect = ClientError(
+            error_response={
+                "Error": {"Code": "ConnectionError"},
+                "Message": "Failed to get query execution information: The error message",
+            },
+            operation_name="GetQueryExecution",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Failed to get query execution information: The error message",
+        ):
+            self.athena_adapter.get_query_execution("111-222-333")
