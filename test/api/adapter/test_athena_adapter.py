@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call
 
 import pandas as pd
 import pytest
@@ -6,7 +6,7 @@ from awswrangler.exceptions import QueryFailed
 from botocore.exceptions import ClientError
 
 from api.adapter.athena_adapter import AthenaAdapter
-from api.common.custom_exceptions import UserError, AWSServiceError
+from api.common.custom_exceptions import UserError, AWSServiceError, QueryExecutionError
 from api.domain.sql_query import SQLQuery, SQLQueryOrderBy
 
 
@@ -239,7 +239,7 @@ class TestLargeQuery:
             self.athena_adapter.query_async("my", "table", 1, SQLQuery())
 
 
-class TestQueryExecution:
+class TestWaitForQueryToComplete:
     def setup_method(self):
         self.mock_athena_read_sql_query = Mock()
         self.mock_athena_client = Mock()
@@ -250,38 +250,76 @@ class TestQueryExecution:
             athena_client=self.mock_athena_client,
         )
 
-    def test_returns_query_execution_details(self):
-        expected = {
-            "QueryExecution": {
-                "QueryExecutionId": "111-222-333",
-                "Status": {
-                    "State": "SUCCEEDED",
-                    "AthenaError": {
-                        "ErrorCategory": 123,
-                        "ErrorType": 123,
-                        "Retryable": False,
-                        "ErrorMessage": "the error message",
-                    },
+    @patch("api.adapter.athena_adapter.sleep")
+    def test_successful_when_query_succeeds_within_retires(self, _mock_sleep):
+        self.mock_athena_client.get_query_execution.side_effect = [
+            {"QueryExecution": {"Status": {"State": "QUEUED"}}},
+            {"QueryExecution": {"Status": {"State": "RUNNING"}}},
+            {"QueryExecution": {"Status": {"State": "SUCCEEDED"}}},
+        ]
+
+        expected_calls = [
+            call(QueryExecutionId="the-execution-id"),
+            call(QueryExecutionId="the-execution-id"),
+            call(QueryExecutionId="the-execution-id"),
+        ]
+
+        self.athena_adapter.wait_for_query_to_complete("the-execution-id")
+
+        self.mock_athena_client.get_query_execution.assert_has_calls(expected_calls)
+
+    @patch("api.adapter.athena_adapter.sleep")
+    def test_successful_when_query_succeeds_within_retires_after_at_least_once_client_error(
+        self, _mock_sleep
+    ):
+        self.mock_athena_client.get_query_execution.side_effect = [
+            {"QueryExecution": {"Status": {"State": "RUNNING"}}},
+            ClientError(
+                error_response={
+                    "Error": {"Code": "ConnectionFailure"},
                 },
-            }
+                operation_name="GetQueryExecution",
+            ),
+            {"QueryExecution": {"Status": {"State": "SUCCEEDED"}}},
+        ]
+
+        expected_calls = [
+            call(QueryExecutionId="the-execution-id"),
+            call(QueryExecutionId="the-execution-id"),
+            call(QueryExecutionId="the-execution-id"),
+        ]
+
+        self.athena_adapter.wait_for_query_to_complete("the-execution-id")
+
+        self.mock_athena_client.get_query_execution.assert_has_calls(expected_calls)
+
+    @patch("api.adapter.athena_adapter.sleep")
+    def test_raises_error_when_retries_exhausted(self, _mock_sleep):
+        self.mock_athena_client.get_query_execution.return_value = {
+            "QueryExecution": {"Status": {"State": "RUNNING"}}
         }
-        self.mock_athena_client.get_query_execution.return_value = expected
 
-        result = self.athena_adapter.get_query_execution("111-222-333")
+        with pytest.raises(AWSServiceError, match="Query took too long to execute"):
+            self.athena_adapter.wait_for_query_to_complete("the-execution-id")
 
-        assert result == expected
+        assert self.mock_athena_client.get_query_execution.call_count == 8
 
-    def test_raises_error_when_failing_to_retrieve_information(self):
-        self.mock_athena_client.get_query_execution.side_effect = ClientError(
-            error_response={
-                "Error": {"Code": "ConnectionError"},
-                "Message": "Failed to get query execution information: The error message",
-            },
-            operation_name="GetQueryExecution",
-        )
+    @patch("api.adapter.athena_adapter.sleep")
+    def test_raises_error_when_query_execution_has_failed(self, _mock_sleep):
+        self.mock_athena_client.get_query_execution.return_value = {
+            "QueryExecution": {"Status": {"State": "FAILED"}}
+        }
+
+        with pytest.raises(QueryExecutionError, match="Query did not complete: FAILED"):
+            self.athena_adapter.wait_for_query_to_complete("the-execution-id")
+
+    @patch("api.adapter.athena_adapter.sleep")
+    def test_raises_error_when_query_execution_has_been_cancelled(self, _mock_sleep):
+        self.mock_athena_client.get_query_execution.return_value = {
+            "QueryExecution": {"Status": {"State": "CANCELLED"}}
+        }
 
         with pytest.raises(
-            AWSServiceError,
-            match="Failed to get query execution information: The error message",
+            QueryExecutionError, match="Query did not complete: CANCELLED"
         ):
-            self.athena_adapter.get_query_execution("111-222-333")
+            self.athena_adapter.wait_for_query_to_complete("the-execution-id")

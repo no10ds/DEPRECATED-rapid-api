@@ -1551,7 +1551,7 @@ class TestQueryLargeDataset:
         )
 
         # THEN
-        self.s3_adapter.wait_for_query_to_complete.assert_called_once_with(
+        self.athena_adapter.wait_for_query_to_complete.assert_called_once_with(
             query_execution_id
         )
         self.s3_adapter.generate_query_result_download_url.assert_called_once_with(

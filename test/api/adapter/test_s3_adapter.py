@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock, call, patch
+from unittest.mock import Mock, call
 
 import pandas as pd
 import pytest
@@ -11,7 +11,6 @@ from api.common.config.aws import SCHEMAS_LOCATION, OUTPUT_QUERY_BUCKET
 from api.common.custom_exceptions import (
     UserError,
     AWSServiceError,
-    QueryExecutionError,
 )
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -579,88 +578,3 @@ class TestGenerateS3PreSignedUrl:
             self.persistence_adapter.generate_query_result_download_url(
                 "the-file-key.csv"
             )
-
-
-class TestWaitForQueryToComplete:
-    mock_s3_client = None
-    persistence_adapter = None
-
-    def setup_method(self):
-        self.mock_s3_client = Mock()
-        self.persistence_adapter = S3Adapter(
-            s3_client=self.mock_s3_client, s3_bucket="my-bucket"
-        )
-
-    @patch("api.adapter.s3_adapter.sleep")
-    def test_successful_when_query_succeeds_within_retires(self, _mock_sleep):
-        self.mock_s3_client.get_query_execution.side_effect = [
-            {"QueryExecution": {"Status": {"State": "QUEUED"}}},
-            {"QueryExecution": {"Status": {"State": "RUNNING"}}},
-            {"QueryExecution": {"Status": {"State": "SUCCEEDED"}}},
-        ]
-
-        expected_calls = [
-            call(QueryExecutionId="the-execution-id"),
-            call(QueryExecutionId="the-execution-id"),
-            call(QueryExecutionId="the-execution-id"),
-        ]
-
-        self.persistence_adapter.wait_for_query_to_complete("the-execution-id")
-
-        self.mock_s3_client.get_query_execution.assert_has_calls(expected_calls)
-
-    @patch("api.adapter.s3_adapter.sleep")
-    def test_successful_when_query_succeeds_within_retires_after_at_least_once_client_error(
-        self, _mock_sleep
-    ):
-        self.mock_s3_client.get_query_execution.side_effect = [
-            {"QueryExecution": {"Status": {"State": "RUNNING"}}},
-            ClientError(
-                error_response={
-                    "Error": {"Code": "ConnectionFailure"},
-                },
-                operation_name="GetQueryExecution",
-            ),
-            {"QueryExecution": {"Status": {"State": "SUCCEEDED"}}},
-        ]
-
-        expected_calls = [
-            call(QueryExecutionId="the-execution-id"),
-            call(QueryExecutionId="the-execution-id"),
-            call(QueryExecutionId="the-execution-id"),
-        ]
-
-        self.persistence_adapter.wait_for_query_to_complete("the-execution-id")
-
-        self.mock_s3_client.get_query_execution.assert_has_calls(expected_calls)
-
-    @patch("api.adapter.s3_adapter.sleep")
-    def test_raises_error_when_retries_exhausted(self, _mock_sleep):
-        self.mock_s3_client.get_query_execution.return_value = {
-            "QueryExecution": {"Status": {"State": "RUNNING"}}
-        }
-
-        with pytest.raises(AWSServiceError, match="Query took too long to execute"):
-            self.persistence_adapter.wait_for_query_to_complete("the-execution-id")
-
-        assert self.mock_s3_client.get_query_execution.call_count == 8
-
-    @patch("api.adapter.s3_adapter.sleep")
-    def test_raises_error_when_query_execution_has_failed(self, _mock_sleep):
-        self.mock_s3_client.get_query_execution.return_value = {
-            "QueryExecution": {"Status": {"State": "FAILED"}}
-        }
-
-        with pytest.raises(QueryExecutionError, match="Query did not complete: FAILED"):
-            self.persistence_adapter.wait_for_query_to_complete("the-execution-id")
-
-    @patch("api.adapter.s3_adapter.sleep")
-    def test_raises_error_when_query_execution_has_been_cancelled(self, _mock_sleep):
-        self.mock_s3_client.get_query_execution.return_value = {
-            "QueryExecution": {"Status": {"State": "CANCELLED"}}
-        }
-
-        with pytest.raises(
-            QueryExecutionError, match="Query did not complete: CANCELLED"
-        ):
-            self.persistence_adapter.wait_for_query_to_complete("the-execution-id")
