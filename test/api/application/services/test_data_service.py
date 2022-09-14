@@ -23,7 +23,9 @@ from api.common.custom_exceptions import (
     UnprocessableDatasetError,
     DatasetValidationError,
     CrawlerUpdateError,
+    QueryExecutionError,
 )
+from api.domain.Jobs.QueryJob import QueryStep
 from api.domain.Jobs.UploadJob import UploadStep
 from api.domain.enriched_schema import (
     EnrichedSchema,
@@ -1545,6 +1547,12 @@ class TestQueryLargeDataset:
 
         self.s3_adapter.generate_query_result_download_url.return_value = download_url
 
+        expected_job_calls = [
+            call(query_job, QueryStep.RUNNING),
+            call(query_job, QueryStep.GENERATING_RESULTS),
+            call(query_job, QueryStep.NONE),
+        ]
+
         # WHEN
         self.data_service.generate_results_download_url_async(
             query_job, query_execution_id
@@ -1558,7 +1566,63 @@ class TestQueryLargeDataset:
             query_execution_id
         )
 
+        self.job_service.update_step.assert_has_calls(expected_job_calls)
         self.job_service.set_results_url.assert_called_once_with(
             query_job, download_url
         )
         self.job_service.succeed.assert_called_once_with(query_job)
+
+    def test_fails_query_job_upon_query_execution_failure(self):
+        # GIVEN
+        query_job = Mock()
+        query_execution_id = "111-222-333"
+
+        self.athena_adapter.wait_for_query_to_complete.side_effect = (
+            QueryExecutionError("the error message")
+        )
+
+        # WHEN
+        self.data_service.generate_results_download_url_async(
+            query_job, query_execution_id
+        )
+
+        # THEN
+        self.athena_adapter.wait_for_query_to_complete.assert_called_once_with(
+            query_execution_id
+        )
+        self.s3_adapter.generate_query_result_download_url.assert_not_called()
+
+        self.job_service.set_results_url.assert_not_called()
+        self.job_service.fail.assert_called_once_with(query_job, ["the error message"])
+
+    @pytest.mark.parametrize("error", [AWSServiceError, Exception])
+    def test_fails_query_job_upon_any_other_error_and_raises_error(self, error):
+        # GIVEN
+        query_job = Mock()
+        query_execution_id = "111-222-333"
+
+        self.s3_adapter.generate_query_result_download_url.side_effect = error(
+            "the error message"
+        )
+
+        expected_job_calls = [
+            call(query_job, QueryStep.RUNNING),
+            call(query_job, QueryStep.GENERATING_RESULTS),
+        ]
+
+        # WHEN/THEN
+        with pytest.raises(error, match="the error message"):
+            self.data_service.generate_results_download_url_async(
+                query_job, query_execution_id
+            )
+
+        self.athena_adapter.wait_for_query_to_complete.assert_called_once_with(
+            query_execution_id
+        )
+        self.s3_adapter.generate_query_result_download_url.assert_called_once_with(
+            query_execution_id
+        )
+
+        self.job_service.update_step.assert_has_calls(expected_job_calls)
+        self.job_service.set_results_url.assert_not_called()
+        self.job_service.fail.assert_called_once_with(query_job, ["the error message"])
