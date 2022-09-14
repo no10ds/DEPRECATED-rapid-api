@@ -8,7 +8,7 @@ from api.common.config.auth import Action
 from api.common.custom_exceptions import AuthorisationError
 from api.common.logger import AppLogger
 from api.domain.Jobs.Job import JobStep, Job, JobStatus, JobType
-from api.domain.Jobs.QueryJob import QueryJob
+from api.domain.Jobs.QueryJob import QueryJob, QueryStep
 from api.domain.Jobs.UploadJob import UploadJob
 
 
@@ -80,7 +80,14 @@ class JobService:
         job.set_errors(set(errors))
         self.db_adapter.update_job(job)
 
-    def set_results_url(self, query_job: QueryJob, url: str):
+    def succeed_query(self, query_job: QueryJob, url: str) -> None:
+        AppLogger.info(f"Query job {query_job.job_id} has succeeded")
+        query_job.set_step(QueryStep.NONE)
+        query_job.set_results_url(url)
+        query_job.set_status(JobStatus.SUCCESS)
+        self.db_adapter.update_job(query_job)
+
+    def set_results_url(self, query_job: QueryJob, url: str) -> None:
         AppLogger.info(f"Setting query results URL on {query_job.job_id}")
         query_job.set_results_url(url)
         self.db_adapter.update_query_job(query_job)

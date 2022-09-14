@@ -14,7 +14,10 @@ from api.common.config.aws import (
     OUTPUT_QUERY_BUCKET,
     AWS_REGION,
 )
-from api.common.config.constants import CONTENT_ENCODING
+from api.common.config.constants import (
+    CONTENT_ENCODING,
+    QUERY_RESULTS_LINK_EXPIRY_SECONDS,
+)
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     UserError,
@@ -160,7 +163,7 @@ class S3Adapter:
                     "Key": f"{query_execution_id}.csv",
                 },
                 HttpMethod="GET",
-                ExpiresIn=86400,
+                ExpiresIn=QUERY_RESULTS_LINK_EXPIRY_SECONDS,
             )
         except ClientError as error:
             AppLogger.error(

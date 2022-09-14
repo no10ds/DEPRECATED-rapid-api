@@ -1550,7 +1550,6 @@ class TestQueryLargeDataset:
         expected_job_calls = [
             call(query_job, QueryStep.RUNNING),
             call(query_job, QueryStep.GENERATING_RESULTS),
-            call(query_job, QueryStep.NONE),
         ]
 
         # WHEN
@@ -1567,10 +1566,7 @@ class TestQueryLargeDataset:
         )
 
         self.job_service.update_step.assert_has_calls(expected_job_calls)
-        self.job_service.set_results_url.assert_called_once_with(
-            query_job, download_url
-        )
-        self.job_service.succeed.assert_called_once_with(query_job)
+        self.job_service.succeed_query.assert_called_once_with(query_job, download_url)
 
     def test_fails_query_job_upon_query_execution_failure(self):
         # GIVEN

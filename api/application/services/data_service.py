@@ -384,9 +384,7 @@ class DataService:
             self.athena_adapter.wait_for_query_to_complete(query_execution_id)
             self.job_service.update_step(query_job, QueryStep.GENERATING_RESULTS)
             url = self.s3_adapter.generate_query_result_download_url(query_execution_id)
-            self.job_service.update_step(query_job, QueryStep.NONE)
-            self.job_service.set_results_url(query_job, url)
-            self.job_service.succeed(query_job)
+            self.job_service.succeed_query(query_job, url)
         except QueryExecutionError as error:
             self.job_service.fail(query_job, build_error_message_list(error))
         except (AWSServiceError, Exception) as error:
