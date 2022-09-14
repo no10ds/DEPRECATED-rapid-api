@@ -150,6 +150,24 @@ class TestAcceptablePermissionsGeneration:
                     },
                 ),
             ),
+            (
+                None,
+                SensitivityLevel.PUBLIC,
+                ["READ", "WRITE"],
+                AcceptablePermissions(  # noqa: E126
+                    required=set(),
+                    optional={
+                        "READ_ALL",
+                        "READ_PROTECTED_TEST",
+                        "READ_PRIVATE",
+                        "READ_PUBLIC",
+                        "WRITE_ALL",
+                        "WRITE_PROTECTED_TEST",
+                        "WRITE_PRIVATE",
+                        "WRITE_PUBLIC",
+                    },
+                ),
+            ),
         ],
     )
     def test_generate_acceptable_permissions(

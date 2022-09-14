@@ -24,7 +24,7 @@ jobs_router = APIRouter(
     dependencies=[
         Security(
             secure_endpoint,
-            scopes=[Action.READ.value, Action.WRITE.value, Action.DATA_ADMIN.value],
+            scopes=[Action.READ.value, Action.WRITE.value],
         )
     ],
     status_code=http_status.HTTP_200_OK,

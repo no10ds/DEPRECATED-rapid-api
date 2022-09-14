@@ -1,4 +1,3 @@
-import time
 from dataclasses import dataclass
 from typing import Optional
 
@@ -40,7 +39,3 @@ class StorageMetaData:
 
     def _construct_raw_dataset_uploads_location(self):
         return f"raw_data/{self.domain}/{self.dataset}/{self.version}"
-
-
-def filename_with_timestamp(filename: str):
-    return f'{time.strftime("%Y-%m-%dT%H:%M:%S")}-{filename}'
