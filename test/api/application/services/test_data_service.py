@@ -1099,6 +1099,52 @@ class TestUploadDataset:
         )
 
 
+class TestUpdateTableConfig:
+    def setup_method(self):
+        self.s3_adapter = Mock()
+        self.glue_adapter = Mock()
+        self.data_service = DataService(
+            self.s3_adapter,
+            self.glue_adapter,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+
+    def test_update_table_config(self):
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="domain1",
+                dataset="dataset1",
+                version="1",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=False,
+                ),
+            ],
+        )
+
+        self.s3_adapter.find_schema.return_value = schema
+        self.data_service.update_table_config("domain1", "dataset1")
+
+        self.s3_adapter.find_schema.assert_called_once_with("domain1", "dataset1", 1)
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
+
+
 class TestListRawFiles:
     def setup_method(self):
         self.s3_adapter = Mock()

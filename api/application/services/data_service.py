@@ -189,6 +189,10 @@ class DataService:
         permanent_filename = self.generate_permanent_filename(raw_file_identifier)
         self.upload_data(schema, validated_dataframe, permanent_filename)
 
+    def update_table_config(self, domain: str, dataset: str) -> None:
+        schema = self.s3_adapter.find_schema(domain, dataset, 1)
+        self.glue_adapter.update_catalog_table_config(schema)
+
     def delete_incoming_raw_file(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
     ):
