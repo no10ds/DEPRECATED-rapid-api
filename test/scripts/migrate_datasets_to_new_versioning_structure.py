@@ -4,6 +4,8 @@ import json
 import os
 import re
 from typing import Set, Tuple
+
+import requests
 import boto3
 import pandas as pd
 from botocore.exceptions import ClientError
@@ -13,6 +15,7 @@ AWS_ACCOUNT = os.environ["AWS_ACCOUNT"]
 RESOURCE_PREFIX = os.environ["RESOURCE_PREFIX"]
 GLUE_CATALOGUE_DB_NAME = RESOURCE_PREFIX + "_catalogue_db"
 DATA_BUCKET = os.environ["DATA_BUCKET"]
+DOMAIN_NAME = os.environ["DOMAIN_NAME"]
 DATA_PATH = "data/"
 SCHEMAS_PATH = "data/schemas/"
 RAW_DATA_PATH = "raw_data/"
@@ -65,17 +68,21 @@ def read_version_into_schema(folder_key):
 
 def version_schemas(folder_key: str):
     old_structure_path = re.compile(
-        "data/schemas/(PROTECTED|PUBLIC|PRIVATE)/[a-zA-Z1-9_]*/[a-zA-Z1-9_]*/schema.json"
+        "data/schemas/(PROTECTED|PUBLIC|PRIVATE)/[a-zA-Z1-9_]*-[a-zA-Z1-9_]*.json"
     )
     if old_structure_path.match(folder_key):
-        data, schemas, sensitivity, domain, dataset, file = folder_key.split("/")
+        result = re.search(
+            r"data/schemas/(?P<sensitivity>.+)/(?P<domain>.+)-(?P<dataset>.+).json",
+            folder_key,
+        )
+        sensitivity = result.group("sensitivity")
+        domain = result.group("domain")
+        dataset = result.group("dataset")
 
         versioned_file_path = (
-            f"{data}/schemas/{sensitivity}/{domain}/{dataset}/1/{file}"
+            f"data/schemas/{sensitivity}/{domain}/{dataset}/1/schema.json"
         )
-        unversioned_file_path = (
-            f"{data}/schemas/{sensitivity}/{domain}/{dataset}/{file}"
-        )
+        unversioned_file_path = f"data/schemas/{sensitivity}/{domain}-{dataset}.json"
 
         versioned_schema = read_version_into_schema(folder_key)
         _update_file_paths(unversioned_file_path, versioned_file_path, versioned_schema)
@@ -215,7 +222,16 @@ def update_crawler(domain, dataset, crawler):
         )
         set_crawler_version_tag(crawler_name)
         run_crawler(crawler_name)
+        _update_table_config(domain, dataset)
         delete_old_table(domain, dataset)
+
+
+def _update_table_config(domain: str, dataset: str):
+    url = f"https://{DOMAIN_NAME}/table_config?domain={domain}&dataset={dataset}"
+    headers = {
+        "Accept": "text/csv",
+    }
+    requests.post(url, headers=headers)
 
 
 def update_crawlers(datasets_changed: Set[Tuple[str, str]], all_crawlers):
