@@ -34,7 +34,16 @@ job_service = JobService()
 )
 def jobs_overview(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    jobs = sorted(job_service.get_all_jobs(subject_id), key=lambda job: job["status"])
+    jobs = sorted(
+        job_service.get_all_jobs(subject_id),
+        key=lambda job: (
+            job.get("status", ""),
+            job.get("type", ""),
+            job.get("domain", ""),
+            job.get("dataset", ""),
+            job.get("version", ""),
+        ),
+    )
 
     return templates.TemplateResponse(
         name="jobs.html", context={"request": request, "jobs": format_jobs_for_ui(jobs)}
