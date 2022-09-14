@@ -24,7 +24,9 @@
                 {% endif %}
             </div>
             <h4>{{ job.status }}</h4>
-            <p><em>refresh the page to update status</em></p>
+            {% if job.status == "IN PROGRESS" %}
+                <p><em>refresh the page to update status</em></p>
+            {% endif %}
             <h3 class="bold">{{ job.job_id }}</h3>
             <table class="info-table">
                 <tr>
