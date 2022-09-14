@@ -488,8 +488,8 @@ class TestSucceedsQueryJob:
         self.job_service = JobService()
 
     @patch("api.domain.Jobs.Job.uuid")
-    @patch.object(DynamoDBAdapter, "update_job")
-    def test_succeeds_query_job(self, mock_update_job, mock_uuid):
+    @patch.object(DynamoDBAdapter, "update_query_job")
+    def test_succeeds_query_job(self, mock_update_query_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
         job = QueryJob("domain1", "dataset2", 4)
@@ -505,7 +505,7 @@ class TestSucceedsQueryJob:
         assert job.step == QueryStep.NONE
         assert job.status == JobStatus.SUCCESS
         assert job.results_url == url
-        mock_update_job.assert_called_once_with(job)
+        mock_update_query_job.assert_called_once_with(job)
 
 
 class TestFailsJob:

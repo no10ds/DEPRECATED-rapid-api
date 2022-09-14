@@ -85,7 +85,7 @@ class JobService:
         query_job.set_step(QueryStep.NONE)
         query_job.set_results_url(url)
         query_job.set_status(JobStatus.SUCCESS)
-        self.db_adapter.update_job(query_job)
+        self.db_adapter.update_query_job(query_job)
 
     def set_results_url(self, query_job: QueryJob, url: str) -> None:
         AppLogger.info(f"Setting query results URL on {query_job.job_id}")
