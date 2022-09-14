@@ -307,19 +307,28 @@ class TestWaitForQueryToComplete:
     @patch("api.adapter.athena_adapter.sleep")
     def test_raises_error_when_query_execution_has_failed(self, _mock_sleep):
         self.mock_athena_client.get_query_execution.return_value = {
-            "QueryExecution": {"Status": {"State": "FAILED"}}
+            "QueryExecution": {
+                "Status": {"State": "FAILED", "StateChangeReason": "Column not found"}
+            }
         }
 
-        with pytest.raises(QueryExecutionError, match="Query did not complete: FAILED"):
+        with pytest.raises(
+            QueryExecutionError, match="Query did not complete: Column not found"
+        ):
             self.athena_adapter.wait_for_query_to_complete("the-execution-id")
 
     @patch("api.adapter.athena_adapter.sleep")
     def test_raises_error_when_query_execution_has_been_cancelled(self, _mock_sleep):
         self.mock_athena_client.get_query_execution.return_value = {
-            "QueryExecution": {"Status": {"State": "CANCELLED"}}
+            "QueryExecution": {
+                "Status": {
+                    "State": "CANCELLED",
+                    "StateChangeReason": "Insufficient memory",
+                }
+            }
         }
 
         with pytest.raises(
-            QueryExecutionError, match="Query did not complete: CANCELLED"
+            QueryExecutionError, match="Query did not complete: Insufficient memory"
         ):
             self.athena_adapter.wait_for_query_to_complete("the-execution-id")

@@ -90,8 +90,13 @@ class AthenaAdapter:
                 if state == "SUCCEEDED":
                     return
                 elif state in ["FAILED", "CANCELLED"]:
+                    reason = (
+                        response.get("QueryExecution", {})
+                        .get("Status", {})
+                        .get("StateChangeReason", "Unknown error occurred")
+                    )
                     AppLogger.error(f"Query {query_execution_id} failed to complete")
-                    raise QueryExecutionError(f"Query did not complete: {state}")
+                    raise QueryExecutionError(f"Query did not complete: {reason}")
             except ClientError:
                 pass
             num_retries -= 1
