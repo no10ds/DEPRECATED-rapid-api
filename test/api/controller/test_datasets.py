@@ -671,7 +671,7 @@ class TestLargeDatasetQuery(BaseClientTest):
         )
 
         assert response.status_code == 202
-        assert response.json() == {"details": "5462433"}
+        assert response.json() == {"details": {"job_id": "5462433"}}
 
     @pytest.mark.parametrize(
         "input_key", ["select_column", "invalid_key", "another_invalid_key"]

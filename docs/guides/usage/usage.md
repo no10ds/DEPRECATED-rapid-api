@@ -820,6 +820,54 @@ than 5000kg.
 }
 ```
 
+## Query Large dataset
+
+Large datasets (> 100,000 rows) can be queried asynchronously, provided data has been uploaded at some point in the past
+and the 'crawler' has completed its run.
+
+When using this endpoint, a Job ID is returned. This can be used to track the progress of the query and subsequently
+retrieve the results from a URL.
+
+This URL is generated once the query completes successfully and can be found on the Job/Tasks status page for the relevant Job ID.
+
+⚠️ Note that the URL is only valid for 24h after which it will expire
+
+### General structure
+
+`POST /datasets/{domain}/{dataset}/query/large`
+
+### Inputs
+
+| Parameters | Required | Usage             | Example values   | Definition            |
+|------------|----------|-------------------|------------------|-----------------------|
+| `domain`   | True     | URL parameter     | `space`          | domain of the dataset |
+| `dataset`  | True     | URL parameter     | `rocket_lauches` | dataset title         |
+| `version`  | False    | Query parameter   | `3`              | dataset version       |
+| `query`    | False    | JSON Request Body | see below        | the query object      |
+
+### Query structure
+
+Please see the docs for the `/query` endpoint above as the structure is identical.
+
+### Outputs
+
+The Job ID
+
+```json
+{
+  "details": {
+    "job_id": "7c7ad6e9-fea7-4fa4-85cc-023399ba2c5d"
+  }
+}
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need a `READ` permission with appropriate sensitivity level permission,
+e.g.: `READ_PRIVATE`.
+
+
+
 ## Create client
 
 As a maintainer of a rAPId instance you may want to allow new clients to interact with the API to upload or query data.

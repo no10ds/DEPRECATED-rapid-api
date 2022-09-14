@@ -280,7 +280,7 @@ def store_file_to_disk(file: UploadFile = File(...)) -> Path:
                 f"Writing incoming file chunk ({chunk_size_mb}MB) to disk [{file.filename}]"
             )
             AppLogger.info(
-                f"Available disk space: {psutil.disk_usage('/').free / (2**30)}GB"
+                f"Available disk space: {psutil.disk_usage('/').free / (2 ** 30)}GB"
             )
             incoming_file.write(contents)
 
@@ -385,6 +385,11 @@ async def query_large_dataset(
 
     Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run.
 
+    This endpoint allows querying datasets larger than 100,000 rows.
+
+    ⚠️ The only download format currently available is `CSV`
+
+
     ### Inputs
 
     | Parameters    | Required     | Usage                   | Example values                                                                                                              | Definition                    |
@@ -397,15 +402,9 @@ async def query_large_dataset(
 
     ### Outputs
 
-    #### CSV
+    Asynchronous Job ID that can be used to track the progress of the query.
 
-    The response will come as a table, e.g.:
-
-    ```csv
-    "","column1","column2"
-    0,"value1","value2"
-    ...
-    ```
+    Once the query has completed successfully, you can query the `/jobs/<job-id>` endpoint to retrieve the download URL for the query results
 
     ### Accepted permissions
 
@@ -415,8 +414,8 @@ async def query_large_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
-    result = data_service.query_large_data(domain, dataset, version, query)
-    return {"details": result}
+    job_id = data_service.query_large_data(domain, dataset, version, query)
+    return {"details": {"job_id": job_id}}
 
 
 def _format_query_output(df: DataFrame, mime_type: MimeType) -> Response:
