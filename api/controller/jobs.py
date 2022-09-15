@@ -37,8 +37,12 @@ async def list_all_jobs(request: Request):
 
     ### Accepted permissions
 
-    You will always be able to list all jobs, provided you have
-    a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
+    You will always be able to list all 'UPLOAD' jobs, regardless of their sensitivity level, provided you have
+    a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+    or a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
+
+    In order to list 'QUERY' jobs you need a relevant `READ` permission that matches the dataset sensitivity level,
+    e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 
     ### Click  `Try it out` to use the endpoint
 

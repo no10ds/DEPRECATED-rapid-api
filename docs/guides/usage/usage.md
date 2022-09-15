@@ -1267,6 +1267,134 @@ List of subjects:
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
+
+## List all jobs
+
+Use this endpoint to retrieve a list of all currently tracked asynchronous processing jobs.
+
+### General structure
+
+`GET /jobs`
+
+### Outputs
+
+List of jobs:
+
+```json
+[
+  {
+    "result_url": "https://example.com",
+    "dataset": "disposals",
+    "step": "-",
+    "version": 1,
+    "job_id": "0dd2c496-ag30-49cf-4ab6-0165gs2c8b00",
+    "ttl": 1663056353,
+    "domain": "moj",
+    "status": "SUCCESS",
+    "errors": null,
+    "type": "QUERY"
+  },
+  {
+  "raw_file_identifier": "4df3cce3-8b07-4051-b500-a07gda34ad2b",
+  "dataset": "upload",
+  "ttl": 1663778785,
+  "status": "SUCCESS",
+  "errors": null,
+  "type": "UPLOAD",
+  "step": "-",
+  "version": 1,
+  "job_id": "0ddf52a6-36ee-4995-8d97-892155608c8d",
+  "domain": "test_e2e",
+  "filename": "test_journey_file.csv"
+  }
+]
+```
+We have two types of jobs: `QUERY` jobs and `UPLOAD` jobs. `QUERY` jobs come with a pre-signed URL for the retrieval of the queried data.
+
+### Accepted permissions
+
+You will always be able to list all `UPLOAD` jobs, regardless of their sensitivity level, provided you have
+a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+or a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
+
+In order to list `QUERY` jobs you need a relevant `READ` permission that matches the dataset sensitivity level,
+e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+
+## Get job
+
+Use this endpoint to retrieve the status of a tracked asynchronous processing job.
+
+### General structure
+
+`GET /{job_id}`
+
+### Inputs
+
+| Parameters | Usage         | Example values                         | Definition                                                                |
+|------------|---------------|----------------------------------------|---------------------------------------------------------------------------|
+| `job_id`   | URL parameter | `yb52c496-b8f0-49cf-8ab6-016111448b00` | The job id returned to a user after querying or uploading a large dataset |
+
+
+### Outputs
+
+If the job id provided is of a `QUERY` type, the exemplary output will be:
+
+```json
+[
+  {
+    "result_url": "https://example.com",
+    "dataset": "disposals",
+    "step": "-",
+    "version": 1,
+    "job_id": "0dd2c496-ag30-49cf-4ab6-0165gs2c8b00",
+    "ttl": 1663056353,
+    "domain": "moj",
+    "status": "SUCCESS",
+    "errors": null,
+    "type": "QUERY"
+  },
+
+]
+```
+Depending on the job status we will have one of the following step values for `QUERY` job:
+- `INITIALISATION`
+- `RUNNING`
+- `GENERATING_RESULTS`
+- `-` if job finished running
+
+If the job id provided is for a `UPLOAD` job the exemplary output will be:
+
+```json
+[
+  {
+  "raw_file_identifier": "4df3cce3-8b07-4051-b500-a07gda34ad2b",
+  "dataset": "upload",
+  "ttl": 1663778785,
+  "status": "SUCCESS",
+  "errors": null,
+  "type": "UPLOAD",
+  "step": "-",
+  "version": 1,
+  "job_id": "0ddf52a6-36ee-4995-8d97-892155608c8d",
+  "domain": "test_e2e",
+  "filename": "test_journey_file.csv"
+  }
+]
+```
+
+Depending on the job status we will have one of the following step values for `UPLOAD` job:
+- `INITIALISATION`
+- `VALIDATION`
+- `RAW_DATA_UPLOAD`
+- `DATA_UPLOAD`
+- `CLEAN_UP`
+- `-` if job finished running
+
+### Accepted permissions
+
+You will always be able to list all jobs, provided you have
+a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
+
 # UI usage
 
 ## Credentials
