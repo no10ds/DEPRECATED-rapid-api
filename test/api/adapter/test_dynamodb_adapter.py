@@ -610,8 +610,10 @@ class TestDynamoDBAdapterServiceTable:
 
         self.permissions_table.assert_not_called()
 
-    def test_get_jobs(self):
-        self.service_table.scan.return_value = {
+    @patch("api.adapter.dynamodb_adapter.time")
+    def test_get_jobs(self, mock_time):
+        mock_time.time.return_value = 19821
+        self.service_table.query.return_value = {
             "Items": [
                 {
                     "Step": "VALIDATION",
@@ -634,7 +636,6 @@ class TestDynamoDBAdapterServiceTable:
             ],
             "Count": 2,
         }
-
         expected = [
             {
                 "step": "VALIDATION",
@@ -657,8 +658,30 @@ class TestDynamoDBAdapterServiceTable:
         result = self.dynamo_adapter.get_jobs()
 
         assert result == expected
-
         self.permissions_table.assert_not_called()
+        self.service_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("JOB"),
+            FilterExpression=Attr("TTL").gt(19821),
+        )
+
+    @patch("api.adapter.dynamodb_adapter.time")
+    def test_get_jobs_for_no_jobs_returned(self, mock_time):
+        mock_time.time.return_value = 19821
+        self.service_table.query.return_value = {
+            "Items": [],
+            "Count": 0,
+            "ScannedCount": 18,
+        }
+        expected = []
+
+        result = self.dynamo_adapter.get_jobs()
+
+        assert result == expected
+        self.permissions_table.assert_not_called()
+        self.service_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("JOB"),
+            FilterExpression=Attr("TTL").gt(19821),
+        )
 
     def test_get_job(self):
         self.service_table.query.return_value = {
@@ -723,7 +746,7 @@ class TestDynamoDBAdapterServiceTable:
         self.permissions_table.assert_not_called()
 
     def test_raises_error_when_get_jobs_fails(self):
-        self.service_table.scan.side_effect = ClientError(
+        self.service_table.query.side_effect = ClientError(
             error_response={"Error": {"Code": "DatabaseConnectionError"}},
             operation_name="Scan",
         )

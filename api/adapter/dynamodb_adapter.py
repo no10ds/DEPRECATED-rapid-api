@@ -1,3 +1,4 @@
+import time
 from abc import ABC, abstractmethod
 from functools import reduce
 from typing import List, Dict, Any
@@ -253,7 +254,13 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def get_jobs(self) -> List[Dict]:
         try:
-            return [self._map_job(job) for job in self.service_table.scan()["Items"]]
+            return [
+                self._map_job(job)
+                for job in self.service_table.query(
+                    KeyConditionExpression=Key("PK").eq(DatabaseItem.JOB.value),
+                    FilterExpression=Attr("TTL").gt(int(time.time())),
+                )["Items"]
+            ]
         except ClientError as error:
             self._handle_client_error("Error fetching jobs from the database", error)
 
