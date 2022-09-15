@@ -61,7 +61,13 @@ class GlueAdapter:
                     ]
                 },
                 Configuration=json.dumps(
-                    {"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5}}
+                    {
+                        "Version": 1.0,
+                        "Grouping": {
+                            "TableLevelConfiguration": 5,
+                            "TableGroupingPolicy": "CombineCompatibleSchemas",
+                        },
+                    }
                 ),
                 Tags=tags,
             )

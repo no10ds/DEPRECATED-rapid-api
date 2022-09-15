@@ -54,7 +54,7 @@ class TestGlueAdapterCrawlerMethods:
                     },
                 ]
             },
-            Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5}}',
+            Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5, "TableGroupingPolicy": "CombineCompatibleSchemas"}}',
             Tags={
                 "tag1": "value1",
                 "tag2": "value2",

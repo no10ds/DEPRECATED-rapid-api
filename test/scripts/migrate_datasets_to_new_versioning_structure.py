@@ -217,7 +217,13 @@ def update_crawler(domain, dataset, crawler):
             Name=crawler_name,
             TablePrefix=glue_table_prefix,
             Configuration=json.dumps(
-                {"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5}}
+                {
+                    "Version": 1.0,
+                    "Grouping": {
+                        "TableLevelConfiguration": 5,
+                        "TableGroupingPolicy": "CombineCompatibleSchemas",
+                    },
+                }
             ),
         )
         set_crawler_version_tag(crawler_name)
