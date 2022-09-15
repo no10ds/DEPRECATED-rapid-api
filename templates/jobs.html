@@ -14,6 +14,7 @@
             <div class="form-select">
                 <h1 class="content_header">Jobs</h1>
             </div>
+            {% if jobs %}
             <table class="info-table">
                 <tr>
                     <td class="bold">Type</td>
@@ -60,15 +61,19 @@
                         <td><a class="btn--discreet" href="/tasks/{{ job.job_id }}">{{ job.job_id }}</a></td>
                         <td>
                             {% if job.errors %}
-                                <a href="/tasks/{{ job.job_id }}">Failure details</a>
+                            <a href="/tasks/{{ job.job_id }}">Failure details</a>
                             {% elif job.result_url %}
-                                <a href="{{ job.result_url }}">Get results</a>
+                            <a href="{{ job.result_url }}">Get results</a>
                             {% endif %}
                         </td>
                     </tr>
-                {% endfor %}
 
+
+                {% endfor %}
             </table>
+            {% else %}
+            <h3 class="bold">No currently tracked tasks</h3>
+            {% endif %}
         </div>
     </form>
 </div>
