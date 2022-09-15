@@ -44,15 +44,15 @@
                             <td>-</td>
                         {% endif %}
                         {% if job.status == "SUCCESS" %}
-                            <td class="info-table_status-container">
+                            <td>
                                 <img class="info-table_status-icon" src="/static/icons/success.svg" alt="success">
                             </td>
                         {% elif job.status == "FAILED" %}
-                            <td class="info-table_status-container">
+                            <td>
                                 <img class="info-table_status-icon" src="/static/icons/failure.svg" alt="failure">
                             </td>
                         {% elif job.status == "IN PROGRESS" %}
-                            <td class="info-table_status-container">
+                            <td>
                                 <img class="info-table_status-icon rotating" src="/static/icons/in_progress.svg" alt="in_progress">
                             </td>
                         {% endif %}
