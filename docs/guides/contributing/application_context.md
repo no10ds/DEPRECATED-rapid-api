@@ -36,7 +36,7 @@ In Terraform, we define permissions for client apps and users.
 In `modules/auth/variables.tf` we define two lists of permissions (Data and Admin). When running Terraform these are
 created in DynamoDB and can be assigned to _client apps_.
 
-In order to grant a client app one or more of these permissions, you need to:
+In order to create a new category of permissions, you need to:
 
 - Add/delete permissions from the list in Terraform
 - Update the code in `api/application/services/authorisation_service.py` that matches client app permissions to handle
@@ -44,19 +44,6 @@ In order to grant a client app one or more of these permissions, you need to:
 - When adding a permission with a new sensitivity level (e.g., READ_SENSITIVE) or a new action (e.g., READ_USER), add it
   to `api/common/config/auth.py`
 - Check if you need handle the permission in `api/application/services/authorisation/acceptable_permissions.py`
-
-### Permissions for existing client apps and users
-
-Once the new permission has been created, you can add it to a client app/user.
-In DynamoDB:
-
-1. Open the permissions table: `{prefix}_users_permissions`
-2. Click on the `Explore items`
-3. Select the subject you want to update
-4. Click on `Actions > Edit Item`
-5. On the `Permissions` attribute, click `Insert a field`
-6. Write the permission
-7. Save
 
 ## Adding more statements into the firewall rules
 

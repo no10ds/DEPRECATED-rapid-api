@@ -4,16 +4,16 @@ The rAPId API serves to make data storage and retrieval consistent for all users
 
 Overarching API functionality includes:
 
-- Uploading a schema
-- Uploading data that matches that schema
+- Uploading a schema (i.e.: creating a new dataset definition)
+    - Also creating a new version of an existing schema
+- Uploading data to any version of a dataset
 - Listing available data
-- Querying data
+- Querying data from any version of a dataset
 - Deleting data
-- Creating programmatic clients
+- Creating users and programmatic clients
+- Managing user permissions
 
-> ⚠️ Currently the **custom UI** only supports **uploading datasets**
-
-## Application usage overview
+# Application usage overview
 
 The first step is to create a dataset by uploading a schema that describes the metadata including e.g.: data owner,
 tags, partition columns, data types, auto-generated version, etc..
@@ -43,23 +43,18 @@ The application can be used by both human and programmatic clients (see more bel
 
 # How to authorise
 
-## Granting users permissions
+There are two types of 'subjects':
 
-For human users to access a certain dataset they need permission based on sensitivity levels.
+- Human users (using the frontend UI)
+- Programmatic clients / 'client-app' (calling the API endpoints directly)
 
-This step is done via the permissions' database.
+## Granting permissions
 
-When creating a user app via the `/user` endpoint, permissions can be granted.
+Both human users and programmatic clients are managed in the same way.
 
-To update these, currently an admin will need to go to DynamoDB in the AWS console and manually grant or revoke the
-relevant permission to the user (see [Adding/Deleting permissions](../contributing/application_context.md))
+When creating a user/client-app via the `/user` or `/client` endpoints, permissions can immediately be granted.
 
-## Granting client apps permissions
-
-When creating a client app via the `/client` endpoint, permissions can be granted.
-
-To update these, currently an admin will need to go to DynamoDB in the AWS console and manually grant or revoke the
-relevant permission to the client app (see [Adding/Deleting permissions](../contributing/application_context.md))
+To update permissions, a user administrator will need to use the frontend application and click 'Modify user'.
 
 # Authenticating and interacting with the application
 
@@ -67,7 +62,7 @@ relevant permission to the client app (see [Adding/Deleting permissions](../cont
 
 ### Using the OpenApi docs at `/docs`:
 
-1. Hit Authorise button
+1. Hit the Authorise button
 2. Pass `client id` and `client secret`
 3. Access the endpoints
 
@@ -82,12 +77,16 @@ token.
 
 ### Via the UI
 
+> ℹ️ Note that you must already have a user account. This can be created by a user admin via the UI or relevant endpoint.
+
 Clicking 'Login' on the `/login` page will redirect the user to Cognito, whereupon they will be prompted to enter their
 username and password. This will grant them a temporary access token and redirect them to the home page.
 
 # Endpoint usage
 
 The following documents the usage of the available endpoints exposed by the REST API.
+
+[//]: # (Dataset management)
 
 ## Generate schema
 
@@ -229,7 +228,7 @@ None
 
 In order to use this endpoint you need the `DATA_ADMIN` permission.
 
-## Update schema
+## Update schema (new dataset version)
 
 ### General structure
 
@@ -298,8 +297,14 @@ In order to use this endpoint you need the `DATA_ADMIN` permission.
 ## Upload dataset
 
 Given a schema has been uploaded you can upload data which matches that schema. Uploading a CSV file via this endpoint
-ensures that the data matches the schema and that it is consistent and sanitised. Should any errors be detected during
-upload, these are sent back in the response to facilitate you fixing the issues.
+ensures that the data matches the schema and that it is consistent and sanitised.
+
+The upload triggers an asynchronous job that is processed in the background. The response contains a job ID that you can
+use to check the status of the upload via the `/jobs/{job_id}` endpoint. Alternatively you can check the tasks status
+page in the UI.
+
+Should any errors be detected during processing the upload, these are made visible in the job status page to facilitate
+you fixing the issues.
 
 ### General structure
 
@@ -320,7 +325,13 @@ If successful returns file name with a timestamp included, e.g.:
 
 ```json
 {
-  "uploaded": "2022-01-01T13:00:00-passengers_by_airport.csv"
+  "details": {
+    "original_filename": "the-filename.csv",
+    "raw_filename": "661c9467-5d0e-4ec7-ad05-b8651598b675.csv",
+    "dataset_version": 3,
+    "status": "Data processing",
+    "job_id": "3bd7d98f-2264-4f88-bd65-5a2089161650"
+  }
 }
 ```
 
@@ -828,7 +839,8 @@ and the 'crawler' has completed its run.
 When using this endpoint, a Job ID is returned. This can be used to track the progress of the query and subsequently
 retrieve the results from a URL.
 
-This URL is generated once the query completes successfully and can be found on the Job/Tasks status page for the relevant Job ID.
+This URL is generated once the query completes successfully and can be found on the Job/Tasks status page for the
+relevant Job ID.
 
 ⚠️ Note that the URL is only valid for 24h after which it will expire
 
@@ -866,7 +878,7 @@ The Job ID
 In order to use this endpoint you need a `READ` permission with appropriate sensitivity level permission,
 e.g.: `READ_PRIVATE`.
 
-
+[//]: # (User management)
 
 ## Create client
 
@@ -1086,61 +1098,7 @@ Confirmation Message:
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
-## Create protected domain
-
-Protected domains can be created to restrict access permissions to specific domains
-
-Use this endpoint to create a new protected domain. After this you can create clients with the permission for this
-domain and create `PROTECTED` datasets within this domain.
-
-### General structure
-
-`POST /protected_domains/{domain}`
-
-### Inputs
-
-| Parameters       | Usage               | Example values   | Definition                                                           |
-|------------------|---------------------|------------------|----------------------------------------------------------------------|
-| `domain` | URL Parameter  | `land`        | The name of the protected domain |
-
-### Domain
-
-The domain name must adhere to the following conditions:
-
-- Alphanumeric
-- Start with an alphabetic character
-- Can contain any symbol of `- _`
-
-### Outputs
-
-None
-
-### Accepted permission
-
-In order to use this endpoint you need the `DATA_ADMIN` permission
-
-## List protected domains
-
-Use this endpoint to list the protected domains that currently exist.
-
-### General structure
-
-`GET /protected_domains`
-
-### Outputs
-
-List of protected permissions in json format in the response body:
-
-```json
-[
-  "land",
-  "department"
-]
-```
-
-### Accepted permissions
-
-In order to use this endpoint you need the `DATA_ADMIN` permission
+[//]: # (Permissions management)
 
 ## List permissions
 
@@ -1236,6 +1194,62 @@ Confirmation of permissions:
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
+## Create protected domain
+
+Protected domains can be created to restrict access permissions to specific domains
+
+Use this endpoint to create a new protected domain. After this you can create clients with the permission for this
+domain and create `PROTECTED` datasets within this domain.
+
+### General structure
+
+`POST /protected_domains/{domain}`
+
+### Inputs
+
+| Parameters       | Usage               | Example values   | Definition                                                           |
+|------------------|---------------------|------------------|----------------------------------------------------------------------|
+| `domain` | URL Parameter  | `land`        | The name of the protected domain |
+
+### Domain
+
+The domain name must adhere to the following conditions:
+
+- Alphanumeric
+- Start with an alphabetic character
+- Can contain any symbol of `- _`
+
+### Outputs
+
+None
+
+### Accepted permission
+
+In order to use this endpoint you need the `DATA_ADMIN` permission
+
+## List protected domains
+
+Use this endpoint to list the protected domains that currently exist.
+
+### General structure
+
+`GET /protected_domains`
+
+### Outputs
+
+List of protected permissions in json format in the response body:
+
+```json
+[
+  "land",
+  "department"
+]
+```
+
+### Accepted permissions
+
+In order to use this endpoint you need the `DATA_ADMIN` permission
+
 ## List subjects
 
 Use this endpoint to list subjects (human users and client apps).
@@ -1267,6 +1281,7 @@ List of subjects:
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
+[//]: # (Job management)
 
 ## List all jobs
 
@@ -1295,26 +1310,28 @@ List of jobs:
     "type": "QUERY"
   },
   {
-  "raw_file_identifier": "4df3cce3-8b07-4051-b500-a07gda34ad2b",
-  "dataset": "upload",
-  "ttl": 1663778785,
-  "status": "SUCCESS",
-  "errors": null,
-  "type": "UPLOAD",
-  "step": "-",
-  "version": 1,
-  "job_id": "0ddf52a6-36ee-4995-8d97-892155608c8d",
-  "domain": "test_e2e",
-  "filename": "test_journey_file.csv"
+    "raw_file_identifier": "4df3cce3-8b07-4051-b500-a07gda34ad2b",
+    "dataset": "upload",
+    "ttl": 1663778785,
+    "status": "SUCCESS",
+    "errors": null,
+    "type": "UPLOAD",
+    "step": "-",
+    "version": 1,
+    "job_id": "0ddf52a6-36ee-4995-8d97-892155608c8d",
+    "domain": "test_e2e",
+    "filename": "test_journey_file.csv"
   }
 ]
 ```
-We have two types of jobs: `QUERY` jobs and `UPLOAD` jobs. `QUERY` jobs come with a pre-signed URL for the retrieval of the queried data.
+
+We have two types of jobs: `QUERY` jobs and `UPLOAD` jobs. `QUERY` jobs come with a pre-signed URL for the retrieval of
+the queried data.
 
 ### Accepted permissions
 
-You will always be able to list all `UPLOAD` jobs, regardless of their sensitivity level, provided you have
-a `READ` permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
+You will always be able to list all `UPLOAD` jobs, regardless of their sensitivity level, provided you have a `READ`
+permission, e.g.: `READ_ALL`, `READ_PUBLIC`, `READ_PRIVATE`, `READ_PROTECTED_{DOMAIN}`
 or a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
 
 In order to list `QUERY` jobs you need a relevant `READ` permission that matches the dataset sensitivity level,
@@ -1334,7 +1351,6 @@ Use this endpoint to retrieve the status of a tracked asynchronous processing jo
 |------------|---------------|----------------------------------------|---------------------------------------------------------------------------|
 | `job_id`   | URL parameter | `yb52c496-b8f0-49cf-8ab6-016111448b00` | The job id returned to a user after querying or uploading a large dataset |
 
-
 ### Outputs
 
 If the job id provided is of a `QUERY` type, the exemplary output will be:
@@ -1352,11 +1368,12 @@ If the job id provided is of a `QUERY` type, the exemplary output will be:
     "status": "SUCCESS",
     "errors": null,
     "type": "QUERY"
-  },
-
+  }
 ]
 ```
+
 Depending on the job status we will have one of the following step values for `QUERY` job:
+
 - `INITIALISATION`
 - `RUNNING`
 - `GENERATING_RESULTS`
@@ -1367,22 +1384,23 @@ If the job id provided is for a `UPLOAD` job the exemplary output will be:
 ```json
 [
   {
-  "raw_file_identifier": "4df3cce3-8b07-4051-b500-a07gda34ad2b",
-  "dataset": "upload",
-  "ttl": 1663778785,
-  "status": "SUCCESS",
-  "errors": null,
-  "type": "UPLOAD",
-  "step": "-",
-  "version": 1,
-  "job_id": "0ddf52a6-36ee-4995-8d97-892155608c8d",
-  "domain": "test_e2e",
-  "filename": "test_journey_file.csv"
+    "raw_file_identifier": "4df3cce3-8b07-4051-b500-a07gda34ad2b",
+    "dataset": "upload",
+    "ttl": 1663778785,
+    "status": "SUCCESS",
+    "errors": null,
+    "type": "UPLOAD",
+    "step": "-",
+    "version": 1,
+    "job_id": "0ddf52a6-36ee-4995-8d97-892155608c8d",
+    "domain": "test_e2e",
+    "filename": "test_journey_file.csv"
   }
 ]
 ```
 
 Depending on the job status we will have one of the following step values for `UPLOAD` job:
+
 - `INITIALISATION`
 - `VALIDATION`
 - `RAW_DATA_UPLOAD`
@@ -1392,8 +1410,8 @@ Depending on the job status we will have one of the following step values for `U
 
 ### Accepted permissions
 
-You will always be able to list all jobs, provided you have
-a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
+You will always be able to list all jobs, provided you have a `WRITE` permission, e.g.: `WRITE_ALL`, `WRITE_PUBLIC`
+, `WRITE_PRIVATE`, `WRITE_PROTECTED_{DOMAIN}`
 
 # UI usage
 
@@ -1451,11 +1469,11 @@ To be logged in
 ### How to log out
 
 1. On any page
-    1. Click on the "Log out" button
-    2. Wait to be redirected to ```/login```
+1. Click on the "Log out" button
+2. Wait to be redirected to ```/login```
 2. Whenever you want
-    1. Go to ```/logout``` as an authenticated user
-    2. Wait to be redirected to ```/login```
+1. Go to ```/logout``` as an authenticated user
+2. Wait to be redirected to ```/login```
 
 ## Landing
 
@@ -1633,3 +1651,17 @@ subject.
 ### Needed credentials
 
 The user must be logged in as a Cognito user to use this page and have the `USER_ADMIN` permission.
+
+## Task Status
+
+This page makes the status of asynchronously running jobs visible.
+
+Any errors or results of the processing job will also be surfaced here or on the job details page (accessible by clicking the job ID or the relevant link).
+
+### General structure
+
+`GET /tasks`
+
+### Needed credentials
+
+The user must be logged in as a Cognito user to use this page and have the `READ` or `WRITE` permissions.

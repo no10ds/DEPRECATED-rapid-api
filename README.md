@@ -1,8 +1,10 @@
+<br>
+<img src="./logo.png" display=block margin-left=auto margin-right=auto width=60%;/>
+
 # Project rAPId
 ![Deployment Pipeline](https://github.com/no10ds/rapid-api/actions/workflows/main.yml/badge.svg)
 
 
-<img src="./logo.png" display=block margin-left= auto margin-right=auto width=80%;/>
 
 ⚠️ This is an MVP, feedback is welcome!
 
@@ -12,13 +14,13 @@
 Project rAPId aims to create consistent, secure, interoperable data storage and sharing interfaces (APIs) that enable
 departments to discover, manage and share data and metadata amongst themselves.
 
-This will rapidly improve the government's use of data by making it more scalable, secure, and resilient, helping to
+This will improve the government's use of data by making it more scalable, secure, and resilient, helping to
 match the rising demand for good-quality evidence in the design, delivery, and evaluation of public policy.
 
-The project aims to deliver a replicable template for simple data storage infrastructure in AWS and a RESTful API to
+The project aims to deliver a replicable template for simple data storage infrastructure in AWS, a RESTful API and custom frontend UI to
 ingest and share named, standardised datasets.
 
-<br />
+<br/>
 <p align="center">
 <a href="https://ukgovernmentdigital.slack.com/archives/C03E5GV2LQM"><img src="https://user-images.githubusercontent.com/609349/63558739-f60a7e00-c502-11e9-8434-c8a95b03ce62.png" width=160px; /></a>
 </p>
@@ -39,13 +41,13 @@ Please see the [Contributing README](docs/guides/contributing/contributing.md)
 
 # High Level Architecture 🏡
 
-Diagrams are compiled [here](docs/architecture/C4_diagrams) and show the intended architecture solution
+Diagrams are compiled [here](docs/architecture/C4_diagrams) and show the architecture of the service
 
 # Tech Stack 🍭
 
 - Python
 - FastApi
 - Docker
-- AWS (ECR, ECS, EC2, S3, Athena)
+- AWS (ECR, ECS, EC2, S3, Glue, Athena, Cognito, DynamoDB)
 - Terraform
 - Github Actions
