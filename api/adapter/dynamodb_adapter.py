@@ -7,7 +7,12 @@ import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
 from botocore.exceptions import ClientError
 
-from api.common.config.auth import DatabaseItem, SubjectType, SensitivityLevel
+from api.common.config.auth import (
+    PermissionsTableItem,
+    SubjectType,
+    SensitivityLevel,
+    ServiceTableItem,
+)
 from api.common.config.aws import (
     AWS_REGION,
     DYNAMO_PERMISSIONS_TABLE_NAME,
@@ -86,7 +91,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             AppLogger.info(f"Storing permissions for {subject_type}: {subject_id}")
             self.permissions_table.put_item(
                 Item={
-                    "PK": DatabaseItem.SUBJECT.value,
+                    "PK": PermissionsTableItem.SUBJECT.value,
                     "SK": subject_id,
                     "Id": subject_id,
                     "Type": subject_type,
@@ -107,7 +112,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 for permission in permissions:
                     batch.put_item(
                         Item={
-                            "PK": DatabaseItem.PERMISSION.value,
+                            "PK": PermissionsTableItem.PERMISSION.value,
                             "SK": permission.id,
                             "Id": permission.id,
                             "Type": permission.type,
@@ -133,7 +138,9 @@ class DynamoDBAdapter(DatabaseAdapter):
     def get_all_permissions(self) -> List[str]:
         try:
             permissions = self.permissions_table.query(
-                KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
+                KeyConditionExpression=Key("PK").eq(
+                    PermissionsTableItem.PERMISSION.value
+                ),
             )
             return [permission["SK"] for permission in permissions["Items"]]
 
@@ -146,7 +153,9 @@ class DynamoDBAdapter(DatabaseAdapter):
     def get_all_protected_permissions(self) -> List[PermissionItem]:
         try:
             list_of_items = self.permissions_table.query(
-                KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
+                KeyConditionExpression=Key("PK").eq(
+                    PermissionsTableItem.PERMISSION.value
+                ),
                 FilterExpression=Attr("Sensitivity").eq(
                     SensitivityLevel.PROTECTED.value
                 ),
@@ -166,7 +175,9 @@ class DynamoDBAdapter(DatabaseAdapter):
             return [
                 permission
                 for permission in self.permissions_table.query(
-                    KeyConditionExpression=Key("PK").eq(DatabaseItem.SUBJECT.value),
+                    KeyConditionExpression=Key("PK").eq(
+                        PermissionsTableItem.SUBJECT.value
+                    ),
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
                 if permission is not None and permission != ""
@@ -189,7 +200,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             unique_permissions = set(subject_permissions.permissions)
             self.permissions_table.update_item(
                 Key={
-                    "PK": DatabaseItem.SUBJECT.value,
+                    "PK": PermissionsTableItem.SUBJECT.value,
                     "SK": subject_permissions.subject_id,
                 },
                 ConditionExpression="SK = :sid",
@@ -257,7 +268,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             return [
                 self._map_job(job)
                 for job in self.service_table.query(
-                    KeyConditionExpression=Key("PK").eq(DatabaseItem.JOB.value),
+                    KeyConditionExpression=Key("PK").eq(ServiceTableItem.JOB.value),
                     FilterExpression=Attr("TTL").gt(int(time.time())),
                 )["Items"]
             ]
@@ -344,7 +355,9 @@ class DynamoDBAdapter(DatabaseAdapter):
     def _find_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:
             return self.permissions_table.query(
-                KeyConditionExpression=Key("PK").eq(DatabaseItem.PERMISSION.value),
+                KeyConditionExpression=Key("PK").eq(
+                    PermissionsTableItem.PERMISSION.value
+                ),
                 FilterExpression=reduce(
                     Or, ([Attr("Id").eq(value) for value in permissions])
                 ),

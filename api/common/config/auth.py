@@ -87,6 +87,10 @@ class SubjectType(BaseEnum):
     USER = "USER"
 
 
-class DatabaseItem(BaseEnum):
+class PermissionsTableItem(BaseEnum):
     SUBJECT = "SUBJECT"
     PERMISSION = "PERMISSION"
+
+
+class ServiceTableItem(BaseEnum):
+    JOB = "JOB"
