@@ -22,11 +22,11 @@ to clarify the overarching structure and where to look when things go wrong.
 1. Application service spins-up
     1. No domains or datasets exist
 2. Client app/user registered and given desired permissions
-3. Client app/user uploads schema to define the first dataset
+3. Client app uploads schema to define the first dataset
 4. User logs in to the UI
 5. User uploads dataset file
-6. AWS Glue Crawler runs to look at the data a construct a metadata schema in the Glue Catalog
-7. The data is available to be queried by a client app via the `/docs` page or via a programmatic client
+6. AWS Glue Crawler runs to look at the data and construct table in the Glue Catalog
+7. The data is available to be queried
 
 ## Authorisation flows
 
@@ -39,8 +39,7 @@ The client app is a programmatic client that is intended as the main way to inte
 currently able to log into and use the `/docs` page and to use the API by programmatic means (custom app, script, cURL,
 Postman, etc.)
 
-The user is a human element that uses the custom UI. Currently, the UI only supports file upload but the intention is to
-extend this in the future.
+The user is a human element that uses the custom UI.
 
 | Flow       | Token        | Auth method | Permission example             | Notes                                                            |
 |------------|--------------|-------------|--------------------------------|------------------------------------------------------------------|
