@@ -220,6 +220,7 @@ class TestCreateSubjectPage(BaseClientTest):
         mock_templates_response.assert_called_once_with(
             name=subject_template_filename,
             context={"request": ANY, "permissions": expected_permission_object},
+            headers={"Cache-Control": "no-store"},
         )
 
         mock_permissions_service.get_all_permissions_ui.assert_called_once()

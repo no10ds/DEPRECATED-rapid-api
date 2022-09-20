@@ -1,4 +1,5 @@
 toggle_inputs("select_subject", "CLIENT", "email_input");
+handleBrowserNavigation();
 
 function create_subject() {
   if(isValidForm()) {

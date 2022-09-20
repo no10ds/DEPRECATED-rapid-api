@@ -109,6 +109,7 @@ def create_subject(request: Request):
     return templates.TemplateResponse(
         name="subject_create.html",
         context={"request": request, "permissions": permissions},
+        headers={"Cache-Control": "no-store"},
     )
 
 

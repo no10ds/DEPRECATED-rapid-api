@@ -48,7 +48,9 @@ def select_dataset(request: Request):
     grouped_datasets = group_datasets_by_domain(datasets)
 
     return templates.TemplateResponse(
-        name="datasets.html", context={"request": request, "datasets": grouped_datasets}
+        name="datasets.html",
+        context={"request": request, "datasets": grouped_datasets},
+        headers={"Cache-Control": "no-store"},
     )
 
 

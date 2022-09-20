@@ -1,3 +1,5 @@
+handleBrowserNavigation();
+
 const goToNextStep = () => {
     const dataset = document.getElementById("select_dataset").value;
     const version = document.getElementById('select_dataset_version').value;

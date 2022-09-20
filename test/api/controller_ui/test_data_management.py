@@ -87,6 +87,7 @@ class TestSelectDatasetPage(BaseClientTest):
         mock_templates_response.assert_called_once_with(
             name=download_template_filename,
             context={"request": ANY, "datasets": expected_datasets},
+            headers={"Cache-Control": "no-store"},
         )
 
         assert response.status_code == 200
