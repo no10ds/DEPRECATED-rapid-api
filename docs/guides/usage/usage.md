@@ -4,14 +4,15 @@ The rAPId API serves to make data storage and retrieval consistent for all users
 
 Overarching API functionality includes:
 
-- Uploading a schema (i.e.: creating a new dataset definition)
+- [Uploading a schema (i.e.: creating a new dataset definition)](#upload-schema)
     - Also creating a new version of an existing schema
-- Uploading data to any version of a dataset
-- Listing available data
-- Querying data from any version of a dataset
-- Deleting data
-- Creating users and programmatic clients
-- Managing user permissions
+- [Uploading data to any version of a dataset](#upload-dataset)
+- [Listing available data](#list-datasets)
+- [Querying data from any version of a dataset](#query-dataset)
+- [Deleting data](#delete-data-file)
+- Creating [users](#create-user) and [clients](#create-client)
+- [Managing user and client permissions](#modify-subject-permissions)
+- [UI Usage](#ui-usage)
 
 # Application usage overview
 
@@ -40,6 +41,10 @@ The application can be used by both human and programmatic clients (see more bel
 ### Schema exists + upload data + query
 
 ![upload and query image](diagrams/upload_and_query_data.png)
+
+### Schema exists + upload large dataset + query
+
+![upload and query image](diagrams/upload_and_query_large_data.png)
 
 # How to authorise
 
