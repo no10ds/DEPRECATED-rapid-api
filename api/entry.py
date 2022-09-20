@@ -60,6 +60,13 @@ async def request_middleware(request: Request, call_next):
     return await call_next(request)
 
 
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    response = await call_next(request)
+    _set_security_headers(response)
+    return response
+
+
 @app.get("/status", tags=["Status"])
 def status():
     """The endpoint used for service health check"""
@@ -69,3 +76,25 @@ def status():
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse("static/favicon.ico")
+
+
+def _set_security_headers(response) -> None:
+    if "Cache-Control" not in response.headers:
+        response.headers["Cache-Control"] = "private, max-age=3600"
+
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' "
+        "cdn.jsdelivr.net/npm/swagger-ui-dist@3/swagger-ui-bundle.js; "
+        "style-src 'self' "
+        "cdn.jsdelivr.net/npm/swagger-ui-dist@3/swagger-ui.css; "
+        "img-src 'self' data: "
+        "fastapi.tiangolo.com/img/favicon.png;"
+    )
+    response.headers["Content-Security-Policy-Report-Only"] = "default-src 'self'"
+    response.headers[
+        "Strict-Transport-Security"
+    ] = "max-age=31536000 ; includeSubDomains"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+    response.headers["Referrer-Policy"] = "strict-origin"
