@@ -2,16 +2,16 @@
 
 This document outlines some limitations that currently restrict parts of the application and its usage.
 
-# Large Dataset Upload Limitations
+## Large Dataset Upload Limitations
 
-## Limitations
+### Limitations
 
 To handle large datasets, most of the processing is done asynchronously. This is because of several limitations:
 
 1. The application resources are limited, and we cannot load a large (>500mb) file into volatile memory and process it
 2. Browsers have a timeout when waiting for a response to be returned (typically 1-5 minutes)
 
-## User experience
+### User experience
 
 There are two main constraining factors to the user experience when uploading a dataset.
 
@@ -19,7 +19,7 @@ There are two main constraining factors to the user experience when uploading a 
     1. We have seen 5GB files take >30mins on a slow connection and < 10mins on a fast one)
 2. The time it takes to process the uploaded file in the background before it is able to be queried etc.
 
-### File upload and processing rough benchmarks
+#### File upload and processing rough benchmarks
 
 - `Time to process` refers to the time it takes to process the file once it has been saved to disk and until it is ready
   to be queried.
@@ -32,7 +32,7 @@ There are two main constraining factors to the user experience when uploading a 
 | 780MB     | 17Mb/s       | 2mins          | ~7mins          |
 | 5GB       | 17Mb/s       | 10mins         | ~35mins         |
 
-## Possible improvements
+### Possible improvements
 
 Potential areas to focus on to improve performance could be:
 
