@@ -100,3 +100,16 @@ return templates.TemplateResponse(
 </script>
 ```
 - Add a call to the method `handleBrowserNavigation();` on the page's `<file-name>.js` file.
+
+### Security headers
+
+As part of our security efforts we have added some
+[OWASP recommended security headers](https://owasp.org/www-project-secure-headers/). However, there are still some
+improvements that are needed:
+1. Remove/Change the use of `unsafe-inline` from the `script-src` section of the CSP Headers, read
+[here](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/nonce) for a possible solution.
+2. The report CSP Header can be deleted to not show logs in the console or updated to show areas of improvements.
+3. More headers can be added, the ones provided right now are a sensible default.
+
+If there is no previous knowledge on how to create/add info on the CSP Headers, find some information
+[here](https://www.uriports.com/blog/creating-a-content-security-policy-csp/)
