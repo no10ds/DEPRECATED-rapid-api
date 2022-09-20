@@ -55,7 +55,7 @@ def jobs_overview(request: Request):
     dependencies=[
         Security(
             secure_endpoint,
-            scopes=[Action.READ.value, Action.WRITE.value, Action.DATA_ADMIN.value],
+            scopes=[Action.READ.value, Action.WRITE.value],
         )
     ],
 )

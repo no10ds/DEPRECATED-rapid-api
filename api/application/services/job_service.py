@@ -24,24 +24,31 @@ class JobService:
     def filter_permitted_jobs(
         self, permissions: List[str], jobs: List[Dict]
     ) -> List[Dict]:
+        # Data admin can always see all jobs
         if Action.DATA_ADMIN.value in permissions:
             return jobs
 
-        permitted_jobs = [
-            job for job in jobs if job.get("type", None) == JobType.UPLOAD.value
-        ]
+        permitted_jobs = []
+
         for job in jobs:
-            if job.get("domain", None) and job.get("dataset", None):
-                try:
-                    match_permissions(
-                        permissions,
-                        [Action.READ.value],
-                        job.get("domain", None),
-                        job.get("dataset", None),
-                    )
-                    permitted_jobs.append(job)
-                except AuthorisationError:
-                    pass
+            if job.get("type", None) == JobType.UPLOAD.value:
+                # Can always see upload jobs
+                permitted_jobs.append(job)
+            if job.get("type", None) == JobType.QUERY.value:
+                # Filter query jobs by what user is allowed to access
+                domain = job.get("domain", None)
+                dataset = job.get("dataset", None)
+                if domain and dataset:
+                    try:
+                        match_permissions(
+                            permissions,
+                            [Action.READ.value],
+                            domain,
+                            dataset,
+                        )
+                        permitted_jobs.append(job)
+                    except AuthorisationError:
+                        pass
         return permitted_jobs
 
     def get_job(self, job_id: str) -> Dict:
