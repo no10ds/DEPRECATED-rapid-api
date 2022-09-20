@@ -81,3 +81,22 @@ been fully completed.
 - We are currently not checking for SQL injection in the code beyond what the firewall (WAF) rules give us.
     - The WAF has an allocated time budget to check the request so if the request is large or the processing is slow for
       whatever reason there is a risk that malicious code could be introduced.
+
+### Caching requests - Cache-Control header
+
+By default, caching is enabled. If this functionality wants to be removed for security purposes:
+- Add the 'Cache-Control' header to the response object in the controller. Example:
+```
+return templates.TemplateResponse(
+        name="name.html",
+        context={"request": request},
+        headers={"Cache-Control": "no-store"},
+    )
+```
+- Add `common.js` into the script section of the template. Example:
+```
+<script type="text/javascript">
+    {% include "./js/common.js" %}
+</script>
+```
+- Add a call to the method `handleBrowserNavigation();` on the page's `<file-name>.js` file.
