@@ -31,7 +31,7 @@ class SchemaInferService:
             columns=self._infer_columns(dataframe),
         )
         validate_schema(schema)
-        return schema.dict(exclude_none=True)
+        return schema.dict(exclude={"metadata": {"version"}})
 
     def transform_to_nullable_data_type(self, data_type_name: str) -> str:
         if data_type_name.capitalize() in DataTypes.numeric_data_types():

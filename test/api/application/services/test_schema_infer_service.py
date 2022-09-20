@@ -50,7 +50,7 @@ class TestSchemaInfer:
                     format=None,
                 ),
             ],
-        ).dict(exclude_none=True)
+        ).dict(exclude={"metadata": {"version"}})
         file_content = b"colname1,colname2,Col name 3,Col/name 4! \nsomething,123,1,True\notherthing,123,3,False\n\n"
 
         actual_schema = self.infer_schema_service.infer_schema(
