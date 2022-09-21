@@ -91,9 +91,6 @@ def _get_subject_id(request: Request):
 
 
 def _set_security_headers(response) -> None:
-    if "Cache-Control" not in response.headers:
-        response.headers["Cache-Control"] = "private, max-age=3600"
-
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline' "
