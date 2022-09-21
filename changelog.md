@@ -3,6 +3,35 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.0.0 - _2022-09-21_
+
+See [v4.0.0] changes
+
+v4.0.0 introduces schema versioning for datasets and allows both uploads and downloads. Also, it allows large file
+uploads and downloads
+
+### Added
+- Schema versioning
+  - Schema update endpoint
+  - Upload and downloading specific version and latest version by default
+- Large file upload/download
+  - Track upload/download job status
+  - List job status endpoint
+- UI
+  - Task status flow
+
+### Changed
+- Schema versioning
+  - New schema upload defaulting to version 1
+  - Upload/Download data defaults to latest version
+
+### Security
+- Security headers
+- Tracing requests by subject ID
+
+[Unreleased changes]: https://github.com/no10ds/rapid-api/compare/v4.0.0...HEAD
+[v4.0.0]: https://github.com/no10ds/rapid-api/compare/v3.0.0...v4.0.0
+
 ## v3.0.0 - _2022-08-26_
 
 See [v3.0.0] changes
