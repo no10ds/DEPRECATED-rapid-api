@@ -8,6 +8,7 @@ from api.application.services.authorisation.authorisation_service import (
     get_user_token,
 )
 from api.application.services.authorisation.token_utils import parse_token
+from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.logger import AppLogger, init_logger
 from api.controller.auth import auth_router
@@ -92,7 +93,8 @@ def _get_subject_id(request: Request):
 
 def _set_security_headers(response) -> None:
     response.headers["Content-Security-Policy"] = (
-        "default-src 'self'; "
+        "default-src 'self' "
+        f"{IDENTITY_PROVIDER_BASE_URL}; "
         "script-src 'self' 'unsafe-inline' "
         "cdn.jsdelivr.net/npm/swagger-ui-dist@3/swagger-ui-bundle.js; "
         "style-src 'self' "
