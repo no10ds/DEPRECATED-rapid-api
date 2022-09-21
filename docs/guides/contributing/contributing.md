@@ -82,6 +82,9 @@ hot-reload" mode so you can keep this running during development.
 > To run the app locally with an admin context you can assume the admin or user role by running `make assume-role` in the `rapid-infrastructure` repo and running the application directly using the `uvicorn` command that batect runs
 >
 > Of course, this requires that you have Python installed on your machine (see above)
+>
+> In other to log in, the application will redirect to the real app, in the browser developer console, go to the settings
+> and look for a cookie called `rat` change the domain to `localhost` and re-open the local application.
 
 ## Developing 🤓
 

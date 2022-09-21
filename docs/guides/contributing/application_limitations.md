@@ -113,3 +113,15 @@ improvements that are needed:
 
 If there is no previous knowledge on how to create/add info on the CSP Headers, find some information
 [here](https://www.uriports.com/blog/creating-a-content-security-policy-csp/)
+
+- To Enable XSS protection in
+  WAF [OWASP XSS Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
+- To Enable CSP headers and restrict inline styling and inline
+  scripting [OWASP CSP Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html)
+- To Use the CSRF header for security checks (the CSRF header is enabled by
+  default) [OWASP CSRF Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
+
+### Tracing requests
+Whenever a call is made to an endpoint, the subject id of the caller will be logged in cloudwatch, we recommend
+creating a request id and log it during the processing, to get an e2e picture of what is happening and track the
+changes made by a particular subject.

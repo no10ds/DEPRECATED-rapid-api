@@ -2,22 +2,6 @@
 
 This section describes improvements that have been suggested as the rAPId service evolves.
 
-## CSRF and XSS protection
-
-### Problem
-
-The front end was done during the last few days, and there are lots of security improvements that could be added, for
-example CSRF and XSS protection.
-
-### Suggested Solution
-
-- Enable XSS protection in
-  WAF [OWASP XSS Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
-- Enable CSP headers and restrict inline styling and inline
-  scripting [OWASP CSP Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html)
-- Use the CSRF header for security checks (the CSRF header is enabled by
-  default) [OWASP CSRF Cheatsheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html)
-
 ## API Gateway Integration
 
 ### Problem
@@ -115,3 +99,16 @@ triggered, thus ending the session also on the tab that the user is working on a
 ### Suggested solution
 Store the timeout time in the local storage, create an interval that checks every second if the timeout has been
 reached and update the time everytime a user does an action in any of the tabs.
+
+## Running the app locally needs the rat cookie from the real app
+
+### Problem
+Since we need to use the `DOMAIN_NAME` in order to connect to our auth systems, we need to get a valid cookie from the
+real application in order to run the app locally. Thus making our journey test fail if tried to run in the local app.
+Also, locally we run the app in http, but we have some of our endpoint hardcoded to https making the application break
+when trying to authenticate. Finally, Cognito is not aware of localhost as a possible login/logout url so any request
+with localhost will fail.
+
+### Suggested solution
+Separate the domain name and the auth domain name into different variables and dynamically assign http or https for then
+auth urls. Finally, change the default infra to allow localhost as a login/logout redirect url
