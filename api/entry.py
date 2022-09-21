@@ -3,6 +3,11 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from api.application.services.authorisation.authorisation_service import (
+    get_client_token,
+    get_user_token,
+)
+from api.application.services.authorisation.token_utils import parse_token
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.logger import AppLogger, init_logger
 from api.controller.auth import auth_router
@@ -52,10 +57,10 @@ async def startup_event():
 
 @app.middleware("http")
 async def request_middleware(request: Request, call_next):
-    request_id = request.headers.get("x-request-id")
     query_params = request.url.include_query_params()
+    subject_id = _get_subject_id(request)
     AppLogger.info(
-        f"    Request started: {request.method} {query_params} with request id: {request_id}"
+        f"    Request started: {request.method} {query_params} by subject: {subject_id}"
     )
     return await call_next(request)
 
@@ -76,6 +81,13 @@ def status():
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse("static/favicon.ico")
+
+
+def _get_subject_id(request: Request):
+    client_token = get_client_token(request)
+    user_token = get_user_token(request)
+    token = client_token if client_token else user_token
+    return parse_token(token).subject if token else "Not an authenticated user"
 
 
 def _set_security_headers(response) -> None:
