@@ -1,4 +1,20 @@
+from unittest.mock import patch
+
+import pytest
+
 from test.api.common.controller_test_utils import BaseClientTest
+
+
+@pytest.fixture(scope="session", autouse=True)
+def get_client_token_mock():
+    with patch("api.entry.get_client_token", return_value=None) as client_token_mock:
+        yield client_token_mock
+
+
+@pytest.fixture(scope="session", autouse=True)
+def get_user_token_mock():
+    with patch("api.entry.get_user_token", return_value=None) as user_token_mock:
+        yield user_token_mock
 
 
 class TestStatus(BaseClientTest):
