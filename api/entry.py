@@ -78,6 +78,25 @@ def status():
     """The endpoint used for service health check"""
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
 
+@app.get("/apis", tags=["Info"])
+def info():
+    """ The endpoint used for a service information check """
+    return {
+        "api-version": "api.gov.uk/v1alpha",
+        "apis": [
+            {
+                "api-version": "api.gov.uk/v1alpha",
+                "data": {
+                    "name": "Project rAPId",
+                    "description": "Sample rAPId description",
+                    "url": "https://getrapid.link/docs",
+                    "contact": "rapid@no10.gov.uk",
+                    "organisation": "10 Downing Street & Cabinet Office",
+                    "documentation-url": "https://github.com/no10ds/rapid-api",
+                }
+            }
+        ]
+    }
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
