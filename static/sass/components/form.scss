@@ -183,3 +183,17 @@
     grid-column-gap: 10px;
   }
 }
+
+.key-input {
+  &:not([hidden]) {
+    display: grid;
+    width: 40%;
+    grid-row-gap: 5px;
+  }
+
+  &--row {
+    display: grid;
+    grid-template-columns: 1fr 20px;
+    grid-column-gap: 10px;
+  }
+}

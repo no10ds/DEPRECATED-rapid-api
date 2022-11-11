@@ -1,6 +1,7 @@
 let schema = {};
 let step = 0;
 let key_value_tags = {};
+let key_tags = [];
 
 handle_step();
 
@@ -76,7 +77,7 @@ function populate_table(schema) {
 
 function renderKeyValueTags() {
   const tagArea = document.getElementById("key_value_tags");
-  while (tagArea.firstChild.id !== "false_tag") {
+  while (tagArea.firstChild.id !== "key_value_false_tag") {
     tagArea.removeChild(tagArea.firstChild);
   }
 
@@ -85,24 +86,53 @@ function renderKeyValueTags() {
     const tagRow = document.createElement("div");
     tagRow.className = "key-value-input--row";
     tagRow.innerHTML = `
-      <input class="form-input_text" type="text" value="${key}">
-      <input class="form-input_text" type="text" value="${value}">
+      <input class="form-input_text" type="text" value="${key}" disabled>
+      <input class="form-input_text" type="text" value="${value}" disabled>
       `;
-    tagArea.insertBefore(tagRow, document.getElementById("false_tag"));
+    tagArea.insertBefore(
+      tagRow,
+      document.getElementById("key_value_false_tag")
+    );
+  });
+}
+
+function renderKeyTags() {
+  const tagArea = document.getElementById("key_tags");
+  while (tagArea.firstChild.id !== "key_false_tag") {
+    tagArea.removeChild(tagArea.firstChild);
+  }
+
+  key_tags.forEach((key) => {
+    const tagRow = document.createElement("div");
+    tagRow.className = "key-input--row";
+    tagRow.innerHTML = `
+      <input class="form-input_text" type="text" value="${key}" disabled>
+    `;
+    tagArea.insertBefore(tagRow, document.getElementById("key_false_tag"));
   });
 }
 
 function createKeyValueTag() {
-  const keyElem = document.getElementById("false_tag_key");
-  const valueElem = document.getElementById("false_tag_value");
+  const keyElem = document.getElementById("key_value_false_tag_key");
+  const valueElem = document.getElementById("key_value_false_tag_value");
   const key = keyElem.value;
   const value = valueElem.value;
-  key_value_tags[key] = value;
-  renderKeyValueTags();
+  if (key && value) {
+    key_value_tags[key] = value;
+    renderKeyValueTags();
+    keyElem.value = "";
+    valueElem.value = "";
+  }
+}
 
-  // Reset values
-  keyElem.value = "";
-  valueElem.value = "";
+function createKeyTag() {
+  const keyElem = document.getElementById("key_false_tag_key");
+  const key = keyElem.value;
+  if (key) {
+    key_tags.push(key);
+    renderKeyTags();
+    keyElem.value = "";
+  }
 }
 
 function handle_step() {
@@ -118,5 +148,6 @@ function handle_step() {
     document.getElementById("form_step_0").style.visibility = "hidden";
     document.getElementById("form_step_1").style.visibility = "visible";
     renderKeyValueTags();
+    renderKeyTags();
   }
 }

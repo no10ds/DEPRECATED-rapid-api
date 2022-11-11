@@ -86,11 +86,22 @@
                 <h3 class="content-step-indicator">Step 5: Optionally set key value tags</h3>
                 <div class="form-input">
                     <div class="key-value-input" id="key_value_tags">
-                        <div class="key-value-input--row" id="false_tag">
-                            <input class="form-input_text" type="text" id="false_tag_key">
-                            <input class="form-input_text" type="text" id="false_tag_value">
-                            <label class="form-input_label btn btn--secondary" for="false_tag_add">Add</label>
-                            <input class="form-input_file" id="false_tag_add" type="button" onclick="createKeyValueTag()">
+                        <div class="key-value-input--row" id="key_value_false_tag">
+                            <input class="form-input_text" type="text" id="key_value_false_tag_key">
+                            <input class="form-input_text" type="text" id="key_value_false_tag_value">
+                            <label class="form-input_label btn btn--secondary" for="key_value_false_tag_add">Add</label>
+                            <input class="form-input_file" id="key_value_false_tag_add" type="button" onclick="createKeyValueTag()">
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="content-step-indicator">Step 6: Optionally set key only tags</h3>
+                <div class="form-input">
+                    <div class="key-input" id="key_tags">
+                        <div class="key-input--row" id="key_false_tag">
+                            <input class="form-input_text" type="text" id="key_false_tag_key">
+                            <label class="form-input_label btn btn--secondary" for="key_false_tag_add">Add</label>
+                            <input class="form-input_file" id="key_false_tag_add" type="button" onclick="createKeyTag()">
                         </div>
                     </div>
                 </div>
