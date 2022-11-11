@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>rAPId - Schema Create</title>
+    <link href="/static/main.css" rel="stylesheet">
+</head>
+<body>
+<div class="content">
+    {% with previous_page = "/" %}
+    {% include 'component/header.html' %}
+    {% endwith %}
+
+        <form class="form" id="form_step_0" hidden>
+            <div class="form_body form_body--headed" id="create_form">
+                <h1 class="content_header">Generate Schema</h1>
+                <h3 class="content-step-indicator">Step 1: Populate dataset properties for the new schema:</h3>
+
+                <div class="form-select">
+                    <label class="form-select_label">Sensitivity level</label>
+                    <select class="form-select_dropdown" id="select_sensitivity" required>
+                        <option value="" disabled selected hidden>Please select a sensitivity</option>
+                        <option value="PUBLIC">PUBLIC</option>
+                        <option value="PRIVATE">PRIVATE</option>
+                        <option value="PROTECTED">PROTECTED</option> 
+                    </select>
+                    <h4 hidden class="form-input_error" id="select_sensitivityError">Please select a sensitivity level.</h4>
+                </div>
+
+                <div class="form-input">
+                    <label class="form-input_label" for="domain">Dataset domain</label>
+                    <input class="form-input_text" name="domain" id="domain" type="text" required>
+                    <h4 hidden class="form-input_error" id="domainError">The provided domain is invalid.</h4>
+                </div>
+
+                <div class="form-input">
+                    <label class="form-input_label" for="title">Dataset title</label>
+                    <input class="form-input_text" name="title" id="title" type="text" required>
+                    <h4 hidden class="form-input_error" id="titleError">The provided title is invalid</h4> 
+                </div>
+
+                <h3 class="content-step-indicator">Step 2: Upload the data to generate the schema for:</h3>
+                <div class="form-input">
+                    <label class="form-input_label btn btn--secondary" for="file">Choose file</label>
+                    <br />
+                    <label class="form-input_filename" id="filename">No file selected</label>
+                    <input class="form-input_file" name="file" id="file" type="file">
+                </div>
+
+                <h4 hidden class="response-msg--error" id="error-message"></h4>
+                <div class="form_submit" id="submit_form">
+                    <button class="btn" type="button" id="generateSchema" onclick="generate_schema()">Generate schema</button>
+                </div>
+            </div>
+        </form>
+
+
+        <form class="form" id="form_step_1" hidden>
+            <div class="form_body form_body--headed" id="validate_form">
+                <h1 class="content-header">Validate Schema</h1>
+                <h3 class="content-step-indicator">Step 3: Validate the data types for the schema:</h3>
+
+                <div class="form-input">
+                    <table class="info-table" id="schema_table">
+                        <tr>
+                            <th>Name</th>
+                            <th>Data Type</th>
+                            <th>Allows Null</th>
+                        </tr>
+                    </table>
+                </div>
+
+                <h3 class="content-step-indicator">Step 4: Set the data owner</h3>
+                <div class="form-input">
+                    <label class="form-input_label" for="owner_email">Owner email</label>
+                    <input class="form-input_text" name="owner_email" id="owner_email" type="email" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$" required>
+                    <h4 hidden class="form-input_error" id="owner_emailError">The provided email is invalid</h4>
+                </div>
+
+                <div class="form-input">
+                    <label class="form-input_label" for="owner_name">Owner name</label>
+                    <input class="form-input_text" name="owner_name" id="owner_name" type="text" pattern="[a-zA-Z][a-zA-Z0-9@._-]{2,127}" required>
+                    <h4 hidden class="form-input_error" id="owner_nameError">The provided name is invalid</h4>
+                </div>
+
+                <h3 class="content-step-indicator">Step 5: Optionally set key value tags</h3>
+                <div class="form-input">
+                    <div class="key-value-input" id="key_value_tags">
+                        <div class="key-value-input--row" id="false_tag">
+                            <input class="form-input_text" type="text" id="false_tag_key">
+                            <input class="form-input_text" type="text" id="false_tag_value">
+                            <label class="form-input_label btn btn--secondary" for="false_tag_add">Add</label>
+                            <input class="form-input_file" id="false_tag_add" type="button" onclick="createKeyValueTag()">
+                        </div>
+                    </div>
+                </div>
+                
+                <h4 hidden class="response-msg--error" id="error-message"></h4>
+                <div class="form_submit" id="submit_form">
+                    <button class="btn" type="button" id="generateSchema" onclick="upload_schema()">Upload schema</button>
+                </div>
+            </div>
+        </form>
+</div>
+
+{% block javascript %}
+<script type="text/javascript">
+        {% include "./js/common.js" %}
+        {% include "./js/schema_create.js" %}
+</script>
+{% endblock %}
+
+</body>
+</html>

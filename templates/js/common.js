@@ -35,7 +35,7 @@ function extract_selections() {
 
   const checkedRadios = Array.from(radios).filter((radio) => radio.checked);
   const checkedBoxes = Array.from(checkboxes).filter(
-    checkbox => !checkbox.disabled && checkbox.checked
+    (checkbox) => !checkbox.disabled && checkbox.checked
   );
 
   const selections = checkedRadios.concat(checkedBoxes);
@@ -53,97 +53,98 @@ function get_selected_value(element_id) {
 }
 
 const showErrorMessage = (message) => {
-    const errorMessageContainer = document.getElementById('error-message');
-    errorMessageContainer.innerText = message;
-    errorMessageContainer.hidden = false;
-}
+  const errorMessageContainer = document.getElementById("error-message");
+  errorMessageContainer.innerText = message;
+  errorMessageContainer.hidden = false;
+};
 
 const hideErrorMessage = () => {
-    const errorMessageContainer = document.getElementById('error-message');
-    errorMessageContainer.innerText = '';
-    errorMessageContainer.hidden = true;
-}
+  const errorMessageContainer = document.getElementById("error-message");
+  errorMessageContainer.innerText = "";
+  errorMessageContainer.hidden = true;
+};
 
 const setupNumericValuesEvents = (elementId) => {
   const numericElement = document.getElementById(elementId);
   numericElement.errorMsgId = `${elementId}Error`;
-  numericElement.addEventListener('focusout', handleNumericValidation);
-}
+  numericElement.addEventListener("focusout", handleNumericValidation);
+};
 
 const handleNumericValidation = (event) => {
   let numericElement = event.currentTarget;
   numericElement.value = Math.floor(numericElement.value);
-  if(numericElement.value == 0) {
+  if (numericElement.value == 0) {
     numericElement.value = "";
   }
   handleBaseValidation(numericElement);
-}
+};
 
 const handleBaseValidation = (elementToValidate) => {
   const errorMsg = document.getElementById(elementToValidate.errorMsgId);
-  if(elementToValidate.checkValidity()) {
+  if (elementToValidate.checkValidity()) {
     elementToValidate.classList.remove("invalid");
-    if(!!errorMsg) {
+    if (!!errorMsg) {
       errorMsg.hidden = true;
     }
   } else {
     elementToValidate.classList.add("invalid");
     errorMsg.hidden = false;
   }
-}
+};
 
 const handleValidation = (event) => {
   handleBaseValidation(event.currentTarget);
-}
+};
 
 const setupValidationForType = (inputType) => {
-    const allInputs = document.querySelectorAll(inputType);
-    allInputs.forEach(input => {
-        input.errorMsgId = `${input.id}Error`;
-        input.addEventListener('focusout', handleValidation);
-    })
-}
+  const allInputs = document.querySelectorAll(inputType);
+  allInputs.forEach((input) => {
+    input.errorMsgId = `${input.id}Error`;
+    input.addEventListener("focusout", handleValidation);
+  });
+};
 
 const setupEventListeners = () => {
-    // Set up inputs to clear error message on interaction
-    const allInputs = document.querySelectorAll('input');
-    allInputs.forEach(input => {
-        input.addEventListener('click', hideErrorMessage);
-        input.addEventListener('focus', hideErrorMessage);
-    })
-    setupValidationForType('input[type="text"]');
-    setupValidationForType('input[type="email"]');
-    setupValidationForType('select');
-}
+  // Set up inputs to clear error message on interaction
+  const allInputs = document.querySelectorAll("input");
+  allInputs.forEach((input) => {
+    input.addEventListener("click", hideErrorMessage);
+    input.addEventListener("focus", hideErrorMessage);
+  });
+  setupValidationForType('input[type="text"]');
+  setupValidationForType('input[type="email"]');
+  setupValidationForType("select");
+};
 
-const isValidForm = () => {
-  const validInputs = checkInputsValidity("input");
-  const validSelects = checkInputsValidity("select");
+const isValidForm = (formId = None) => {
+  const _document = formId ? document.getElementById(formId) : document;
+  const validInputs = checkInputsValidity("input", _document);
+  const validSelects = checkInputsValidity("select", _document);
   return validInputs && validSelects;
-}
+};
 
-const checkInputsValidity = (inputType) => {
+const checkInputsValidity = (inputType, document) => {
   let isValid = true;
   const allInputs = document.querySelectorAll(inputType);
-      allInputs.forEach(input => {
-        if(!input.checkValidity()) {
-          isValid = false;
-          input.errorMsgId = `${input.id}Error`;
-          handleBaseValidation(input);
-        }
-    })
+  allInputs.forEach((input) => {
+    if (!input.checkValidity()) {
+      isValid = false;
+      input.errorMsgId = `${input.id}Error`;
+      handleBaseValidation(input);
+    }
+  });
   return isValid;
-}
+};
 
 const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
+  window.scrollTo({ top: 0, behavior: "smooth" });
+};
 
 const handleBrowserNavigation = () => {
   perfEntries = performance.getEntriesByType("navigation");
   if (perfEntries[0].type === "back_forward") {
     location.reload(true);
   }
-}
+};
 
 setupEventListeners();

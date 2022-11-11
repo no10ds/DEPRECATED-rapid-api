@@ -66,6 +66,13 @@
     box-shadow: var(--light-shadow);
     align-self: start;
     cursor: pointer;
+
+    &_table {
+      background-color: var(--light-grey-1);
+      border: none;
+      text-align-last: left;
+      color: var(--dark-grey-2);
+    }
   }
 }
 
@@ -160,5 +167,19 @@
       width: 80%;
       margin: 1.5rem auto;
     }
+  }
+}
+
+.key-value-input {
+  &:not([hidden]) {
+    display: grid;
+    width: 50%;
+    grid-row-gap: 5px;
+  }
+
+  &--row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 20px;
+    grid-column-gap: 10px;
   }
 }

@@ -61,4 +61,10 @@ def determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool]
                 for permission in subject_permissions
             )
         ),
+        "can_create_schema": any(
+            (
+                permission.startswith(Action.DATA_ADMIN.value)
+                for permission in subject_permissions
+            )
+        ),
     }

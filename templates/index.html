@@ -32,6 +32,12 @@
                     {% endif %}
                 </div>
                 <div class="btn-set">
+                    <h3 class="btn-set-hedaer">Schema Management</h3>
+                    {% if can_create_schema %}
+                        <a class="btn" href="/schema/create">Create Schema</a>
+                    {% endif %}
+                </div>
+                <div class="btn-set">
                     <h3 class="btn-set_header">Task Management</h3>
                     <a class="btn" href="/tasks">Tasks Status</a>
                 </div>
