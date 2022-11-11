@@ -13,6 +13,27 @@ function generate_schema() {
   }
 }
 
+function upload_schema() {
+  if (isValidForm("validate_form")) {
+    handle_upload();
+  } else {
+    // TODO
+  }
+}
+
+function handle_upload() {
+  const ownerName = document.getElementById("owner_name").value;
+  const ownerEmail = document.getElementById("owner_email").value;
+  const updateBehaviour = document.getElementById("select_behaviour").value;
+  const owners = [{ email: ownerEmail, name: ownerName }];
+  schema.metadata.owners = owners;
+  schema.metadata.key_only_tags = key_tags;
+  schema.metadata.key_value_tags = key_value_tags;
+  schema.metadata.update_behaviour = updateBehaviour;
+
+  console.log("SCHEMA UPLOAD", schema);
+}
+
 function handle_generation() {
   const sensitivity = document.getElementById("select_sensitivity").value;
   const domain = document.getElementById("domain").value;
@@ -36,7 +57,7 @@ function handle_generation() {
       )
       .catch(() => {
         console.log("ERROR");
-        // TODO:
+        // TODO
       });
   }
 }
@@ -49,7 +70,7 @@ function populate_table(schema) {
     row.innerHTML = `
         <td>${name}</td>
         <td>
-            <select class="form-select_dropdown_table" selected="${data_type}" data-name="${name}" id="schema_data_type_select">
+            <select class="form-select_dropdown_table" selected="${data_type}" data-name="${name}" data-type="data_type">
             <option ${data_type === "Int64" ? "selected" : ""}>Int64</option>
             <option ${
               data_type === "Float64" ? "selected" : ""
@@ -62,7 +83,7 @@ function populate_table(schema) {
             </select>
         </td>
         <td>
-            <select class="form-select_dropdown_table selected="${allow_null}" data-name="${name}">
+            <select class="form-select_dropdown_table selected="${allow_null}" data-name="${name}" data-type="allow_null">
             <option ${allow_null === true ? "selected" : ""}>true</option>
             <option ${allow_null === false ? "selected" : ""}>false</option>
             </select>
@@ -70,9 +91,28 @@ function populate_table(schema) {
     `;
   });
 
-  // document
-  //   .getElementById("schema_data_type_select")
-  //   .addEventListener("change", onDataTypeChange);
+  const selects = document.getElementsByClassName("form-select_dropdown_table");
+  for (let i = 0; i < selects.length; i++) {
+    selects[i].addEventListener("change", onDataTypeChange);
+  }
+}
+
+function updateSchema(columnName, value, updateType) {
+  const index = schema.columns.findIndex((col) => col.name === columnName);
+  if (updateType === "data_type") {
+    schema.columns[index].data_type = value;
+  } else {
+    schema.columns[index].allow_null = value;
+  }
+  console.log(schema);
+}
+
+function onDataTypeChange(elem) {
+  const target = elem.target;
+  const value = target.value;
+  const name = target.dataset.name;
+  const updateType = target.dataset.type;
+  return updateSchema(name, value, updateType);
 }
 
 function renderKeyValueTags() {
