@@ -147,4 +147,20 @@ const handleBrowserNavigation = () => {
   }
 };
 
+const createErrorDetail = (response) => {
+  let errorDetail = "<ul>";
+
+  if (Array.isArray(response["details"])) {
+    response["details"].forEach((error) => {
+      errorDetail += `<li>${error}</li>`;
+    });
+  } else {
+    errorDetail += `<li>${response["details"]}</li>`;
+  }
+
+  errorDetail += "</ul>";
+
+  return errorDetail;
+};
+
 setupEventListeners();

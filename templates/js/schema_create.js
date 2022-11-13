@@ -9,7 +9,7 @@ function generate_schema() {
   if (isValidForm("create_form")) {
     handle_generation();
   } else {
-    // TODO
+    scrollToTop();
   }
 }
 
@@ -17,7 +17,7 @@ function upload_schema() {
   if (isValidForm("validate_form")) {
     handle_upload();
   } else {
-    // TODO
+    scrollToTop();
   }
 }
 
@@ -25,6 +25,10 @@ function handle_upload() {
   const ownerName = document.getElementById("owner_name").value;
   const ownerEmail = document.getElementById("owner_email").value;
   const updateBehaviour = document.getElementById("select_behaviour").value;
+  const responseTextElementTitle = document.getElementById(
+    "upload-response-title"
+  );
+  const responseTextElement = document.getElementById("upload-response");
   const spinner = document.getElementsByClassName("loading-spinner")[1];
 
   const owners = [{ email: ownerEmail, name: ownerName }];
@@ -33,8 +37,42 @@ function handle_upload() {
   schema.metadata.key_value_tags = key_value_tags;
   schema.metadata.update_behaviour = updateBehaviour;
 
-  console.log("SCHEMA UPLOAD", schema);
   spinner.style.display = "block";
+
+  fetch(`/schema`, {
+    method: "POST",
+    headers: new Headers({
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    }),
+    body: JSON.stringify(schema),
+  })
+    .then((response) =>
+      response.json().then((result) => {
+        spinner.style.display = "none";
+
+        if (response.ok) {
+          responseTextElement.innerHTML = `Schema created: <br>${result["details"]}</br>`;
+          responseTextElement.classList.add("response-msg--success");
+          responseTextElement.classList.remove("response-msg--error");
+        } else {
+          const errorDetail = createErrorDetail(result);
+          responseTextElementTitle.innerHTML = "Errors:";
+          responseTextElementTitle.classList.add("response-msg--error");
+
+          responseTextElement.innerHTML = errorDetail;
+          responseTextElement.classList.add("response-msg--error");
+          responseTextElement.classList.remove("response-msg--success");
+        }
+      })
+    )
+    .catch(() => {
+      spinner.style.display = "none";
+      responseTextElement.innerHTML =
+        "Error: There was a problem uploading the schema";
+      responseTextElement.classList.add("response-msg--error");
+      responseTextElement.classList.remove("response-msg--success");
+    });
 }
 
 function handle_generation() {
@@ -42,10 +80,17 @@ function handle_generation() {
   const domain = document.getElementById("domain").value;
   const title = document.getElementById("title").value;
   const file = document.getElementById("file").files[0];
+  const responseTextElementTitle = document.getElementById(
+    "generate-response-title"
+  );
+  const responseTextElement = document.getElementById("generate-response");
   const spinner = document.getElementsByClassName("loading-spinner")[0];
 
   if (sensitivity && domain && title && file) {
+    responseTextElement.innerHTML = "Uploading";
     spinner.style.display = "block";
+    responseTextElement.classList.remove("response-msg--error");
+    responseTextElement.classList.remove("response-msg--success");
 
     let data = new FormData();
     data.append("file", file);
@@ -58,16 +103,28 @@ function handle_generation() {
         response.json().then((result) => {
           spinner.style.display = "none";
 
-          schema = result;
-          step = 1;
-          handle_step();
-          populate_table(result);
+          if (response.ok) {
+            schema = result;
+            step = 1;
+            handle_step();
+            populate_table(result);
+          } else {
+            const errorDetail = createErrorDetail(result);
+            responseTextElementTitle.innerHTML = "Errors:";
+            responseTextElementTitle.classList.add("response-msg--error");
+
+            responseTextElement.innerHTML = errorDetail;
+            responseTextElement.classList.add("response-msg--error");
+            responseTextElement.classList.remove("response-msg--success");
+          }
         })
       )
       .catch(() => {
         spinner.style.display = "none";
-        console.log("ERROR");
-        // TODO
+        responseTextElement.innerHTML =
+          "Error: There was a problem generating the schema";
+        responseTextElement.classList.add("response-msg--error");
+        responseTextElement.classList.remove("response-msg--success");
       });
   }
 }
