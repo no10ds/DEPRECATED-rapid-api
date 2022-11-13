@@ -25,6 +25,8 @@ function handle_upload() {
   const ownerName = document.getElementById("owner_name").value;
   const ownerEmail = document.getElementById("owner_email").value;
   const updateBehaviour = document.getElementById("select_behaviour").value;
+  const spinner = document.getElementsByClassName("loading-spinner")[1];
+
   const owners = [{ email: ownerEmail, name: ownerName }];
   schema.metadata.owners = owners;
   schema.metadata.key_only_tags = key_tags;
@@ -32,6 +34,7 @@ function handle_upload() {
   schema.metadata.update_behaviour = updateBehaviour;
 
   console.log("SCHEMA UPLOAD", schema);
+  spinner.style.display = "block";
 }
 
 function handle_generation() {
@@ -39,16 +42,22 @@ function handle_generation() {
   const domain = document.getElementById("domain").value;
   const title = document.getElementById("title").value;
   const file = document.getElementById("file").files[0];
+  const spinner = document.getElementsByClassName("loading-spinner")[0];
 
   if (sensitivity && domain && title && file) {
+    spinner.style.display = "block";
+
     let data = new FormData();
     data.append("file", file);
+
     fetch(`${sensitivity}/${domain}/${title}/generate`, {
       method: "POST",
       body: data,
     })
       .then((response) =>
         response.json().then((result) => {
+          spinner.style.display = "none";
+
           schema = result;
           step = 1;
           handle_step();
@@ -56,6 +65,7 @@ function handle_generation() {
         })
       )
       .catch(() => {
+        spinner.style.display = "none";
         console.log("ERROR");
         // TODO
       });
