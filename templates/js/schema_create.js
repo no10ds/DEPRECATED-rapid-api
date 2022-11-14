@@ -205,12 +205,20 @@ function renderKeyValueTags() {
     tagRow.innerHTML = `
       <input class="form-input_text" type="text" value="${key}" disabled>
       <input class="form-input_text" type="text" value="${value}" disabled>
+      <label class="form-input_label btn btn--secondary" for="key_value_tag_remove_${key}">Remove</label>
+      <input class="form-input_file remove-key-value-tag" type="button" id="key_value_tag_remove_${key}" data-key="${key}">
       `;
     tagArea.insertBefore(
       tagRow,
       document.getElementById("key_value_false_tag")
     );
   });
+
+  const removes = document.getElementsByClassName("remove-key-value-tag");
+  console.log(removes);
+  for (let i = 0; i < removes.length; i++) {
+    removes[i].addEventListener("click", removeKeyValueTag);
+  }
 }
 
 function renderKeyTags() {
@@ -219,14 +227,21 @@ function renderKeyTags() {
     tagArea.removeChild(tagArea.firstChild);
   }
 
-  key_tags.forEach((key) => {
+  key_tags.forEach((key, index) => {
     const tagRow = document.createElement("div");
     tagRow.className = "key-input--row";
     tagRow.innerHTML = `
       <input class="form-input_text" type="text" value="${key}" disabled>
+      <label class="form-input_label btn btn--secondary" for="key_tag_remove_${key}">Remove</label>
+      <input class="form-input_file remove_key_tag" type="button" id="key_tag_remove_${key}" data-index="${index}" >
     `;
     tagArea.insertBefore(tagRow, document.getElementById("key_false_tag"));
   });
+
+  const removes = document.getElementsByClassName("remove_key_tag");
+  for (let i = 0; i < removes.length; i++) {
+    removes[i].addEventListener("click", removeKeyTag);
+  }
 }
 
 function createKeyValueTag() {
@@ -250,6 +265,20 @@ function createKeyTag() {
     renderKeyTags();
     keyElem.value = "";
   }
+}
+
+function removeKeyValueTag(elem) {
+  const target = elem.target;
+  const key = target.dataset.key;
+  delete key_value_tags[key];
+  renderKeyValueTags();
+}
+
+function removeKeyTag(elem) {
+  const target = elem.target;
+  const index = target.dataset.index;
+  key_tags.splice(index, 1);
+  renderKeyTags();
 }
 
 function handle_step() {
