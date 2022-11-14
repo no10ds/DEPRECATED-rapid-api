@@ -155,6 +155,9 @@ function populate_table(schema) {
             <option ${allow_null === false ? "selected" : ""}>false</option>
             </select>
         </td>
+        <td>
+            <input class="form-input_input_text" type='number' value='' data-name="${name}" data-type="partition_index" />
+        </td>
     `;
   });
 
@@ -162,14 +165,21 @@ function populate_table(schema) {
   for (let i = 0; i < selects.length; i++) {
     selects[i].addEventListener("change", onDataTypeChange);
   }
+
+  const inputs = document.getElementsByClassName("form-input_input_text");
+  for (let i = 0; i < inputs.length; i++) {
+    inputs[i].addEventListener("change", onDataTypeChange);
+  }
 }
 
 function updateSchema(columnName, value, updateType) {
   const index = schema.columns.findIndex((col) => col.name === columnName);
   if (updateType === "data_type") {
     schema.columns[index].data_type = value;
-  } else {
+  } else if (updateType === "allow_null") {
     schema.columns[index].allow_null = value;
+  } else if (updateType === "partition_index") {
+    schema.columns[index].partition_index = value ? parseInt(value) : null;
   }
   console.log(schema);
 }
@@ -179,7 +189,7 @@ function onDataTypeChange(elem) {
   const value = target.value;
   const name = target.dataset.name;
   const updateType = target.dataset.type;
-  return updateSchema(name, value, updateType);
+  return updateSchema(name, value === "" ? null : value, updateType);
 }
 
 function renderKeyValueTags() {
