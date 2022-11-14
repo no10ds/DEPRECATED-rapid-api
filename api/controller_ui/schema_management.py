@@ -1,7 +1,7 @@
 import os
 
 from fastapi import APIRouter
-from fastapi import Security, Request, UploadFile, File
+from fastapi import Security, Request
 from fastapi.templating import Jinja2Templates
 
 from api.application.services.authorisation.authorisation_service import secure_endpoint
@@ -17,6 +17,7 @@ schema_management_router = APIRouter(
 )
 
 templates = Jinja2Templates(directory=os.path.abspath("templates"))
+
 
 @schema_management_router.get(
     "/create", dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])]
