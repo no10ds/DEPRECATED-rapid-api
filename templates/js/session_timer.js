@@ -20,7 +20,7 @@ var sessionTimer = function () {
 
   function setTimeoutForPages() {
     //  300000ms == 5min
-    let timeoutInMs = 300000 * 12;
+    let timeoutInMs = 300000;
     LONG_TIMEOUT_PAGES.forEach((page_uri) => {
       if (window.location.pathname.startsWith(page_uri)) {
         //  1800000ms == 30min
