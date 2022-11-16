@@ -24,6 +24,8 @@ function upload_schema() {
 function handle_upload() {
   const ownerName = document.getElementById("owner_name").value;
   const ownerEmail = document.getElementById("owner_email").value;
+  const domain = document.getElementById("domain_form_1").value;
+  const title = document.getElementById("title_form_1").value;
   const updateBehaviour = document.getElementById("select_behaviour").value;
   const responseTextElementTitle = document.getElementById(
     "upload-response-title"
@@ -36,6 +38,8 @@ function handle_upload() {
   schema.metadata.key_only_tags = key_tags;
   schema.metadata.key_value_tags = key_value_tags;
   schema.metadata.update_behaviour = updateBehaviour;
+  schema.metadata.domain = domain;
+  schema.metadata.dataset = title;
 
   spinner.style.display = "block";
 
@@ -215,7 +219,6 @@ function renderKeyValueTags() {
   });
 
   const removes = document.getElementsByClassName("remove-key-value-tag");
-  console.log(removes);
   for (let i = 0; i < removes.length; i++) {
     removes[i].addEventListener("click", removeKeyValueTag);
   }
@@ -293,6 +296,10 @@ function handle_step() {
   } else if (step === 1) {
     document.getElementById("form_step_0").style.visibility = "hidden";
     document.getElementById("form_step_1").style.visibility = "visible";
+
+    document.getElementById("domain_form_1").value = schema.metadata.domain;
+    document.getElementById("title_form_1").value = schema.metadata.dataset;
+
     renderKeyValueTags();
     renderKeyTags();
   }

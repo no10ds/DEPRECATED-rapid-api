@@ -14,7 +14,10 @@
         <form class="form" id="form_step_0" hidden>
             <div class="form_body form_body--headed" id="create_form">
                 <h1 class="content_header">Generate Schema</h1>
-                <h3 class="content-step-indicator">Step 1: Populate dataset properties for the new schema:</h3>
+                <span>
+                    <h3 class="content-step-indicator">Step 1: Populate dataset properties for the new schema:</h3>
+                    <p>Consult the <a href="https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md" target="_blank">schema writing guide</a> for further information.</p>
+                </span>
 
                 <div class="form-select">
                     <label class="form-select_label">Sensitivity level</label>
@@ -28,13 +31,13 @@
                 </div>
 
                 <div class="form-input">
-                    <label class="form-input_label" for="domain">Dataset domain</label>
+                    <label class="form-input_label" for="domain">Dataset domain e.g. demo</label>
                     <input class="form-input_text" name="domain" id="domain" type="text" required>
                     <h4 hidden class="form-input_error" id="domainError">The provided domain is invalid.</h4>
                 </div>
 
                 <div class="form-input">
-                    <label class="form-input_label" for="title">Dataset title</label>
+                    <label class="form-input_label" for="title">Dataset title e.g. gapminder</label>
                     <input class="form-input_text" name="title" id="title" type="text" required>
                     <h4 hidden class="form-input_error" id="titleError">The provided title is invalid</h4> 
                 </div>
@@ -61,7 +64,23 @@
         <form class="form" id="form_step_1" hidden>
             <div class="form_body form_body--headed" id="validate_form">
                 <h1 class="content_header">Validate Schema</h1>
-                <h3 class="content-step-indicator">Step 3: Validate the data types for the schema:</h3>
+
+                <div class="form-input">
+                    <label class="form-input_label" for="domain">Dataset domain</label>
+                    <input class="form-input_text" name="domain" id="domain_form_1" type="text" required>
+                    <h4 hidden class="form-input_error" id="domain_form_1Error">The provided domain is invalid.</h4>
+                </div>
+                <div class="form-input">
+                    <label class="form-input_label" for="title">Dataset title</label>
+                    <input class="form-input_text" name="title" id="title_form_1" type="text" required>
+                    <h4 hidden class="form-input_error" id="title_form_1Error">The provided title is invalid</h4> 
+                </div>
+
+                <br />
+                <div>
+                    <h3 class="content-step-indicator">Step 3: Validate the data types for the schema:</h3>
+                    <p>Consult the <a href="https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/schema_creation.md" target="_blank">schema writing guide</a> for further information.</p>
+                </div>
 
                 <div class="form-input">
                     <table class="info-table" id="schema_table">
@@ -69,7 +88,7 @@
                             <th>Name</th>
                             <th>Data Type</th>
                             <th>Allows Null</th>
-                            <th>Partition Index</th>
+                            <th>Partition Index (Optional)</th>
                         </tr>
                     </table>
                 </div>
@@ -91,9 +110,8 @@
                 <div class="form-select">
                     <label class="form-select_label">Update behaviour</label>
                     <select class="form-select_dropdown" id="select_behaviour" required>
-                        <option value="" disabled selected hidden>Please select a update behaviour</option>
                         <option value="APPEND">APPEND</option>
-                        <option value="OVERWRITE">OVERWRITE</option>
+                        <option value="OVERWRITE" selected>OVERWRITE</option>
                     </select>
                     <h4 hidden class="form-input_error" id="select_behaviourError">Please select a update behaviour.</h4>
                 </div>
