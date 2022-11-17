@@ -443,7 +443,9 @@ class TestUpdateJob:
     def test_updates_job(self, mock_update_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = UploadJob("subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob(
+            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+        )
 
         assert job.step == UploadStep.INITIALISATION
 
@@ -480,7 +482,9 @@ class TestSucceedsJob:
     def test_updates_job(self, mock_update_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = UploadJob("subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob(
+            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+        )
 
         assert job.status == JobStatus.IN_PROGRESS
 
@@ -526,7 +530,9 @@ class TestFailsJob:
     def test_updates_job(self, mock_update_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = UploadJob("subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob(
+            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+        )
 
         assert job.status == JobStatus.IN_PROGRESS
 

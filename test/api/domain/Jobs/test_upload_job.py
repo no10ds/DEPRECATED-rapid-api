@@ -10,7 +10,9 @@ def test_initialise_upload_job(mock_time, mock_uuid):
     mock_time.time.return_value = 1000
     mock_uuid.uuid4.return_value = "abc-123"
 
-    job = UploadJob("subject-123", "some-filename.csv", "111-222-333", "domain1", "dataset2", 12)
+    job = UploadJob(
+        "subject-123", "some-filename.csv", "111-222-333", "domain1", "dataset2", 12
+    )
 
     assert job.job_id == "abc-123"
     assert job.job_type == JobType.UPLOAD
