@@ -234,7 +234,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         item_config = {
             "PK": "JOB",
             "SK": upload_job.job_id,
-            "SubjectId": upload_job.subject_id, # TODO These will probably want to be a sort key
+            "SK2": upload_job.subject_id, # TODO These will probably want to be a sort key
             "Type": upload_job.job_type.value,
             "Status": upload_job.status.value,
             "Step": upload_job.step.value,
@@ -252,7 +252,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         item_config = {
             "PK": "JOB",
             "SK": query_job.job_id,
-            "SubjectId": query_job.subject_id, # TODO These will probably want to be a sort key
+            "SK2": query_job.subject_id, # TODO These will probably want to be a sort key
             "Type": query_job.job_type.value,
             "Status": query_job.status.value,
             "Step": query_job.step.value,
@@ -265,13 +265,14 @@ class DynamoDBAdapter(DatabaseAdapter):
         }
         self._store_job(item_config)
 
-    def get_jobs(self) -> List[Dict]:
+    def get_jobs(self, subject_id: str) -> List[Dict]:
         try:
             return [
                 self._map_job(job)
                 for job in self.service_table.query(
-                    KeyConditionExpression=Key("PK").eq(ServiceTableItem.JOB.value),
+                    KeyConditionExpression=Key("PK").eq(ServiceTableItem.JOB.value) & Key("SK2").eq(subject_id),
                     FilterExpression=Attr("TTL").gt(int(time.time())),
+                    IndexName="JOB_SUBJECT_ID"
                 )["Items"]
             ]
         except ClientError as error:

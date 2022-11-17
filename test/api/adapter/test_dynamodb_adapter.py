@@ -568,7 +568,7 @@ class TestDynamoDBAdapterServiceTable:
             Item={
                 "PK": "JOB",
                 "SK": "abc-123",
-                "SubjectId": "subject-123",
+                "SK2": "subject-123",
                 "Type": "UPLOAD",
                 "Status": "IN PROGRESS",
                 "Step": "INITIALISATION",
@@ -597,7 +597,7 @@ class TestDynamoDBAdapterServiceTable:
             Item={
                 "PK": "JOB",
                 "SK": "abc-123",
-                "SubjectId": "subject-123",
+                "SK2": "subject-123",
                 "Type": "QUERY",
                 "Status": "IN PROGRESS",
                 "Step": "INITIALISATION",
@@ -657,13 +657,14 @@ class TestDynamoDBAdapterServiceTable:
             },
         ]
 
-        result = self.dynamo_adapter.get_jobs()
+        result = self.dynamo_adapter.get_jobs("subject-123")
 
         assert result == expected
         self.permissions_table.assert_not_called()
         self.service_table.query.assert_called_once_with(
-            KeyConditionExpression=Key("PK").eq("JOB"),
+            KeyConditionExpression=Key("PK").eq("JOB") & Key("SK2").eq("subject-123"),
             FilterExpression=Attr("TTL").gt(19821),
+            IndexName="JOB_SUBJECT_ID"
         )
 
     @patch("api.adapter.dynamodb_adapter.time")
@@ -676,13 +677,14 @@ class TestDynamoDBAdapterServiceTable:
         }
         expected = []
 
-        result = self.dynamo_adapter.get_jobs()
+        result = self.dynamo_adapter.get_jobs("subject-123")
 
         assert result == expected
         self.permissions_table.assert_not_called()
         self.service_table.query.assert_called_once_with(
-            KeyConditionExpression=Key("PK").eq("JOB"),
+            KeyConditionExpression=Key("PK").eq("JOB") & Key("SK2").eq("subject-123"),
             FilterExpression=Attr("TTL").gt(19821),
+            IndexName="JOB_SUBJECT_ID"
         )
 
     def test_get_job(self):
@@ -756,7 +758,7 @@ class TestDynamoDBAdapterServiceTable:
         with pytest.raises(
             AWSServiceError, match="Error fetching jobs from the database"
         ):
-            self.dynamo_adapter.get_jobs()
+            self.dynamo_adapter.get_jobs("subject-123")
 
     @patch("api.domain.Jobs.Job.uuid")
     def test_update_job(self, mock_uuid):
