@@ -510,7 +510,7 @@ class TestUploadDataset:
         mock_get_version.return_value = 1
 
         with pytest.raises(SchemaNotFoundError):
-            self.data_service.upload_dataset("some", "other", None, Path("data.csv"))
+            self.data_service.upload_dataset("subject-123", "some", "other", None, Path("data.csv"))
 
         self.s3_adapter.find_schema.assert_called_once_with("some", "other", 1)
 
@@ -548,12 +548,12 @@ class TestUploadDataset:
 
         # WHEN
         uploaded_raw_file = self.data_service.upload_dataset(
-            "some", "other", None, Path("data.csv")
+            "subject-123", "some", "other", None, Path("data.csv")
         )
 
         # THEN
         self.job_service.create_upload_job.assert_called_once_with(
-            "data.csv", "123-456-789", "some", "other", 1
+            "subject-123", "data.csv", "123-456-789", "some", "other", 1
         )
         self.data_service.generate_raw_file_identifier.assert_called_once()
         mock_thread.assert_called_once_with(
@@ -781,7 +781,7 @@ class TestUploadDataset:
         )
 
         try:
-            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
+            self.data_service.upload_dataset("subject-123", "some", "other", 2, Path("data.csv"))
         except DatasetValidationError as error:
             assert {
                 "Failed to convert column [colname1] to type [Int64]",
@@ -814,7 +814,7 @@ class TestUploadDataset:
         )
 
         try:
-            self.data_service.upload_dataset("some", "other", 2, Path("data.csv"))
+            self.data_service.upload_dataset("subject-123", "some", "other", 2, Path("data.csv"))
         except DatasetValidationError as error:
             assert {
                 "Column [colname1] has an incorrect data type. Expected Int64, received "
@@ -1528,6 +1528,7 @@ class TestQueryLargeDataset:
 
     @patch("api.application.services.data_service.Thread")
     def test_query_large_creates_query_job_and_triggers_async_query(self, mock_thread):
+        subject_id = "subject-123"
         domain = "domain1"
         dataset = "dataset1"
         version = 4
@@ -1538,11 +1539,11 @@ class TestQueryLargeDataset:
         query_execution_id = "111-222-333"
         self.athena_adapter.query_async.return_value = query_execution_id
 
-        response = self.data_service.query_large_data(domain, dataset, version, query)
+        response = self.data_service.query_large_data(subject_id, domain, dataset, version, query)
 
         assert response == "12838"
         self.job_service.create_query_job.assert_called_once_with(
-            domain, dataset, version
+            subject_id, domain, dataset, version
         )
         self.athena_adapter.query_async.assert_called_once_with(
             domain, dataset, version, query
@@ -1561,6 +1562,7 @@ class TestQueryLargeDataset:
     def test_query_large_data_for_version_not_specified(
         self, mock_handle_version_retrieval, mock_thread
     ):
+        subject_id = "subject-123"
         domain = "domain1"
         dataset = "dataset1"
         version = None
@@ -1572,10 +1574,10 @@ class TestQueryLargeDataset:
         query_execution_id = "111-222-333"
         self.athena_adapter.query_async.return_value = query_execution_id
 
-        response = self.data_service.query_large_data(domain, dataset, version, query)
+        response = self.data_service.query_large_data(subject_id, domain, dataset, version, query)
 
         assert response == "12838"
-        self.job_service.create_query_job.assert_called_once_with(domain, dataset, 3)
+        self.job_service.create_query_job.assert_called_once_with(subject_id, domain, dataset, 3)
         mock_handle_version_retrieval.assert_called_once_with(domain, dataset, version)
         mock_thread.assert_called_once_with(
             target=self.data_service.generate_results_download_url_async,

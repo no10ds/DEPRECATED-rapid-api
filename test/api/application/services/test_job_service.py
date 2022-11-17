@@ -388,15 +388,22 @@ class TestCreateUploadJob:
     def test_creates_upload_job(self, mock_store_upload_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
+        subject_id = "subject-123"
+        filename = "file1.csv"
+        raw_file_identifier = "123-456-789"
+        domain = "domain1"
+        dataset = "dataset1"
+        version = 3
 
         # WHEN
         result = self.job_service.create_upload_job(
-            "file1.csv", "123-456-789", "domain1", "dataset1", 3
+            subject_id, filename, raw_file_identifier, domain, dataset, version
         )
 
         # THEN
         assert result.job_id == "abc-123"
-        assert result.filename == "file1.csv"
+        assert result.subject_id == subject_id
+        assert result.filename == filename
         assert result.step == UploadStep.INITIALISATION
         assert result.status == JobStatus.IN_PROGRESS
         mock_store_upload_job.assert_called_once_with(result)
@@ -411,15 +418,17 @@ class TestCreateQueryJob:
     def test_creates_query_job(self, mock_store_query_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
+        subject_id = "subject-123"
         domain = "test_domain"
         dataset = "test_dataset"
         version = 43
 
         # WHEN
-        result = self.job_service.create_query_job(domain, dataset, version)
+        result = self.job_service.create_query_job(subject_id, domain, dataset, version)
 
         # THEN
         assert result.job_id == "abc-123"
+        assert result.subject_id == subject_id
         assert result.step == QueryStep.INITIALISATION
         assert result.status == JobStatus.IN_PROGRESS
         mock_store_query_job.assert_called_once_with(result)
@@ -434,7 +443,7 @@ class TestUpdateJob:
     def test_updates_job(self, mock_update_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob("subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4)
 
         assert job.step == UploadStep.INITIALISATION
 
@@ -450,7 +459,7 @@ class TestUpdateJob:
     def test_sets_results_url_on_query_job(self, mock_update_query_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = QueryJob("domain1", "dataset2", 4)
+        job = QueryJob("subject-123", "domain1", "dataset2", 4)
 
         assert job.results_url is None
 
@@ -471,7 +480,7 @@ class TestSucceedsJob:
     def test_updates_job(self, mock_update_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob("subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4)
 
         assert job.status == JobStatus.IN_PROGRESS
 
@@ -492,7 +501,7 @@ class TestSucceedsQueryJob:
     def test_succeeds_query_job(self, mock_update_query_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = QueryJob("domain1", "dataset2", 4)
+        job = QueryJob("subject-123", "domain1", "dataset2", 4)
         url = "https://some-url.com"
 
         assert job.step == QueryStep.INITIALISATION
@@ -517,7 +526,7 @@ class TestFailsJob:
     def test_updates_job(self, mock_update_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob("subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4)
 
         assert job.status == JobStatus.IN_PROGRESS
 

@@ -11,13 +11,14 @@ def test_initialise_query_job(mock_time, mock_uuid):
     mock_uuid.uuid4.return_value = "abc-123"
     version = 9
 
-    job = QueryJob("domain1", "dataset1", version)
+    job = QueryJob("subject-123", "domain1", "dataset1", version)
 
     assert job.job_id == "abc-123"
     assert job.job_type == JobType.QUERY
     assert job.status == JobStatus.IN_PROGRESS
     assert job.step == QueryStep.INITIALISATION
     assert job.errors == set()
+    assert job.subject_id == "subject-123"
     assert job.domain == "domain1"
     assert job.dataset == "dataset1"
     assert job.version == 9

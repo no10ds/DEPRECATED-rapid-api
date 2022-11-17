@@ -16,13 +16,14 @@ class UploadStep(JobStep):
 class UploadJob(Job):
     def __init__(
         self,
+        subject_id: str,
         filename: str,
         raw_file_identifier: str,
         domain: str,
         dataset: str,
         version: int,
     ):
-        super().__init__(JobType.UPLOAD, UploadStep.INITIALISATION)
+        super().__init__(JobType.UPLOAD, UploadStep.INITIALISATION, subject_id)
         self.filename: str = filename
         self.raw_file_identifier: str = raw_file_identifier
         self.domain: str = domain

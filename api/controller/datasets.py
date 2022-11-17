@@ -10,7 +10,9 @@ from starlette.responses import PlainTextResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.authorisation.authorisation_service import (
+    RAPID_ACCESS_TOKEN,
     secure_dataset_endpoint,
     secure_endpoint,
 )
@@ -204,6 +206,7 @@ async def delete_data_file(
 def upload_data(
     domain: str,
     dataset: str,
+    request: Request,
     response: Response,
     version: Optional[int] = None,
     file: UploadFile = File(...),
@@ -250,9 +253,10 @@ def upload_data(
 
     """
     try:
+        subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
         incoming_file_path = store_file_to_disk(file)
         raw_filename, version, job_id = data_service.upload_dataset(
-            domain, dataset, version, incoming_file_path
+            subject_id, domain, dataset, version, incoming_file_path
         )
         response.status_code = http_status.HTTP_202_ACCEPTED
         return {
@@ -377,6 +381,7 @@ async def query_dataset(
 async def query_large_dataset(
     domain: str,
     dataset: str,
+    request: Request,
     version: Optional[int] = None,
     query: Optional[SQLQuery] = SQLQuery(),
 ):
@@ -414,7 +419,8 @@ async def query_large_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
-    job_id = data_service.query_large_data(domain, dataset, version, query)
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    job_id = data_service.query_large_data(subject_id, domain, dataset, version, query)
     return {"details": {"job_id": job_id}}
 
 

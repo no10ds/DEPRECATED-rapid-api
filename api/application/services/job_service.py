@@ -56,18 +56,19 @@ class JobService:
 
     def create_upload_job(
         self,
+        subject_id: str,
         filename: str,
         raw_file_identifier: str,
         domain: str,
         dataset: str,
         version: int,
     ) -> UploadJob:
-        job = UploadJob(filename, raw_file_identifier, domain, dataset, version)
+        job = UploadJob(subject_id, filename, raw_file_identifier, domain, dataset, version)
         self.db_adapter.store_upload_job(job)
         return job
 
-    def create_query_job(self, domain: str, dataset: str, version: int) -> QueryJob:
-        job = QueryJob(domain, dataset, version)
+    def create_query_job(self, subject_id: str, domain: str, dataset: str, version: int) -> QueryJob:
+        job = QueryJob(subject_id, domain, dataset, version)
         self.db_adapter.store_query_job(job)
         return job
 
