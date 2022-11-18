@@ -31,11 +31,11 @@ from api.controller_ui.login import login_router
 from api.controller_ui.subject_management import subject_management_router
 from api.exception_handler import add_exception_handlers
 
-PROJECT_NAME = os.environ["PROJECT_NAME"]
-PROJECT_DESCRIPTION = os.environ["PROJECT_DESCRIPTION"]
-PROJECT_URL = os.environ["PROJECT_URL"]
-PROJECT_CONTACT = os.environ["PROJECT_CONTACT"]
-PROJECT_ORGINISATION = os.environ["PROJECT_ORGINISATION"]
+PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
+PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
+PROJECT_URL = os.environ.get("PROJECT_URL", None)
+PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
+PROJECT_ORGINISATION = os.environ.get("PROJECT_ORGINISATION", None)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
