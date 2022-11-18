@@ -1,7 +1,9 @@
 import sass
-from fastapi import FastAPI, Request
+import os
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.status import HTTP_404_NOT_FOUND
 
 from api.application.services.authorisation.authorisation_service import (
     get_client_token,
@@ -28,6 +30,12 @@ from api.controller_ui.landing import landing_router
 from api.controller_ui.login import login_router
 from api.controller_ui.subject_management import subject_management_router
 from api.exception_handler import add_exception_handlers
+
+PROJECT_NAME = os.environ["PROJECT_NAME"]
+PROJECT_DESCRIPTION = os.environ["PROJECT_DESCRIPTION"]
+PROJECT_URL = os.environ["PROJECT_URL"]
+PROJECT_CONTACT = os.environ["PROJECT_CONTACT"]
+PROJECT_ORGINISATION = os.environ["PROJECT_ORGINISATION"]
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -83,17 +91,20 @@ def status():
 @app.get("/apis", tags=["Info"])
 def info():
     """ The endpoint used for a service information check """
+    if PROJECT_NAME is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Path not found")
+
     return {
         "api-version": "api.gov.uk/v1alpha",
         "apis": [
             {
                 "api-version": "api.gov.uk/v1alpha",
                 "data": {
-                    "name": "Project rAPId",
-                    "description": "Sample rAPId description",
-                    "url": "https://getrapid.link/docs",
-                    "contact": "rapid@no10.gov.uk",
-                    "organisation": "10 Downing Street & Cabinet Office",
+                    "name": PROJECT_NAME,
+                    "description": PROJECT_DESCRIPTION,
+                    "url": PROJECT_URL,
+                    "contact": PROJECT_CONTACT,
+                    "organisation": PROJECT_ORGINISATION,
                     "documentation-url": "https://github.com/no10ds/rapid-api",
                 }
             }
