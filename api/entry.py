@@ -33,7 +33,7 @@ from api.exception_handler import add_exception_handlers
 
 PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
 PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
-PROJECT_URL = os.environ.get("PROJECT_URL", None)
+PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGINISATION = os.environ.get("PROJECT_ORGINISATION", None)
 
