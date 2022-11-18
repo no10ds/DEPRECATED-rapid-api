@@ -10,27 +10,28 @@ from test.api.common.controller_test_utils import BaseClientTest
 
 class TestLandingPage(BaseClientTest):
     @pytest.mark.parametrize(
-        "permissions,can_manage_users,can_upload,can_download",
+        "permissions,can_manage_users,can_upload,can_download,can_create_schema",
         [
-            ([], False, False, False),
-            (["READ_ALL"], False, False, True),
-            (["WRITE_ALL"], False, True, False),
-            (["DATA_ADMIN"], False, False, False),
-            (["USER_ADMIN"], True, False, False),
-            (["READ_ALL", "WRITE_ALL"], False, True, True),
-            (["USER_ADMIN", "READ_ALL", "WRITE_ALL"], True, True, True),
-            (["READ_PRIVATE", "WRITE_PUBLIC"], False, True, True),
-            (["READ_PROTECTED_domain1", "WRITE_PROTECTED_domain2"], False, True, True),
+            ([], False, False, False, False),
+            (["READ_ALL"], False, False, True, False),
+            (["WRITE_ALL"], False, True, False, False),
+            (["DATA_ADMIN"], False, False, False, True),
+            (["USER_ADMIN"], True, False, False, False),
+            (["READ_ALL", "WRITE_ALL"], False, True, True, False),
+            (["USER_ADMIN", "READ_ALL", "WRITE_ALL"], True, True, True, False),
+            (["READ_PRIVATE", "WRITE_PUBLIC"], False, True, True, False),
+            (["READ_PROTECTED_domain1", "WRITE_PROTECTED_domain2"], False, True, True, False),
         ],
     )
     def test_determines_user_allowed_ui_actions(
-        self, permissions, can_manage_users, can_upload, can_download
+        self, permissions, can_manage_users, can_upload, can_download, can_create_schema
     ):
         allowed_actions = determine_user_ui_actions(permissions)
 
         assert allowed_actions["can_manage_users"] is can_manage_users
         assert allowed_actions["can_upload"] is can_upload
         assert allowed_actions["can_download"] is can_download
+        assert allowed_actions["can_create_schema"] is can_create_schema
 
     @patch("api.controller_ui.landing.permissions_service")
     @patch("api.controller_ui.landing.parse_token")
@@ -47,6 +48,7 @@ class TestLandingPage(BaseClientTest):
             "READ_ALL",
             "WRITE_ALL",
             "USER_ADMIN",
+            "DATA_ADMIN"
         ]
 
         response = self.client.get("/", cookies={"rat": "user_token"})
@@ -59,6 +61,7 @@ class TestLandingPage(BaseClientTest):
                 "can_manage_users": True,
                 "can_upload": True,
                 "can_download": True,
+                "can_create_schema": True
             },
         )
 
