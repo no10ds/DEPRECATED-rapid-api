@@ -47,6 +47,10 @@ RAPID_TAGS = [
         "name": "Status",
         "description": "Shows current status of application, version and commit sha.",
     },
+    {
+        "name": "Info",
+        "description": "Shows the project information including description and contact links."
+    }
 ]
 
 

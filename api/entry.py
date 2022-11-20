@@ -1,7 +1,9 @@
 import sass
-from fastapi import FastAPI, Request
+import os
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.status import HTTP_404_NOT_FOUND
 
 from api.application.services.authorisation.authorisation_service import (
     get_client_token,
@@ -28,6 +30,12 @@ from api.controller_ui.landing import landing_router
 from api.controller_ui.login import login_router
 from api.controller_ui.subject_management import subject_management_router
 from api.exception_handler import add_exception_handlers
+
+PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
+PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
+PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
+PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
+PROJECT_ORGINISATION = os.environ.get("PROJECT_ORGINISATION", None)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -80,6 +88,28 @@ def status():
     """The endpoint used for service health check"""
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
 
+@app.get("/apis", tags=["Info"])
+def info():
+    """ The endpoint used for a service information check """
+    if PROJECT_NAME is None:
+        raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Path not found")
+
+    return {
+        "api-version": "api.gov.uk/v1alpha",
+        "apis": [
+            {
+                "api-version": "api.gov.uk/v1alpha",
+                "data": {
+                    "name": PROJECT_NAME,
+                    "description": PROJECT_DESCRIPTION,
+                    "url": PROJECT_URL,
+                    "contact": PROJECT_CONTACT,
+                    "organisation": PROJECT_ORGINISATION,
+                    "documentation-url": "https://github.com/no10ds/rapid-api",
+                }
+            }
+        ]
+    }
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
