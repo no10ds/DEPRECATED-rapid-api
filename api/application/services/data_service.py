@@ -88,7 +88,12 @@ class DataService:
         return f"{raw_file_identifier}_{uuid.uuid4()}.parquet"
 
     def upload_dataset(
-        self, domain: str, dataset: str, version: Optional[int], file_path: Path
+        self,
+        subject_id: str,
+        domain: str,
+        dataset: str,
+        version: Optional[int],
+        file_path: Path,
     ) -> Tuple[str, int, str]:
         version = handle_version_retrieval(domain, dataset, version)
         schema = self._get_schema(domain, dataset, version)
@@ -99,7 +104,12 @@ class DataService:
         else:
             raw_file_identifier = self.generate_raw_file_identifier()
             upload_job = self.job_service.create_upload_job(
-                file_path.name, raw_file_identifier, domain, dataset, version
+                subject_id,
+                file_path.name,
+                raw_file_identifier,
+                domain,
+                dataset,
+                version,
             )
 
             Thread(
@@ -361,10 +371,17 @@ class DataService:
             raise UnprocessableDatasetError("Dataset too large")
 
     def query_large_data(
-        self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
+        self,
+        subject_id: str,
+        domain: str,
+        dataset: str,
+        version: Optional[int],
+        query: SQLQuery,
     ) -> str:
         version = handle_version_retrieval(domain, dataset, version)
-        query_job = self.job_service.create_query_job(domain, dataset, version)
+        query_job = self.job_service.create_query_job(
+            subject_id, domain, dataset, version
+        )
 
         query_execution_id = self.athena_adapter.query_async(
             domain, dataset, version, query

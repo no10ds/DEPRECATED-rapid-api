@@ -561,13 +561,16 @@ class TestDynamoDBAdapterServiceTable:
         mock_uuid.uuid4.return_value = "abc-123"
 
         self.dynamo_adapter.store_upload_job(
-            UploadJob("filename.csv", "111-222-333", "domain1", "dataset2", 4)
+            UploadJob(
+                "subject-123", "filename.csv", "111-222-333", "domain1", "dataset2", 4
+            )
         )
 
         self.service_table.put_item.assert_called_once_with(
             Item={
                 "PK": "JOB",
                 "SK": "abc-123",
+                "SK2": "subject-123",
                 "Type": "UPLOAD",
                 "Status": "IN PROGRESS",
                 "Step": "INITIALISATION",
@@ -590,12 +593,15 @@ class TestDynamoDBAdapterServiceTable:
         mock_uuid.uuid4.return_value = "abc-123"
         version = 5
 
-        self.dynamo_adapter.store_query_job(QueryJob("domain1", "dataset1", version))
+        self.dynamo_adapter.store_query_job(
+            QueryJob("subject-123", "domain1", "dataset1", version)
+        )
 
         self.service_table.put_item.assert_called_once_with(
             Item={
                 "PK": "JOB",
                 "SK": "abc-123",
+                "SK2": "subject-123",
                 "Type": "QUERY",
                 "Status": "IN PROGRESS",
                 "Step": "INITIALISATION",
@@ -655,13 +661,14 @@ class TestDynamoDBAdapterServiceTable:
             },
         ]
 
-        result = self.dynamo_adapter.get_jobs()
+        result = self.dynamo_adapter.get_jobs("subject-123")
 
         assert result == expected
         self.permissions_table.assert_not_called()
         self.service_table.query.assert_called_once_with(
-            KeyConditionExpression=Key("PK").eq("JOB"),
+            KeyConditionExpression=Key("PK").eq("JOB") & Key("SK2").eq("subject-123"),
             FilterExpression=Attr("TTL").gt(19821),
+            IndexName="JOB_SUBJECT_ID",
         )
 
     @patch("api.adapter.dynamodb_adapter.time")
@@ -674,13 +681,14 @@ class TestDynamoDBAdapterServiceTable:
         }
         expected = []
 
-        result = self.dynamo_adapter.get_jobs()
+        result = self.dynamo_adapter.get_jobs("subject-123")
 
         assert result == expected
         self.permissions_table.assert_not_called()
         self.service_table.query.assert_called_once_with(
-            KeyConditionExpression=Key("PK").eq("JOB"),
+            KeyConditionExpression=Key("PK").eq("JOB") & Key("SK2").eq("subject-123"),
             FilterExpression=Attr("TTL").gt(19821),
+            IndexName="JOB_SUBJECT_ID",
         )
 
     def test_get_job(self):
@@ -754,13 +762,15 @@ class TestDynamoDBAdapterServiceTable:
         with pytest.raises(
             AWSServiceError, match="Error fetching jobs from the database"
         ):
-            self.dynamo_adapter.get_jobs()
+            self.dynamo_adapter.get_jobs("subject-123")
 
     @patch("api.domain.Jobs.Job.uuid")
     def test_update_job(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob(
+            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+        )
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
         job.set_errors({"error1", "error2"})
@@ -791,7 +801,9 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_job_without_errors(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob(
+            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+        )
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
 
@@ -821,7 +833,9 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_job_raises_error_when_fails(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = UploadJob("file1.csv", "111-222-333", "domain1", "dataset2", 4)
+        job = UploadJob(
+            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+        )
 
         self.service_table.update_item.side_effect = ClientError(
             error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
@@ -837,7 +851,7 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_query_job(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = QueryJob("domain1", "dataset2", 4)
+        job = QueryJob("subject-123", "domain1", "dataset2", 4)
         job.set_results_url("https://some-url.com")
         job.set_status(JobStatus.SUCCESS)
         job.set_step(QueryStep.NONE)
@@ -870,7 +884,7 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_query_job_raises_error_when_fails(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = QueryJob("domain1", "dataset2", 4)
+        job = QueryJob("subject-123", "domain1", "dataset2", 4)
 
         self.service_table.update_item.side_effect = ClientError(
             error_response={"Error": {"Code": "ConditionalCheckFailedException"}},

@@ -26,9 +26,10 @@ def generate_uuid() -> str:
 
 
 class Job:
-    def __init__(self, job_type: JobType, step: JobStep):
+    def __init__(self, job_type: JobType, step: JobStep, subject_id: str):
         self.step: JobStep = step
         self.job_type: JobType = job_type
+        self.subject_id: str = subject_id
         self.status: JobStatus = JobStatus.IN_PROGRESS
         self.job_id: str = generate_uuid()
         self.errors: Set[str] = set()

@@ -13,8 +13,8 @@ class QueryStep(JobStep):
 
 
 class QueryJob(Job):
-    def __init__(self, domain: str, dataset: str, version: int):
-        super().__init__(JobType.QUERY, QueryStep.INITIALISATION)
+    def __init__(self, subject_id: str, domain: str, dataset: str, version: int):
+        super().__init__(JobType.QUERY, QueryStep.INITIALISATION, subject_id)
         self.domain: str = domain
         self.dataset: str = dataset
         self.version: int = version
