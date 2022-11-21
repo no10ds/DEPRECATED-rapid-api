@@ -36,9 +36,9 @@ class TestStatus(BaseClientTest):
                         "contact": "rapid@no10.gov.uk",
                         "organisation": "10 Downing Street & Cabinet Office",
                         "documentation-url": "https://github.com/no10ds/rapid-api",
-                    }
+                    },
                 }
-            ]
+            ],
         }
         assert response.status_code == 200
         assert response.json() == expected_response

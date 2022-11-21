@@ -49,8 +49,8 @@ RAPID_TAGS = [
     },
     {
         "name": "Info",
-        "description": "Shows the project information including description and contact links."
-    }
+        "description": "Shows the project information including description and contact links.",
+    },
 ]
 
 

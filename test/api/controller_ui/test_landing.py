@@ -20,7 +20,13 @@ class TestLandingPage(BaseClientTest):
             (["READ_ALL", "WRITE_ALL"], False, True, True, False),
             (["USER_ADMIN", "READ_ALL", "WRITE_ALL"], True, True, True, False),
             (["READ_PRIVATE", "WRITE_PUBLIC"], False, True, True, False),
-            (["READ_PROTECTED_domain1", "WRITE_PROTECTED_domain2"], False, True, True, False),
+            (
+                ["READ_PROTECTED_domain1", "WRITE_PROTECTED_domain2"],
+                False,
+                True,
+                True,
+                False,
+            ),
         ],
     )
     def test_determines_user_allowed_ui_actions(
@@ -48,7 +54,7 @@ class TestLandingPage(BaseClientTest):
             "READ_ALL",
             "WRITE_ALL",
             "USER_ADMIN",
-            "DATA_ADMIN"
+            "DATA_ADMIN",
         ]
 
         response = self.client.get("/", cookies={"rat": "user_token"})
@@ -61,7 +67,7 @@ class TestLandingPage(BaseClientTest):
                 "can_manage_users": True,
                 "can_upload": True,
                 "can_download": True,
-                "can_create_schema": True
+                "can_create_schema": True,
             },
         )
 

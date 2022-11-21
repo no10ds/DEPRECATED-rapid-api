@@ -88,9 +88,10 @@ def status():
     """The endpoint used for service health check"""
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
 
+
 @app.get("/apis", tags=["Info"])
 def info():
-    """ The endpoint used for a service information check """
+    """The endpoint used for a service information check"""
     if PROJECT_NAME is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Path not found")
 
@@ -106,10 +107,11 @@ def info():
                     "contact": PROJECT_CONTACT,
                     "organisation": PROJECT_ORGINISATION,
                     "documentation-url": "https://github.com/no10ds/rapid-api",
-                }
+                },
             }
-        ]
+        ],
     }
+
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
