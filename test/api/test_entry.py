@@ -22,23 +22,6 @@ class TestStatus(BaseClientTest):
         response = self.client.get("/status")
         assert response.status_code == 200
 
-    def test_returns_metadata_for_api(self):
+    def test_returns_no_metadata_for_api(self):
         response = self.client.get("/apis")
-        expected_response = {
-            "api-version": "api.gov.uk/v1alpha",
-            "apis": [
-                {
-                    "api-version": "api.gov.uk/v1alpha",
-                    "data": {
-                        "name": "Project rAPId",
-                        "description": "Sample rAPId description",
-                        "url": "https://getrapid.link/docs",
-                        "contact": "rapid@no10.gov.uk",
-                        "organisation": "10 Downing Street & Cabinet Office",
-                        "documentation-url": "https://github.com/no10ds/rapid-api",
-                    },
-                }
-            ],
-        }
-        assert response.status_code == 200
-        assert response.json() == expected_response
+        assert response.status_code == 404

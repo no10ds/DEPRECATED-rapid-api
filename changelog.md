@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.1.0 - _2022-11-20_
+
+v4.1.0 introduces a new UI for the easy creation of schemas and the ability to expose the rAPId instance to the Gov UK CDDO Federated API Discovery Model (https://github.com/co-cddo/federated-api-model). Instead of having to use the rAPId endpoints to generate and then upload the schema, the new UI opens a simple flow from uploading a file, to altering the generated schema and to then uploading. 
+
+### Added
+- UI
+  - Schema creation flow
+- CDDO Federated API Discovery
+
 ## v4.0.0 - _2022-09-21_
 
 See [v4.0.0] changes
