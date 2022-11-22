@@ -15,6 +15,8 @@ from api.application.services.authorisation.authorisation_service import (
     RAPID_ACCESS_TOKEN,
     secure_dataset_endpoint,
     secure_endpoint,
+    get_client_token,
+    get_user_token,
 )
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
@@ -253,7 +255,10 @@ def upload_data(
 
     """
     try:
-        subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+        client_token = get_client_token(request)
+        user_token = get_user_token(request)
+        token = client_token if client_token else user_token
+        subject_id = parse_token(token).subject
         incoming_file_path = store_file_to_disk(file)
         raw_filename, version, job_id = data_service.upload_dataset(
             subject_id, domain, dataset, version, incoming_file_path
