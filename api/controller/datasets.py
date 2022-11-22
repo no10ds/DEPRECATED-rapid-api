@@ -16,7 +16,7 @@ from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     secure_endpoint,
     get_client_token,
-    get_user_token
+    get_user_token,
 )
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
