@@ -59,7 +59,7 @@ pyflakes==2.4.0
 PyJWT==2.4.0
 PyMySQL==1.0.2
 pyparsing==3.0.6
-pytest==6.2.5
+pytest==7.2.0
 pytest-base-url==2.0.0
 pytest-cov==3.0.0
 pytest-playwright==0.3.0
