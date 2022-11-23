@@ -91,7 +91,6 @@ def status():
 
 @app.get("/apis", tags=["Info"])
 def info():
-    print("I got here")
     """The endpoint used for a service information check"""
     if PROJECT_NAME is None:
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Path not found")
