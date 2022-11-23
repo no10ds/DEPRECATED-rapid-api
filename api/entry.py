@@ -35,7 +35,7 @@ PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
 PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
 PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
-PROJECT_ORGINISATION = os.environ.get("PROJECT_ORGINISATION", None)
+PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -105,7 +105,7 @@ def info():
                     "description": PROJECT_DESCRIPTION,
                     "url": PROJECT_URL,
                     "contact": PROJECT_CONTACT,
-                    "organisation": PROJECT_ORGINISATION,
+                    "organisation": PROJECT_ORGANISATION,
                     "documentation-url": "https://github.com/no10ds/rapid-api",
                 },
             }

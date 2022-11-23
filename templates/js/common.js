@@ -116,7 +116,7 @@ const setupEventListeners = () => {
   setupValidationForType("select");
 };
 
-const isValidForm = (formId = None) => {
+const isValidForm = (formId = null) => {
   const _document = formId ? document.getElementById(formId) : document;
   const validInputs = checkInputsValidity("input", _document);
   const validSelects = checkInputsValidity("select", _document);

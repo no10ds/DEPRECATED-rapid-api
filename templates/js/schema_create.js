@@ -26,6 +26,7 @@ function handle_upload() {
   const ownerEmail = document.getElementById("owner_email").value;
   const domain = document.getElementById("domain_form_1").value;
   const title = document.getElementById("title_form_1").value;
+  const sensitivity = document.getElementById("select_sensitivity_1").value;
   const updateBehaviour = document.getElementById("select_behaviour").value;
   const responseTextElementTitle = document.getElementById(
     "upload-response-title"
@@ -40,6 +41,7 @@ function handle_upload() {
   schema.metadata.update_behaviour = updateBehaviour;
   schema.metadata.domain = domain;
   schema.metadata.dataset = title;
+  schema.metadata.sensitivity = sensitivity;
 
   spinner.style.display = "block";
 
@@ -299,7 +301,7 @@ function handle_step() {
 
     document.getElementById("domain_form_1").value = schema.metadata.domain;
     document.getElementById("title_form_1").value = schema.metadata.dataset;
-
+    document.getElementById("select_sensitivity_1").value = schema.metadata.sensitivity;
     renderKeyValueTags();
     renderKeyTags();
   }
