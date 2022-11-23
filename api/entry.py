@@ -35,7 +35,7 @@ PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
 PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
 PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
-PROJECT_ORGINISATION = os.environ.get("PROJECT_ORGINISATION", None)
+PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -91,8 +91,10 @@ def status():
 
 @app.get("/apis", tags=["Info"])
 def info():
+    print("I got here")
     """The endpoint used for a service information check"""
     if PROJECT_NAME is None:
+        print("Project name is not here")
         raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="Path not found")
 
     return {
@@ -105,7 +107,7 @@ def info():
                     "description": PROJECT_DESCRIPTION,
                     "url": PROJECT_URL,
                     "contact": PROJECT_CONTACT,
-                    "organisation": PROJECT_ORGINISATION,
+                    "organisation": PROJECT_ORGANISATION,
                     "documentation-url": "https://github.com/no10ds/rapid-api",
                 },
             }

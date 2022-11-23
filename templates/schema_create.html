@@ -31,13 +31,13 @@
                 </div>
 
                 <div class="form-input">
-                    <label class="form-input_label" for="domain">Dataset domain e.g. demo</label>
+                    <label class="form-input_label" for="domain">Dataset domain</label>
                     <input class="form-input_text" name="domain" id="domain" type="text" required>
                     <h4 hidden class="form-input_error" id="domainError">The provided domain is invalid.</h4>
                 </div>
 
                 <div class="form-input">
-                    <label class="form-input_label" for="title">Dataset title e.g. gapminder</label>
+                    <label class="form-input_label" for="title">Dataset title</label>
                     <input class="form-input_text" name="title" id="title" type="text" required>
                     <h4 hidden class="form-input_error" id="titleError">The provided title is invalid</h4> 
                 </div>
@@ -64,6 +64,17 @@
         <form class="form" id="form_step_1" hidden>
             <div class="form_body form_body--headed" id="validate_form">
                 <h1 class="content_header">Validate Schema</h1>
+
+                <div class="form-select">
+                    <label class="form-select_label">Sensitivity level</label>
+                    <select class="form-select_dropdown" id="select_sensitivity_1" required>
+                        <option value="" disabled selected hidden>Please select a sensitivity</option>
+                        <option value="PUBLIC">PUBLIC</option>
+                        <option value="PRIVATE">PRIVATE</option>
+                        <option value="PROTECTED">PROTECTED</option> 
+                    </select>
+                    <h4 hidden class="form-input_error" id="select_sensitivityError">Please select a sensitivity level.</h4>
+                </div>
 
                 <div class="form-input">
                     <label class="form-input_label" for="domain">Dataset domain</label>
@@ -102,7 +113,7 @@
 
                 <div class="form-input">
                     <label class="form-input_label" for="owner_name">Owner name</label>
-                    <input class="form-input_text" name="owner_name" id="owner_name" type="text" pattern="[a-zA-Z][a-zA-Z0-9@._-]{2,127}" required>
+                    <input class="form-input_text" name="owner_name" id="owner_name" type="text" pattern="[a-zA-Z][a-zA-Z\s]{2,127}" required>
                     <h4 hidden class="form-input_error" id="owner_nameError">The provided name is invalid</h4>
                 </div>
 
