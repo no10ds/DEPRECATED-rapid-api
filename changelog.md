@@ -3,9 +3,9 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v4.2.0 - _2022-11-23_
+## v4.1.1 - _2022-11-23_
 
-v4.2.0 fixes a few issues with the schema creation UI
+v4.1.1 fixes a few issues with the schema creation UI
 
 ### Fixes
 - Create client error
