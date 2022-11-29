@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch, ANY, Mock
+from unittest.mock import patch, ANY
 
 import pandas as pd
 import pytest
