@@ -10,13 +10,10 @@ from starlette.responses import PlainTextResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.authorisation.authorisation_service import (
-    RAPID_ACCESS_TOKEN,
     secure_dataset_endpoint,
     secure_endpoint,
-    get_client_token,
-    get_user_token,
+    get_subject_id,
 )
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
@@ -255,10 +252,7 @@ def upload_data(
 
     """
     try:
-        client_token = get_client_token(request)
-        user_token = get_user_token(request)
-        token = client_token if client_token else user_token
-        subject_id = parse_token(token).subject
+        subject_id = get_subject_id(request)
         incoming_file_path = store_file_to_disk(file)
         raw_filename, version, job_id = data_service.upload_dataset(
             subject_id, domain, dataset, version, incoming_file_path
@@ -424,7 +418,7 @@ async def query_large_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
-    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    subject_id = get_subject_id(request)
     job_id = data_service.query_large_data(subject_id, domain, dataset, version, query)
     return {"details": {"job_id": job_id}}
 

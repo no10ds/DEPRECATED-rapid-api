@@ -25,9 +25,9 @@ from test.api.common.controller_test_utils import BaseClientTest
 class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_calls_data_upload_service_successfully(
-        self, mock_parse_token, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
@@ -35,10 +35,7 @@ class TestDataUpload(BaseClientTest):
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
-
+        mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 5, "abc-123"
 
@@ -66,9 +63,9 @@ class TestDataUpload(BaseClientTest):
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_calls_data_upload_service_with_version_successfully(
-        self, mock_parse_token, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
@@ -76,10 +73,7 @@ class TestDataUpload(BaseClientTest):
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
-
+        mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 2, "abc-123"
 
@@ -107,19 +101,16 @@ class TestDataUpload(BaseClientTest):
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_calls_data_upload_service_fails_when_invalid_dataset_is_uploaded(
-        self, mock_parse_token, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
-
+        mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = DatasetValidationError(
             "Expected 3 columns, received 4"
@@ -158,19 +149,16 @@ class TestDataUpload(BaseClientTest):
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_raises_error_when_schema_does_not_exist(
-        self, mock_parse_token, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
-
+        mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = (incoming_file_path, incoming_file_name)
         mock_upload_dataset.side_effect = SchemaNotFoundError("Error message")
 
@@ -184,19 +172,16 @@ class TestDataUpload(BaseClientTest):
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_raises_error_when_crawler_is_already_running(
-        self, mock_parse_token, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
-
+        mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = CrawlerIsNotReadyError("Some message")
 
@@ -215,19 +200,16 @@ class TestDataUpload(BaseClientTest):
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_raises_error_when_fails_to_get_crawler_state(
-        self, mock_parse_token, mock_store_file_to_disk, mock_upload_dataset
+        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
-
+        mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = AWSServiceError("Some message")
 
@@ -626,16 +608,14 @@ class TestQuery(BaseClientTest):
 
 class TestLargeDatasetQuery(BaseClientTest):
     @patch.object(DataService, "query_large_data")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_call_service_with_only_domain_dataset_when_no_json_provided(
-        self, mock_parse_token, mock_large_query_method
+        self, mock_get_subject_id, mock_large_query_method
     ):
         query_url = "/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
+        mock_get_subject_id.return_value = subject_id
 
         self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
 
@@ -644,18 +624,16 @@ class TestLargeDatasetQuery(BaseClientTest):
         )
 
     @patch.object(DataService, "query_large_data")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_call_service_with_sql_query_when_json_provided(
-        self, mock_parse_token, mock_large_query_method
+        self, mock_get_subject_id, mock_large_query_method
     ):
         request_json = {"select_columns": ["column1"], "limit": "10"}
 
         query_url = "/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
+        mock_get_subject_id.return_value = subject_id
 
         self.client.post(
             query_url, headers={"Authorization": "Bearer test-token"}, json=request_json
@@ -670,16 +648,14 @@ class TestLargeDatasetQuery(BaseClientTest):
         )
 
     @patch.object(DataService, "query_large_data")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_call_service_version_provided(
-        self, mock_parse_token, mock_large_query_method
+        self, mock_get_subject_id, mock_large_query_method
     ):
         query_url = "/datasets/mydomain/mydataset/query/large?version=3"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
+        mock_get_subject_id.return_value = subject_id
 
         self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
 
@@ -688,9 +664,9 @@ class TestLargeDatasetQuery(BaseClientTest):
         )
 
     @patch.object(DataService, "query_large_data")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_calls_service_with_sql_query_when_empty_json_values_provided(
-        self, mock_parse_token, mock_large_query_method
+        self, mock_get_subject_id, mock_large_query_method
     ):
         request_json = {
             "select_columns": ["column1"],
@@ -702,9 +678,7 @@ class TestLargeDatasetQuery(BaseClientTest):
         query_url = "/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
+        mock_get_subject_id.return_value = subject_id
 
         self.client.post(
             query_url, headers={"Authorization": "Bearer test-token"}, json=request_json
@@ -724,18 +698,16 @@ class TestLargeDatasetQuery(BaseClientTest):
         )
 
     @patch.object(DataService, "query_large_data")
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_request_query_is_successful(
-        self, mock_parse_token, mock_large_query_method
+        self, mock_get_subject_id, mock_large_query_method
     ):
         mock_large_query_method.return_value = "5462433"
 
         query_url = "/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
+        mock_get_subject_id.return_value = subject_id
 
         response = self.client.post(
             query_url,
@@ -748,16 +720,14 @@ class TestLargeDatasetQuery(BaseClientTest):
     @pytest.mark.parametrize(
         "input_key", ["select_column", "invalid_key", "another_invalid_key"]
     )
-    @patch("api.controller.datasets.parse_token")
+    @patch("api.controller.datasets.get_subject_id")
     def test_returns_error_from_query_request_when_invalid_key(
-        self, mock_parse_token, input_key: str
+        self, mock_get_subject_id, input_key: str
     ):
         query_url = "/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
-        mock_token = Mock()
-        mock_token.subject = subject_id
-        mock_parse_token.return_value = mock_token
+        mock_get_subject_id.return_value = subject_id
 
         response = self.client.post(
             query_url,
