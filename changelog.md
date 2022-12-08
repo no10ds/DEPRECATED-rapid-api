@@ -23,7 +23,7 @@ v4.1.1 fixes a few issues with the schema creation UI
 
 ## v4.1.0 - _2022-11-20_
 
-v4.1.0 introduces a new UI for the easy creation of schemas and the ability to expose the rAPId instance to the Gov UK CDDO Federated API Discovery Model (https://github.com/co-cddo/federated-api-model). Instead of having to use the rAPId endpoints to generate and then upload the schema, the new UI opens a simple flow from uploading a file, to altering the generated schema and to then uploading. 
+v4.1.0 introduces a new UI for the easy creation of schemas and the ability to expose the rAPId instance to the Gov UK CDDO Federated API Discovery Model (https://github.com/co-cddo/federated-api-model). Instead of having to use the rAPId endpoints to generate and then upload the schema, the new UI opens a simple flow from uploading a file, to altering the generated schema and to then uploading.
 
 ### Added
 - UI

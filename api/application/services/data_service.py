@@ -356,16 +356,25 @@ class DataService:
             partitioned_data,
         )
 
-    def query_data(
+    def is_query_too_large(
         self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
-    ) -> pd.DataFrame:
-        version = handle_version_retrieval(domain, dataset, version)
+    ):
+        if query.limit:
+            if int(query.limit) <= DATASET_QUERY_LIMIT:
+                return False
+
         no_of_rows_in_table = self.glue_adapter.get_no_of_rows(
             StorageMetaData(
                 domain=domain, dataset=dataset, version=version
             ).glue_table_name()
         )
-        if no_of_rows_in_table <= DATASET_QUERY_LIMIT:
+        return no_of_rows_in_table > DATASET_QUERY_LIMIT
+
+    def query_data(
+        self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
+    ) -> pd.DataFrame:
+        version = handle_version_retrieval(domain, dataset, version)
+        if not self.is_query_too_large(domain, dataset, version, query):
             return self.athena_adapter.query(domain, dataset, version, query)
         else:
             raise UnprocessableDatasetError("Dataset too large")
