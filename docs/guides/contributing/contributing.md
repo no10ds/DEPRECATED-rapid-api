@@ -11,80 +11,9 @@ Familiarise yourself with the following documentation:
 5. [Application limitations](application_limitations.md)
 5. [Future improvements](improvements.md)
 
-## Prerequisites ✅
+## aws-vault set up
 
-### Access
-
-- Git repo
-- AWS account
-
-### Tools
-
-Some of these can be installed using the 'Self Service' app that comes with the government laptop. Others you can
-download from the linked sites or use Homebrew etc.
-
-(If you install the XCode CLI tools, you'll get Git and Make for free)
-
-- jq (use Homebrew)
-- Git
-- [pre-commit](https://pre-commit.com/)
-- [Make](https://formulae.brew.sh/formula/make)
-- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-- [Homebrew](https://brew.sh/)
-- Docker (from Self Service)
-- [Java version 8+](https://mkyong.com/java/how-to-install-java-on-mac-osx/) (for Batect (future releases will remove
-  this dependency))
-- Python (v3.10) - Only for local development without Docker (ideally manage
-  via [pyenv](https://github.com/pyenv/pyenv))
-
-## Local set up 🏗
-
-We use [batect](https://batect.dev/docs/) to ensure consistency of build and runtime environments.
-
-A [Makefile](../../../Makefile) is provided for convenience. The commands serve as a wrapper around Batect which runs
-the various commands in a clean Docker container each time. The commands should be self-explanatory.
-
-Provided you have the above prerequisites you can get started straight out of the box:
-
-1. In the root of the project run `make precommit`. This will run the `precommit` task and, in doing so, create the
-   relevant Docker image with relevant dependencies with which to run subsequent tasks and the app locally.
-2. If your IDE can use a remote Docker interpreter, point to the image created above (avoids the need to install a
-   specific python version locally or to have to manage virtual environments manually)
-    1. Point your IDE to the Python interpreter -> Setup steps are dependent on IDE of choice
-3. If your IDE CANNOT use a remote Docker interpreter, use a local `venv` (see setup instructions below) and point to
-   this Python interpreter
-    1. Setup steps are dependent on IDE of choice
-
-4. Add AWS credentials for the CLI.
-   Follow [these instructions](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html)
-
-## Running locally 🏃‍♂️
-
-To run the app locally, you will need to set the following environment variables:
-
-- `AWS_ACCOUNT`
-- `AWS_REGION`
-- `AWS_DEFAULT_REGION`
-- `COGNITO_USER_POOL_ID`
-- `DATA_BUCKET`
-- `DOMAIN_NAME`
-- `RESOURCE_PREFIX`
-- `ALLOWED_EMAIL_DOMAINS`
-
-`make run` runs batect to bring up a locally running version of the application within a Docker container using the base
-image.
-
-`make run-dev` runs batect to bring up a locally running version of the application within a Docker container in a "
-hot-reload" mode so you can keep this running during development.
-
-> ⚠️ Note that the app communicates with AWS services and needs to assume the relevant role to do so, however the Docker container **will not have this role**.
->
-> To run the app locally with an admin context you can assume the admin or user role by running `make assume-role` in the `rapid-infrastructure` repo and running the application directly using the `uvicorn` command that batect runs
->
-> Of course, this requires that you have Python installed on your machine (see above)
->
-> In other to log in, the application will redirect to the real app, in the browser developer console, go to the settings
-> and look for a cookie called `rat` change the domain to `localhost` and re-open the local application.
+We recommend using aws-vault to handle the different aws credentials. Details on how to set it up and run can be found [here](https://github.com/99designs/aws-vault).
 
 ## Developing 🤓
 
@@ -118,7 +47,7 @@ run `pip install <dependency>` and freeze this into the requirements file: `pip 
 You can run `make shell` to run commands in a clean environment against the mounted local source code; e.g.: Install
 dependencies, etc
 
-### Testing
+## Testing
 
 To run the tests in your IDE ensure that the test runner's working directory is set to the root directory of the
 project.
@@ -136,6 +65,10 @@ You will need to add some environment variables to your run configuration templa
 - `DOMAIN_NAME=example.com`
 - `COGNITO_USER_POOL_ID=11111111`
 - `ALLOWED_EMAIL_DOMAINS=example1.com,example2.com`
+
+We use pytest as our test runner. This can be run by calling
+
+`make test`
 
 ### Scripts
 
@@ -214,30 +147,6 @@ To format the code or check for linting errors we use `black` and `flake8`. Use 
 `make format`
 
 `make lint`
-
-### Testing your code
-
-We use pytest as our test runner.
-
-`make test`
-
-### Committing
-
-We follow a consistent commit message structure:
-
-``` text
-<issue_number>-<initials> Short message
-
-Message body
-```
-
-For example:
-
-``` text
-455-USR Fix codestyle config
-
-Removing extra semicolon causing the config validation to fail
-```
 
 ## Deployment and Infrastructure 🚀
 
@@ -348,10 +257,6 @@ in the url path and should be taken in consideration to determine the permission
 When using the frontend layer instead of the client app token, the user token is used. This token contains Cognito user
 subject id which can be looked up in the permissions database to describe the permission access level for that
 particular user. The database follows a naming convention of ```WRITE_PUBLIC```.
-
-## Session timeout
-A 5min timer has been added to the user session in the UI, to change this value please go to
-[session_time.js](./templates/js/session_timer.js) and change the `FIVE_MINUTES` field.
 
 ## Gotchas 🤯
 
