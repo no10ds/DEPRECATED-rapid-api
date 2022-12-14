@@ -147,12 +147,12 @@ function populate_table(schema) {
             <option ${data_type === "Int64" ? "selected" : ""}>Int64</option>
             <option ${
               data_type === "Float64" ? "selected" : ""
-            }>Float64</option> 
-            <option ${data_type === "object" ? "selected" : ""}>object</option> 
-            <option ${data_type === "date" ? "selected" : ""}>date</option> 
+            }>Float64</option>
+            <option ${data_type === "object" ? "selected" : ""}>object</option>
+            <option ${data_type === "date" ? "selected" : ""}>date</option>
             <option ${
               data_type === "boolean" ? "selected" : ""
-            }>boolean</option> 
+            }>boolean</option>
             </select>
         </td>
         <td>

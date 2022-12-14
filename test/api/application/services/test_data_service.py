@@ -12,7 +12,7 @@ from api.application.services.data_service import (
     construct_chunked_dataframe,
 )
 from api.common.config.auth import SensitivityLevel
-from api.common.config.constants import CONTENT_ENCODING
+from api.common.config.constants import CONTENT_ENCODING, DATASET_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     CrawlerIsNotReadyError,
@@ -1474,28 +1474,51 @@ class TestQueryDataset:
             None,
         )
 
+    def test_is_query_too_large_with_limit_under(self):
+        query = SQLQuery(limit=100)
+
+        response = self.data_service.is_query_too_large("domain1", "dataset1", 2, query)
+        assert response is False
+
+    def test_is_query_too_large_with_rows_under(self):
+        query = SQLQuery()
+        self.glue_adapter.get_no_of_rows.return_value = 1000
+
+        response = self.data_service.is_query_too_large("domain1", "dataset1", 2, query)
+        assert response is False
+
+    def test_is_query_too_large_with_rows_over(self):
+        query = SQLQuery()
+        self.glue_adapter.get_no_of_rows.return_value = DATASET_QUERY_LIMIT + 1
+
+        response = self.data_service.is_query_too_large("domain1", "dataset1", 2, query)
+        assert response is True
+
     def test_query_data_success(self):
         query = SQLQuery()
         expected_response = pd.DataFrame().empty
-        self.glue_adapter.get_no_of_rows.return_value = 48293
+        self.data_service.is_query_too_large = Mock(return_value=False)
         self.athena_adapter.query.return_value = expected_response
 
         response = self.data_service.query_data("domain1", "dataset1", 2, query)
-
         assert response == expected_response
-        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_2")
+
         self.athena_adapter.query.assert_called_once_with(
             "domain1", "dataset1", 2, query
         )
+        self.data_service.is_query_too_large.assert_called_once_with(
+            "domain1", "dataset1", 2, query
+        )
 
-    def test_query_data_for_large_no_of_rows(self):
+    def test_query_data_for_query_too_large(self):
         query = SQLQuery()
-        self.glue_adapter.get_no_of_rows.return_value = 100_001
-
+        self.data_service.is_query_too_large = Mock(return_value=True)
         with pytest.raises(UnprocessableDatasetError):
             self.data_service.query_data("domain1", "dataset1", 1, query)
 
-        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_1")
+        self.data_service.is_query_too_large.assert_called_once_with(
+            "domain1", "dataset1", 1, query
+        )
         self.athena_adapter.query.assert_not_called()
 
     @patch("api.application.services.data_service.handle_version_retrieval")
