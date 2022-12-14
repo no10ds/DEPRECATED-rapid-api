@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v4.2.0 - _2022-12-14_
+
+See [v4.2.0] changes
+
+v4.2.0 Improves the behaviour of the query dataset endpoint to allow the querying of large datasets (>100000 rows)
+
+### Changed
+
+The query dataset endpoint can now be used for the querying of large datasets (>100000 rows), if the query includes a `limit` clause ensuring that less that 100000 rows of data will be returned.
+
+[v4.2.0]: https://github.com/no10ds/rapid-api/compare/v4.1.2...v4.2.0
 
 ## v4.1.2 - _2022-11-29_
 
