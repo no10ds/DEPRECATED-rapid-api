@@ -21,7 +21,7 @@ class BaseTestUI(ABC):
     subject_name = None
 
     def set_up_base_page(self, playwright):
-        test_user_credentials = get_secret(secret_name="UI_TEST_USER")
+        test_user_credentials = get_secret(secret_name="dev-rapid-no10ds_UI_TEST_USER_test")
         self.username = test_user_credentials["username"]
         self.password = test_user_credentials["password"]
         self.subject_id = test_user_credentials["subject_id"]
