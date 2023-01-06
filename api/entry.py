@@ -37,7 +37,7 @@ PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 
-app = FastAPI()
+app = FastAPI(root_path='/api')
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
 sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
