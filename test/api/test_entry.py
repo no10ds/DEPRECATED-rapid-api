@@ -19,7 +19,7 @@ def get_user_token_mock():
 
 class TestStatus(BaseClientTest):
     def test_http_status_response_is_200_status(self):
-        response = self.client.get("/api/status")
+        response = self.client.get("/status")
         assert response.status_code == 200
 
     def test_returns_no_metadata_for_api(self):
