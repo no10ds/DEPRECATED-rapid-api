@@ -83,13 +83,13 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-@app.get("/status", tags=["Status"])
+@app.get("/api/status", tags=["Status"])
 def status():
     """The endpoint used for service health check"""
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
 
 
-@app.get("/apis", tags=["Info"])
+@app.get("/api/apis", tags=["Info"])
 def info():
     """The endpoint used for a service information check"""
     if PROJECT_NAME is None:
