@@ -83,10 +83,10 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-@app.get("/api/status", tags=["Status"])
-def status():
+@app.get("/status", tags=["Status"])
+def status(request: Request):
     """The endpoint used for service health check"""
-    return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
+    return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION, "root_path": request.scope.get('root_path')}
 
 
 @app.get("/api/apis", tags=["Info"])
