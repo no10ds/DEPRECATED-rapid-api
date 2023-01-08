@@ -19,6 +19,7 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
@@ -35,7 +36,7 @@ athena_adapter = AthenaAdapter()
 delete_service = DeleteService()
 
 datasets_router = APIRouter(
-    prefix="/datasets",
+    prefix=f"{BASE_API_PATH}/datasets",
     tags=["Datasets"],
     responses={404: {"description": "Not found"}},
 )

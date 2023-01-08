@@ -2,11 +2,12 @@ from fastapi import APIRouter
 from fastapi import status as http_status
 
 from api.application.services.data_service import DataService
+from api.common.config.constants import BASE_API_PATH
 
 data_service = DataService()
 
 table_router = APIRouter(
-    prefix="/table_config",
+    prefix=f"{BASE_API_PATH}/table_config",
     tags=["table_config"],
     responses={404: {"description": "Not found"}},
 )

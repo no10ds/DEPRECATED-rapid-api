@@ -12,6 +12,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.authorisation.token_utils import parse_token
 from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
+from api.common.config.constants import BASE_API_PATH
 from api.common.logger import AppLogger, init_logger
 from api.controller.auth import auth_router
 from api.controller.client import client_router
@@ -37,7 +38,10 @@ PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 
-app = FastAPI(root_path='/api')
+app = FastAPI(
+    openapi_url=f'{BASE_API_PATH}/openapi.json',
+    docs_url=f'{BASE_API_PATH}/docs'
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
 sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
@@ -89,7 +93,7 @@ def status(request: Request):
     return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION, "root_path": request.scope.get('root_path')}
 
 
-@app.get("/api/apis", tags=["Info"])
+@app.get(f"{BASE_API_PATH}/apis", tags=["Info"])
 def info():
     """The endpoint used for a service information check"""
     if PROJECT_NAME is None:

@@ -12,10 +12,11 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.permissions_service import PermissionsService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import UserError, AWSServiceError
 
 landing_router = APIRouter(
-    prefix="", responses={404: {"description": "Not found"}}, include_in_schema=False
+    prefix=f"{BASE_API_PATH}", responses={404: {"description": "Not found"}}, include_in_schema=False
 )
 
 templates = Jinja2Templates(directory=(os.path.abspath("templates")))

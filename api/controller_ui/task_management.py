@@ -11,9 +11,10 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.job_service import JobService
 from api.common.config.auth import Action, RAPID_ACCESS_TOKEN
+from api.common.config.constants import BASE_API_PATH
 
 jobs_ui_router = APIRouter(
-    prefix="/tasks",
+    prefix=f"{BASE_API_PATH}/tasks",
     responses={404: {"description": "Not found"}},
     include_in_schema=False,
 )

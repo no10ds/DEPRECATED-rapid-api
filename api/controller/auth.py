@@ -17,10 +17,10 @@ from api.common.config.auth import (
     COGNITO_REDIRECT_URI,
     COOKIE_MAX_AGE_IN_SECONDS,
 )
-from api.common.config.constants import CONTENT_ENCODING
+from api.common.config.constants import CONTENT_ENCODING, BASE_API_PATH
 
 auth_router = APIRouter(
-    prefix="/oauth2",
+    prefix=f"{BASE_API_PATH}/oauth2",
     include_in_schema=False,
     responses={404: {"description": "Not found"}},
 )
