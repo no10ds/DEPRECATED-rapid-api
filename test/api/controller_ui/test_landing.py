@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.controller_ui.landing import determine_user_ui_actions
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -57,7 +58,7 @@ class TestLandingPage(BaseClientTest):
             "DATA_ADMIN",
         ]
 
-        response = self.client.get("/", cookies={"rat": "user_token"})
+        response = self.client.get(f"{BASE_API_PATH}/", cookies={"rat": "user_token"})
 
         mock_templates_response.assert_called_once_with(
             name=landing_template_filename,
@@ -88,7 +89,7 @@ class TestLandingPage(BaseClientTest):
             "a message"
         )
 
-        response = self.client.get("/", cookies={"rat": "user_token"})
+        response = self.client.get(f"{BASE_API_PATH}/", cookies={"rat": "user_token"})
 
         mock_templates_response.assert_called_once_with(
             name=landing_template_filename,
@@ -115,7 +116,7 @@ class TestLandingPage(BaseClientTest):
             "a custom message"
         )
 
-        response = self.client.get("/", cookies={"rat": "user_token"})
+        response = self.client.get(f"{BASE_API_PATH}/", cookies={"rat": "user_token"})
 
         mock_templates_response.assert_called_once_with(
             name=landing_template_filename,
@@ -142,7 +143,7 @@ class TestLandingPage(BaseClientTest):
 
         mock_ui_actions.return_value = {}
 
-        response = self.client.get("/", cookies={"rat": "user_token"})
+        response = self.client.get(f"{BASE_API_PATH}/", cookies={"rat": "user_token"})
 
         mock_templates_response.assert_called_once_with(
             name=landing_template_filename,

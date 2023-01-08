@@ -3,6 +3,7 @@ from unittest.mock import patch, ANY, Mock
 from fastapi.templating import Jinja2Templates
 
 from api.application.services.job_service import JobService
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -59,7 +60,7 @@ class TestJobsPage(BaseClientTest):
             },
         ]
 
-        response = self.client.get("/tasks", cookies={"rat": "user_token"})
+        response = self.client.get(f"{BASE_API_PATH}/tasks", cookies={"rat": "user_token"})
 
         mock_parse_token.assert_called_once_with("user_token")
         mock_get_all_jobs.assert_called_once_with(subject_id)
@@ -102,7 +103,7 @@ class TestJobDetailsPage(BaseClientTest):
             "filename": "filename1.csv",
         }
 
-        response = self.client.get("/tasks/123-456-789", cookies={"rat": "user_token"})
+        response = self.client.get(f"{BASE_API_PATH}/tasks/123-456-789", cookies={"rat": "user_token"})
 
         mock_get_job.assert_called_once_with("123-456-789")
         mock_templates_response.assert_called_once_with(

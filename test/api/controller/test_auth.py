@@ -3,6 +3,7 @@ from unittest.mock import patch, ANY
 from starlette.status import HTTP_302_FOUND
 
 from api.common.config.auth import IDENTITY_PROVIDER_TOKEN_URL, COGNITO_REDIRECT_URI
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -29,7 +30,7 @@ class TestAuth(BaseClientTest):
 
         mock_requests.post.return_value = mock_token_response
 
-        self.client.get(f"/oauth2/success?code={temporary_code}")
+        self.client.get(f"{BASE_API_PATH}/oauth2/success?code={temporary_code}")
 
         mock_requests.post.assert_called_once_with(
             IDENTITY_PROVIDER_TOKEN_URL,
