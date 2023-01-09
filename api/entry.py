@@ -39,8 +39,7 @@ PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 
 app = FastAPI(
-    openapi_url=f'{BASE_API_PATH}/openapi.json',
-    docs_url=f'{BASE_API_PATH}/docs'
+    openapi_url=f"{BASE_API_PATH}/openapi.json", docs_url=f"{BASE_API_PATH}/docs"
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
@@ -90,7 +89,12 @@ async def add_security_headers(request: Request, call_next):
 @app.get("/status", tags=["Status"])
 def status(request: Request):
     """The endpoint used for service health check"""
-    return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION, "root_path": request.scope.get('root_path')}
+    return {
+        "status": "deployed",
+        "sha": COMMIT_SHA,
+        "version": VERSION,
+        "root_path": request.scope.get("root_path"),
+    }
 
 
 @app.get(f"{BASE_API_PATH}/apis", tags=["Info"])

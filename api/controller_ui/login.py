@@ -17,7 +17,9 @@ from api.common.config.auth import (
 )
 
 login_router = APIRouter(
-    prefix=f"{BASE_API_PATH}", responses={404: {"description": "Not found"}}, include_in_schema=False
+    prefix=f"{BASE_API_PATH}",
+    responses={404: {"description": "Not found"}},
+    include_in_schema=False,
 )
 
 templates = Jinja2Templates(directory=(os.path.abspath("templates")))

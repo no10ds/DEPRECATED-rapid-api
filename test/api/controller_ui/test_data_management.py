@@ -39,7 +39,9 @@ class TestUploadPage(BaseClientTest):
             "domain2": [{"dataset": "dataset2", "version": "1"}],
         }
 
-        response = self.client.get(f"{BASE_API_PATH}/upload", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/upload", cookies={"rat": "user_token"}
+        )
 
         mock_parse_token.assert_called_once_with("user_token")
         mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.WRITE)
@@ -82,7 +84,9 @@ class TestSelectDatasetPage(BaseClientTest):
             "domain2": [{"dataset": "dataset3", "version": "1"}],
         }
 
-        response = self.client.get(f"{BASE_API_PATH}/download", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/download", cookies={"rat": "user_token"}
+        )
 
         mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.READ)
         mock_templates_response.assert_called_once_with(

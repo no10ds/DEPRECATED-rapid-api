@@ -131,7 +131,9 @@ class TestSubjectPage(BaseClientTest):
             },
         ]
 
-        response = self.client.get(f"{BASE_API_PATH}/subject", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/subject", cookies={"rat": "user_token"}
+        )
 
         mock_list_subjects.assert_called_once()
 
@@ -170,7 +172,8 @@ class TestModifySubjectSuccessPage(BaseClientTest):
         }
 
         response = self.client.get(
-            f"{BASE_API_PATH}/subject/a1b2c3d4/modify/success", cookies={"rat": "user_token"}
+            f"{BASE_API_PATH}/subject/a1b2c3d4/modify/success",
+            cookies={"rat": "user_token"},
         )
 
         mock_subject_service.get_subject_name_by_id.assert_called_once_with("a1b2c3d4")
@@ -196,7 +199,8 @@ class TestModifySubjectSuccessPage(BaseClientTest):
         )
 
         response = self.client.get(
-            f"{BASE_API_PATH}/subject/a1b2c3d4/modify/success", cookies={"rat": "user_token"}
+            f"{BASE_API_PATH}/subject/a1b2c3d4/modify/success",
+            cookies={"rat": "user_token"},
         )
 
         assert response.status_code == 500
@@ -216,7 +220,9 @@ class TestCreateSubjectPage(BaseClientTest):
             expected_permission_object
         )
 
-        response = self.client.get(f"{BASE_API_PATH}/subject/create", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/subject/create", cookies={"rat": "user_token"}
+        )
 
         mock_templates_response.assert_called_once_with(
             name=subject_template_filename,

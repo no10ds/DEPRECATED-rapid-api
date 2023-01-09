@@ -60,7 +60,9 @@ class TestJobsPage(BaseClientTest):
             },
         ]
 
-        response = self.client.get(f"{BASE_API_PATH}/tasks", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/tasks", cookies={"rat": "user_token"}
+        )
 
         mock_parse_token.assert_called_once_with("user_token")
         mock_get_all_jobs.assert_called_once_with(subject_id)
@@ -103,7 +105,9 @@ class TestJobDetailsPage(BaseClientTest):
             "filename": "filename1.csv",
         }
 
-        response = self.client.get(f"{BASE_API_PATH}/tasks/123-456-789", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/tasks/123-456-789", cookies={"rat": "user_token"}
+        )
 
         mock_get_job.assert_called_once_with("123-456-789")
         mock_templates_response.assert_called_once_with(

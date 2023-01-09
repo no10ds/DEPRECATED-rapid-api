@@ -144,7 +144,8 @@ class TestDataUpload(BaseClientTest):
 
     def test_raises_validation_error_when_file_not_provided(self):
         response = self.client.post(
-            f"{BASE_API_PATH}/datasets/domain/dataset", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/datasets/domain/dataset",
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 400
 

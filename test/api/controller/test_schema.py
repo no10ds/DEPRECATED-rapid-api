@@ -30,7 +30,9 @@ class TestSchemaUpload(BaseClientTest):
         mock_upload_schema.return_value = "some-thing.json"
 
         response = self.client.post(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         mock_upload_schema.assert_called_once_with(expected_schema)
@@ -52,7 +54,9 @@ class TestSchemaUpload(BaseClientTest):
         }
 
         response = self.client.post(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 400
@@ -69,7 +73,9 @@ class TestSchemaUpload(BaseClientTest):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = ConflictError("Error message")
         response = self.client.post(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 409
@@ -80,7 +86,9 @@ class TestSchemaUpload(BaseClientTest):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = SchemaValidationError("Error message")
         response = self.client.post(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 400
@@ -97,7 +105,9 @@ class TestSchemaUpload(BaseClientTest):
         mock_upload_schema.side_effect = CrawlerCreationError("Crawler creation error")
 
         response = self.client.post(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 500
@@ -115,7 +125,9 @@ class TestSchemaUpload(BaseClientTest):
         mock_upload_schema.side_effect = UserError("Protected domain error")
 
         response = self.client.post(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 400
@@ -185,7 +197,9 @@ class TestSchemaUpdate(BaseClientTest):
         mock_update_schema.return_value = "some-thing.json"
 
         response = self.client.put(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         mock_update_schema.assert_called_once_with(expected_schema)
@@ -207,7 +221,9 @@ class TestSchemaUpdate(BaseClientTest):
         }
 
         response = self.client.put(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 400
@@ -224,7 +240,9 @@ class TestSchemaUpdate(BaseClientTest):
         request_body, expected_schema = self._generate_schema()
         mock_update_schema.side_effect = SchemaNotFoundError("Error message")
         response = self.client.put(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 404
@@ -235,7 +253,9 @@ class TestSchemaUpdate(BaseClientTest):
         request_body, expected_schema = self._generate_schema()
         mock_update_schema.side_effect = SchemaValidationError("Error message")
         response = self.client.put(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 400
@@ -253,7 +273,9 @@ class TestSchemaUpdate(BaseClientTest):
         )
 
         response = self.client.put(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 429
@@ -271,7 +293,9 @@ class TestSchemaUpdate(BaseClientTest):
         )
 
         response = self.client.put(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 500
@@ -287,7 +311,9 @@ class TestSchemaUpdate(BaseClientTest):
         mock_update_schema.side_effect = UserError("Protected domain error")
 
         response = self.client.put(
-            f"{BASE_API_PATH}/schema", json=request_body, headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
         )
 
         assert response.status_code == 400

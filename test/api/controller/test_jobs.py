@@ -59,7 +59,8 @@ class TestGetJob(BaseClientTest):
         mock_get_job.return_value = expected_response
 
         response = self.client.get(
-            f"{BASE_API_PATH}/jobs/abc-123", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/jobs/abc-123",
+            headers={"Authorization": "Bearer test-token"},
         )
 
         mock_get_job.assert_called_once_with("abc-123")

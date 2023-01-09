@@ -9,16 +9,17 @@ from starlette.status import HTTP_302_FOUND, HTTP_401_UNAUTHORIZED
 
 from api.application.services.authorisation.authorisation_service import (
     RAPID_ACCESS_TOKEN,
-    user_logged_in
+    user_logged_in,
 )
-from api.application.services.authorisation.token_utils import parse_token
+
+# from api.application.services.authorisation.token_utils import parse_token
 from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
     IDENTITY_PROVIDER_TOKEN_URL,
     COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME,
     COGNITO_REDIRECT_URI,
     COOKIE_MAX_AGE_IN_SECONDS,
-    construct_user_auth_url
+    construct_user_auth_url,
 )
 from api.common.config.constants import CONTENT_ENCODING, BASE_API_PATH
 
@@ -28,14 +29,16 @@ auth_router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 # TODO Is this the best location for this route?
 @auth_router.get("/")
 async def get_auth(request: Request):
     if user_logged_in(request):
-        subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+        # subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
         return {"detail": "success"}
     else:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str("fail"))
+
 
 # TODO Is this the best location for this route?
 @auth_router.get("/login")
@@ -48,6 +51,7 @@ async def get_login_url(request: Request):
     )["client_id"]
     user_auth_url = construct_user_auth_url(cognito_user_login_client_id)
     return {"auth_url": user_auth_url}
+
 
 @auth_router.post("/token")
 async def redirect_oauth_token_request(request: Request):
