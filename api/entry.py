@@ -1,16 +1,18 @@
 import sass
 import os
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, Security
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.status import HTTP_404_NOT_FOUND
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK
 
 from api.application.services.authorisation.authorisation_service import (
     get_client_token,
     get_user_token,
+    secure_endpoint,
 )
 from api.application.services.authorisation.token_utils import parse_token
-from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL
+from api.application.services.permissions_service import PermissionsService
+from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL, Action
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.config.constants import BASE_API_PATH
 from api.common.logger import AppLogger, init_logger
@@ -37,6 +39,8 @@ PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
 PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
+
+permissions_service = PermissionsService()
 
 app = FastAPI(
     openapi_url=f"{BASE_API_PATH}/openapi.json", docs_url=f"{BASE_API_PATH}/docs"
@@ -119,6 +123,15 @@ def info():
             }
         ],
     }
+
+
+@app.get(
+    "/permissions_ui",
+    status_code=HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+)
+async def get_permissions_ui():
+    return permissions_service.get_all_permissions_ui()
 
 
 @app.get("/favicon.ico", include_in_schema=False)
