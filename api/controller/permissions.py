@@ -49,3 +49,12 @@ async def get_subject_permissions(subject_id: str):
     ### Click  `Try it out` to use the endpoint
     """
     return permissions_service.get_subject_permissions(subject_id)
+
+
+@permissions_router.get(
+    "/ui",
+    status_code=http_status.HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+)
+async def get_permissions_ui():
+    return permissions_service.get_all_permissions_ui()
