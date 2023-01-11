@@ -3,15 +3,18 @@ import os
 from fastapi import FastAPI, Request, HTTPException, Security
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK
 
 from api.application.services.authorisation.authorisation_service import (
     get_client_token,
     get_user_token,
     secure_endpoint,
+    RAPID_ACCESS_TOKEN
 )
 from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.permissions_service import PermissionsService
+from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL, Action
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.config.constants import BASE_API_PATH
@@ -26,7 +29,7 @@ from api.controller.schema import schema_router
 from api.controller.subjects import subjects_router
 from api.controller.table import table_router
 from api.controller.user import user_router
-from api.controller_ui.data_management import data_management_router
+from api.controller_ui.data_management import data_management_router, group_datasets_by_domain
 from api.controller_ui.task_management import jobs_ui_router
 from api.controller_ui.schema_management import schema_management_router
 from api.controller_ui.landing import landing_router
@@ -41,6 +44,7 @@ PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 
 permissions_service = PermissionsService()
+upload_service = DatasetService()
 
 app = FastAPI(
     openapi_url=f"{BASE_API_PATH}/openapi.json", docs_url=f"{BASE_API_PATH}/docs"
@@ -49,6 +53,16 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
 sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
 add_exception_handlers(app)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:3000"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(auth_router)
 app.include_router(permissions_router)
@@ -126,12 +140,23 @@ def info():
 
 
 @app.get(
-    "/permissions_ui",
+    f"{BASE_API_PATH}/permissions_ui",
     status_code=HTTP_200_OK,
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
 )
 async def get_permissions_ui():
     return permissions_service.get_all_permissions_ui()
+
+@app.get(
+    f"{BASE_API_PATH}/datasets_ui",
+    status_code=HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])]
+)
+async def get_datasets_ui(request: Request):
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
+
+    return group_datasets_by_domain(datasets)
 
 
 @app.get("/favicon.ico", include_in_schema=False)
