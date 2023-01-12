@@ -10,7 +10,7 @@ from api.application.services.authorisation.authorisation_service import (
     get_client_token,
     get_user_token,
     secure_endpoint,
-    RAPID_ACCESS_TOKEN
+    RAPID_ACCESS_TOKEN,
 )
 from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.permissions_service import PermissionsService
@@ -29,7 +29,10 @@ from api.controller.schema import schema_router
 from api.controller.subjects import subjects_router
 from api.controller.table import table_router
 from api.controller.user import user_router
-from api.controller_ui.data_management import data_management_router, group_datasets_by_domain
+from api.controller_ui.data_management import (
+    data_management_router,
+    group_datasets_by_domain,
+)
 from api.controller_ui.task_management import jobs_ui_router
 from api.controller_ui.schema_management import schema_management_router
 from api.controller_ui.landing import landing_router
@@ -55,10 +58,7 @@ sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
 add_exception_handlers(app)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost",
-        "http://localhost:3000"
-    ],
+    allow_origins=["http://localhost", "http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -147,10 +147,11 @@ def info():
 async def get_permissions_ui():
     return permissions_service.get_all_permissions_ui()
 
+
 @app.get(
     f"{BASE_API_PATH}/datasets_ui",
     status_code=HTTP_200_OK,
-    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])]
+    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
 )
 async def get_datasets_ui(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
