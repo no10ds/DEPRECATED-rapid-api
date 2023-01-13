@@ -104,7 +104,7 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-@app.get("/status", tags=["Status"])
+@app.get(f"{BASE_API_PATH}/status", tags=["Status"])
 def status(request: Request):
     """The endpoint used for service health check"""
     return {
