@@ -20,6 +20,7 @@ from api.common.config.auth import (
     COGNITO_REDIRECT_URI,
     COOKIE_MAX_AGE_IN_SECONDS,
     construct_user_auth_url,
+    construct_logout_url,
 )
 from api.common.config.constants import CONTENT_ENCODING, BASE_API_PATH
 
@@ -51,6 +52,18 @@ async def get_login_url(request: Request):
     )["client_id"]
     user_auth_url = construct_user_auth_url(cognito_user_login_client_id)
     return {"auth_url": user_auth_url}
+
+
+# TODO Is this the best location for this route?
+@auth_router.get("/logout")
+async def logout():
+    cognito_user_login_client_id = get_secret(
+        COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME
+    )["client_id"]
+    logout_url = construct_logout_url(cognito_user_login_client_id)
+    redirect_response = RedirectResponse(url=logout_url, status_code=HTTP_302_FOUND)
+    redirect_response.delete_cookie(RAPID_ACCESS_TOKEN)
+    return redirect_response
 
 
 @auth_router.post("/token")
