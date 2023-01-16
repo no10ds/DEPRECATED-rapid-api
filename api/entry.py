@@ -3,7 +3,6 @@ import os
 from fastapi import FastAPI, Request, HTTPException, Security
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK
 
 from api.application.services.authorisation.authorisation_service import (
@@ -56,13 +55,14 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
 sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
 add_exception_handlers(app)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost", "http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["http://localhost", "http://localhost:3000"],
+#     allow_credentials=True,
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
 
 app.include_router(auth_router)
 app.include_router(permissions_router)
