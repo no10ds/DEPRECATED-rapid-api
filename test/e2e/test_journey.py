@@ -136,8 +136,6 @@ class TestUnauthorisedJourney(BaseJourneyTest):
 
     def test_query_existing_dataset_when_not_authorised_to_read(self):
         url = self.query_dataset_url(self.e2e_test_domain, "query")
-        print("\nQUERY URL:")
-        print(url)
         response = requests.post(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
@@ -206,7 +204,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
             headers=self.generate_auth_headers(),
             json={"tags": {"test": "e2e"}},
         )
-        print(self.datasets_endpoint)
         assert response.status_code == HTTPStatus.OK
 
     def test_uploads_when_authorised(self):
@@ -224,7 +221,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
 
     def test_gets_existing_dataset_info_when_authorised(self):
         url = self.info_dataset_url(domain=self.e2e_test_domain, dataset="query")
-        print(url)
         response = requests.get(url, headers=(self.generate_auth_headers()))
         assert response.status_code == HTTPStatus.OK
 
@@ -455,10 +451,10 @@ class TestAuthenticatedSubjectJourneys(BaseJourneyTest):
         )
 
         minimum_expected_names = [
-            # "ui-test-user",
-            # "e2e_test_client_read_and_write",
-            # "e2e_test_client_data_admin",
-            # "e2e_test_client_user_admin",
+            f"{RESOURCE_PREFIX}_ui_test_user",
+            f"{RESOURCE_PREFIX}_e2e_test_client_read_and_write",
+            f"{RESOURCE_PREFIX}_e2e_test_client_data_admin",
+            f"{RESOURCE_PREFIX}_e2e_test_client_write_all",
             f"{RESOURCE_PREFIX}_e2e_test_client_user_admin"
         ]
 
@@ -536,7 +532,6 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
         self.reset_permissions()
         # Create protected domain
         create_url = self.create_protected_domain_url("test_e2e")
-        print(create_url)
         response = requests.post(create_url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.CREATED
 
