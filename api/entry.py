@@ -154,7 +154,7 @@ def info():
 
 
 @app.get(
-    f"${BASE_API_PATH}/auth",
+    f"{BASE_API_PATH}/auth",
     status_code=HTTP_200_OK,
     dependencies=[Depends(secure_endpoint)],
     include_in_schema=False,
