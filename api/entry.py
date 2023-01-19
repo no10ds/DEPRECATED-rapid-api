@@ -1,6 +1,10 @@
+from typing import Dict, List
 import sass
 import os
-from fastapi import FastAPI, Request, HTTPException, Security
+
+from dotenv import load_dotenv
+
+from fastapi import FastAPI, Request, HTTPException, Security, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK
@@ -18,6 +22,7 @@ from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL, Action
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.config.constants import BASE_API_PATH
 from api.common.logger import AppLogger, init_logger
+from api.common.custom_exceptions import UserError, AWSServiceError
 from api.controller.auth import auth_router
 from api.controller.client import client_router
 from api.controller.datasets import datasets_router
@@ -38,6 +43,12 @@ from api.controller_ui.landing import landing_router
 from api.controller_ui.login import login_router
 from api.controller_ui.subject_management import subject_management_router
 from api.exception_handler import add_exception_handlers
+
+try:
+    load_dotenv()
+except OSError:
+    pass
+
 
 PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
 PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
@@ -140,9 +151,35 @@ def info():
 
 
 @app.get(
+    f"{BASE_API_PATH}/methods",
+    status_code=HTTP_200_OK,
+    dependencies=[Depends(secure_endpoint)],
+    include_in_schema=False,
+)
+async def methods(request: Request):
+    allowed_actions = {}
+    error_message = None
+    default_error_message = "You have not been granted relevant permissions. Please speak to your system administrator."
+
+    try:
+        subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+        subject_permissions = permissions_service.get_subject_permissions(subject_id)
+        allowed_actions = _determine_user_ui_actions(subject_permissions)
+        if not any([action_allowed for action_allowed in allowed_actions.values()]):
+            error_message = default_error_message
+    except UserError:
+        error_message = default_error_message
+    except AWSServiceError as error:
+        error_message = error.message
+
+    return {"error_message": error_message, **allowed_actions}
+
+
+@app.get(
     f"{BASE_API_PATH}/permissions_ui",
     status_code=HTTP_200_OK,
     dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+    include_in_schema=False,
 )
 async def get_permissions_ui():
     return permissions_service.get_all_permissions_ui()
@@ -152,6 +189,7 @@ async def get_permissions_ui():
     f"{BASE_API_PATH}/datasets_ui",
     status_code=HTTP_200_OK,
     dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
+    include_in_schema=False,
 )
 async def get_datasets_ui(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
@@ -170,6 +208,30 @@ def _get_subject_id(request: Request):
     user_token = get_user_token(request)
     token = client_token if client_token else user_token
     return parse_token(token).subject if token else "Not an authenticated user"
+
+
+def _determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool]:
+    return {
+        "can_manage_users": Action.USER_ADMIN.value in subject_permissions,
+        "can_upload": any(
+            (
+                permission.startswith(Action.WRITE.value)
+                for permission in subject_permissions
+            )
+        ),
+        "can_download": any(
+            (
+                permission.startswith(Action.READ.value)
+                for permission in subject_permissions
+            )
+        ),
+        "can_create_schema": any(
+            (
+                permission.startswith(Action.DATA_ADMIN.value)
+                for permission in subject_permissions
+            )
+        ),
+    }
 
 
 def _set_security_headers(response) -> None:
