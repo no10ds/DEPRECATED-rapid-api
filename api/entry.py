@@ -7,13 +7,16 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request, HTTPException, Security, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
+
+# from fastapi.middleware.cors import CORSMiddleware
 
 from api.application.services.authorisation.authorisation_service import (
     get_client_token,
     get_user_token,
     secure_endpoint,
     RAPID_ACCESS_TOKEN,
+    user_logged_in,
 )
 from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.permissions_service import PermissionsService
@@ -148,6 +151,19 @@ def info():
             }
         ],
     }
+
+
+@app.get(
+    f"${BASE_API_PATH}/auth",
+    status_code=HTTP_200_OK,
+    dependencies=[Depends(secure_endpoint)],
+    include_in_schema=False,
+)
+async def get_auth(request: Request):
+    if user_logged_in(request):
+        return {"detail": "success"}
+    else:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str("fail"))
 
 
 @app.get(

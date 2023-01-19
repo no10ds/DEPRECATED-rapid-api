@@ -2,10 +2,10 @@ import json
 from typing import Dict
 
 import requests
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request
 from requests.auth import HTTPBasicAuth
 from starlette.responses import RedirectResponse
-from starlette.status import HTTP_302_FOUND, HTTP_401_UNAUTHORIZED
+from starlette.status import HTTP_302_FOUND
 
 from api.application.services.authorisation.authorisation_service import (
     RAPID_ACCESS_TOKEN,
@@ -31,17 +31,6 @@ auth_router = APIRouter(
 )
 
 
-# TODO Is this the best location for this route?
-@auth_router.get("/")
-async def get_auth(request: Request):
-    if user_logged_in(request):
-        # subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-        return {"detail": "success"}
-    else:
-        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str("fail"))
-
-
-# TODO Is this the best location for this route?
 @auth_router.get("/login")
 async def get_login_url(request: Request):
     if user_logged_in(request):
@@ -54,7 +43,6 @@ async def get_login_url(request: Request):
     return {"auth_url": user_auth_url}
 
 
-# TODO Is this the best location for this route?
 @auth_router.get("/logout")
 async def logout():
     cognito_user_login_client_id = get_secret(
