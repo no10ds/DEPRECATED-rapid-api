@@ -25,6 +25,7 @@ class SchemaMetadata(BaseModel):
     dataset: str
     sensitivity: str
     version: Optional[int]
+    description: Optional[str] = ""
     key_value_tags: Dict[str, str] = dict()
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
@@ -41,6 +42,9 @@ class SchemaMetadata(BaseModel):
 
     def get_version(self) -> int:
         return self.version
+
+    def get_description(self) -> str:
+        return self.description
 
     def schema_path(self) -> str:
         return f"{SCHEMAS_LOCATION}/{self.sensitivity}/{self.schema_name()}"

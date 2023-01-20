@@ -79,7 +79,7 @@ class S3Adapter:
         schema_metadata = schema.metadata
         self.store_data(
             object_full_path=schema_metadata.schema_path(),
-            object_content=self._convert_to_bytes(schema.json(indent=True)),
+            object_content=self._convert_to_bytes(schema.json()),
         )
         return schema_metadata.schema_name()
 
