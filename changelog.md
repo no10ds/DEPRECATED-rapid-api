@@ -3,6 +3,34 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## v5.0.0 - _2022-01-27_
+
+See [v5.0.0] changes
+
+v5.0.0 is a major release of rAPId with several breaking changes. One of the major changes is the splitting out of the user interface into it's own codebase. It also introduces a data catalog metadata search.
+
+### Fixed
+
+TODO
+
+### Added
+
+TODO
+
+### Changed
+- Test users are created automatically within the infrastructure now and are prefixed accordingly
+
+### Removed
+
+TODO
+
+### Security
+
+TODO
+
+[v5.0.0]: https://github.com/no10ds/rapid-api/compare/v4.2.0...v5.0.0
+
 ## v4.2.0 - _2022-12-14_
 
 See [v4.2.0] changes
