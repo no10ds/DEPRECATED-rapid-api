@@ -20,6 +20,7 @@ TODO
 
 ### Changed
 - Test users are created automatically within the infrastructure now and are prefixed accordingly
+- ***(Breaking Change)*** All api routes are now served on the prefix `/api`. For instance the api route to list datasets `GET /datasets` now becomes `GET /api/datasets`
 
 ### Removed
 
