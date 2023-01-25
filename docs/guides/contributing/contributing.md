@@ -72,10 +72,12 @@ We use pytest as our test runner. This can be run by calling
 
 ### Scripts
 
-There are currently two scripts located in the `test/scripts`, these are:
+There are currently four scripts located in the `test/scripts`, these are:
 
 - Delete Protected Domain Permission
 - User Permission Test
+- Migrate Datasets to Schema Versioning
+- v5.0.0 Schema Migration
 
 #### Delete Protected Domain Permission
 
@@ -86,6 +88,22 @@ deleted.
 
 ```commandline
 python test/scripts/delete_protected_domain_permission domain-to-be-deleted
+```
+
+#### Migrate Datasets to Schema Versioning
+
+rAPId v3.0.0 introduced the ability to version dataset schemas. This introduced a breaking change and running the migration script updates previous datasets to the required new v3.0.0 compatible.
+
+```commandline
+python test/scripts/migrate_datasets_to_new_versioning_structure.py
+```
+
+### v5.0.0 Schema Migration
+
+rAPId v5.0.0 introduced a new search over data metadata as part of introductionary work into a data catalog. The data catalog search introduces a breaking change as the current pretty-printed schemas are not compatiable for searching within Athena. The v5.0.0 migration script removes the pretty-printed format from the saved schemas.
+
+```commandline
+python test/scripts/v5_schema_migration.py
 ```
 
 ### Checking your code
