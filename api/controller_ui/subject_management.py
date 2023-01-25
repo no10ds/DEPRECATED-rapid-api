@@ -9,12 +9,13 @@ from api.application.services.authorisation.authorisation_service import secure_
 from api.application.services.permissions_service import PermissionsService
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 
 permissions_service = PermissionsService()
 subject_service = SubjectService()
 
 subject_management_router = APIRouter(
-    prefix="/subject",
+    prefix=f"{BASE_API_PATH}/subject",
     responses={404: {"description": "Not found"}},
     include_in_schema=False,
 )

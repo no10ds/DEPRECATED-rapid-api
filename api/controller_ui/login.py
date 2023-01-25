@@ -8,6 +8,7 @@ from starlette.status import HTTP_302_FOUND
 
 from api.application.services.authorisation.authorisation_service import user_logged_in
 from api.common.aws_utilities import get_secret
+from api.common.config.constants import BASE_API_PATH
 from api.common.config.auth import (
     COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME,
     construct_user_auth_url,
@@ -16,7 +17,9 @@ from api.common.config.auth import (
 )
 
 login_router = APIRouter(
-    prefix="", responses={404: {"description": "Not found"}}, include_in_schema=False
+    prefix=f"{BASE_API_PATH}",
+    responses={404: {"description": "Not found"}},
+    include_in_schema=False,
 )
 
 templates = Jinja2Templates(directory=(os.path.abspath("templates")))

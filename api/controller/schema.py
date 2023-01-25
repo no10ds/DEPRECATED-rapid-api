@@ -8,6 +8,7 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerAlreadyExistsError,
@@ -22,7 +23,7 @@ delete_service = DeleteService()
 cognito_adapter = CognitoAdapter()
 
 schema_router = APIRouter(
-    prefix="/schema",
+    prefix=f"{BASE_API_PATH}/schema",
     tags=["Schema"],
     responses={404: {"description": "Not found"}},
 )

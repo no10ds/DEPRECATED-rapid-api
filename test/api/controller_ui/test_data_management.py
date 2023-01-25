@@ -11,6 +11,7 @@ from api.domain.enriched_schema import (
     EnrichedColumn,
 )
 from api.domain.schema_metadata import Owner
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -38,7 +39,9 @@ class TestUploadPage(BaseClientTest):
             "domain2": [{"dataset": "dataset2", "version": "1"}],
         }
 
-        response = self.client.get("/upload", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/upload", cookies={"rat": "user_token"}
+        )
 
         mock_parse_token.assert_called_once_with("user_token")
         mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.WRITE)
@@ -81,7 +84,9 @@ class TestSelectDatasetPage(BaseClientTest):
             "domain2": [{"dataset": "dataset3", "version": "1"}],
         }
 
-        response = self.client.get("/download", cookies={"rat": "user_token"})
+        response = self.client.get(
+            f"{BASE_API_PATH}/download", cookies={"rat": "user_token"}
+        )
 
         mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.READ)
         mock_templates_response.assert_called_once_with(
@@ -170,7 +175,7 @@ class TestDownloadPage(BaseClientTest):
         download_template_filename = "download.html"
 
         response = self.client.get(
-            "/download/domain1/dataset1", cookies={"rat": "user_token"}
+            f"{BASE_API_PATH}/download/domain1/dataset1", cookies={"rat": "user_token"}
         )
 
         mock_templates_response.assert_called_once_with(

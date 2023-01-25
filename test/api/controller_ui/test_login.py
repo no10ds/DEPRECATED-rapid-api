@@ -9,6 +9,7 @@ from api.common.config.auth import (
     COGNITO_REDIRECT_URI,
     RAPID_ACCESS_TOKEN,
 )
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -23,7 +24,7 @@ class TestLoginPage(BaseClientTest):
         mock_get_secret.return_value = {"client_id": "12345", "client_secret": "54321"}
         login_template_filename = "login.html"
 
-        response = self.client.get("/login")
+        response = self.client.get(f"{BASE_API_PATH}/login")
 
         mock_templates_response.assert_called_once_with(
             name=login_template_filename,
@@ -41,7 +42,7 @@ class TestLoginPage(BaseClientTest):
         self, mock_redirect_response, mock_log_in
     ):
         mock_log_in.return_value = True
-        self.client.get("/login")
+        self.client.get(f"{BASE_API_PATH}/login")
         mock_redirect_response.assert_called_once_with(
             url="/", status_code=HTTP_302_FOUND
         )
@@ -57,7 +58,7 @@ class TestLogoutPage(BaseClientTest):
         mock_get_secret.return_value = {"client_id": "the-client_id"}
         mock_construct_logout_url.return_value = "https://the-redirect-url.com"
 
-        response = self.client.get("/logout", allow_redirects=False)
+        response = self.client.get(f"{BASE_API_PATH}/logout", allow_redirects=False)
 
         mock_delete_cookie.assert_called_once_with(RAPID_ACCESS_TOKEN)
         mock_construct_logout_url.assert_called_once_with("the-client_id")

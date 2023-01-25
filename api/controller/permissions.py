@@ -4,11 +4,12 @@ from fastapi import status as http_status
 from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.permissions_service import PermissionsService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 
 permissions_service = PermissionsService()
 
 permissions_router = APIRouter(
-    prefix="/permissions",
+    prefix=f"{BASE_API_PATH}/permissions",
     tags=["Permissions"],
     responses={404: {"description": "Not found"}},
 )

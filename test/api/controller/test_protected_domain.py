@@ -1,6 +1,7 @@
 from unittest.mock import patch, Mock
 
 from api.application.services.protected_domain_service import ProtectedDomainService
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -8,7 +9,7 @@ class TestProtectedDomains(BaseClientTest):
     @patch.object(ProtectedDomainService, "create_protected_domain_permission")
     def test_scopes_creation(self, create_protected_domain_permission: Mock):
         response = self.client.post(
-            "/protected_domains/new",
+            f"{BASE_API_PATH}/protected_domains/new",
             headers={"Authorization": "Bearer test-token"},
         )
 
@@ -24,7 +25,7 @@ class TestProtectedDomains(BaseClientTest):
         list_protected_domains.return_value = ["test"]
 
         response = self.client.get(
-            "/protected_domains",
+            f"{BASE_API_PATH}/protected_domains",
             headers={"Authorization": "Bearer test-token"},
         )
 

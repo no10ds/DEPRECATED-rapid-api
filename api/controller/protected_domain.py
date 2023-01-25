@@ -5,11 +5,12 @@ from fastapi import status as http_status
 from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 
 protected_domain_service = ProtectedDomainService()
 
 protected_domain_router = APIRouter(
-    prefix="/protected_domains",
+    prefix=f"{BASE_API_PATH}/protected_domains",
     tags=["Protected Domains"],
     responses={404: {"description": "Not found"}},
 )

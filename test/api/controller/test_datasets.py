@@ -16,6 +16,7 @@ from api.common.custom_exceptions import (
     CrawlerIsNotReadyError,
     AWSServiceError,
 )
+from api.common.config.constants import BASE_API_PATH
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -41,7 +42,7 @@ class TestDataUpload(BaseClientTest):
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 5, "abc-123"
 
         response = self.client.post(
-            "/datasets/domain/dataset",
+            f"{BASE_API_PATH}/datasets/domain/dataset",
             files={"file": (incoming_file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -79,7 +80,7 @@ class TestDataUpload(BaseClientTest):
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 2, "abc-123"
 
         response = self.client.post(
-            "/datasets/domain/dataset?version=2",
+            f"{BASE_API_PATH}/datasets/domain/dataset?version=2",
             files={"file": (incoming_file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -118,7 +119,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         response = self.client.post(
-            "/datasets/domain/dataset",
+            f"{BASE_API_PATH}/datasets/domain/dataset",
             files={"file": (incoming_file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -135,7 +136,7 @@ class TestDataUpload(BaseClientTest):
         file_name = "filename.csv"
 
         response = self.client.post(
-            "/datasets//dataset",
+            f"{BASE_API_PATH}/datasets//dataset",
             files={"file": (file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -144,7 +145,8 @@ class TestDataUpload(BaseClientTest):
 
     def test_raises_validation_error_when_file_not_provided(self):
         response = self.client.post(
-            "/datasets/domain/dataset", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/datasets/domain/dataset",
+            headers={"Authorization": "Bearer test-token"},
         )
         assert response.status_code == 400
 
@@ -164,7 +166,7 @@ class TestDataUpload(BaseClientTest):
         mock_upload_dataset.side_effect = SchemaNotFoundError("Error message")
 
         response = self.client.post(
-            "/datasets/domain/dataset",
+            f"{BASE_API_PATH}/datasets/domain/dataset",
             files={"file": (incoming_file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -187,7 +189,7 @@ class TestDataUpload(BaseClientTest):
         mock_upload_dataset.side_effect = CrawlerIsNotReadyError("Some message")
 
         response = self.client.post(
-            "/datasets/domain/dataset",
+            f"{BASE_API_PATH}/datasets/domain/dataset",
             files={"file": (incoming_file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -215,7 +217,7 @@ class TestDataUpload(BaseClientTest):
         mock_upload_dataset.side_effect = AWSServiceError("Some message")
 
         response = self.client.post(
-            "/datasets/domain/dataset?version=3",
+            f"{BASE_API_PATH}/datasets/domain/dataset?version=3",
             files={"file": (incoming_file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
@@ -260,7 +262,7 @@ class TestListDatasets(BaseClientTest):
         expected_query = DatasetFilters()
 
         response = self.client.post(
-            "/datasets",
+            f"{BASE_API_PATH}/datasets",
             headers={"Authorization": "Bearer test-token"},
             # Not passing a JSON body here to filter by tags
         )
@@ -308,7 +310,7 @@ class TestListDatasets(BaseClientTest):
         expected_query_object = DatasetFilters(sensitivity=None, tags=tag_filters)
 
         response = self.client.post(
-            "/datasets",
+            f"{BASE_API_PATH}/datasets",
             headers={"Authorization": "Bearer test-token"},
             json={"tags": tag_filters},
         )
@@ -353,7 +355,7 @@ class TestListDatasets(BaseClientTest):
         expected_query_object = DatasetFilters(sensitivity="PUBLIC")
 
         response = self.client.post(
-            "/datasets",
+            f"{BASE_API_PATH}/datasets",
             headers={"Authorization": "Bearer test-token"},
             json={"sensitivity": "PUBLIC"},
         )
@@ -425,7 +427,7 @@ class TestDatasetInfo(BaseClientTest):
         mock_get_dataset_info.return_value = expected_response
 
         response = self.client.get(
-            "/datasets/mydomain/mydataset/info?version=2",
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset/info?version=2",
             headers={"Authorization": "Bearer test-token"},
             # Not passing a JSON body here to filter by tags
         )
@@ -444,7 +446,7 @@ class TestDatasetInfo(BaseClientTest):
         )
 
         response = self.client.get(
-            "/datasets/mydomain/mydataset/info",
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset/info",
             headers={"Authorization": "Bearer test-token"},
             # Not passing a JSON body here to filter by tags
         )
@@ -462,7 +464,7 @@ class TestQuery(BaseClientTest):
     def test_call_service_with_only_domain_dataset_when_no_json_provided(
         self, mock_query_method
     ):
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
 
@@ -474,7 +476,7 @@ class TestQuery(BaseClientTest):
     def test_call_service_with_sql_query_when_json_provided(self, mock_query_method):
         request_json = {"select_columns": ["column1"], "limit": "10"}
 
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         self.client.post(
             query_url, headers={"Authorization": "Bearer test-token"}, json=request_json
@@ -489,7 +491,7 @@ class TestQuery(BaseClientTest):
 
     @patch.object(DataService, "query_data")
     def test_call_service_version_provided(self, mock_query_method):
-        query_url = "/datasets/mydomain/mydataset/query?version=3"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query?version=3"
 
         self.client.post(query_url, headers={"Authorization": "Bearer test-token"})
 
@@ -508,7 +510,7 @@ class TestQuery(BaseClientTest):
             "limit": "10",
         }
 
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         self.client.post(
             query_url, headers={"Authorization": "Bearer test-token"}, json=request_json
@@ -536,7 +538,7 @@ class TestQuery(BaseClientTest):
             }
         )
 
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         response = self.client.post(
             query_url,
@@ -563,7 +565,7 @@ class TestQuery(BaseClientTest):
             }
         )
 
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         response = self.client.post(
             query_url,
@@ -584,7 +586,7 @@ class TestQuery(BaseClientTest):
             }
         )
 
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         response = self.client.post(
             query_url, headers={"Authorization": "Bearer test-token"}
@@ -608,7 +610,7 @@ class TestQuery(BaseClientTest):
             }
         )
 
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         response = self.client.post(
             query_url,
@@ -624,7 +626,7 @@ class TestQuery(BaseClientTest):
         "input_key", ["select_column", "invalid_key", "another_invalid_key"]
     )
     def test_returns_error_from_query_request_when_invalid_key(self, input_key: str):
-        query_url = "/datasets/mydomain/mydataset/query"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query"
 
         response = self.client.post(
             query_url,
@@ -644,7 +646,7 @@ class TestLargeDatasetQuery(BaseClientTest):
     def test_call_service_with_only_domain_dataset_when_no_json_provided(
         self, mock_get_subject_id, mock_large_query_method
     ):
-        query_url = "/datasets/mydomain/mydataset/query/large"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
         mock_get_subject_id.return_value = subject_id
@@ -662,7 +664,7 @@ class TestLargeDatasetQuery(BaseClientTest):
     ):
         request_json = {"select_columns": ["column1"], "limit": "10"}
 
-        query_url = "/datasets/mydomain/mydataset/query/large"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
         mock_get_subject_id.return_value = subject_id
@@ -684,7 +686,7 @@ class TestLargeDatasetQuery(BaseClientTest):
     def test_call_service_version_provided(
         self, mock_get_subject_id, mock_large_query_method
     ):
-        query_url = "/datasets/mydomain/mydataset/query/large?version=3"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query/large?version=3"
         subject_id = "subject_id"
 
         mock_get_subject_id.return_value = subject_id
@@ -707,7 +709,7 @@ class TestLargeDatasetQuery(BaseClientTest):
             "limit": "10",
         }
 
-        query_url = "/datasets/mydomain/mydataset/query/large"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
         mock_get_subject_id.return_value = subject_id
@@ -736,7 +738,7 @@ class TestLargeDatasetQuery(BaseClientTest):
     ):
         mock_large_query_method.return_value = "5462433"
 
-        query_url = "/datasets/mydomain/mydataset/query/large"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
         mock_get_subject_id.return_value = subject_id
@@ -756,7 +758,7 @@ class TestLargeDatasetQuery(BaseClientTest):
     def test_returns_error_from_query_request_when_invalid_key(
         self, mock_get_subject_id, input_key: str
     ):
-        query_url = "/datasets/mydomain/mydataset/query/large"
+        query_url = f"{BASE_API_PATH}/datasets/mydomain/mydataset/query/large"
         subject_id = "subject_id"
 
         mock_get_subject_id.return_value = subject_id
@@ -783,7 +785,7 @@ class TestListFilesFromDataset(BaseClientTest):
         ]
 
         response = self.client.get(
-            "/datasets/mydomain/mydataset/2/files",
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset/2/files",
             headers={"Authorization": "Bearer test-token"},
         )
 
@@ -796,7 +798,7 @@ class TestDeleteFiles(BaseClientTest):
     @patch.object(DeleteService, "delete_dataset_file")
     def test_returns_204_when_file_is_deleted(self, mock_delete_dataset_file):
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/3/2022-01-01T00:00:00-file.csv",
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset/3/2022-01-01T00:00:00-file.csv",
             headers={"Authorization": "Bearer test-token"},
         )
 
@@ -813,7 +815,7 @@ class TestDeleteFiles(BaseClientTest):
         mock_delete_dataset_file.side_effect = CrawlerIsNotReadyError("Some message")
 
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/3/2022-01-01T00:00:00-file.csv?",
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset/3/2022-01-01T00:00:00-file.csv?",
             headers={"Authorization": "Bearer test-token"},
         )
 
@@ -833,7 +835,7 @@ class TestDeleteFiles(BaseClientTest):
         )
 
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/2/2022-01-01T00:00:00-file.csv?",
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset/2/2022-01-01T00:00:00-file.csv?",
             headers={"Authorization": "Bearer test-token"},
         )
 
@@ -851,7 +853,7 @@ class TestDeleteFiles(BaseClientTest):
         mock_delete_dataset_file.side_effect = UserError("Some random message")
 
         response = self.client.delete(
-            "/datasets/mydomain/mydataset/5/2022-01-01T00:00:00-file.csv",
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset/5/2022-01-01T00:00:00-file.csv",
             headers={"Authorization": "Bearer test-token"},
         )
 
