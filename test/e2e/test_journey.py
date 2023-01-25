@@ -105,7 +105,7 @@ class TestUnauthorisedJourney(BaseJourneyTest):
     def setup_class(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
 
-        write_all_credentials = get_secret(secret_name="E2E_TEST_CLIENT_WRITE_ALL")
+        write_all_credentials = get_secret(secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_WRITE_ALL")
 
         cognito_client_id = write_all_credentials["CLIENT_ID"]
         cognito_client_secret = write_all_credentials[
@@ -158,7 +158,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
 
         read_and_write_credentials = get_secret(
-            secret_name="E2E_TEST_CLIENT_READ_ALL_WRITE_ALL"  # pragma: allowlist secret
+            secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_READ_ALL_WRITE_ALL"  # pragma: allowlist secret
         )
 
         cognito_client_id = read_and_write_credentials["CLIENT_ID"]
@@ -293,7 +293,7 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
     def generate_auth_headers(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
         data_admin_credentials = get_secret(
-            secret_name="E2E_TEST_CLIENT_DATA_ADMIN"  # pragma: allowlist secret
+            secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_DATA_ADMIN"  # pragma: allowlist secret
         )
         cognito_client_id = data_admin_credentials["CLIENT_ID"]
         cognito_client_secret = data_admin_credentials[
@@ -383,7 +383,7 @@ class TestAuthenticatedSubjectJourneys(BaseJourneyTest):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
 
         read_and_write_credentials = get_secret(
-            secret_name="E2E_TEST_CLIENT_USER_ADMIN"  # pragma: allowlist secret
+            secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_USER_ADMIN"  # pragma: allowlist secret
         )
 
         self.cognito_client_id = read_and_write_credentials["CLIENT_ID"]
@@ -451,10 +451,11 @@ class TestAuthenticatedSubjectJourneys(BaseJourneyTest):
         )
 
         minimum_expected_names = [
-            "ui-test-user",
-            "e2e_test_client_read_and_write",
-            "e2e_test_client_data_admin",
-            "e2e_test_client_user_admin",
+            f"{RESOURCE_PREFIX}_ui_test_user",
+            f"{RESOURCE_PREFIX}_e2e_test_client_read_and_write",
+            f"{RESOURCE_PREFIX}_e2e_test_client_data_admin",
+            f"{RESOURCE_PREFIX}_e2e_test_client_write_all",
+            f"{RESOURCE_PREFIX}_e2e_test_client_user_admin"
         ]
 
         assert response.status_code == HTTPStatus.OK
@@ -477,7 +478,7 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
 
         read_and_write_credentials = get_secret(
-            secret_name="E2E_TEST_CLIENT_DATA_ADMIN"  # pragma: allowlist secret
+            secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_DATA_ADMIN"  # pragma: allowlist secret
         )
 
         self.cognito_client_id = read_and_write_credentials["CLIENT_ID"]
