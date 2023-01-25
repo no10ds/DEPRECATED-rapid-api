@@ -1,39 +1,40 @@
 from jinja2 import Template
 from typing import List
 
-from api.common.config.aws import RESOURCE_PREFIX, GLUE_CATALOGUE_DB_NAME
+from api.common.config.aws import GLUE_CATALOGUE_DB_NAME, METADATA_CATALOGUE_DB_NAME
 
 
 DATASET_COLUMN = "dataset"
 DATA_COLUMN = "data"
 DATA_TYPE_COLUMN = "data_type"
 
-
-METADATA_QUERY = Template(
+# fmt: off
+METADATA_QUERY = Template(  # nosec
     f"""
 SELECT * FROM (
-    SELECT 
+    SELECT
         metadata.dataset as {DATASET_COLUMN},
         "column".name as {DATA_COLUMN},
         'column_name' as {DATA_TYPE_COLUMN}
-    FROM "{GLUE_CATALOGUE_DB_NAME}"."{RESOURCE_PREFIX}_metadata_table"
+    FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
     CROSS JOIN UNNEST("columns") AS t ("column")
     UNION ALL
-    SELECT 
+    SELECT
         metadata.dataset as {DATASET_COLUMN},
         metadata.description as {DATA_COLUMN},
         'description' as {DATA_TYPE_COLUMN}
-    FROM "{GLUE_CATALOGUE_DB_NAME}"."{RESOURCE_PREFIX}_metadata_table"
+    FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
     UNION ALL
     SELECT
         metadata.dataset as {DATASET_COLUMN},
         metadata.dataset as {DATA_COLUMN},
         'dataset_name' as {DATA_TYPE_COLUMN}
-    FROM "dev-rapid-no10ds_catalogue_db"."dev-rapid-no10ds_metadata_table"
+    FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
 )
 WHERE {{{{ where_clause }}}}
 """
 )
+# fmt: on
 
 
 def generate_where_clause(search_term: str) -> List[str]:
