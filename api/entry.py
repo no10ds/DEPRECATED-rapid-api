@@ -31,6 +31,7 @@ from api.controller_ui.login import login_router
 from api.controller_ui.subject_management import subject_management_router
 from api.exception_handler import add_exception_handlers
 
+
 PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
 PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
 PROJECT_URL = os.environ.get("DOMAIN_NAME", None)

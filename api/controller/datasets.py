@@ -26,13 +26,16 @@ from api.common.custom_exceptions import (
 )
 from api.common.logger import AppLogger
 from api.domain.dataset_filters import DatasetFilters
+from api.domain.metadata_search import metadata_search_query
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
 
+
+athena_adapter = AthenaAdapter()
 resource_adapter = AWSResourceAdapter()
 data_service = DataService()
-athena_adapter = AthenaAdapter()
 delete_service = DeleteService()
+
 
 datasets_router = APIRouter(
     prefix="/datasets",
@@ -70,6 +73,18 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
 
     """
     return resource_adapter.get_datasets_metadata(tag_filters)
+
+
+@datasets_router.get(
+    "/search/{term}",
+    dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
+    status_code=http_status.HTTP_200_OK,
+    include_in_schema=False,
+)
+async def search_dataset_metadata(term: str):
+    sql_query = metadata_search_query(term)
+    df = athena_adapter.query_sql(sql_query)
+    return df.to_dict("records")
 
 
 @datasets_router.get(
