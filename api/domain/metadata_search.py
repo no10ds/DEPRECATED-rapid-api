@@ -5,6 +5,7 @@ from api.common.config.aws import GLUE_CATALOGUE_DB_NAME, METADATA_CATALOGUE_DB_
 
 
 DATASET_COLUMN = "dataset"
+DOMAIN_COLUMN = "domain"
 DATA_COLUMN = "data"
 DATA_TYPE_COLUMN = "data_type"
 
@@ -14,6 +15,7 @@ METADATA_QUERY = Template(  # nosec
 SELECT * FROM (
     SELECT
         metadata.dataset as {DATASET_COLUMN},
+        metadata.domain as {DOMAIN_COLUMN},
         "column".name as {DATA_COLUMN},
         'column_name' as {DATA_TYPE_COLUMN}
     FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
@@ -21,12 +23,14 @@ SELECT * FROM (
     UNION ALL
     SELECT
         metadata.dataset as {DATASET_COLUMN},
+        metadata.domain as {DOMAIN_COLUMN},
         metadata.description as {DATA_COLUMN},
         'description' as {DATA_TYPE_COLUMN}
     FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
     UNION ALL
     SELECT
         metadata.dataset as {DATASET_COLUMN},
+        metadata.domain as {DOMAIN_COLUMN},
         metadata.dataset as {DATA_COLUMN},
         'dataset_name' as {DATA_TYPE_COLUMN}
     FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
