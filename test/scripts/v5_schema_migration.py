@@ -28,5 +28,5 @@ for page in pages:
 for key in keys:
     res = s3_client.get_object(Bucket=DATA_BUCKET, Key=key)
     json_object = json.loads(res["Body"].read().decode("utf-8"))
-    json_object |= {"description": ""}
+    json_object["metadata"] |= {"description": "some base test description"}
     s3_client.put_object(Body=json.dumps(json_object), Bucket=DATA_BUCKET, Key=key)

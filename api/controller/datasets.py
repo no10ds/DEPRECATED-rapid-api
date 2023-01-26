@@ -10,6 +10,7 @@ from starlette.responses import PlainTextResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.adapter.s3_adapter import S3Adapter
 from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     secure_endpoint,
@@ -32,6 +33,7 @@ from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
 
 
+s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
 resource_adapter = AWSResourceAdapter()
 data_service = DataService()
@@ -73,7 +75,7 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return resource_adapter.get_datasets_metadata(tag_filters)
+    return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
 
 
 @datasets_router.get(

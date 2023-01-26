@@ -1,11 +1,12 @@
 from pathlib import Path
-from unittest.mock import patch, ANY
+from unittest.mock import patch, ANY, Mock
 
 import pandas as pd
 import pytest
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.adapter.s3_adapter import S3Adapter
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.common.custom_exceptions import (
@@ -231,14 +232,24 @@ class TestDataUpload(BaseClientTest):
 
 
 class TestListDatasets(BaseClientTest):
+    def setup_method(self):
+        self.mock_s3_client = Mock()
+        self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
+
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     def test_returns_metadata_for_all_datasets(self, mock_get_datasets_metadata):
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain1", dataset="dataset1", tags={"tag1": "value1"}
+                domain="domain1",
+                dataset="dataset1",
+                tags={"tag1": "value1"},
+                description="",
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain2", dataset="dataset2", tags={"tag2": "value2"}
+                domain="domain2",
+                dataset="dataset2",
+                tags={"tag2": "value2"},
+                description="some test description",
             ),
         ]
 
@@ -249,12 +260,14 @@ class TestListDatasets(BaseClientTest):
                 "domain": "domain1",
                 "dataset": "dataset1",
                 "version": 1,
+                "description": "",
                 "tags": {"tag1": "value1"},
             },
             {
                 "domain": "domain2",
                 "dataset": "dataset2",
                 "version": 1,
+                "description": "some test description",
                 "tags": {"tag2": "value2"},
             },
         ]
@@ -267,7 +280,8 @@ class TestListDatasets(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        mock_get_datasets_metadata.assert_called_once_with(expected_query)
+        _, kwargs = mock_get_datasets_metadata.call_args
+        assert expected_query == kwargs.get("query")
 
         assert response.status_code == 200
         assert response.json() == expected_response
@@ -278,10 +292,18 @@ class TestListDatasets(BaseClientTest):
     ):
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain1", dataset="dataset1", tags={"tag1": "value1"}, version=1
+                domain="domain1",
+                dataset="dataset1",
+                tags={"tag1": "value1"},
+                version=1,
+                description="",
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain2", dataset="dataset2", tags={"tag2": "value2"}, version=1
+                domain="domain2",
+                dataset="dataset2",
+                tags={"tag2": "value2"},
+                version=1,
+                description="some test description",
             ),
         ]
 
@@ -293,12 +315,14 @@ class TestListDatasets(BaseClientTest):
                 "dataset": "dataset1",
                 "version": 1,
                 "tags": {"tag1": "value1"},
+                "description": "",
             },
             {
                 "domain": "domain2",
                 "dataset": "dataset2",
                 "version": 1,
                 "tags": {"tag2": "value2"},
+                "description": "some test description",
             },
         ]
 
@@ -315,7 +339,8 @@ class TestListDatasets(BaseClientTest):
             json={"tags": tag_filters},
         )
 
-        mock_get_datasets_metadata.assert_called_once_with(expected_query_object)
+        _, kwargs = mock_get_datasets_metadata.call_args
+        assert expected_query_object == kwargs.get("query")
 
         assert response.status_code == 200
         assert response.json() == expected_response
@@ -329,9 +354,13 @@ class TestListDatasets(BaseClientTest):
                 domain="domain1",
                 dataset="dataset1",
                 tags={"sensitivity": "PUBLIC", "tag1": "value1"},
+                description="",
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain2", dataset="dataset2", tags={"sensitivity": "PUBLIC"}
+                domain="domain2",
+                dataset="dataset2",
+                tags={"sensitivity": "PUBLIC"},
+                description="some test description",
             ),
         ]
 
@@ -343,12 +372,14 @@ class TestListDatasets(BaseClientTest):
                 "dataset": "dataset1",
                 "version": 1,
                 "tags": {"sensitivity": "PUBLIC", "tag1": "value1"},
+                "description": "",
             },
             {
                 "domain": "domain2",
                 "dataset": "dataset2",
                 "tags": {"sensitivity": "PUBLIC"},
                 "version": 1,
+                "description": "some test description",
             },
         ]
 
@@ -360,7 +391,8 @@ class TestListDatasets(BaseClientTest):
             json={"sensitivity": "PUBLIC"},
         )
 
-        mock_get_datasets_metadata.assert_called_once_with(expected_query_object)
+        _, kwargs = mock_get_datasets_metadata.call_args
+        assert expected_query_object == kwargs.get("query")
 
         assert response.status_code == 200
         assert response.json() == expected_response
@@ -371,6 +403,7 @@ class TestSearchDatasets(BaseClientTest):
     @patch("api.controller.datasets.metadata_search_query")
     def test_search_dataset_metadata(self, mock_metadata_search_query, mock_query_sql):
         mock_query = "SELECT * FROM table"
+
         mock_metadata_search_query.return_value = mock_query
 
         mock_data = [
@@ -388,7 +421,8 @@ class TestSearchDatasets(BaseClientTest):
 
         mock_query_sql.return_value = pd.DataFrame(mock_data)
         response = self.client.get(
-            "/datasets/search/foo bar", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/datasets/search/foo bar",
+            headers={"Authorization": "Bearer test-token"},
         )
 
         mock_metadata_search_query.assert_called_once_with("foo bar")

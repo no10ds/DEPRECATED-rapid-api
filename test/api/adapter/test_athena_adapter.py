@@ -121,7 +121,7 @@ class TestQuery:
             "SYNTAX_ERROR: line 1:15: Table awsdatacatalog.rapid_catalogue_db.my_table_1 does not exist"
         )
 
-        expected_message = r"Query failed to execute: The table \[my_table_1\] does not exist. The data could be currently processing or you might need to upload it."
+        expected_message = r"Query failed to execute: The table does not exist. The data could be currently processing or you might need to upload it."
 
         with pytest.raises(UserError, match=expected_message):
             self.athena_adapter.query("my", "table", 1, SQLQuery())
@@ -233,7 +233,7 @@ class TestLargeQuery:
             "SYNTAX_ERROR: line 1:15: Table awsdatacatalog.rapid_catalogue_db.my_table_1 does not exist"
         )
 
-        expected_message = r"Query failed to execute: The table \[my_table_1\] does not exist. The data could be currently processing or you might need to upload it."
+        expected_message = r"Query failed to execute: The table does not exist. The data could be currently processing or you might need to upload it."
 
         with pytest.raises(UserError, match=expected_message):
             self.athena_adapter.query_async("my", "table", 1, SQLQuery())

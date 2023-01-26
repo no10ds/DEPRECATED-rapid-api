@@ -1,8 +1,8 @@
 from typing import Set, Dict, List
 
+from api.common.config.auth import SensitivityLevel, Action
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.common.config.auth import SensitivityLevel, Action
 from api.domain.dataset_filters import DatasetFilters
 
 WRITE_ALL = f"{Action.WRITE.value}_ALL"

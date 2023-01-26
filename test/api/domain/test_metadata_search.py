@@ -21,6 +21,7 @@ def test_metadata_search_query():
 SELECT * FROM (
     SELECT
         metadata.dataset as dataset,
+        metadata.domain as domain,
         "column".name as data,
         'column_name' as data_type
     FROM "rapid_catalogue_db"."rapid_metadata_table"
@@ -28,15 +29,17 @@ SELECT * FROM (
     UNION ALL
     SELECT
         metadata.dataset as dataset,
+        metadata.domain as domain,
         metadata.description as data,
         'description' as data_type
     FROM "rapid_catalogue_db"."rapid_metadata_table"
     UNION ALL
     SELECT
         metadata.dataset as dataset,
+        metadata.domain as domain,
         metadata.dataset as data,
         'dataset_name' as data_type
-    FROM "dev-rapid-no10ds_catalogue_db"."dev-rapid-no10ds_metadata_table"
+    FROM "rapid_catalogue_db"."rapid_metadata_table"
 )
 WHERE lower(data) LIKE '%foo%' OR lower(data) LIKE '%bar%'
     """

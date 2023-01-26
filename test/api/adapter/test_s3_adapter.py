@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import Mock, call
+from unittest.mock import Mock, call, patch
 
 import pandas as pd
 import pytest
@@ -184,7 +184,8 @@ class TestS3AdapterDataRetrieval:
         self.persistence_adapter.retrieve_data(key="an_s3_object")
         self.mock_s3_client.get_object.assert_called_once()
 
-    def test_retrieve_existing_schema(self):
+    @patch("api.adapter.s3_adapter.S3Adapter._retrieve_schema_metadata")
+    def test_retrieve_existing_schema(self, mock_s3_adapter_retrieve_schema_metadata):
         domain = "test_domain"
         dataset = "test_dataset"
         version = 1
@@ -194,6 +195,7 @@ class TestS3AdapterDataRetrieval:
                 domain=domain,
                 dataset=dataset,
                 sensitivity="PUBLIC",
+                description="some test description",
                 version=1,
             ),
             columns=[
@@ -207,12 +209,16 @@ class TestS3AdapterDataRetrieval:
         )
 
         self.mock_s3_client.get_object.return_value = mock_schema_response()
-        self.mock_s3_client.list_objects.return_value = mock_list_schemas_response()
+        mock_s3_adapter_retrieve_schema_metadata.return_value = SchemaMetadata(
+            domain=domain,
+            dataset=dataset,
+            sensitivity="PUBLIC",
+            description="some test description",
+            version=1,
+        )
+
         schema = self.persistence_adapter.find_schema(
             domain=domain, dataset=dataset, version=version
-        )
-        self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="dataset", Prefix="data/schemas"
         )
         self.mock_s3_client.get_object.assert_called_once_with(
             Bucket="dataset",

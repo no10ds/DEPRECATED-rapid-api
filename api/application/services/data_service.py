@@ -277,6 +277,8 @@ class DataService:
             original_schema = self._get_schema(
                 schema.get_domain(), schema.get_dataset(), FIRST_SCHEMA_VERSION_NUMBER
             )
+            original_schema_description = original_schema.metadata.description
+            new_schema_description = schema.metadata.description
             if original_schema is None:
                 AppLogger.warning(
                     f"Could not find schema for domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
@@ -291,6 +293,8 @@ class DataService:
             )
             schema.metadata = original_schema.metadata
             schema.metadata.version = new_version
+            if original_schema_description != new_schema_description:
+                schema.metadata.description = new_schema_description
             self.check_for_protected_domain(schema)
             self.glue_adapter.check_crawler_is_ready(
                 schema.get_domain(), schema.get_dataset()
