@@ -3,6 +3,7 @@
     "domain": "test_e2e",
     "dataset": "query",
     "sensitivity": "PUBLIC",
+    "description": "A test dataset",
     "tags": {
       "test_e2e": "query",
       "test": "e2e"

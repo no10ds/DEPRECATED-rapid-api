@@ -52,7 +52,6 @@ try:
 except OSError:
     pass
 
-
 PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
 PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
 PROJECT_URL = os.environ.get("DOMAIN_NAME", None)

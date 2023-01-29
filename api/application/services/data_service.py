@@ -283,6 +283,8 @@ class DataService:
                 )
                 raise SchemaNotFoundError("Previous version of schema not found")
 
+            original_schema_description = original_schema.metadata.description
+            new_schema_description = schema.metadata.description
             new_version = (
                 handle_version_retrieval(
                     schema.get_domain(), schema.get_dataset(), version=None
@@ -291,6 +293,8 @@ class DataService:
             )
             schema.metadata = original_schema.metadata
             schema.metadata.version = new_version
+            if original_schema_description != new_schema_description:
+                schema.metadata.description = new_schema_description
             self.check_for_protected_domain(schema)
             self.glue_adapter.check_crawler_is_ready(
                 schema.get_domain(), schema.get_dataset()

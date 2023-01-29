@@ -101,6 +101,13 @@ async def upload_schema(schema: Schema):
     - Only alphanumeric characters allowed
     - Have to start with an alphabetic character
 
+    ### Description
+
+    The description metadata argument is an additional free text piece of metadata that you can attach to datasets. It should be a human readable description
+    that provides sufficient detail to enable a user to quickly understand what the purpose of the dataset is.
+
+    It is important to note that different versions of schemas can have different descriptions attached to them.
+
     ### Accepted permissions
 
     In order to use this endpoint you need the `DATA_ADMIN` permission.
@@ -140,7 +147,7 @@ async def update_schema(schema: Schema):
 
     #### Schema metadata
 
-    Metadata information for an updated schema will be taken from the original schema
+    Metadata information for an updated schema will be taken from the original schema except the description field. Different versions of schemas can have different descriptions attched to them.
 
     ### Accepted permissions
 

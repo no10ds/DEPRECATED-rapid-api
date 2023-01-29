@@ -4,7 +4,9 @@ from api.domain.storage_metadata import StorageMetaData
 
 class TestStorageMetaData:
     def setup_method(self):
-        self.dataset_meta_data = StorageMetaData("DOMAIN", "DATASET", 3)
+        self.dataset_meta_data = StorageMetaData(
+            "DOMAIN", "DATASET", "Some test base description", 3
+        )
 
     def test_file_location(self):
         assert self.dataset_meta_data.file_location() == "data/DOMAIN/DATASET/3"

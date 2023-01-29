@@ -941,6 +941,7 @@ class TestSchemaValidation:
             "dataset": "other",
             "sensitivity": "PUBLIC",
             "version": 3,
+            "description": "",
             "key_value_tags": {"tag1": "value-1", "Tag1": "val1", "tag2": "val2"},
             "key_only_tags": ["tag4"],
             "owners": [{"name": "owner", "email": "owner@email.com"}],

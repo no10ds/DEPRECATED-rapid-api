@@ -1,8 +1,9 @@
 from typing import Set, Dict, List
 
+from api.common.config.auth import SensitivityLevel, Action
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.common.config.auth import SensitivityLevel, Action
+from api.adapter.s3_adapter import S3Adapter
 from api.domain.dataset_filters import DatasetFilters
 
 WRITE_ALL = f"{Action.WRITE.value}_ALL"
@@ -24,10 +25,14 @@ sensitivities_dict = {
 
 class DatasetService:
     def __init__(
-        self, dynamodb_adapter=DynamoDBAdapter(), resource_adapter=AWSResourceAdapter()
+        self,
+        dynamodb_adapter=DynamoDBAdapter(),
+        resource_adapter=AWSResourceAdapter(),
+        s3_adapter=S3Adapter(),
     ):
         self.dynamodb_adapter = dynamodb_adapter
         self.resource_adapter = resource_adapter
+        self.s3_adapter = s3_adapter
 
     def get_authorised_datasets(self, subject_id: str, action: Action) -> List[str]:
         permissions = self.dynamodb_adapter.get_permissions_for_subject(subject_id)
@@ -73,7 +78,7 @@ class DatasetService:
     ):
         query = DatasetFilters(sensitivity=SensitivityLevel.PROTECTED.value)
         datasets_metadata_list_protected_domains = (
-            self.resource_adapter.get_datasets_metadata(query)
+            self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
         )
         for protected_domain in sensitivities_and_domains.get("protected_domains"):
             [
@@ -90,7 +95,7 @@ class DatasetService:
         for sensitivity in sensitivities_and_domains.get("sensitivities"):
             query = DatasetFilters(sensitivity=sensitivity)
             datasets_metadata_list_sensitivities.extend(
-                self.resource_adapter.get_datasets_metadata(query)
+                self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
             )
         return [
             authorised_datasets.add(datasets_metadata.get_ui_upload_path())
