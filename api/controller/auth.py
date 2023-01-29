@@ -12,7 +12,6 @@ from api.application.services.authorisation.authorisation_service import (
     user_logged_in,
 )
 
-# from api.application.services.authorisation.token_utils import parse_token
 from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
     IDENTITY_PROVIDER_TOKEN_URL,
