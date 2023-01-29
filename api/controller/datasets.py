@@ -87,6 +87,8 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
 async def search_dataset_metadata(term: str):
     sql_query = metadata_search_query(term)
     df = athena_adapter.query_sql(sql_query)
+    df["version"] = df["version"].fillna(value="0")
+    df["data"] = df["data"].fillna(value="")
     return df.to_dict("records")
 
 
