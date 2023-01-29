@@ -410,11 +410,13 @@ class TestSearchDatasets(BaseClientTest):
             {
                 "dataset": "test",
                 "data": "foo",
+                "version": "1",
                 "data_type": "column",
             },
             {
                 "dataset": "bar",
                 "data": "bar",
+                "version": "1",
                 "data_type": "table_name",
             },
         ]
