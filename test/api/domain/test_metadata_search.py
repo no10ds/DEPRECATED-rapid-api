@@ -22,6 +22,7 @@ SELECT * FROM (
     SELECT
         metadata.dataset as dataset,
         metadata.domain as domain,
+        metadata.version as version,
         "column".name as data,
         'column_name' as data_type
     FROM "rapid_catalogue_db"."rapid_metadata_table"
@@ -30,6 +31,7 @@ SELECT * FROM (
     SELECT
         metadata.dataset as dataset,
         metadata.domain as domain,
+        metadata.version as version,
         metadata.description as data,
         'description' as data_type
     FROM "rapid_catalogue_db"."rapid_metadata_table"
@@ -37,6 +39,7 @@ SELECT * FROM (
     SELECT
         metadata.dataset as dataset,
         metadata.domain as domain,
+        metadata.version as version,
         metadata.dataset as data,
         'dataset_name' as data_type
     FROM "rapid_catalogue_db"."rapid_metadata_table"

@@ -6,6 +6,7 @@ from api.common.config.aws import GLUE_CATALOGUE_DB_NAME, METADATA_CATALOGUE_DB_
 
 DATASET_COLUMN = "dataset"
 DOMAIN_COLUMN = "domain"
+VERSION_COLUMN = "version"
 DATA_COLUMN = "data"
 DATA_TYPE_COLUMN = "data_type"
 
@@ -16,6 +17,7 @@ SELECT * FROM (
     SELECT
         metadata.dataset as {DATASET_COLUMN},
         metadata.domain as {DOMAIN_COLUMN},
+        metadata.version as {VERSION_COLUMN},
         "column".name as {DATA_COLUMN},
         'column_name' as {DATA_TYPE_COLUMN}
     FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
@@ -24,6 +26,7 @@ SELECT * FROM (
     SELECT
         metadata.dataset as {DATASET_COLUMN},
         metadata.domain as {DOMAIN_COLUMN},
+        metadata.version as {VERSION_COLUMN},
         metadata.description as {DATA_COLUMN},
         'description' as {DATA_TYPE_COLUMN}
     FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
@@ -31,6 +34,7 @@ SELECT * FROM (
     SELECT
         metadata.dataset as {DATASET_COLUMN},
         metadata.domain as {DOMAIN_COLUMN},
+        metadata.version as {VERSION_COLUMN},
         metadata.dataset as {DATA_COLUMN},
         'dataset_name' as {DATA_TYPE_COLUMN}
     FROM "{GLUE_CATALOGUE_DB_NAME}"."{METADATA_CATALOGUE_DB_NAME}"
