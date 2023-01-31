@@ -10,7 +10,6 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY api api
-COPY templates templates
 COPY static static
 
 ARG commit_sha
