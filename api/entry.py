@@ -1,18 +1,28 @@
-import sass
+from typing import Dict, List
 import os
-from fastapi import FastAPI, Request, HTTPException
+
+from dotenv import load_dotenv
+
+from fastapi import FastAPI, Request, HTTPException, Security, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from starlette.status import HTTP_404_NOT_FOUND
+from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
 
 from api.application.services.authorisation.authorisation_service import (
     get_client_token,
     get_user_token,
+    secure_endpoint,
+    RAPID_ACCESS_TOKEN,
+    user_logged_in,
 )
 from api.application.services.authorisation.token_utils import parse_token
-from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL
+from api.application.services.permissions_service import PermissionsService
+from api.application.services.dataset_service import DatasetService
+from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL, Action
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
+from api.common.config.constants import BASE_API_PATH
 from api.common.logger import AppLogger, init_logger
+from api.common.custom_exceptions import UserError, AWSServiceError
 from api.controller.auth import auth_router
 from api.controller.client import client_router
 from api.controller.datasets import datasets_router
@@ -23,13 +33,12 @@ from api.controller.schema import schema_router
 from api.controller.subjects import subjects_router
 from api.controller.table import table_router
 from api.controller.user import user_router
-from api.controller_ui.data_management import data_management_router
-from api.controller_ui.task_management import jobs_ui_router
-from api.controller_ui.schema_management import schema_management_router
-from api.controller_ui.landing import landing_router
-from api.controller_ui.login import login_router
-from api.controller_ui.subject_management import subject_management_router
 from api.exception_handler import add_exception_handlers
+
+try:
+    load_dotenv()
+except OSError:
+    pass
 
 PROJECT_NAME = os.environ.get("PROJECT_NAME", None)
 PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
@@ -37,12 +46,15 @@ PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 
-app = FastAPI()
+permissions_service = PermissionsService()
+upload_service = DatasetService()
+
+app = FastAPI(
+    openapi_url=f"{BASE_API_PATH}/openapi.json", docs_url=f"{BASE_API_PATH}/docs"
+)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
-sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
 add_exception_handlers(app)
-
 app.include_router(auth_router)
 app.include_router(permissions_router)
 app.include_router(datasets_router)
@@ -50,14 +62,8 @@ app.include_router(schema_router)
 app.include_router(client_router)
 app.include_router(user_router)
 app.include_router(protected_domain_router)
-app.include_router(login_router)
-app.include_router(landing_router)
-app.include_router(data_management_router)
-app.include_router(subject_management_router)
-app.include_router(schema_management_router)
 app.include_router(subjects_router)
 app.include_router(jobs_router)
-app.include_router(jobs_ui_router)
 app.include_router(table_router)
 
 
@@ -83,13 +89,18 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-@app.get("/status", tags=["Status"])
-def status():
+@app.get(f"{BASE_API_PATH}/status", tags=["Status"])
+def status(request: Request):
     """The endpoint used for service health check"""
-    return {"status": "deployed", "sha": COMMIT_SHA, "version": VERSION}
+    return {
+        "status": "deployed",
+        "sha": COMMIT_SHA,
+        "version": VERSION,
+        "root_path": request.scope.get("root_path"),
+    }
 
 
-@app.get("/apis", tags=["Info"])
+@app.get(f"{BASE_API_PATH}/apis", tags=["Info"])
 def info():
     """The endpoint used for a service information check"""
     if PROJECT_NAME is None:
@@ -113,9 +124,81 @@ def info():
     }
 
 
+@app.get(
+    f"{BASE_API_PATH}/auth",
+    status_code=HTTP_200_OK,
+    include_in_schema=False,
+)
+async def get_auth(request: Request):
+    if user_logged_in(request):
+        return {"detail": "success"}
+    else:
+        raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str("fail"))
+
+
+@app.get(
+    f"{BASE_API_PATH}/methods",
+    status_code=HTTP_200_OK,
+    dependencies=[Depends(secure_endpoint)],
+    include_in_schema=False,
+)
+async def methods(request: Request):
+    allowed_actions = {}
+    error_message = None
+    default_error_message = "You have not been granted relevant permissions. Please speak to your system administrator."
+
+    try:
+        subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+        subject_permissions = permissions_service.get_subject_permissions(subject_id)
+        allowed_actions = _determine_user_ui_actions(subject_permissions)
+        if not any([action_allowed for action_allowed in allowed_actions.values()]):
+            error_message = default_error_message
+    except UserError:
+        error_message = default_error_message
+    except AWSServiceError as error:
+        error_message = error.message
+
+    return {"error_message": error_message, **allowed_actions}
+
+
+@app.get(
+    f"{BASE_API_PATH}/permissions_ui",
+    status_code=HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+    include_in_schema=False,
+)
+async def get_permissions_ui():
+    return permissions_service.get_all_permissions_ui()
+
+
+@app.get(
+    f"{BASE_API_PATH}/datasets_ui",
+    status_code=HTTP_200_OK,
+    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
+    include_in_schema=False,
+)
+async def get_datasets_ui(request: Request):
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
+
+    return _group_datasets_by_domain(datasets)
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse("static/favicon.ico")
+
+
+def _group_datasets_by_domain(datasets: List[str]):
+    grouped_datasets = {}
+    for dataset in datasets:
+        dataset_data = dataset.split("/")
+        domain, dataset, version = dataset_data[0], dataset_data[1], dataset_data[2]
+        if domain not in grouped_datasets:
+            grouped_datasets[domain] = [{"dataset": dataset, "version": version}]
+        else:
+            grouped_datasets[domain].append({"dataset": dataset, "version": version})
+    return grouped_datasets
 
 
 def _get_subject_id(request: Request):
@@ -123,6 +206,30 @@ def _get_subject_id(request: Request):
     user_token = get_user_token(request)
     token = client_token if client_token else user_token
     return parse_token(token).subject if token else "Not an authenticated user"
+
+
+def _determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool]:
+    return {
+        "can_manage_users": Action.USER_ADMIN.value in subject_permissions,
+        "can_upload": any(
+            (
+                permission.startswith(Action.WRITE.value)
+                for permission in subject_permissions
+            )
+        ),
+        "can_download": any(
+            (
+                permission.startswith(Action.READ.value)
+                for permission in subject_permissions
+            )
+        ),
+        "can_create_schema": any(
+            (
+                permission.startswith(Action.DATA_ADMIN.value)
+                for permission in subject_permissions
+            )
+        ),
+    }
 
 
 def _set_security_headers(response) -> None:

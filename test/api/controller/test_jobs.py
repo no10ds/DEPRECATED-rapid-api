@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from api.application.services.job_service import JobService
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -34,7 +35,7 @@ class TestListJob(BaseClientTest):
         mock_get_all_jobs.return_value = expected_response
 
         response = self.client.get(
-            "/jobs", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/jobs", headers={"Authorization": "Bearer test-token"}
         )
 
         mock_get_all_jobs.assert_called_once_with("111222333")
@@ -58,7 +59,8 @@ class TestGetJob(BaseClientTest):
         mock_get_job.return_value = expected_response
 
         response = self.client.get(
-            "/jobs/abc-123", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/jobs/abc-123",
+            headers={"Authorization": "Bearer test-token"},
         )
 
         mock_get_job.assert_called_once_with("abc-123")

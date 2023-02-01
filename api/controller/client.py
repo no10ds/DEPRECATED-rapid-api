@@ -5,12 +5,13 @@ from fastapi import status as http_status
 from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 from api.domain.client import ClientRequest
 
 subject_service = SubjectService()
 
 client_router = APIRouter(
-    prefix="/client",
+    prefix=f"{BASE_API_PATH}/client",
     tags=["Client"],
     responses={404: {"description": "Not found"}},
 )

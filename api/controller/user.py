@@ -5,12 +5,13 @@ from fastapi import status as http_status
 from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 from api.domain.user import UserRequest, UserDeleteRequest
 
 subject_service = SubjectService()
 
 user_router = APIRouter(
-    prefix="/user",
+    prefix=f"{BASE_API_PATH}/user",
     tags=["User"],
     responses={404: {"description": "Not found"}},
 )

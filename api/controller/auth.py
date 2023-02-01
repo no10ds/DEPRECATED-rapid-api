@@ -9,21 +9,48 @@ from starlette.status import HTTP_302_FOUND
 
 from api.application.services.authorisation.authorisation_service import (
     RAPID_ACCESS_TOKEN,
+    user_logged_in,
 )
+
 from api.common.aws_utilities import get_secret
 from api.common.config.auth import (
     IDENTITY_PROVIDER_TOKEN_URL,
     COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME,
     COGNITO_REDIRECT_URI,
     COOKIE_MAX_AGE_IN_SECONDS,
+    construct_user_auth_url,
+    construct_logout_url,
 )
-from api.common.config.constants import CONTENT_ENCODING
+from api.common.config.constants import CONTENT_ENCODING, BASE_API_PATH
 
 auth_router = APIRouter(
-    prefix="/oauth2",
+    prefix=f"{BASE_API_PATH}/oauth2",
     include_in_schema=False,
     responses={404: {"description": "Not found"}},
 )
+
+
+@auth_router.get("/login")
+async def get_login_url(request: Request):
+    if user_logged_in(request):
+        return RedirectResponse(url="/", status_code=HTTP_302_FOUND)
+
+    cognito_user_login_client_id = get_secret(
+        COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME
+    )["client_id"]
+    user_auth_url = construct_user_auth_url(cognito_user_login_client_id)
+    return {"auth_url": user_auth_url}
+
+
+@auth_router.get("/logout")
+async def logout():
+    cognito_user_login_client_id = get_secret(
+        COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME
+    )["client_id"]
+    logout_url = construct_logout_url(cognito_user_login_client_id)
+    redirect_response = RedirectResponse(url=logout_url, status_code=HTTP_302_FOUND)
+    redirect_response.delete_cookie(RAPID_ACCESS_TOKEN)
+    return redirect_response
 
 
 @auth_router.post("/token")

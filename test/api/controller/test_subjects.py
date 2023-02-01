@@ -3,6 +3,7 @@ from unittest.mock import patch
 from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import AWSServiceError, UserError
 from api.domain.subject_permissions import SubjectPermissions
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -17,7 +18,7 @@ class TestListSubjects(BaseClientTest):
         mock_subject_service.list_subjects.return_value = expected
 
         response = self.client.get(
-            "/subjects", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/subjects", headers={"Authorization": "Bearer test-token"}
         )
 
         mock_subject_service.list_subjects.assert_called_once()
@@ -30,7 +31,7 @@ class TestListSubjects(BaseClientTest):
         mock_subject_service.list_subjects.side_effect = AWSServiceError("The message")
 
         response = self.client.get(
-            "/subjects", headers={"Authorization": "Bearer test-token"}
+            f"{BASE_API_PATH}/subjects", headers={"Authorization": "Bearer test-token"}
         )
 
         mock_subject_service.list_subjects.assert_called_once()
@@ -55,7 +56,7 @@ class TestModifySubjectPermissions(BaseClientTest):
         )
 
         response = self.client.put(
-            "/subjects/permissions",
+            f"{BASE_API_PATH}/subjects/permissions",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "subject_id": subject_permissions.subject_id,
@@ -75,7 +76,7 @@ class TestModifySubjectPermissions(BaseClientTest):
         mock_set_subject_permissions.side_effect = UserError("Invalid permissions")
 
         response = self.client.put(
-            "/subjects/permissions",
+            f"{BASE_API_PATH}/subjects/permissions",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "subject_id": "1234",
@@ -93,7 +94,7 @@ class TestModifySubjectPermissions(BaseClientTest):
         mock_set_subject_permissions.side_effect = AWSServiceError("Database error")
 
         response = self.client.put(
-            "/subjects/permissions",
+            f"{BASE_API_PATH}/subjects/permissions",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "subject_id": "1234",

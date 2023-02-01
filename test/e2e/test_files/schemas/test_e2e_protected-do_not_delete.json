@@ -3,6 +3,7 @@
   "domain": "test_e2e_protected",
   "dataset": "do_not_delete",
   "sensitivity": "PROTECTED",
+  "description": "A test dataset",
   "key_value_tags": {},
   "key_only_tags": [],
   "owners": [

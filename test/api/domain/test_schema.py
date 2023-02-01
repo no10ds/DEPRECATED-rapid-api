@@ -1,5 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 
+from api.adapter.s3_adapter import S3Adapter
 from api.common.custom_exceptions import SchemaNotFoundError
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata, SchemaMetadatas
@@ -80,9 +83,13 @@ class TestSchema:
 
 
 class TestSchemaMetadata:
+    def setup_method(self):
+        self.mock_s3_client = Mock()
+        self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
+
     def test_creates_metadata_from_s3_key(self):
         key = "data/schemas/PRIVATE/test_domain/test_dataset/2/schema.json"
-        result = SchemaMetadata.from_path(key)
+        result = SchemaMetadata.from_path(key, self.s3_adapter)
 
         assert result.get_domain() == "test_domain"
         assert result.get_dataset() == "test_dataset"
@@ -91,7 +98,7 @@ class TestSchemaMetadata:
 
     def test_creates_metadata_from_s3_key_for_older_files(self):
         key = "data/schemas/PRIVATE/test_domain-test_dataset.json"
-        result = SchemaMetadata.from_path(key)
+        result = SchemaMetadata.from_path(key, self.s3_adapter)
 
         assert result.get_domain() == "test_domain"
         assert result.get_dataset() == "test_dataset"
@@ -102,7 +109,7 @@ class TestSchemaMetadata:
         key = "data/schemas/HYPERSECRET/test_domain/test_dataset/2/schema.json"
 
         with pytest.raises(ValueError):
-            SchemaMetadata.from_path(key)
+            SchemaMetadata.from_path(key, self.s3_adapter)
 
     def test_schema_path(self):
         schema_metadata = SchemaMetadata(

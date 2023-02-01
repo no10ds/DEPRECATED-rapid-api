@@ -3,6 +3,7 @@ from unittest.mock import patch
 from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.client import ClientResponse, ClientRequest
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -23,7 +24,7 @@ class TestClientCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/client",
+            f"{BASE_API_PATH}/client",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "client_name": "my_client",
@@ -52,7 +53,7 @@ class TestClientCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/client",
+            f"{BASE_API_PATH}/client",
             headers={"Authorization": "Bearer test-token"},
             json={"client_name": "my_client"},
         )
@@ -64,7 +65,7 @@ class TestClientCreation(BaseClientTest):
 
     def test_throws_an_exception_when_client_is_empty(self):
         response = self.client.post(
-            "/client",
+            f"{BASE_API_PATH}/client",
             headers={"Authorization": "Bearer test-token"},
             json={"permissions": ["WRITE_PUBLIC", "READ_PRIVATE"]},
         )
@@ -79,7 +80,7 @@ class TestClientCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/client",
+            f"{BASE_API_PATH}/client",
             headers={"Authorization": "Bearer test-token"},
             json={"client_name": "my_client", "permissions": ["INVALID_SCOPE"]},
         )
@@ -96,7 +97,7 @@ class TestClientCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/client",
+            f"{BASE_API_PATH}/client",
             headers={"Authorization": "Bearer test-token"},
             json={"client_name": "my_client", "permissions": ["INVALID_SCOPE"]},
         )
@@ -113,7 +114,7 @@ class TestClientDeletion(BaseClientTest):
         expected_response = {"details": "The client 'my-client-id' has been deleted"}
 
         response = self.client.delete(
-            "/client/my-client-id",
+            f"{BASE_API_PATH}/client/my-client-id",
             headers={"Authorization": "Bearer test-token"},
         )
 
@@ -129,7 +130,7 @@ class TestClientDeletion(BaseClientTest):
         )
 
         response = self.client.delete(
-            "/client/my-client-id",
+            f"{BASE_API_PATH}/client/my-client-id",
             headers={"Authorization": "Bearer test-token"},
         )
 
@@ -145,7 +146,7 @@ class TestClientDeletion(BaseClientTest):
         )
 
         response = self.client.delete(
-            "/client/my-client-id",
+            f"{BASE_API_PATH}/client/my-client-id",
             headers={"Authorization": "Bearer test-token"},
         )
 

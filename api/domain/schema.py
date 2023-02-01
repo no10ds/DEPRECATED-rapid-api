@@ -24,6 +24,9 @@ class Schema(BaseModel):
     def get_dataset(self) -> str:
         return self.metadata.get_dataset()
 
+    def get_description(self) -> str:
+        return self.metadata.get_description()
+
     def get_sensitivity(self) -> str:
         return self.metadata.get_sensitivity()
 

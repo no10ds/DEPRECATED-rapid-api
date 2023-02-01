@@ -9,11 +9,12 @@ from api.application.services.authorisation.authorisation_service import (
 )
 from api.application.services.job_service import JobService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 
 jobs_service = JobService()
 
 jobs_router = APIRouter(
-    prefix="/jobs",
+    prefix=f"{BASE_API_PATH}/jobs",
     tags=["Jobs"],
     responses={404: {"description": "Not found"}},
 )
