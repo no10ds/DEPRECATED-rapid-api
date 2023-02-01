@@ -18,7 +18,7 @@ v5.0.0 is a major release of rAPId with several breaking changes. One of the maj
 ### Changed
 - Test users are created automatically within the infrastructure now and are prefixed accordingly
 - ***(Breaking Change)*** All api routes are now served on the prefix `/api`. For instance the api route to list datasets `GET /datasets` now becomes `GET /api/datasets`
-- ***(Breaking Change)*** The storage of the pretty printed JSON schemas has been removed to allow for them be queriable within Athena. This is requied for the data catalog search. To migrate over it is required to run the migration `test/scripts/v5_schema_migration.py`.
+- ***(Breaking Change)*** The storage of the pretty printed JSON schemas has been removed to allow for them be queriable within Athena. This is requied for the data catalog search. To migrate over it is required to run the migration `migrations/scripts/v5_schema_migration.py`.
 - Test users are now prefixed as they are generated within the infrastructure.
 
 ### Removed
