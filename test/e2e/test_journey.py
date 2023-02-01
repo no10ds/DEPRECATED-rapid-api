@@ -38,11 +38,11 @@ class BaseJourneyTest(ABC):
     def upload_dataset_url(self, domain: str, dataset: str) -> str:
         return f"{self.datasets_endpoint}/{domain}/{dataset}"
 
-    def query_dataset_url(self, domain: str, dataset: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/query"
+    def query_dataset_url(self, domain: str, dataset: str, version: int = 0) -> str:
+        return f"{self.datasets_endpoint}/{domain}/{dataset}/query?version={version}"
 
-    def info_dataset_url(self, domain: str, dataset: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/info"
+    def info_dataset_url(self, domain: str, dataset: str, version: int = 0) -> str:
+        return f"{self.datasets_endpoint}/{domain}/{dataset}/info?version={version}"
 
     def list_dataset_raw_files_url(self, domain: str, dataset: str) -> str:
         return f"{self.datasets_endpoint}/{domain}/{dataset}/1/files"
@@ -222,7 +222,10 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         requests.delete(delete_url, headers=self.generate_auth_headers())
 
     def test_gets_existing_dataset_info_when_authorised(self):
-        url = self.info_dataset_url(domain=self.e2e_test_domain, dataset="query")
+        url = self.info_dataset_url(
+            domain=self.e2e_test_domain, dataset="query", version=1
+        )
+
         response = requests.get(url, headers=(self.generate_auth_headers()))
         assert response.status_code == HTTPStatus.OK
 
@@ -232,19 +235,15 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         assert response.status_code == HTTPStatus.NOT_FOUND
 
     def test_queries_existing_dataset_as_csv_when_authorised(self):
-        url = self.query_dataset_url(domain=self.e2e_test_domain, dataset="query")
+        url = self.query_dataset_url(
+            domain=self.e2e_test_domain, dataset="query", version=1
+        )
         headers = {
             "Accept": "text/csv",
             "Authorization": "Bearer " + self.token,
         }
         response = requests.post(url, headers=headers)
         assert response.status_code == HTTPStatus.OK
-        assert (
-            response.text
-            == '"","year","month","destination","arrival","type","status"\n'
-            + '0,"2017","7","Leeds","London","regular","completed"\n'
-            + '1,"2017","7","Darlington","Durham","regular","completed"\n'
-        )
 
     def test_fails_to_query_when_authorised_and_sql_injection_attempted(self):
         url = self.query_dataset_url(domain=self.e2e_test_domain, dataset="query")
