@@ -1,4 +1,5 @@
 import json
+import time
 from typing import Dict
 
 import requests
@@ -50,6 +51,9 @@ async def logout():
     logout_url = construct_logout_url(cognito_user_login_client_id)
     redirect_response = RedirectResponse(url=logout_url, status_code=HTTP_302_FOUND)
     redirect_response.delete_cookie(RAPID_ACCESS_TOKEN)
+    # we sleep for just over a second so that the Cloudfront cache has time
+    # to clear
+    time.sleep(1.2)
     return redirect_response
 
 
