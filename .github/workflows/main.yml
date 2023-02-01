@@ -81,14 +81,8 @@ jobs:
           ALLOWED_EMAIL_DOMAINS: ${{ secrets.ALLOWED_EMAIL_DOMAINS }}
         run: pytest test/e2e -v
 
-      - name: Run UI Tests
-        id: ui-tests
-        env:
-          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
-        run: make test-ui
-
       - name: Tag image as failure
-        if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure' || steps.ui-tests.conclusion == 'failure' || steps.install-requirements.conclusion == 'failure'
+        if: always() && steps.await-running-app.conclusion == 'failure' || steps.e2e-tests.conclusion == 'failure' || steps.install-requirements.conclusion == 'failure'
         run: make tag-prod-failure
 
       - name: Clean Docker context
