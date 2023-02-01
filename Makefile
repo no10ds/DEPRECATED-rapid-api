@@ -48,22 +48,6 @@ test-e2e:		## Run E2E tests
 test-e2e-focus:		## Run E2E tests marked with `@pytest.mark.focus`
 	@./batect test-e2e-focus
 
-test-ui:		## Run UI tests
-	@playwright install --with-deps
-	@pytest test/ui -v -s
-
-test-headed-ui:		## Run UI tests with chrome browser window
-	@playwright install --with-deps
-	@BROWSER_MODE="HEADED" pytest test/ui -v -s
-
-test-ui-focus:		## Runs UI tests marked with `@pytest.mark.focus`
-	@playwright install --with-deps
-	@pytest test/ui -v -s -m focus
-
-test-headed-ui-focus:	## Runs UI tests marked with `@pytest.mark.focus` in headed mode
-	@playwright install --with-deps
-	@BROWSER_MODE="HEADED" pytest test/ui -v -s -m focus
-
 test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage
 

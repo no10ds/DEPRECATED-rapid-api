@@ -11,6 +11,7 @@ The schema will have the following structure:
   - `domain` - String value, is the name of the domain that owns the dataset, it could be for example the name of the department that handles the data.
   - `dataset` - String value, is the name of the dataset. e.g.: "receipts" or "address".
   - `sensitivity` - String value, is the sensitivity level of the dataset. e.g.: "PUBLIC", "PRIVATE", "PROTECTED"
+  - `description` - Free text string that provides human readable information about the details of the dataset.
   - `version` - int value, denotes the schema version
   - `key_value_tags` - Dictionary of string keys and values to associate to the dataset. e.g.: `{"school_level": "primary", "school_type": "private"}`
   - `key_only_tags` - List of strings of tags to associate to the dataset. e.g.: `["schooling", "benefits", "archive", "historic"]`
@@ -27,6 +28,9 @@ The sensitivity level of a dataset can be described by one of three values: `PUB
 These determine the access level that different clients will have to the data depending on their permissions.
 
 Notes if you wish to use the sensitivity level `PROTECTED` then you must first create a Protected Domain for your Dataset. See the [data access docs](data_access.md)
+
+### Description
+The description is where you can specify human readable details about the dataset so that a user can quickly understand the contents and purpose of a dataset.
 
 ### Version
 The schema version is automatically generated and cannot be updated by the user
@@ -139,6 +143,7 @@ To create a schema manually from scratch, just create a json file filling all th
   "metadata": {
     "domain": "my_domain_name",
     "dataset": "my_dataset_name",
+    "description": "",
     "sensitivity": "SENSITIVITY",
     "key_value_tags": {
       "tag_name_1": "tag_value_1",
@@ -211,6 +216,7 @@ After calling POST `/schema/my_domain_name/my_datase_name/generate` with `my_fil
   "metadata": {
     "domain": "my_domain_name",
     "dataset": "my_dataset_name",
+    "description": "provide some human readable details about the dataset",
     "sensitivity": "SENSITIVITY",
     "key_value_tags": {},
     "key_only_tags": [],
@@ -261,6 +267,7 @@ You might then change the values that fit your data and come with something like
   "metadata": {
     "domain": "changed_domain_name",
     "dataset": "changed_dataset_name",
+    "description": "provide some human readable details about the dataset"
     "sensitivity": "SENSITIVITY",
     "key_value_tags": {},
     "key_only_tags": [

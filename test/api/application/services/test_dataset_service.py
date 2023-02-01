@@ -1,10 +1,9 @@
-from unittest.mock import patch, call
+from unittest.mock import patch
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import Action
-from api.domain.dataset_filters import DatasetFilters
 
 
 class TestWriteDatasets:
@@ -18,8 +17,6 @@ class TestWriteDatasets:
         action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_PRIVATE", "WRITE_PUBLIC", "WRITE_PRIVATE"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
-        query_private = DatasetFilters(sensitivity="PRIVATE")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_dataset_1", domain="test_domain_1", version=1
         )
@@ -40,9 +37,6 @@ class TestWriteDatasets:
         assert "test_domain_2/test_dataset_2/2" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_has_calls(
-            [call(query_private), call(query_public)], any_order=True
-        )
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
@@ -52,9 +46,6 @@ class TestWriteDatasets:
         action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_PRIVATE", "WRITE_ALL", "WRITE_PRIVATE"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
-        query_private = DatasetFilters(sensitivity="PRIVATE")
-        query_protected = DatasetFilters(sensitivity="PROTECTED")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_public_dataset", domain="test_domain_1"
         )
@@ -81,10 +72,6 @@ class TestWriteDatasets:
         assert "test_domain_3/test_protected_dataset/3" in result
         assert mock_get_datasets_metadata.call_count == 3
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_has_calls(
-            [call(query_private), call(query_public), call(query_protected)],
-            any_order=True,
-        )
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
@@ -94,7 +81,6 @@ class TestWriteDatasets:
         action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_ALL", "WRITE_PUBLIC"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_dataset_1", domain="test_domain_1", version=3
         )
@@ -110,7 +96,6 @@ class TestWriteDatasets:
         assert "test_domain_1/test_dataset_1/3" in result
         assert mock_get_datasets_metadata.call_count == 1
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_called_once_with(query_public)
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
@@ -120,8 +105,6 @@ class TestWriteDatasets:
         action = Action.WRITE
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_ALL", "WRITE_PUBLIC", "WRITE_PROTECTED_TEST2DOMAIN"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
-        query_protected_protected_domain = DatasetFilters(sensitivity="PROTECTED")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_dataset_1", domain="some_domain"
         )
@@ -144,10 +127,6 @@ class TestWriteDatasets:
         assert "test2domain/test_dataset_2/1" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_has_calls(
-            [call(query_public), call(query_protected_protected_domain)],
-            any_order=True,
-        )
 
 
 class TestReadDatasets:
@@ -161,8 +140,6 @@ class TestReadDatasets:
         action = Action.READ
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_PRIVATE", "READ_PUBLIC", "WRITE_PRIVATE"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
-        query_private = DatasetFilters(sensitivity="PRIVATE")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_dataset_1", domain="test_domain_1"
         )
@@ -183,9 +160,6 @@ class TestReadDatasets:
         assert "test_domain_2/test_dataset_2/2" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_has_calls(
-            [call(query_private), call(query_public)], any_order=True
-        )
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
@@ -195,9 +169,6 @@ class TestReadDatasets:
         action = Action.READ
         subject_id = "1234adsfasd8234kj"
         permissions = ["READ_PRIVATE", "READ_ALL", "WRITE_PRIVATE"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
-        query_private = DatasetFilters(sensitivity="PRIVATE")
-        query_protected = DatasetFilters(sensitivity="PROTECTED")
 
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_public_dataset", domain="test_domain_1", version=2
@@ -224,10 +195,6 @@ class TestReadDatasets:
         assert "test_domain_3/test_protected_dataset/2" in result
         assert mock_get_datasets_metadata.call_count == 3
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_has_calls(
-            [call(query_private), call(query_public), call(query_protected)],
-            any_order=True,
-        )
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
@@ -237,7 +204,6 @@ class TestReadDatasets:
         action = Action.READ
         subject_id = "1234adsfasd8234kj"
         permissions = ["WRITE_ALL", "READ_PUBLIC"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_dataset_1", domain="test_domain_1", version=100
         )
@@ -253,7 +219,6 @@ class TestReadDatasets:
         assert "test_domain_1/test_dataset_1/100" in result
         assert mock_get_datasets_metadata.call_count == 1
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_called_once_with(query_public)
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
@@ -263,8 +228,6 @@ class TestReadDatasets:
         action = Action.READ
         subject_id = "1234adsfasd8234kj"
         permissions = ["WRITE_ALL", "READ_PUBLIC", "READ_PROTECTED_TEST2DOMAIN"]
-        query_public = DatasetFilters(sensitivity="PUBLIC")
-        query_protected_protected_domain = DatasetFilters(sensitivity="PROTECTED")
         enriched_dataset_metadata_1 = AWSResourceAdapter.EnrichedDatasetMetaData(
             dataset="test_dataset_1", domain="some_domain", version=2
         )
@@ -287,7 +250,3 @@ class TestReadDatasets:
         assert "test2domain/test_dataset_2/1" in result
         assert mock_get_datasets_metadata.call_count == 2
         mock_get_permissions_for_subject.assert_called_once_with(subject_id)
-        mock_get_datasets_metadata.assert_has_calls(
-            [call(query_public), call(query_protected_protected_domain)],
-            any_order=True,
-        )

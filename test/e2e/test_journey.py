@@ -105,7 +105,9 @@ class TestUnauthorisedJourney(BaseJourneyTest):
     def setup_class(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
 
-        write_all_credentials = get_secret(secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_WRITE_ALL")
+        write_all_credentials = get_secret(
+            secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_WRITE_ALL"
+        )
 
         cognito_client_id = write_all_credentials["CLIENT_ID"]
         cognito_client_secret = write_all_credentials[
@@ -455,7 +457,7 @@ class TestAuthenticatedSubjectJourneys(BaseJourneyTest):
             f"{RESOURCE_PREFIX}_e2e_test_client_read_and_write",
             f"{RESOURCE_PREFIX}_e2e_test_client_data_admin",
             f"{RESOURCE_PREFIX}_e2e_test_client_write_all",
-            f"{RESOURCE_PREFIX}_e2e_test_client_user_admin"
+            f"{RESOURCE_PREFIX}_e2e_test_client_user_admin",
         ]
 
         assert response.status_code == HTTPStatus.OK

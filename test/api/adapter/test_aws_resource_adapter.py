@@ -4,6 +4,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.adapter.s3_adapter import S3Adapter
 from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.dataset_filters import DatasetFilters
@@ -15,7 +16,9 @@ class TestAWSResourceAdapterClientMethods:
 
     def setup_method(self):
         self.resource_boto_client = Mock()
+        self.mock_s3_client = Mock()
         self.resource_adapter = AWSResourceAdapter(self.resource_boto_client)
+        self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
         self.aws_return_value = {
             "ResourceTagMappingList": [
                 {
@@ -83,30 +86,35 @@ class TestAWSResourceAdapterClientMethods:
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
                 dataset="dataset1",
+                description="",
                 tags={"sensitivity": "PUBLIC", "no_of_versions": "1"},
                 version=1,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain2",
                 dataset="dataset2",
+                description="",
                 tags={"tag1": "", "sensitivity": "PUBLIC", "no_of_versions": "2"},
                 version=2,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain3",
                 dataset="dataset",
+                description="",
                 tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "3"},
                 version=3,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain3",
                 dataset="dataset3",
+                description="",
                 tags={"tag5": "", "sensitivity": "PUBLIC", "no_of_versions": "1"},
                 version=1,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain36",
                 dataset="dataset3",
+                description="",
                 tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "10"},
                 version=10,
             ),
@@ -114,7 +122,9 @@ class TestAWSResourceAdapterClientMethods:
 
         self.resource_boto_client.get_resources.return_value = self.aws_return_value
 
-        actual_metadatas = self.resource_adapter.get_datasets_metadata(query)
+        actual_metadatas = self.resource_adapter.get_datasets_metadata(
+            self.s3_adapter, query
+        )
 
         self.resource_boto_client.get_resources.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"], TagFilters=[]
@@ -126,7 +136,9 @@ class TestAWSResourceAdapterClientMethods:
 
         self.resource_boto_client.get_resources.return_value = {}
 
-        actual_metadatas = self.resource_adapter.get_datasets_metadata(query)
+        actual_metadatas = self.resource_adapter.get_datasets_metadata(
+            self.s3_adapter, query
+        )
 
         self.resource_boto_client.get_resources.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"], TagFilters=[]
@@ -144,7 +156,7 @@ class TestAWSResourceAdapterClientMethods:
 
         self.resource_boto_client.get_resources.return_value = {}
 
-        self.resource_adapter.get_datasets_metadata(query)
+        self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
 
         self.resource_boto_client.get_resources.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"],
@@ -168,7 +180,7 @@ class TestAWSResourceAdapterClientMethods:
         )
 
         with pytest.raises(UserError, match="Wrong parameters sent to list datasets"):
-            self.resource_adapter.get_datasets_metadata(query)
+            self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
 
     @pytest.mark.parametrize(
         "error_code",
@@ -196,7 +208,7 @@ class TestAWSResourceAdapterClientMethods:
             AWSServiceError,
             match="Internal server error, please contact system administrator",
         ):
-            self.resource_adapter.get_datasets_metadata(query)
+            self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
 
     @pytest.mark.parametrize(
         "domain, dataset, expected_version",

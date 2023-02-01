@@ -1,5 +1,6 @@
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TYPE_CHECKING
+import json
 
 from pydantic import BaseModel, EmailStr
 
@@ -8,6 +9,9 @@ from api.common.config.aws import SCHEMAS_LOCATION
 from api.common.custom_exceptions import SchemaNotFoundError
 from api.common.data_parsers import parse_categorisation
 from api.common.utilities import BaseEnum
+
+if TYPE_CHECKING:
+    from api.adapter.s3_adapter import S3Adapter
 
 
 class Owner(BaseModel):
@@ -25,6 +29,7 @@ class SchemaMetadata(BaseModel):
     dataset: str
     sensitivity: str
     version: Optional[int]
+    description: Optional[str] = ""
     key_value_tags: Dict[str, str] = dict()
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
@@ -42,27 +47,52 @@ class SchemaMetadata(BaseModel):
     def get_version(self) -> int:
         return self.version
 
+    def get_description(self) -> str:
+        return self.description
+
     def schema_path(self) -> str:
         return f"{SCHEMAS_LOCATION}/{self.sensitivity}/{self.schema_name()}"
 
     def schema_name(self) -> str:
         return f"{self.domain}/{self.dataset}/{self.version}/schema.json"
 
-    # TODO remove else block once schema versioning migration is done
     @classmethod
-    def from_path(cls, path: str):
+    def from_path(cls, path: str, s3_adapter: "S3Adapter"):
         sensitivity = parse_categorisation(path, SensitivityLevel.values(), "PUBLIC")
         if path.endswith("schema.json"):
-            split_path = path.split("/")
-            return cls(
-                domain=split_path[-4],
-                dataset=split_path[-3],
-                sensitivity=sensitivity,
-                version=split_path[-2],
-            )
+            try:
+                data = s3_adapter.retrieve_data(path).read()
+                data_json = json.loads(data)
+                metadata = data_json["metadata"]
+
+                if metadata:
+                    return cls(
+                        domain=metadata["domain"],
+                        dataset=metadata["dataset"],
+                        sensitivity=metadata["sensitivity"],
+                        description=metadata["description"],
+                        version=metadata["version"],
+                    )
+                else:
+                    raise Exception
+            except Exception:
+                split_path = path.split("/")
+                domain = split_path[-4]
+                dataset = split_path[-3]
+                version = split_path[-2]
+                return cls(
+                    domain=domain,
+                    dataset=dataset,
+                    sensitivity=sensitivity,
+                    description="",
+                    version=version,
+                )
+
         else:
             domain, dataset = path.split("/")[-1].replace(".json", "").split("-")
-            return cls(domain=domain, dataset=dataset, sensitivity=sensitivity)
+            return cls(
+                domain=domain, dataset=dataset, sensitivity=sensitivity, description=""
+            )
 
     def get_custom_tags(self) -> Dict[str, str]:
         return {**self.key_value_tags, **dict.fromkeys(self.key_only_tags, "")}

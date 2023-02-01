@@ -37,6 +37,7 @@ def mock_schema_response():
             "domain": "test_domain",
             "dataset": "test_dataset",
             "sensitivity": "PUBLIC",
+            "description": "some test description",
             "version": 1,
         },
         "columns": [

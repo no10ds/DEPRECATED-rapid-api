@@ -3,6 +3,7 @@ from unittest.mock import patch
 from api.application.services.subject_service import SubjectService
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.user import UserResponse, UserRequest, UserDeleteRequest
+from api.common.config.constants import BASE_API_PATH
 from test.api.common.controller_test_utils import BaseClientTest
 
 
@@ -25,7 +26,7 @@ class TestUserCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "user-name",
@@ -59,7 +60,7 @@ class TestUserCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "user-name",
@@ -74,7 +75,7 @@ class TestUserCreation(BaseClientTest):
 
     def test_throws_an_exception_when_user_is_empty(self):
         response = self.client.post(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={"permissions": ["WRITE_PUBLIC", "READ_PRIVATE"]},
         )
@@ -91,7 +92,7 @@ class TestUserCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",
@@ -112,7 +113,7 @@ class TestUserCreation(BaseClientTest):
         )
 
         response = self.client.post(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",
@@ -134,7 +135,7 @@ class TestUserDeletion(BaseClientTest):
         )
 
         response = self.client.delete(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",
@@ -154,7 +155,7 @@ class TestUserDeletion(BaseClientTest):
         )
 
         response = self.client.delete(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",
@@ -174,7 +175,7 @@ class TestUserDeletion(BaseClientTest):
         )
 
         response = self.client.delete(
-            "/user",
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",

@@ -3,6 +3,7 @@
     "domain": "test_e2e",
     "dataset": "update",
     "sensitivity": "PUBLIC",
+    "description": "A test dataset",
     "key_value_tags": {
       "test_e2e": "update",
       "test": "e2e"

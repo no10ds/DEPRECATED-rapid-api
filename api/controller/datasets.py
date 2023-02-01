@@ -10,6 +10,7 @@ from starlette.responses import PlainTextResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.adapter.s3_adapter import S3Adapter
 from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     secure_endpoint,
@@ -19,6 +20,7 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
 from api.common.config.auth import Action
+from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
@@ -26,16 +28,20 @@ from api.common.custom_exceptions import (
 )
 from api.common.logger import AppLogger
 from api.domain.dataset_filters import DatasetFilters
+from api.domain.metadata_search import metadata_search_query
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
 
+
+s3_adapter = S3Adapter()
+athena_adapter = AthenaAdapter()
 resource_adapter = AWSResourceAdapter()
 data_service = DataService()
-athena_adapter = AthenaAdapter()
 delete_service = DeleteService()
 
+
 datasets_router = APIRouter(
-    prefix="/datasets",
+    prefix=f"{BASE_API_PATH}/datasets",
     tags=["Datasets"],
     responses={404: {"description": "Not found"}},
 )
@@ -69,7 +75,21 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return resource_adapter.get_datasets_metadata(tag_filters)
+    return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
+
+
+@datasets_router.get(
+    "/search/{term}",
+    dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
+    status_code=http_status.HTTP_200_OK,
+    include_in_schema=False,
+)
+async def search_dataset_metadata(term: str):
+    sql_query = metadata_search_query(term)
+    df = athena_adapter.query_sql(sql_query)
+    df["version"] = df["version"].fillna(value="0")
+    df["data"] = df["data"].fillna(value="")
+    return df.to_dict("records")
 
 
 @datasets_router.get(

@@ -3,6 +3,7 @@ import urllib.parse
 from typing import List
 
 from api.common.config.aws import DOMAIN_NAME, RESOURCE_PREFIX, AWS_REGION
+from api.common.config.constants import BASE_API_PATH
 from api.common.utilities import BaseEnum
 
 RAPID_ACCESS_TOKEN = "rat"  # nosec B105
@@ -37,7 +38,7 @@ COGNITO_USER_LOGIN_APP_CREDENTIALS_SECRETS_NAME = os.getenv(
 )
 
 COGNITO_LOGOUT_URI = f"https://{DOMAIN_NAME}/login"
-COGNITO_REDIRECT_URI = f"https://{DOMAIN_NAME}/oauth2/success"
+COGNITO_REDIRECT_URI = f"https://{DOMAIN_NAME}{BASE_API_PATH}/oauth2/success"
 PROTECTED_DOMAIN_SCOPES_PARAMETER_NAME = f"{RESOURCE_PREFIX}_protected_domain_scopes"
 PROTECTED_DOMAIN_PERMISSIONS_PARAMETER_NAME = (
     f"{RESOURCE_PREFIX}_protected_domain_permissions"

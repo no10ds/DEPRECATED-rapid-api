@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
+## v5.0.0 - _2022-01-27_
+
+See [v5.0.0] changes
+
+v5.0.0 is a major release of rAPId with several breaking changes. One of the major changes is the splitting out of the user interface into it's own codebase. It also introduces a data catalog metadata search.
+
+### Added
+
+- New description field for dataset schemas. This is a human readable tag that can be applied to datasets so a user can understand the datasets functionaility.
+- Dataset metadata search endpoint `/api/datasets/search/{search term}`
+
+### Changed
+- Test users are created automatically within the infrastructure now and are prefixed accordingly
+- ***(Breaking Change)*** All api routes are now served on the prefix `/api`. For instance the api route to list datasets `GET /datasets` now becomes `GET /api/datasets`
+- ***(Breaking Change)*** The storage of the pretty printed JSON schemas has been removed to allow for them be queriable within Athena. This is requied for the data catalog search. To migrate over it is required to run the migration `migrations/scripts/v5_schema_migration.py`.
+- Test users are now prefixed as they are generated within the infrastructure.
+
+### Removed
+
+- The simple static user interface hosted within the API has been removed and is now hosted as it's own (service)[https://github.com/no10ds/rapid-ui]
+
+
+[v5.0.0]: https://github.com/no10ds/rapid-api/compare/v4.2.0...v5.0.0
+
 ## v4.2.0 - _2022-12-14_
 
 See [v4.2.0] changes
