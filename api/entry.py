@@ -1,5 +1,4 @@
 from typing import Dict, List
-import sass
 import os
 
 from dotenv import load_dotenv
@@ -34,15 +33,6 @@ from api.controller.schema import schema_router
 from api.controller.subjects import subjects_router
 from api.controller.table import table_router
 from api.controller.user import user_router
-from api.controller_ui.data_management import (
-    data_management_router,
-    group_datasets_by_domain,
-)
-from api.controller_ui.task_management import jobs_ui_router
-from api.controller_ui.schema_management import schema_management_router
-from api.controller_ui.landing import landing_router
-from api.controller_ui.login import login_router
-from api.controller_ui.subject_management import subject_management_router
 from api.exception_handler import add_exception_handlers
 
 try:
@@ -64,7 +54,6 @@ app = FastAPI(
 )
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.openapi = custom_openapi_docs_generator(app)
-sass.compile(dirname=("static/sass/main", "static"), output_style="compressed")
 add_exception_handlers(app)
 app.include_router(auth_router)
 app.include_router(permissions_router)
@@ -73,14 +62,8 @@ app.include_router(schema_router)
 app.include_router(client_router)
 app.include_router(user_router)
 app.include_router(protected_domain_router)
-app.include_router(login_router)
-app.include_router(landing_router)
-app.include_router(data_management_router)
-app.include_router(subject_management_router)
-app.include_router(schema_management_router)
 app.include_router(subjects_router)
 app.include_router(jobs_router)
-app.include_router(jobs_ui_router)
 app.include_router(table_router)
 
 
@@ -198,12 +181,24 @@ async def get_datasets_ui(request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
     datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
 
-    return group_datasets_by_domain(datasets)
+    return _group_datasets_by_domain(datasets)
 
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse("static/favicon.ico")
+
+
+def _group_datasets_by_domain(datasets: List[str]):
+    grouped_datasets = {}
+    for dataset in datasets:
+        dataset_data = dataset.split("/")
+        domain, dataset, version = dataset_data[0], dataset_data[1], dataset_data[2]
+        if domain not in grouped_datasets:
+            grouped_datasets[domain] = [{"dataset": dataset, "version": version}]
+        else:
+            grouped_datasets[domain].append({"dataset": dataset, "version": version})
+    return grouped_datasets
 
 
 def _get_subject_id(request: Request):

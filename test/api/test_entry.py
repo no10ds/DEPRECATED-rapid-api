@@ -5,7 +5,7 @@ from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import Action
 from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import AWSServiceError, UserError
-from api.controller_ui.landing import determine_user_ui_actions
+from api.entry import _determine_user_ui_actions
 
 from test.api.common.controller_test_utils import BaseClientTest
 
@@ -94,7 +94,7 @@ class TestMethodsUI(BaseClientTest):
     def test_determines_user_allowed_ui_actions(
         self, permissions, can_manage_users, can_upload, can_download, can_create_schema
     ):
-        allowed_actions = determine_user_ui_actions(permissions)
+        allowed_actions = _determine_user_ui_actions(permissions)
 
         assert allowed_actions["can_manage_users"] is can_manage_users
         assert allowed_actions["can_upload"] is can_upload
