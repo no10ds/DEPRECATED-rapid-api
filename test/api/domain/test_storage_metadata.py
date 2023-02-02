@@ -5,7 +5,10 @@ from api.domain.storage_metadata import StorageMetaData
 class TestStorageMetaData:
     def setup_method(self):
         self.dataset_meta_data = StorageMetaData(
-            "DOMAIN", "DATASET", "Some test base description", 3
+            "DOMAIN",
+            "DATASET",
+            3,
+            "Some test base description",
         )
 
     def test_file_location(self):
