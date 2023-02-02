@@ -84,7 +84,7 @@ class AWSResourceAdapter:
         description = s3_adapter.get_dataset_description(
             domain, dataset, version, senstivity
         )
-        return self.EnrichedDatasetMetaData(domain, dataset, description, version, tags)
+        return self.EnrichedDatasetMetaData(domain, dataset, version, description, tags)
 
     def get_version_from_tags(self, resource_tag_mapping):
         version_tag = [

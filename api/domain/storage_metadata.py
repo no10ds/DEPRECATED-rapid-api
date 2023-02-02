@@ -8,8 +8,8 @@ from api.common.config.aws import DATA_BUCKET
 class StorageMetaData:
     domain: str
     dataset: str
-    description: Optional[str] = ""
     version: Optional[int] = 1
+    description: Optional[str] = ""
 
     def dataset_location(self) -> str:
         return self._construct_dataset_location()

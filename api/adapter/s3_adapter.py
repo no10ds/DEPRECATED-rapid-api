@@ -69,7 +69,7 @@ class S3Adapter:
     def find_raw_file(self, domain: str, dataset: str, version: int, filename: str):
         try:
             self.retrieve_data(
-                StorageMetaData(domain, dataset, "", version).raw_data_path(filename)
+                StorageMetaData(domain, dataset, version).raw_data_path(filename)
             )
         except ClientError as error:
             if error.response["Error"]["Code"] == "NoSuchKey":
@@ -133,7 +133,7 @@ class S3Adapter:
         AppLogger.info(f"Raw data upload for {domain}/{dataset}/{version} started")
         filename = f"{raw_file_identifier}.csv"
         raw_data_path = StorageMetaData(
-            domain, dataset, description, version
+            domain, dataset, version, description
         ).raw_data_path(filename)
         self.__s3_client.upload_file(
             Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path
@@ -142,14 +142,14 @@ class S3Adapter:
 
     def list_raw_files(self, domain: str, dataset: str, version: int) -> List[str]:
         object_list = self._list_files_from_path(
-            StorageMetaData(domain, dataset, "", version).raw_data_location()
+            StorageMetaData(domain, dataset, version).raw_data_location()
         )
         return self._map_object_list_to_filename(object_list)
 
     def delete_dataset_files(
         self, domain: str, dataset: str, version: int, raw_data_filename: str
     ) -> None:
-        dataset_metadata = StorageMetaData(domain, dataset, "", version)
+        dataset_metadata = StorageMetaData(domain, dataset, version)
         files = self._list_files_from_path(dataset_metadata.file_location())
         raw_file_identifier = self._clean_filename(raw_data_filename)
 
@@ -162,7 +162,6 @@ class S3Adapter:
         files_to_delete.append(
             {"Key": dataset_metadata.raw_data_path(raw_data_filename)}
         )
-
         self._delete_objects(files_to_delete, raw_data_filename)
 
     def generate_query_result_download_url(self, query_execution_id: str) -> str:

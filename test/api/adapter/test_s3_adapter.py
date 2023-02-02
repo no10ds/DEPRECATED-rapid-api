@@ -74,6 +74,12 @@ class TestS3AdapterUpload:
             object_content="",
         )
 
+    def test_construct_partitioned_data_path(self):
+        result = self.persistence_adapter._construct_partitioned_data_path(
+            "partition", "file.csv", "domain", "dataset", "4"
+        )
+        assert result == "data/domain/dataset/4/partition/file.csv"
+
     def test_upload_partitioned_data(self):
         domain = "domain"
         dataset = "dataset"

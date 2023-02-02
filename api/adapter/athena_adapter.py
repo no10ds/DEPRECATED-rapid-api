@@ -38,7 +38,7 @@ class AthenaAdapter:
         self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
     ) -> DataFrame:
         version = handle_version_retrieval(domain, dataset, version)
-        table_name = StorageMetaData(domain, dataset, "", version).glue_table_name()
+        table_name = StorageMetaData(domain, dataset, version).glue_table_name()
         return self.query_sql(query.to_sql(table_name))
 
     def query_sql(self, query_string: str) -> DataFrame:
@@ -62,7 +62,7 @@ class AthenaAdapter:
         :return: QueryExecutionId from Athena
         """
         version = handle_version_retrieval(domain, dataset, version)
-        table_name = StorageMetaData(domain, dataset, "", version).glue_table_name()
+        table_name = StorageMetaData(domain, dataset, version).glue_table_name()
         try:
             return self.__athena_client.start_query_execution(
                 QueryString=query.to_sql(table_name),
