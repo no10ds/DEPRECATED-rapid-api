@@ -87,6 +87,20 @@ class TestUploadSchema:
         )
         assert result == "some-other.json"
 
+    def test_upload_schema_uppercase_domain(self):
+        self.s3_adapter.find_schema.return_value = None
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+
+        schema = self.valid_schema.copy()
+        schema.metadata.domain = schema.metadata.domain.upper()
+        result = self.data_service.upload_schema(schema)
+
+        self.s3_adapter.save_schema.assert_called_once_with(schema)
+        self.glue_adapter.create_crawler.assert_called_once_with(
+            "some", "other", {"sensitivity": "PUBLIC", "no_of_versions": "1"}
+        )
+        assert result == "some-other.json"
+
     def test_aborts_uploading_if_schema_upload_fails(self):
         self.s3_adapter.find_schema.return_value = None
         self.s3_adapter.save_schema.side_effect = ClientError(
@@ -349,6 +363,33 @@ class TestUpdateSchema:
 
         result = self.data_service.update_schema(new_schema)
 
+        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
+            new_schema.get_domain(), new_schema.get_dataset()
+        )
+        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
+        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
+            expected_schema.get_domain(),
+            expected_schema.get_dataset(),
+            expected_schema.metadata.version,
+        )
+        assert result == "some-other.json"
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_success_uppercase_domain(
+        self, mock_handle_version_retrieval
+    ):
+        original_schema = self.valid_schema
+        new_schema = self.valid_updated_schema.copy(deep=True)
+        new_schema.metadata.domain = new_schema.metadata.domain.upper()
+        expected_schema = self.valid_updated_schema.copy(deep=True)
+        expected_schema.metadata.version = 2
+
+        self.glue_adapter.check_crawler_is_ready.return_value = None
+        self.s3_adapter.find_schema.return_value = original_schema
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+        mock_handle_version_retrieval.return_value = 1
+
+        result = self.data_service.update_schema(new_schema)
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
             new_schema.get_domain(), new_schema.get_dataset()
         )
