@@ -17,7 +17,6 @@ class DeleteService:
     def delete_dataset_file(
         self, domain: str, dataset: str, version: int, filename: str
     ):
-        domain = domain.lower()
         self._validate_filename(filename)
         self.persistence_adapter.find_raw_file(domain, dataset, version, filename)
         self.glue_adapter.check_crawler_is_ready(domain, dataset)

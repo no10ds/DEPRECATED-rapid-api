@@ -73,7 +73,6 @@ class DataService:
         self.job_service = job_service
 
     def list_raw_files(self, domain: str, dataset: str, version: int) -> list[str]:
-        domain = domain.lower()
         raw_files = self.s3_adapter.list_raw_files(domain, dataset, version)
         if len(raw_files) == 0:
             raise UserError(
@@ -96,9 +95,9 @@ class DataService:
         version: Optional[int],
         file_path: Path,
     ) -> Tuple[str, int, str]:
-        domain = domain.lower()
         version = handle_version_retrieval(domain, dataset, version)
         schema = self._get_schema(domain, dataset, version)
+        schema.metadata.domain = schema.metadata.domain.lower()
         if not schema:
             raise SchemaNotFoundError(
                 f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
@@ -268,7 +267,7 @@ class DataService:
         validate_schema_for_upload(schema)
         schema_name = self.s3_adapter.save_schema(schema)
         self.glue_adapter.create_crawler(
-            schema.get_domain().lower(),
+            schema.get_domain(),
             schema.get_dataset(),
             schema.get_tags(),
         )
@@ -299,13 +298,13 @@ class DataService:
                 schema.metadata.description = new_schema_description
             self.check_for_protected_domain(schema)
             self.glue_adapter.check_crawler_is_ready(
-                schema.get_domain().lower(), schema.get_dataset()
+                schema.get_domain(), schema.get_dataset()
             )
             validate_schema_for_upload(schema)
 
             schema_name = self.s3_adapter.save_schema(schema)
             self.glue_adapter.set_crawler_version_tag(
-                schema.get_domain().lower(),
+                schema.get_domain(),
                 schema.get_dataset(),
                 new_version,
             )
@@ -322,7 +321,7 @@ class DataService:
     def check_for_protected_domain(self, schema: Schema) -> str:
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
             if (
-                schema.get_domain().lower()
+                schema.get_domain()
                 not in self.protected_domain_service.list_protected_domains()
             ):
                 raise UserError(
@@ -333,7 +332,6 @@ class DataService:
     def get_dataset_info(
         self, domain: str, dataset: str, version: Optional[int]
     ) -> EnrichedSchema:
-        domain = domain.lower()
         version = handle_version_retrieval(domain, dataset, version)
         schema = self._get_schema(domain, dataset, version)
         if not schema:
@@ -380,7 +378,6 @@ class DataService:
     def query_data(
         self, domain: str, dataset: str, version: Optional[int], query: SQLQuery
     ) -> pd.DataFrame:
-        domain = domain.lower()
         version = handle_version_retrieval(domain, dataset, version)
         if not self.is_query_too_large(domain, dataset, version, query):
             return self.athena_adapter.query(domain, dataset, version, query)
@@ -395,7 +392,6 @@ class DataService:
         version: Optional[int],
         query: SQLQuery,
     ) -> str:
-        domain = domain.lower()
         version = handle_version_retrieval(domain, dataset, version)
         query_job = self.job_service.create_query_job(
             subject_id, domain, dataset, version

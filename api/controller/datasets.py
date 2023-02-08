@@ -125,6 +125,7 @@ async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = N
     ### Click  `Try it out` to use the endpoint
 
     """
+    domain = domain.lower()
     return data_service.get_dataset_info(domain, dataset, version)
 
 
@@ -169,6 +170,7 @@ async def list_raw_files(domain: str, dataset: str, version: int):
     ### Click  `Try it out` to use the endpoint
 
     """
+    domain = domain.lower()
     raw_files = data_service.list_raw_files(domain, dataset, version)
     return raw_files
 
@@ -209,6 +211,7 @@ async def delete_data_file(
 
     """
     try:
+        domain = domain.lower()
         delete_service.delete_dataset_file(domain, dataset, version, filename)
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
     except CrawlerStartFailsError as error:
@@ -274,6 +277,7 @@ def upload_data(
     try:
         subject_id = get_subject_id(request)
         incoming_file_path = store_file_to_disk(file)
+        domain = domain.lower()
         raw_filename, version, job_id = data_service.upload_dataset(
             subject_id, domain, dataset, version, incoming_file_path
         )
@@ -385,6 +389,7 @@ async def query_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
+    domain = domain.lower()
     df = data_service.query_data(domain, dataset, version, query)
     string_df = df.astype("string")
     output_format = request.headers.get("Accept")
@@ -439,6 +444,7 @@ async def query_large_dataset(
 
     """
     subject_id = get_subject_id(request)
+    domain = domain.lower()
     job_id = data_service.query_large_data(subject_id, domain, dataset, version, query)
     return {"details": {"job_id": job_id}}
 
