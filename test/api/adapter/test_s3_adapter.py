@@ -306,9 +306,6 @@ class TestS3Deletion:
                 {
                     "Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet",
                 },
-                {
-                    "Key": "raw_data/domain/dataset/123-456-789.csv",
-                },
             ],
         }
 
@@ -332,9 +329,6 @@ class TestS3Deletion:
                     {
                         "Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet",
                     },
-                    {
-                        "Key": "raw_data/domain/dataset/1/123-456-789.csv",
-                    },
                 ],
             },
         )
@@ -357,9 +351,6 @@ class TestS3Deletion:
                 {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
                 {"Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"},
                 {"Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"},
-                {
-                    "Key": "raw_data/domain/dataset/1/123-456-789.csv",
-                },
             ]
         }
 
@@ -382,9 +373,6 @@ class TestS3Deletion:
                     },
                     {
                         "Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
-                    },
-                    {
-                        "Key": "raw_data/domain/dataset/1/123-456-789.csv",
                     },
                 ],
             },

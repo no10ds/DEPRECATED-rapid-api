@@ -159,9 +159,6 @@ class S3Adapter:
             if self._clean_filename(data_file["Key"]).startswith(raw_file_identifier)
         ]
 
-        files_to_delete.append(
-            {"Key": dataset_metadata.raw_data_path(raw_data_filename)}
-        )
         self._delete_objects(files_to_delete, raw_data_filename)
 
     def generate_query_result_download_url(self, query_execution_id: str) -> str:
