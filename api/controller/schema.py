@@ -71,6 +71,8 @@ async def generate_schema(
     - Only alphanumeric and underscore `_` characters allowed
     - Start with an alphabetic character
 
+    The domain must also be lowercase only.
+
     ### Click  `Try it out` to use the endpoint
 
     """
