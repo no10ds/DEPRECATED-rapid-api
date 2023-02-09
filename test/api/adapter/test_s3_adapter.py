@@ -649,25 +649,3 @@ class TestS3AdapterFunctions:
         )
 
         assert metadata.domain == "test_domain"
-
-    @patch("api.adapter.s3_adapter.S3Adapter._list_all_schemas")
-    def test_retrieve_schema_metadata_uppercase_domain(
-        self, mock_s3_adapter_list_all_schemas
-    ):
-        mock_s3_adapter_list_all_schemas.return_value = SchemaMetadatas(
-            metadatas=[
-                SchemaMetadata(
-                    domain="test_domain",
-                    dataset="test_dataset",
-                    sensitivity="PUBLIC",
-                    description="some test description",
-                    version=1,
-                )
-            ]
-        )
-
-        metadata = self.persistence_adapter.retrieve_schema_metadata(
-            "TEST_DOMAIN", "test_dataset", 1
-        )
-
-        assert metadata.domain == "test_domain"

@@ -22,7 +22,7 @@ class Schema(BaseModel):
         return self.metadata.get_domain().lower()
 
     def get_dataset(self) -> str:
-        return self.metadata.get_dataset().lower()
+        return self.metadata.get_dataset()
 
     def get_description(self) -> str:
         return self.metadata.get_description()

@@ -259,7 +259,6 @@ async def delete_data_file(
 
     """
     try:
-        domain = domain.lower()
         delete_service.delete_dataset_file(domain, dataset, version, filename)
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
     except CrawlerStartFailsError as error:
@@ -329,7 +328,6 @@ def upload_data(
     try:
         subject_id = get_subject_id(request)
         incoming_file_path = store_file_to_disk(file)
-        domain = domain.lower()
         raw_filename, version, job_id = data_service.upload_dataset(
             subject_id, domain, dataset, version, incoming_file_path
         )

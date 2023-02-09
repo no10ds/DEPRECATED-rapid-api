@@ -186,7 +186,7 @@ class S3Adapter:
         self, domain: str, dataset: str, version: int
     ) -> SchemaMetadata:
         schemas = self._list_all_schemas()
-        return schemas.find(domain=domain.lower(), dataset=dataset, version=version)
+        return schemas.find(domain=domain, dataset=dataset, version=version)
 
     def _clean_filename(self, file_key: str) -> str:
         return file_key.rsplit("/", 1)[-1].split(".")[0]
