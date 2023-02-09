@@ -102,7 +102,6 @@ class DataService:
                 f"Could not find schema related to the domain {domain}, dataset {dataset}, and version {version}"
             )
         else:
-            schema.metadata.domain = schema.metadata.domain.lower()
             raw_file_identifier = self.generate_raw_file_identifier()
             upload_job = self.job_service.create_upload_job(
                 subject_id,
