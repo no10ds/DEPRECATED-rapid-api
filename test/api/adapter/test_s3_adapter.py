@@ -282,7 +282,7 @@ class TestS3Deletion:
             Bucket="data-bucket", Key="data/schemas/PUBLIC/domain/dataset/2/schema.json"
         )
 
-    def test_deletion_of_raw_files_with_no_partitions(self):
+    def test_deletion_of_dataset_files_with_no_partitions(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
                 {"Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet"},
@@ -333,7 +333,7 @@ class TestS3Deletion:
             },
         )
 
-    def test_deletion_of_raw_files_with_partitions(self):
+    def test_deletion_of_dataset_files_with_partitions(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
                 {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
@@ -378,7 +378,7 @@ class TestS3Deletion:
             },
         )
 
-    def test_deletion_of_raw_files_when_error_is_thrown(self):
+    def test_deletion_of_dataset_files_when_error_is_thrown(self):
         self.mock_s3_client.list_objects.return_value = {}
 
         self.mock_s3_client.delete_objects.return_value = {
@@ -407,6 +407,53 @@ class TestS3Deletion:
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/domain/dataset/3"
         )
+
+    def test_deletion_of_raw_files(self):
+        self.mock_s3_client.list_objects.return_value = {
+            "Contents": [
+                {"Key": "data/domain/dataset/1/123-456-789_11-222-333.parquet"},
+                {"Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet"},
+                {"Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet"},
+            ],
+            "Name": "data-bucket",
+            "Prefix": "data/domain/dataset",
+            "EncodingType": "url",
+        }
+        self.mock_s3_client.delete_objects.return_value = {
+            "Deleted": [{"Key": "raw_data/domain/dataset/123-456-789.csv"}]
+        }
+
+        self.persistence_adapter.delete_raw_dataset_files(
+            "domain", "dataset", 1, "123-456-789.csv"
+        )
+        self.mock_s3_client.delete_objects.assert_called_once_with(
+            Bucket="data-bucket",
+            Delete={"Objects": [{"Key": "raw_data/domain/dataset/1/123-456-789.csv"}]},
+        )
+
+    def test_deletion_of_raw_files_when_error_is_thrown(self):
+        self.mock_s3_client.delete_objects.return_value = {
+            "Errors": [
+                {
+                    "Key": "An error",
+                    "VersionId": "has occurred",
+                    "Code": "403 Forbidden",
+                    "Message": "There is a problem with your Amazon Web Services account",
+                },
+                {
+                    "Key": "Another error",
+                    "VersionId": "has occurred",
+                    "Code": "403 Forbidden",
+                    "Message": "There is a problem with your Amazon Web Services account",
+                },
+            ]
+        }
+        msg = "The file \\[123-456-789.csv\\] could not be deleted. Please contact your administrator."
+
+        with pytest.raises(AWSServiceError, match=msg):
+            self.persistence_adapter.delete_raw_dataset_files(
+                "domain", "dataset", 3, "123-456-789.csv"
+            )
 
 
 class TestDatasetMetadataRetrieval:

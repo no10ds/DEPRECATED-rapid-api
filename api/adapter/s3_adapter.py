@@ -161,6 +161,14 @@ class S3Adapter:
 
         self._delete_objects(files_to_delete, raw_data_filename)
 
+    def delete_raw_dataset_files(
+        self, domain: str, dataset: str, version: int, raw_data_filename: str
+    ):
+        dataset_metadata = StorageMetaData(domain, dataset, version)
+        files_to_delete = [{"Key": dataset_metadata.raw_data_path(raw_data_filename)}]
+
+        self._delete_objects(files_to_delete, raw_data_filename)
+
     def generate_query_result_download_url(self, query_execution_id: str) -> str:
         try:
             return self.__s3_client.generate_presigned_url(
