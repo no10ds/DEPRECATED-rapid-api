@@ -174,6 +174,38 @@ async def list_raw_files(domain: str, dataset: str, version: int):
 
 
 @datasets_router.delete(
+    "/{domain}/{dataset}",
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+)
+async def delete_dataset(domain: str, dataset: str, response: Response):
+    """
+    ## Delete Dataset
+
+    Use this endpoint to delete all the contents linked to a domain/dataset. It deletes the crawler, raw data, uploaded data
+    and all schemas.
+
+    When all valid items in the domain/dataset have been deleted, a success message will be displayed.
+
+    ### Inputs
+
+    | Parameters | Required | Usage         | Example values                  | Definition                    |
+    |------------|----------|---------------|---------------------------------|-------------------------------|
+    | `domain`   | True     | URL parameter | `land`                          | domain of the dataset         |
+    | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
+
+    ### Accepted permissions
+    In order to use this endpoint you need a relevant WRITE permission that matches the dataset sensitivity level,
+    e.g. `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
+
+    ### Click `Try it out` to use the endpoint
+
+    """
+    delete_service.delete_dataset(domain, dataset)
+    response.status_code = http_status.HTTP_202_ACCEPTED
+    return {"details": f"{dataset} has been deleted."}
+
+
+@datasets_router.delete(
     "/{domain}/{dataset}/{version}/{filename}",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )

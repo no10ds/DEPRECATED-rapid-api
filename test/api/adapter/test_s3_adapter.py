@@ -585,6 +585,108 @@ class TestS3FileList:
             Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
         )
 
+    def test_list_dataset_files(self):
+        self.mock_s3_client.list_objects.side_effect = [
+            {
+                "Contents": [
+                    {"Key": "raw_data/my_domain/my_dataset/"},
+                    {
+                        "Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"
+                    },
+                    {
+                        "Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"
+                    },
+                    {
+                        "Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
+                    },
+                ],
+                "Name": "my-bucket",
+                "EncodingType": "url",
+            },
+            {
+                "Contents": [
+                    {"Key": "data/my_domain/my_dataset/"},
+                    {
+                        "Key": "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"
+                    },
+                    {
+                        "Key": "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"
+                    },
+                ],
+                "Name": "my-bucket",
+                "EncodingType": "url",
+            },
+            {
+                "Contents": [
+                    {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/"},
+                    {
+                        "Key": "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json"
+                    },
+                ],
+                "Name": "my-bucket",
+                "EncodingType": "url",
+            },
+        ]
+
+        dataset_files = self.persistence_adapter.list_dataset_files(
+            "my_domain", "my_dataset", "PROTECTED"
+        )
+        assert dataset_files == [
+            "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv",
+            "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv",
+            "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
+            "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet",
+            "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet",
+            "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json",
+        ]
+
+        calls = [
+            call(Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="data/my_domain/my_dataset"),
+            call(
+                Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
+            ),
+        ]
+        self.mock_s3_client.list_objects.assert_has_calls(calls)
+
+    def test_list_dataset_files_when_empty(self):
+        self.mock_s3_client.list_objects.return_value = {
+            "Name": "my-bucket",
+            "Prefix": "raw_data/my_domain/my_dataset",
+            "EncodingType": "url",
+        }
+
+        dataset_files = self.persistence_adapter.list_dataset_files(
+            "my_domain", "my_dataset", "PROTECTED"
+        )
+        assert dataset_files == []
+
+        calls = [
+            call(Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="data/my_domain/my_dataset"),
+            call(
+                Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
+            ),
+        ]
+        self.mock_s3_client.list_objects.assert_has_calls(calls)
+
+    def test_list_dataset_files_when_empty_response(self):
+        self.mock_s3_client.list_objects.return_value = {}
+
+        dataset_files = self.persistence_adapter.list_dataset_files(
+            "my_domain", "my_dataset", "PROTECTED"
+        )
+        assert dataset_files == []
+
+        calls = [
+            call(Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="data/my_domain/my_dataset"),
+            call(
+                Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
+            ),
+        ]
+        self.mock_s3_client.list_objects.assert_has_calls(calls)
+
 
 class TestGenerateS3PreSignedUrl:
     mock_s3_client = None

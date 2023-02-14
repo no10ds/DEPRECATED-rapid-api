@@ -25,6 +25,22 @@ class DeleteService:
         )
         self.glue_adapter.start_crawler(domain, dataset)
 
+    def delete_dataset(self, domain: str, dataset: str):
+        sensitivity = self.persistence_adapter.get_dataset_sensitivity(domain, dataset)
+        self.delete_crawler(domain, dataset)
+        dataset_files = self.persistence_adapter.list_dataset_files(
+            domain, dataset, sensitivity
+        )
+        self.persistence_adapter.delete_dataset_files_using_key(dataset_files)
+
+        # TODO: Need to delete the glue table
+        # The option here is to either delete the glue tables through a boto3 call
+        # or change how the crawlers work to move the deprecated system to a delete the table
+        # if recrawled over empty data
+
+    def delete_crawler(self, domain: str, dataset: str):
+        self.glue_adapter.delete_crawler(domain, dataset)
+
     def _validate_filename(self, filename: str):
         if not re.match(FILENAME_WITH_TIMESTAMP_REGEX, filename):
             raise UserError(f"Invalid file name [{filename}]")

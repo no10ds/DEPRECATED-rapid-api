@@ -146,6 +146,26 @@ class S3Adapter:
         )
         return self._map_object_list_to_filename(object_list)
 
+    def list_dataset_files(
+        self, domain: str, dataset: str, sensitivity: str
+    ) -> List[str]:
+        # Generate list of raw files to be deleted
+        raw_data_files = self._map_object_list_to_key(
+            self._list_files_from_path(f"raw_data/{domain}/{dataset}")
+        )
+
+        # Generate list of processed data files to be deleted
+        data_files = self._map_object_list_to_key(
+            self._list_files_from_path(f"data/{domain}/{dataset}")
+        )
+
+        # Generate list of schema files to be deleted
+        schema_files = self._map_object_list_to_key(
+            self._list_files_from_path(f"data/schemas/{sensitivity}/{domain}/{dataset}")
+        )
+
+        return [*raw_data_files, *data_files, *schema_files]
+
     def delete_dataset_files(
         self, domain: str, dataset: str, version: int, raw_data_filename: str
     ) -> None:
@@ -160,6 +180,10 @@ class S3Adapter:
         ]
 
         self._delete_objects(files_to_delete, raw_data_filename)
+
+    def delete_dataset_files_using_key(self, keys: List[str]):
+        files_to_delete = [{"Key": key} for key in keys]
+        self._delete_objects(files_to_delete, "")
 
     def delete_raw_dataset_files(
         self, domain: str, dataset: str, version: int, raw_data_filename: str
@@ -234,6 +258,17 @@ class S3Adapter:
                 self._extract_filename(item["Key"])
                 for item in object_list
                 if item["Key"].endswith(".csv")
+            ]
+        return object_list
+
+    def _map_object_list_to_key(self, object_list) -> List[str]:
+        if len(object_list) > 0:
+            return [
+                item["Key"]
+                for item in object_list
+                if item["Key"].endswith(".csv")
+                or item["Key"].endswith(".parquet")
+                or item["Key"].endswith(".json")
             ]
         return object_list
 
