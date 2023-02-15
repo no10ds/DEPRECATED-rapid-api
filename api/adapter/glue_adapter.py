@@ -60,6 +60,7 @@ class GlueAdapter:
                         },
                     ]
                 },
+                SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"},
                 Configuration=json.dumps(
                     {
                         "Version": 1.0,
