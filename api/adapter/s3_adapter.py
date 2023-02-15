@@ -76,8 +76,8 @@ class S3Adapter:
                 raise UserError(f"The file [{filename}] does not exist")
 
     def save_schema(self, schema: Schema) -> str:
-        schema_metadata = schema.metadata.copy()
-        schema_metadata.domain = schema_metadata.domain.lower()
+        schema.metadata.domain = schema.metadata.domain.lower()
+        schema_metadata = schema.metadata
         self.store_data(
             object_full_path=schema_metadata.schema_path(),
             object_content=self._convert_to_bytes(schema.json()),

@@ -169,7 +169,7 @@ class TestS3AdapterUpload:
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
             Key="data/schemas/PUBLIC/test_domain/test_dataset/1/schema.json",
-            Body=b'{"metadata": {"domain": "TEST_DOMAIN", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
+            Body=b'{"metadata": {"domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
         )
 
         assert result == "test_domain/test_dataset/1/schema.json"
