@@ -1,3 +1,4 @@
+import csv
 import pandas as pd
 
 from api.application.services.format_service import FormatService
@@ -13,6 +14,10 @@ class TestFormatService:
                 "area": ["area_1", "area_2"],
             }
         )
+
+    def test_format_to_csv(self):
+        output = FormatService.from_df_to_mimetype(self.df, MimeType.TEXT_CSV)
+        assert output == self.df.to_csv(quoting=csv.QUOTE_NONNUMERIC, index=False)
 
     def test_format_to_json(self):
         output = FormatService.from_df_to_mimetype(self.df, MimeType.APPLICATION_JSON)
