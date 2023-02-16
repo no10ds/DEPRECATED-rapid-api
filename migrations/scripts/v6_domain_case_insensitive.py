@@ -92,6 +92,34 @@ def retrieve_move_delete(loop_map_raw):
     return to_delete, to_move
 
 
+def list_crawlers():
+    crawlers = []
+    next_page = ""
+    while True:
+        response = glue_client.list_crawlers(NextToken=next_page)
+        current_crawlers = [
+            crawler
+            for crawler in response["CrawlerNames"]
+            if crawler.startswith(f"{RESOURCE_NAME_PREFIX}_crawler/")
+        ]
+        crawlers += current_crawlers
+        next_page = response.get("NextToken")
+
+        if next_page is None:
+            break
+
+    return crawlers
+
+
+def edit_crawlers():
+    crawlers = list_crawlers()
+    for crawler in crawlers:
+        print(f"Updating crawler {crawler}")
+        glue_client.update_crawler(
+            Name=crawler, SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"}
+        )
+
+
 loop_map_raw = retrieve_all_raw()
 to_delete, to_move = retrieve_move_delete(loop_map_raw)
 
@@ -113,6 +141,8 @@ try:
 
         print(f"Deleting old file {key}")
         remove_s3_object(value)
+
+    edit_crawlers()
 
 except Exception as e:
     print(e)
