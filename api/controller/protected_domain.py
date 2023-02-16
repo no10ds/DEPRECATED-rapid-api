@@ -110,12 +110,9 @@ def delete_protected_domain(domain: str, response: Response):
 
     ### Click  `Try it out` to use the endpoint
     """
-    subjects_list = subject_service.list_subjects()
-    user_subjects_list = [
-        subject["subject_id"] for subject in subjects_list if subject["type"] == "USER"
+    subjects_list = [
+        subject["subject_id"] for subject in subject_service.list_subjects()
     ]
-    protected_domain_service.delete_protected_domain_permission(
-        domain, user_subjects_list
-    )
+    protected_domain_service.delete_protected_domain_permission(domain, subjects_list)
     response.status_code = http_status.HTTP_202_ACCEPTED
     return {"details": f"{domain} has been deleted."}

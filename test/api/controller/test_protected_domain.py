@@ -46,7 +46,7 @@ class TestDeleteProtectedDomains(BaseClientTest):
     ):
         mock_list_subjects.return_value = [
             {"subject_id": "xxx-yyy-zzz", "type": "USER"},
-            {"subject_id": "xxx-yyy-zzz", "type": "CLIENT"},
+            {"subject_id": "aaa-bbb-ccc", "type": "CLIENT"},
         ]
 
         response = self.client.delete(
@@ -55,7 +55,7 @@ class TestDeleteProtectedDomains(BaseClientTest):
         )
 
         mock_delete_protected_domain_permission.assert_called_once_with(
-            "mydomain", ["xxx-yyy-zzz"]
+            "mydomain", ["xxx-yyy-zzz", "aaa-bbb-ccc"]
         )
 
         assert response.status_code == 202

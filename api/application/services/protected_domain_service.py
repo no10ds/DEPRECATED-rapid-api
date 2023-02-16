@@ -60,8 +60,12 @@ class ProtectedDomainService:
         self._verify_protected_domain_is_empty(domain)
 
         # Delete the read and write protected permissions from the table
-        read_protected_id = f"READ_PROTECTED_{domain.upper()}"
-        write_protected_id = f"WRITE_PROTECTED_{domain.upper()}"
+        read_protected_id = (
+            f"{Action.READ.value}_{SensitivityLevel.PROTECTED.value}_{domain.upper()}"
+        )
+        write_protected_id = (
+            f"{Action.WRITE.value}_{SensitivityLevel.PROTECTED.value}_{domain.upper()}"
+        )
         self.dynamodb_adapter.delete_permission(read_protected_id)
         self.dynamodb_adapter.delete_permission(write_protected_id)
 
@@ -96,15 +100,13 @@ class ProtectedDomainService:
             raise UserError(f"The protected domain, [{domain}] does not exist.")
 
     def _verify_protected_domain_is_empty(self, domain):
-        query = DatasetFilters(sensitivity="PROTECTED")
+        query = DatasetFilters(sensitivity=SensitivityLevel.PROTECTED.value)
         datasets_metadata = self.resource_adapter.get_datasets_metadata(
             s3_adapter=self.s3_adapter, query=query
         )
-        if any(data.domain == domain for data in datasets_metadata):
-            datasets = [
-                data.dataset for data in datasets_metadata if data.domain == domain
-            ]
-            # Get the list of the datasets that still exist and prompt the user to delete them
+        datasets = [data.dataset for data in datasets_metadata if data.domain == domain]
+        if datasets:
+            # Prompt to the user that datasets still exist and tell them to delete them
             raise DomainNotEmptyError(
                 f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {datasets}."
             )

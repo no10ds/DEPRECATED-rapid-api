@@ -105,6 +105,134 @@ class TestProtectedDomainService:
         ):
             self.protected_domain_service.create_protected_domain_permission(domain)
 
+    def test_delete_protected_domain_permission(self):
+        domain = "other"
+        existing_domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_OTHER",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+        ]
+
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            existing_domain_permissions
+        )
+        self.resource_adapter.get_datasets_metadata.return_value = []
+
+        self.protected_domain_service.delete_protected_domain_permission(domain, [])
+
+        self.dynamodb_adapter.delete_permission.assert_has_calls(
+            [call("READ_PROTECTED_OTHER"), call("WRITE_PROTECTED_OTHER")]
+        )
+
+    def test_delete_protected_domain_permission_when_user_subject_list_passed(self):
+        domain = "other"
+        existing_domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_OTHER",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+        ]
+
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            existing_domain_permissions
+        )
+        self.dynamodb_adapter.get_permissions_for_subject.return_value = [
+            "READ_PROTECTED_OTHER",
+            "WRITE_PROTECTED_OTHER",
+            "DATA_ADMIN",
+            "USER_ADMIN",
+        ]
+        self.resource_adapter.get_datasets_metadata.return_value = []
+
+        self.protected_domain_service.delete_protected_domain_permission(
+            domain, ["xxx-yyy-zzz"]
+        )
+
+        self.dynamodb_adapter.delete_permission.assert_has_calls(
+            [call("READ_PROTECTED_OTHER"), call("WRITE_PROTECTED_OTHER")]
+        )
+        self.dynamodb_adapter.update_subject_permissions.assert_called_once_with(
+            subject_permissions=SubjectPermissions(
+                subject_id="xxx-yyy-zzz", permissions=["DATA_ADMIN", "USER_ADMIN"]
+            )
+        )
+
+    def test_delete_protected_domain_permission_when_domain_exists(self):
+        domain = "domain"
+        existing_domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_OTHER",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+        ]
+
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            existing_domain_permissions
+        )
+
+        with pytest.raises(
+            UserError, match=r"The protected domain, \[domain]\ does not exist."
+        ):
+            self.protected_domain_service.delete_protected_domain_permission(domain, [])
+
+    def test_delete_protected_domain_permission_when_domain_not_empty(self):
+        domain = "other"
+        existing_domain_permissions = [
+            PermissionItem(
+                id="READ_PROTECTED_OTHER",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+            PermissionItem(
+                id="WRITE_PROTECTED_OTHER",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="OTHER",
+            ),
+        ]
+
+        self.dynamodb_adapter.get_all_protected_permissions.return_value = (
+            existing_domain_permissions
+        )
+
+        self.resource_adapter.get_datasets_metadata.return_value = [
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="other", dataset="dataset"
+            )
+        ]
+
+        with pytest.raises(
+            DomainNotEmptyError,
+            match=r"Cannot delete protected domain \[other\] as it is not empty. Please delete the datasets \['dataset'\].",
+        ):
+            self.protected_domain_service.delete_protected_domain_permission(domain, [])
+
     def test_list_protected_domains_from_db(self):
         expected_response = {"other", "domain"}
         domain_permissions = [
