@@ -538,6 +538,13 @@ class TestDynamoDBAdapterPermissionsTable:
         )
         self.service_table.assert_not_called()
 
+    def test_delete_permission(self):
+        self.dynamo_adapter.delete_permission("some_id")
+        self.permissions_table.delete_item.assert_called_once_with(
+            Key={"PK": "PERMISSION", "SK": "some_id"}
+        )
+        self.service_table.assert_not_called()
+
 
 class TestDynamoDBAdapterServiceTable:
     def setup_method(self):
