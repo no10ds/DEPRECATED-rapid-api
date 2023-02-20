@@ -29,13 +29,15 @@ class DeleteService:
         # Given a domain and a dataset, delete all rAPId contents for this domain & dataset
         # 1. Generate a list of file keys from S3 to delete, raw_data, data & schemas
         # 2. Remove keys
-        # 3. Run crawler to remove Glue Table
+        # 3. Delete Glue Tables
         sensitivity = self.persistence_adapter.get_dataset_sensitivity(domain, dataset)
         dataset_files = self.persistence_adapter.list_dataset_files(
             domain, dataset, sensitivity
         )
         self.persistence_adapter.delete_dataset_files_using_key(dataset_files)
         self.glue_adapter.start_crawler(domain, dataset)
+        tables = self.glue_adapter.get_tables_for_dataset(domain, dataset)
+        self.glue_adapter.delete_tables(tables)
 
     def delete_crawler(self, domain: str, dataset: str):
         self.glue_adapter.delete_crawler(domain, dataset)

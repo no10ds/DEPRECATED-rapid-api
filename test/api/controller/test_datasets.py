@@ -909,7 +909,7 @@ class TestDeleteDataset(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_delete_dataset.assert_called_once_with("mydomain", "dataset")
+        mock_delete_dataset.assert_called_once_with("mydomain", "mydataset")
 
         assert response.status_code == 202
-        assert response.json() == {"details": "dataset has been deleted"}
+        assert response.json() == {"details": "mydataset has been deleted."}
