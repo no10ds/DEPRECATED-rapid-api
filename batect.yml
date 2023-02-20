@@ -69,7 +69,7 @@ tasks:
     description: Run unit tests
     run:
       container: service-image
-      command: "pytest test/api -vv -s"
+      command: "pytest test/api -v"
 
   test-unit-focus:
     description: Run unit tests
