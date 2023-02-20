@@ -6,28 +6,9 @@ The E2E tests require some first time setup. The tests will hit the real endpoin
 performed that require the relevant resources to be available in AWS (files in S3, Crawlers, Glue Tables, etc.).
 
 ### Data setup
-Using the running service:
 
-1. Upload the new schemas in `test_files/schemas` to their respective domains (e.g.: `test_e2e/upload`, `test_e2e/query`
-   , `test_e2e_protected/do_not_delete`, etc.)
-2. Upload the `test-journey_file.csv` to each of the datasets
-3. Create a protected domain for `test_e2e_protected`
-
-### Clients setup
-Using the running service:
-
-1. Create four programmatic clients with relevant permission (see table below)
-2. Add the clients' credentials as secrets (with the name specific in the table below) in AWS Secrets Manager with the structure:
-```json
-{"CLIENT_ID":  "<client_id>", "CLIENT_SECRET":  "<client_secret>"}
-```
-| Secret name                        | Client Permissions     |
-|------------------------------------|------------------------|
-| E2E_TEST_CLIENT_WRITE_ALL          | WRITE_ALL              |
-| E2E_TEST_CLIENT_DATA_ADMIN         | DATA_ADMIN, USER_ADMIN |
-| E2E_TEST_CLIENT_USER_ADMIN         | USER_ADMIN             |
-| E2E_TEST_CLIENT_READ_ALL_WRITE_ALL | READ_ALL, WRITE_ALL    |
-
+Run [this](./setup_e2e_tests.py) script, passing in the necessary environment variables.
+> Note: After running this it will take a few minutes for the uploaded data to become available and for the tests to pass.
 
 ## Running the tests
 
