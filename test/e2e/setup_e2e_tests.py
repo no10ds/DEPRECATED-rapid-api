@@ -52,6 +52,7 @@ def upload_dataset(token: str, file_path: str, domain: str, dataset: str):
     return response.status_code, json.loads(response.content.decode("utf-8"))
 
 
+print("Script starting")
 token = fetch_token()
 
 files = os.listdir(SCHEMA_PATH)
@@ -76,3 +77,4 @@ print(
         "do_not_delete",
     )
 )
+print("Script finished successfuly")
