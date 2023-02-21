@@ -148,23 +148,18 @@ class S3Adapter:
 
     def list_dataset_files(
         self, domain: str, dataset: str, sensitivity: str
-    ) -> List[str]:
-        # Generate list of raw files to be deleted
-        raw_data_files = self._map_object_list_to_key(
-            self._list_files_from_path(f"raw_data/{domain}/{dataset}")
-        )
+    ) -> List[Dict]:
+        storage_metadata = StorageMetaData(domain, dataset)
 
-        # Generate list of processed data files to be deleted
-        data_files = self._map_object_list_to_key(
-            self._list_files_from_path(f"data/{domain}/{dataset}")
-        )
-
-        # Generate list of schema files to be deleted
-        schema_files = self._map_object_list_to_key(
-            self._list_files_from_path(f"data/schemas/{sensitivity}/{domain}/{dataset}")
-        )
-
-        return [*raw_data_files, *data_files, *schema_files]
+        return [
+            *self._list_files_from_path(
+                storage_metadata.construct_raw_dataset_uploads_location()
+            ),
+            *self._list_files_from_path(storage_metadata.construct_dataset_location()),
+            *self._list_files_from_path(
+                storage_metadata.construct_schema_dataset_location(sensitivity)
+            ),
+        ]
 
     def delete_dataset_files(
         self, domain: str, dataset: str, version: int, raw_data_filename: str
@@ -181,9 +176,9 @@ class S3Adapter:
 
         self._delete_objects(files_to_delete, raw_data_filename)
 
-    def delete_dataset_files_using_key(self, keys: List[str]):
-        files_to_delete = [{"Key": key} for key in keys]
-        self._delete_objects(files_to_delete, "")
+    def delete_dataset_files_using_key(self, keys: List[Dict], filename: str):
+        files_to_delete = [{"Key": key["Key"]} for key in keys]
+        self._delete_objects(files_to_delete, filename)
 
     def delete_raw_dataset_files(
         self, domain: str, dataset: str, version: int, raw_data_filename: str
@@ -239,7 +234,7 @@ class S3Adapter:
             message = "\n".join([str(error) for error in response["Errors"]])
             AppLogger.error(f"Error during file deletion [{filename}]: \n{message}")
             raise AWSServiceError(
-                f"The file [{filename}] could not be deleted. Please contact your administrator."
+                f"The item [{filename}] could not be deleted. Please contact your administrator."
             )
 
     def _list_files_from_path(self, file_path: str) -> List[Dict]:
@@ -258,17 +253,6 @@ class S3Adapter:
                 self._extract_filename(item["Key"])
                 for item in object_list
                 if item["Key"].endswith(".csv")
-            ]
-        return object_list
-
-    def _map_object_list_to_key(self, object_list) -> List[str]:
-        if len(object_list) > 0:
-            return [
-                item["Key"]
-                for item in object_list
-                if item["Key"].endswith(".csv")
-                or item["Key"].endswith(".parquet")
-                or item["Key"].endswith(".json")
             ]
         return object_list
 

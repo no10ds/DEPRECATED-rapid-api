@@ -34,7 +34,9 @@ class DeleteService:
         dataset_files = self.persistence_adapter.list_dataset_files(
             domain, dataset, sensitivity
         )
-        self.persistence_adapter.delete_dataset_files_using_key(dataset_files)
+        self.persistence_adapter.delete_dataset_files_using_key(
+            dataset_files, f"{domain}/{dataset}"
+        )
         tables = self.glue_adapter.get_tables_for_dataset(domain, dataset)
         self.glue_adapter.delete_tables(tables)
 

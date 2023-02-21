@@ -397,7 +397,7 @@ class TestS3Deletion:
                 },
             ]
         }
-        msg = "The file \\[123-456-789.csv\\] could not be deleted. Please contact your administrator."
+        msg = "The item \\[123-456-789.csv\\] could not be deleted. Please contact your administrator."
 
         with pytest.raises(AWSServiceError, match=msg):
             self.persistence_adapter.delete_dataset_files(
@@ -448,7 +448,7 @@ class TestS3Deletion:
                 },
             ]
         }
-        msg = "The file \\[123-456-789.csv\\] could not be deleted. Please contact your administrator."
+        msg = "The item \\[123-456-789.csv\\] could not be deleted. Please contact your administrator."
 
         with pytest.raises(AWSServiceError, match=msg):
             self.persistence_adapter.delete_raw_dataset_files(
@@ -632,12 +632,15 @@ class TestS3FileList:
             "my_domain", "my_dataset", "PROTECTED"
         )
         assert dataset_files == [
-            "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv",
-            "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv",
-            "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
-            "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet",
-            "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet",
-            "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json",
+            {"Key": "raw_data/my_domain/my_dataset/"},
+            {"Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"},
+            {"Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"},
+            {"Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv"},
+            {"Key": "data/my_domain/my_dataset/"},
+            {"Key": "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"},
+            {"Key": "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"},
+            {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/"},
+            {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json"},
         ]
 
         calls = [
