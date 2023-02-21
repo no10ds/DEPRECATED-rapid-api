@@ -55,7 +55,7 @@ class S3Adapter:
 
     def find_schema(self, domain: str, dataset: str, version: int) -> Optional[Schema]:
         try:
-            schema_metadata = self._retrieve_schema_metadata(
+            schema_metadata = self.retrieve_schema_metadata(
                 domain=domain, dataset=dataset, version=version
             )
             dataset = self.retrieve_data(schema_metadata.schema_path())
@@ -76,6 +76,7 @@ class S3Adapter:
                 raise UserError(f"The file [{filename}] does not exist")
 
     def save_schema(self, schema: Schema) -> str:
+        schema.metadata.domain = schema.metadata.domain.lower()
         schema_metadata = schema.metadata
         self.store_data(
             object_full_path=schema_metadata.schema_path(),
@@ -95,7 +96,7 @@ class S3Adapter:
         if not domain or not dataset:
             return SensitivityLevel.from_string("PUBLIC")
         # all datasets have the same sensitivity - take the first version
-        schema_metadata = self._retrieve_schema_metadata(domain, dataset, version=1)
+        schema_metadata = self.retrieve_schema_metadata(domain, dataset, version=1)
         return SensitivityLevel.from_string(schema_metadata.get_sensitivity())
 
     def get_dataset_description(
@@ -205,6 +206,12 @@ class S3Adapter:
             )
             raise AWSServiceError("Unable to generate download URL")
 
+    def retrieve_schema_metadata(
+        self, domain: str, dataset: str, version: int
+    ) -> SchemaMetadata:
+        schemas = self._list_all_schemas()
+        return schemas.find(domain=domain, dataset=dataset, version=version)
+
     def _clean_filename(self, file_key: str) -> str:
         return file_key.rsplit("/", 1)[-1].split(".")[0]
 
@@ -279,12 +286,6 @@ class S3Adapter:
 
     def _delete_data(self, object_full_path: str):
         self.__s3_client.delete_object(Bucket=self.__s3_bucket, Key=object_full_path)
-
-    def _retrieve_schema_metadata(
-        self, domain: str, dataset: str, version: int
-    ) -> SchemaMetadata:
-        schemas = self._list_all_schemas()
-        return schemas.find(domain=domain, dataset=dataset, version=version)
 
     def _list_all_schemas(self) -> SchemaMetadatas:
         items = self._list_files_from_path(SCHEMAS_LOCATION)

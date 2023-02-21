@@ -13,7 +13,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
 )
 from api.domain.schema import Schema, Column
-from api.domain.schema_metadata import Owner, SchemaMetadata
+from api.domain.schema_metadata import Owner, SchemaMetadata, SchemaMetadatas
 from test.test_utils import (
     mock_schema_response,
     mock_list_schemas_response,
@@ -145,6 +145,35 @@ class TestS3AdapterUpload:
 
         assert result == "test_domain/test_dataset/1/schema.json"
 
+    def test_schema_upload_capitalised(self):
+        valid_schema = Schema(
+            metadata=SchemaMetadata(
+                domain="TEST_DOMAIN",
+                dataset="test_dataset",
+                sensitivity="PUBLIC",
+                version=1,
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                )
+            ],
+        )
+
+        result = self.persistence_adapter.save_schema(schema=valid_schema)
+
+        self.mock_s3_client.put_object.assert_called_with(
+            Bucket="dataset",
+            Key="data/schemas/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Body=b'{"metadata": {"domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
+        )
+
+        assert result == "test_domain/test_dataset/1/schema.json"
+
     def test_raw_data_upload(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -190,7 +219,7 @@ class TestS3AdapterDataRetrieval:
         self.persistence_adapter.retrieve_data(key="an_s3_object")
         self.mock_s3_client.get_object.assert_called_once()
 
-    @patch("api.adapter.s3_adapter.S3Adapter._retrieve_schema_metadata")
+    @patch("api.adapter.s3_adapter.S3Adapter.retrieve_schema_metadata")
     def test_retrieve_existing_schema(self, mock_s3_adapter_retrieve_schema_metadata):
         domain = "test_domain"
         dataset = "test_dataset"
@@ -730,3 +759,33 @@ class TestGenerateS3PreSignedUrl:
             self.persistence_adapter.generate_query_result_download_url(
                 "the-file-key.csv"
             )
+
+
+class TestS3AdapterFunctions:
+    mock_s3_client = None
+    persistence_adapter = None
+
+    def setup_method(self):
+        self.mock_s3_client = Mock()
+        self.persistence_adapter = S3Adapter(
+            s3_client=self.mock_s3_client, s3_bucket="my-bucker"
+        )
+
+    @patch("api.adapter.s3_adapter.S3Adapter._list_all_schemas")
+    def test_retrieve_schema_metadata(self, mock_s3_adapter_list_all_schemas):
+        mock_s3_adapter_list_all_schemas.return_value = SchemaMetadatas(
+            metadatas=[
+                SchemaMetadata(
+                    domain="test_domain",
+                    dataset="test_dataset",
+                    sensitivity="PUBLIC",
+                    description="some test description",
+                    version=1,
+                )
+            ]
+        )
+        metadata = self.persistence_adapter.retrieve_schema_metadata(
+            "test_domain", "test_dataset", 1
+        )
+
+        assert metadata.domain == "test_domain"

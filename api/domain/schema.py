@@ -19,7 +19,7 @@ class Schema(BaseModel):
     columns: List[Column]
 
     def get_domain(self) -> str:
-        return self.metadata.get_domain()
+        return self.metadata.get_domain().lower()
 
     def get_dataset(self) -> str:
         return self.metadata.get_dataset()
