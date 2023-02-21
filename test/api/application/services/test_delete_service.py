@@ -23,11 +23,6 @@ class TestDeleteService:
             "domain", "dataset", "PUBLIC", 2
         )
 
-    def test_delete_crawler(self):
-        self.delete_service.delete_crawler("domain", "dataset")
-
-        self.glue_adapter.delete_crawler.assert_called_once_with("domain", "dataset")
-
     def test_delete_file_when_crawler_is_ready(self):
         self.delete_service.delete_dataset_file(
             "domain",

@@ -40,9 +40,6 @@ class DeleteService:
         tables = self.glue_adapter.get_tables_for_dataset(domain, dataset)
         self.glue_adapter.delete_tables(tables)
 
-    def delete_crawler(self, domain: str, dataset: str):
-        self.glue_adapter.delete_crawler(domain, dataset)
-
     def _validate_filename(self, filename: str):
         if not re.match(FILENAME_WITH_TIMESTAMP_REGEX, filename):
             raise UserError(f"Invalid file name [{filename}]")
