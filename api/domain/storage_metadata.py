@@ -12,13 +12,13 @@ class StorageMetaData:
     description: Optional[str] = ""
 
     def dataset_location(self) -> str:
-        return self._construct_dataset_location()
+        return self.construct_dataset_location()
 
     def file_location(self) -> str:
-        return f"{self._construct_dataset_location()}/{self.version}"
+        return f"{self.construct_dataset_location()}/{self.version}"
 
     def raw_data_location(self) -> str:
-        return self._construct_raw_dataset_uploads_location()
+        return f"{self.construct_raw_dataset_uploads_location()}/{self.version}"
 
     def raw_data_path(self, filename: str) -> str:
         return f"{self.raw_data_location()}/{filename}"
@@ -35,8 +35,11 @@ class StorageMetaData:
     def s3_path(self) -> str:
         return f"s3://{DATA_BUCKET}/{self.dataset_location()}/"
 
-    def _construct_dataset_location(self):
+    def construct_dataset_location(self):
         return f"data/{self.domain}/{self.dataset}"
 
-    def _construct_raw_dataset_uploads_location(self):
-        return f"raw_data/{self.domain}/{self.dataset}/{self.version}"
+    def construct_raw_dataset_uploads_location(self):
+        return f"raw_data/{self.domain}/{self.dataset}"
+
+    def construct_schema_dataset_location(self, sensitvity: str):
+        return f"data/schemas/{sensitvity}/{self.domain}/{self.dataset}"

@@ -969,3 +969,17 @@ class TestDeleteFiles(BaseClientTest):
         assert response.json() == {
             "details": ["domain -> was required to be lowercase only."]
         }
+
+
+class TestDeleteDataset(BaseClientTest):
+    @patch.object(DeleteService, "delete_dataset")
+    def test_returns_202_when_dataset_is_deleted(self, mock_delete_dataset):
+        response = self.client.delete(
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        mock_delete_dataset.assert_called_once_with("mydomain", "mydataset")
+
+        assert response.status_code == 202
+        assert response.json() == {"details": "mydataset has been deleted."}
