@@ -24,6 +24,11 @@ class UserError(BaseAppException):
         super().__init__(message, status_code)
 
 
+class DomainNotEmptyError(BaseAppException):
+    def __init__(self, message, status_code: int = 400):
+        super().__init__(message, status_code)
+
+
 class ConflictError(UserError):
     def __init__(self, message, status_code: int = 409):
         super().__init__(message, status_code)
