@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#set -eu -o pipefail
+set -eu -o pipefail
 
 LATEST_TAG=$(git rev-parse --short "$GITHUB_SHA")
 IGNORE_LIST_FILE=vulnerability-ignore-list.txt
@@ -45,13 +45,14 @@ function _wait_for_scan_to_complete {
 
 function _get_high_or_critical_vulnerabilities {
   VULNS=()
-  echo $1
+
   while IFS='' read -r line; do VULNS+=("$line"); done < <(aws ecr describe-image-scan-findings \
   --region "$AWS_REGION" \
   --repository-name "$IMAGE_NAME" \
   --image-id imageTag="$1" \
   | jq '.imageScanFindings.findings[] | select(.severity == "HIGH" or .severity == "CRITICAL") | (.name + "_" + .uri)' \
   | jq -r .)
+  echo $VULNS
 }
 
 function _get_unknown_vulnerabilities_count {
@@ -189,7 +190,4 @@ function scheduled_scan_result_check {
   fi
 }
 
-echo "'\$1' is $1"
-_get_high_or_critical_vulnerabilities "$1"
-_get_unknown_vulnerabilities_count
 "$@"
