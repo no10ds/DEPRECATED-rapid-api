@@ -3,7 +3,7 @@ name: rAPId Dev Deployment
 on:
   push:
     branches:
-      - "**"
+      - "nodeploy"
 
   workflow_dispatch:
 
