@@ -158,7 +158,7 @@ function _check_for_vulnerabilities {
   _get_high_or_critical_vulnerabilities "$1"
   _get_unknown_vulnerabilities_count
 
-  HIGH_VULN=_get_high_or_critical_vulnerabilities "$1"
+  HIGH_VULN=_get_high_or_critical_vulnerabilities
   echo $HIGH_VULN
 }
 
