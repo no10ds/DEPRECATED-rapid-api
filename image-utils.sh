@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu -o pipefail
+#set -eu -o pipefail
 
 LATEST_TAG=$(git rev-parse --short "$GITHUB_SHA")
 IGNORE_LIST_FILE=vulnerability-ignore-list.txt
@@ -9,7 +9,7 @@ SCAN_CHECK_COUNT_MAX=3
 
 UNKNOWN_VULNERABILITIES=0
 
-PROD_TAG="7f30203"
+PROD_TAG="prod"
 VULNERABLE_TAG="VULNERABLE"
 SCAN_TIMEOUT_TAG="SCAN_TIMEOUT"
 DEPLOYMENT_FAILED_TAG="DEPLOYMENT_FAILED"
@@ -45,6 +45,7 @@ function _wait_for_scan_to_complete {
 
 function _get_high_or_critical_vulnerabilities {
   VULNS=()
+  echo $1
   while IFS='' read -r line; do VULNS+=("$line"); done < <(aws ecr describe-image-scan-findings \
   --region "$AWS_REGION" \
   --repository-name "$IMAGE_NAME" \
@@ -157,9 +158,6 @@ function get_image_sha_if_exists {
 function _check_for_vulnerabilities {
   _get_high_or_critical_vulnerabilities "$1"
   _get_unknown_vulnerabilities_count
-
-  HIGH_VULN=_get_high_or_critical_vulnerabilities
-  echo $HIGH_VULN
 }
 
 function pipeline_post_scanning_processing {
@@ -191,4 +189,7 @@ function scheduled_scan_result_check {
   fi
 }
 
+echo "'\$1' is $1"
+_get_high_or_critical_vulnerabilities "$1"
+_get_unknown_vulnerabilities_count
 "$@"
