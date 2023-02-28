@@ -12,6 +12,7 @@ from api.common.custom_exceptions import (
     UserError,
     AWSServiceError,
 )
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata, SchemaMetadatas
 from test.test_utils import (
@@ -76,11 +77,12 @@ class TestS3AdapterUpload:
 
     def test_construct_partitioned_data_path(self):
         result = self.persistence_adapter._construct_partitioned_data_path(
-            "partition", "file.csv", "domain", "dataset", "4"
+            "partition", "file.csv", DatasetMetadata("layer", "domain", "dataset", "4")
         )
-        assert result == "data/domain/dataset/4/partition/file.csv"
+        assert result == "data/layer/domain/dataset/4/partition/file.csv"
 
     def test_upload_partitioned_data(self):
+        layer = "layer"
         domain = "domain"
         dataset = "dataset"
         version = 1
@@ -95,7 +97,7 @@ class TestS3AdapterUpload:
         ]
 
         self.persistence_adapter.upload_partitioned_data(
-            domain, dataset, version, filename, partitioned_data
+            DatasetMetadata(layer, domain, dataset, version), filename, partitioned_data
         )
 
         partition_1_parquet = partition_1.to_parquet(compression="gzip", index=False)
@@ -104,12 +106,12 @@ class TestS3AdapterUpload:
         calls = [
             call(
                 Bucket="dataset",
-                Key="data/domain/dataset/1/year=2020/month=1/data.parquet",
+                Key="data/layer/domain/dataset/1/year=2020/month=1/data.parquet",
                 Body=partition_1_parquet,
             ),
             call(
                 Bucket="dataset",
-                Key="data/domain/dataset/1/year=2020/month=2/data.parquet",
+                Key="data/layer/domain/dataset/1/year=2020/month=2/data.parquet",
                 Body=partition_2_parquet,
             ),
         ]
@@ -119,6 +121,7 @@ class TestS3AdapterUpload:
     def test_schema_upload(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -139,8 +142,8 @@ class TestS3AdapterUpload:
 
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
-            Key="data/schemas/PUBLIC/test_domain/test_dataset/1/schema.json",
-            Body=b'{"metadata": {"domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
+            Key="data/schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Body=b'{"metadata": {"layer": "raw", "domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
         )
 
         assert result == "test_domain/test_dataset/1/schema.json"
@@ -148,6 +151,7 @@ class TestS3AdapterUpload:
     def test_schema_upload_capitalised(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="layer",
                 domain="TEST_DOMAIN",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -168,8 +172,8 @@ class TestS3AdapterUpload:
 
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
-            Key="data/schemas/PUBLIC/test_domain/test_dataset/1/schema.json",
-            Body=b'{"metadata": {"domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
+            Key="data/schemas/layer/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Body=b'{"metadata": {"layer": "layer", "domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
         )
 
         assert result == "test_domain/test_dataset/1/schema.json"
@@ -177,6 +181,7 @@ class TestS3AdapterUpload:
     def test_raw_data_upload(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="values",
                 sensitivity="PUBLIC",
@@ -201,7 +206,7 @@ class TestS3AdapterUpload:
         self.mock_s3_client.upload_file.assert_called_with(
             Filename="filename.csv",
             Bucket="dataset",
-            Key="raw_data/some/values/2/123-456-789.csv",
+            Key="raw_data/raw/some/values/2/123-456-789.csv",
         )
 
 
@@ -221,12 +226,14 @@ class TestS3AdapterDataRetrieval:
 
     @patch("api.adapter.s3_adapter.S3Adapter.retrieve_schema_metadata")
     def test_retrieve_existing_schema(self, mock_s3_adapter_retrieve_schema_metadata):
+        layer = "raw"
         domain = "test_domain"
         dataset = "test_dataset"
         version = 1
 
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer=layer,
                 domain=domain,
                 dataset=dataset,
                 sensitivity="PUBLIC",
@@ -245,6 +252,7 @@ class TestS3AdapterDataRetrieval:
 
         self.mock_s3_client.get_object.return_value = mock_schema_response()
         mock_s3_adapter_retrieve_schema_metadata.return_value = SchemaMetadata(
+            layer=layer,
             domain=domain,
             dataset=dataset,
             sensitivity="PUBLIC",
@@ -253,18 +261,22 @@ class TestS3AdapterDataRetrieval:
         )
 
         schema = self.persistence_adapter.find_schema(
-            domain=domain, dataset=dataset, version=version
+            DatasetMetadata(
+                layer=layer, domain=domain, dataset=dataset, version=version
+            )
         )
         self.mock_s3_client.get_object.assert_called_once_with(
             Bucket="dataset",
-            Key="data/schemas/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Key="data/schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
         )
 
         assert schema == valid_schema
 
     def test_retrieve_non_existent_schema(self):
         self.mock_s3_client.list_objects.return_value = mock_list_schemas_response()
-        schema = self.persistence_adapter.find_schema("bad", "data", 1)
+        schema = self.persistence_adapter.find_schema(
+            DatasetMetadata("raw", "bad", "data", 1)
+        )
 
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="dataset", Prefix="data/schemas"
@@ -273,9 +285,11 @@ class TestS3AdapterDataRetrieval:
         assert schema is None
 
     def test_find_raw_file_when_file_exists(self):
-        self.persistence_adapter.find_raw_file("domain", "dataset", 1, "filename.csv")
+        self.persistence_adapter.find_raw_file(
+            DatasetMetadata("raw", "domain", "dataset", 1), "filename.csv"
+        )
         self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="raw_data/domain/dataset/1/filename.csv"
+            Bucket="dataset", Key="raw_data/raw/domain/dataset/1/filename.csv"
         )
 
     def test_throws_error_for_find_raw_file_when_file__does_not_exist(self):
@@ -287,10 +301,12 @@ class TestS3AdapterDataRetrieval:
         )
 
         with pytest.raises(UserError, match="The file \\[bad_file\\] does not exist"):
-            self.persistence_adapter.find_raw_file("domain", "dataset", 2, "bad_file")
+            self.persistence_adapter.find_raw_file(
+                DatasetMetadata("raw", "domain", "dataset", 2), "bad_file"
+            )
 
         self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="raw_data/domain/dataset/2/bad_file"
+            Bucket="dataset", Key="raw_data/raw/domain/dataset/2/bad_file"
         )
 
 
@@ -305,44 +321,59 @@ class TestS3Deletion:
         )
 
     def test_deletion_of_schema(self):
-        self.persistence_adapter.delete_schema("domain", "dataset", "PUBLIC", 2)
+        self.persistence_adapter.delete_schema(
+            SchemaMetadata(
+                layer="raw",
+                domain="domain",
+                dataset="dataset",
+                sensitivity="PUBLIC",
+                version=2,
+            )
+        )
 
         self.mock_s3_client.delete_object.assert_called_once_with(
-            Bucket="data-bucket", Key="data/schemas/PUBLIC/domain/dataset/2/schema.json"
+            Bucket="data-bucket",
+            Key="data/schemas/raw/PUBLIC/domain/dataset/2/schema.json",
         )
 
     def test_deletion_of_dataset_files_with_no_partitions(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
-                {"Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet"},
-                {"Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet"},
-                {"Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet"},
-                {"Key": "data/domain/dataset/1/999-999-999_111-888-999.parquet"},
-                {"Key": "data/domain/dataset/2/888-888-888_777-888-999.parquet"},
+                {"Key": "data/layer/domain/dataset/1/123-456-789_111-222-333.parquet"},
+                {"Key": "data/layer/domain/dataset/1/123-456-789_444-555-666.parquet"},
+                {"Key": "data/layer/domain/dataset/1/123-456-789_777-888-999.parquet"},
+                {"Key": "data/layer/domain/dataset/1/999-999-999_111-888-999.parquet"},
+                {"Key": "data/layer/domain/dataset/2/888-888-888_777-888-999.parquet"},
             ],
             "Name": "data-bucket",
-            "Prefix": "data/domain/dataset",
+            "Prefix": "data/layer/domain/dataset",
             "EncodingType": "url",
         }
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
                 {
-                    "Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet",
+                    "Key": "data/layer/domain/dataset/1/123-456-789_111-222-333.parquet",
                 },
                 {
-                    "Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet",
+                    "Key": "data/layer/domain/dataset/1/123-456-789_444-555-666.parquet",
                 },
                 {
-                    "Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet",
+                    "Key": "data/layer/domain/dataset/1/123-456-789_777-888-999.parquet",
                 },
             ],
         }
 
         self.persistence_adapter.delete_dataset_files(
-            "domain", "dataset", 1, "123-456-789.csv"
+            DatasetMetadata(
+                "layer",
+                "domain",
+                "dataset",
+                1,
+            ),
+            "123-456-789.csv",
         )
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="data-bucket", Prefix="data/domain/dataset/1"
+            Bucket="data-bucket", Prefix="data/layer/domain/dataset/1"
         )
 
         self.mock_s3_client.delete_objects.assert_called_once_with(
@@ -350,13 +381,13 @@ class TestS3Deletion:
             Delete={
                 "Objects": [
                     {
-                        "Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet",
+                        "Key": "data/layer/domain/dataset/1/123-456-789_111-222-333.parquet",
                     },
                     {
-                        "Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet",
+                        "Key": "data/layer/domain/dataset/1/123-456-789_444-555-666.parquet",
                     },
                     {
-                        "Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet",
+                        "Key": "data/layer/domain/dataset/1/123-456-789_777-888-999.parquet",
                     },
                 ],
             },
@@ -365,29 +396,45 @@ class TestS3Deletion:
     def test_deletion_of_dataset_files_with_partitions(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
-                {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
-                {"Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"},
-                {"Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"},
-                {"Key": "data/domain/dataset/1/2019/999-999-999_111-888-999.parquet"},
-                {"Key": "data/domain/dataset/2/2022/888-888-888_777-888-999.parquet"},
+                {
+                    "Key": "data/layer/domain/dataset/1/2022/123-456-789_111-222-333.parquet"
+                },
+                {
+                    "Key": "data/layer/domain/dataset/1/2021/123-456-789_444-555-666.parquet"
+                },
+                {
+                    "Key": "data/layer/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
+                },
+                {
+                    "Key": "data/layer/domain/dataset/1/2019/999-999-999_111-888-999.parquet"
+                },
+                {
+                    "Key": "data/layer/domain/dataset/2/2022/888-888-888_777-888-999.parquet"
+                },
             ],
             "Name": "data-bucket",
-            "Prefix": "data/domain/dataset",
+            "Prefix": "data/layer/domain/dataset",
             "EncodingType": "url",
         }
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
-                {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
-                {"Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"},
-                {"Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"},
+                {
+                    "Key": "data/layer/domain/dataset/1/2022/123-456-789_111-222-333.parquet"
+                },
+                {
+                    "Key": "data/layer/domain/dataset/1/2021/123-456-789_444-555-666.parquet"
+                },
+                {
+                    "Key": "data/layer/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
+                },
             ]
         }
 
         self.persistence_adapter.delete_dataset_files(
-            "domain", "dataset", 1, "123-456-789.csv"
+            DatasetMetadata("layer", "domain", "dataset", 1), "123-456-789.csv"
         )
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="data-bucket", Prefix="data/domain/dataset/1"
+            Bucket="data-bucket", Prefix="data/layer/domain/dataset/1"
         )
 
         self.mock_s3_client.delete_objects.assert_called_once_with(
@@ -395,13 +442,13 @@ class TestS3Deletion:
             Delete={
                 "Objects": [
                     {
-                        "Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"
+                        "Key": "data/layer/domain/dataset/1/2022/123-456-789_111-222-333.parquet"
                     },
                     {
-                        "Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"
+                        "Key": "data/layer/domain/dataset/1/2021/123-456-789_444-555-666.parquet"
                     },
                     {
-                        "Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
+                        "Key": "data/layer/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
                     },
                 ],
             },
@@ -430,34 +477,36 @@ class TestS3Deletion:
 
         with pytest.raises(AWSServiceError, match=msg):
             self.persistence_adapter.delete_dataset_files(
-                "domain", "dataset", 3, "123-456-789.csv"
+                DatasetMetadata("layer", "domain", "dataset", 3), "123-456-789.csv"
             )
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="data-bucket", Prefix="data/domain/dataset/3"
+            Bucket="data-bucket", Prefix="data/layer/domain/dataset/3"
         )
 
     def test_deletion_of_raw_files(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
-                {"Key": "data/domain/dataset/1/123-456-789_11-222-333.parquet"},
-                {"Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet"},
-                {"Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet"},
+                {"Key": "data/layer/domain/dataset/1/123-456-789_11-222-333.parquet"},
+                {"Key": "data/layer/domain/dataset/1/123-456-789_444-555-666.parquet"},
+                {"Key": "data/layer/domain/dataset/1/123-456-789_777-888-999.parquet"},
             ],
             "Name": "data-bucket",
-            "Prefix": "data/domain/dataset",
+            "Prefix": "data/layer/domain/dataset",
             "EncodingType": "url",
         }
         self.mock_s3_client.delete_objects.return_value = {
-            "Deleted": [{"Key": "raw_data/domain/dataset/123-456-789.csv"}]
+            "Deleted": [{"Key": "raw_data/layer/domain/dataset/123-456-789.csv"}]
         }
 
         self.persistence_adapter.delete_raw_dataset_files(
-            "domain", "dataset", 1, "123-456-789.csv"
+            DatasetMetadata("layer", "domain", "dataset", 1), "123-456-789.csv"
         )
         self.mock_s3_client.delete_objects.assert_called_once_with(
             Bucket="data-bucket",
-            Delete={"Objects": [{"Key": "raw_data/domain/dataset/1/123-456-789.csv"}]},
+            Delete={
+                "Objects": [{"Key": "raw_data/layer/domain/dataset/1/123-456-789.csv"}]
+            },
         )
 
     def test_deletion_of_raw_files_when_error_is_thrown(self):
@@ -481,7 +530,7 @@ class TestS3Deletion:
 
         with pytest.raises(AWSServiceError, match=msg):
             self.persistence_adapter.delete_raw_dataset_files(
-                "domain", "dataset", 3, "123-456-789.csv"
+                DatasetMetadata("layer", "domain", "dataset", 3), "123-456-789.csv"
             )
 
 
@@ -496,23 +545,31 @@ class TestDatasetMetadataRetrieval:
         )
 
     @pytest.mark.parametrize(
-        "domain, dataset, sensitivity, expected",
+        "layer, domain, dataset, sensitivity, expected",
         [
-            ("test_domain", "test_dataset", "PUBLIC", SensitivityLevel.PUBLIC),
-            ("sample", "other", "PRIVATE", SensitivityLevel.PRIVATE),
-            ("hi", "there", "PROTECTED", SensitivityLevel.PROTECTED),
+            ("layer", "test_domain", "test_dataset", "PUBLIC", SensitivityLevel.PUBLIC),
+            ("layer", "sample", "other", "PRIVATE", SensitivityLevel.PRIVATE),
+            ("layer", "hi", "there", "PROTECTED", SensitivityLevel.PROTECTED),
         ],
     )
     def test_retrieves_dataset_sensitivity(
-        self, domain: str, dataset: str, sensitivity: str, expected: SensitivityLevel
+        self,
+        layer: str,
+        domain: str,
+        dataset: str,
+        sensitivity: str,
+        expected: SensitivityLevel,
     ):
         self.mock_s3_client.list_objects.return_value = mock_list_schemas_response(
+            layer,
             domain,
             dataset,
             sensitivity,
         )
 
-        result = self.persistence_adapter.get_dataset_sensitivity(domain, dataset)
+        result = self.persistence_adapter.get_dataset_sensitivity(
+            layer, domain, dataset
+        )
 
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="data-bucket", Prefix=SCHEMAS_LOCATION
@@ -521,10 +578,12 @@ class TestDatasetMetadataRetrieval:
         assert result == expected
 
     def test_returns_none_if_not_schemas_exist(self):
-        domain, dataset = "test_domain", "test_dataset"
+        layer, domain, dataset = "layer", "test_domain", "test_dataset"
         self.mock_s3_client.list_objects.return_value = {}
 
-        result = self.persistence_adapter.find_schema(domain, dataset, 1)
+        result = self.persistence_adapter.find_schema(
+            DatasetMetadata(layer, domain, dataset, 1)
+        )
 
         self.mock_s3_client.list_objects.assert_called_once_with(
             Bucket="data-bucket", Prefix=SCHEMAS_LOCATION
@@ -533,17 +592,20 @@ class TestDatasetMetadataRetrieval:
         assert result is None
 
     @pytest.mark.parametrize(
-        "domain, dataset",
+        "layer, domain, dataset",
         [
-            (None, None),
-            ("domain", None),
-            (None, "dataset"),
+            (None, None, None),
+            ("layer", "domain", None),
+            ("layer", None, "dataset"),
+            (None, "domain", "dataset"),
         ],
     )
-    def test_returns_none_when_either_domain_or_dataset_or_both_not_specified(
-        self, domain: str, dataset: str
+    def test_returns_none_when_any_of_the_args_is_none(
+        self, layer: str, domain: str, dataset: str
     ):
-        result = self.persistence_adapter.get_dataset_sensitivity(domain, dataset)
+        result = self.persistence_adapter.get_dataset_sensitivity(
+            layer, domain, dataset
+        )
 
         assert result is SensitivityLevel.PUBLIC
 
@@ -561,20 +623,24 @@ class TestS3FileList:
     def test_list_raw_files(self):
         self.mock_s3_client.list_objects.return_value = {
             "Contents": [
-                {"Key": "raw_data/my_domain/my_dataset/"},
-                {"Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"},
-                {"Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"},
+                {"Key": "raw_data/layer/my_domain/my_dataset/"},
                 {
-                    "Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
+                    "Key": "raw_data/layer/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"
+                },
+                {
+                    "Key": "raw_data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"
+                },
+                {
+                    "Key": "raw_data/layer/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
                 },
             ],
             "Name": "my-bucket",
-            "Prefix": "raw_data/my_domain/my_dataset",
+            "Prefix": "raw_data/layer/my_domain/my_dataset",
             "EncodingType": "url",
         }
 
         raw_files = self.persistence_adapter.list_raw_files(
-            "my_domain", "my_dataset", 1
+            DatasetMetadata("layer", "my_domain", "my_dataset", 1)
         )
         assert raw_files == [
             "2020-01-01T12:00:00-file1.csv",
@@ -583,63 +649,50 @@ class TestS3FileList:
         ]
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
+            Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset/1"
         )
 
     def test_list_raw_files_when_empty(self):
         self.mock_s3_client.list_objects.return_value = {
             "Name": "my-bucket",
-            "Prefix": "raw_data/my_domain/my_dataset",
+            "Prefix": "raw_data/layer/my_domain/my_dataset",
             "EncodingType": "url",
         }
 
         raw_files = self.persistence_adapter.list_raw_files(
-            "my_domain", "my_dataset", 2
+            DatasetMetadata("layer", "my_domain", "my_dataset", 2)
         )
         assert raw_files == []
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/2"
+            Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset/2"
         )
 
     def test_list_raw_files_when_empty_response(self):
         self.mock_s3_client.list_objects.return_value = {}
 
         raw_files = self.persistence_adapter.list_raw_files(
-            "my_domain", "my_dataset", 1
+            DatasetMetadata("layer", "my_domain", "my_dataset", 1)
         )
         assert raw_files == []
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
+            Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset/1"
         )
 
     def test_list_dataset_files(self):
         self.mock_s3_client.list_objects.side_effect = [
             {
                 "Contents": [
-                    {"Key": "raw_data/my_domain/my_dataset/"},
+                    {"Key": "raw_data/layer/my_domain/my_dataset/"},
                     {
-                        "Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"
+                        "Key": "raw_data/layer/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"
                     },
                     {
-                        "Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"
+                        "Key": "raw_data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"
                     },
                     {
-                        "Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
-                    },
-                ],
-                "Name": "my-bucket",
-                "EncodingType": "url",
-            },
-            {
-                "Contents": [
-                    {"Key": "data/my_domain/my_dataset/"},
-                    {
-                        "Key": "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"
-                    },
-                    {
-                        "Key": "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"
+                        "Key": "raw_data/layer/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
                     },
                 ],
                 "Name": "my-bucket",
@@ -647,9 +700,22 @@ class TestS3FileList:
             },
             {
                 "Contents": [
-                    {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/"},
+                    {"Key": "data/layer/my_domain/my_dataset/"},
                     {
-                        "Key": "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json"
+                        "Key": "data/layer/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"
+                    },
+                    {
+                        "Key": "data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"
+                    },
+                ],
+                "Name": "my-bucket",
+                "EncodingType": "url",
+            },
+            {
+                "Contents": [
+                    {"Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/"},
+                    {
+                        "Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"
                     },
                 ],
                 "Name": "my-bucket",
@@ -658,25 +724,36 @@ class TestS3FileList:
         ]
 
         dataset_files = self.persistence_adapter.list_dataset_files(
-            "my_domain", "my_dataset", "PROTECTED"
+            DatasetMetadata("layer", "my_domain", "my_dataset"), "PROTECTED"
         )
         assert dataset_files == [
-            {"Key": "raw_data/my_domain/my_dataset/"},
-            {"Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"},
-            {"Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"},
-            {"Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv"},
-            {"Key": "data/my_domain/my_dataset/"},
-            {"Key": "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"},
-            {"Key": "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"},
-            {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/"},
-            {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json"},
+            {"Key": "raw_data/layer/my_domain/my_dataset/"},
+            {
+                "Key": "raw_data/layer/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"
+            },
+            {
+                "Key": "raw_data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"
+            },
+            {
+                "Key": "raw_data/layer/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv"
+            },
+            {"Key": "data/layer/my_domain/my_dataset/"},
+            {
+                "Key": "data/layer/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"
+            },
+            {
+                "Key": "data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"
+            },
+            {"Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/"},
+            {"Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"},
         ]
 
         calls = [
-            call(Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"),
-            call(Bucket="my-bucket", Prefix="data/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
-                Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
+                Bucket="my-bucket",
+                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.list_objects.assert_has_calls(calls)
@@ -684,20 +761,21 @@ class TestS3FileList:
     def test_list_dataset_files_when_empty(self):
         self.mock_s3_client.list_objects.return_value = {
             "Name": "my-bucket",
-            "Prefix": "raw_data/my_domain/my_dataset",
+            "Prefix": "raw_data/layer/my_domain/my_dataset",
             "EncodingType": "url",
         }
 
         dataset_files = self.persistence_adapter.list_dataset_files(
-            "my_domain", "my_dataset", "PROTECTED"
+            DatasetMetadata("layer", "my_domain", "my_dataset"), "PROTECTED"
         )
         assert dataset_files == []
 
         calls = [
-            call(Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"),
-            call(Bucket="my-bucket", Prefix="data/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
-                Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
+                Bucket="my-bucket",
+                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.list_objects.assert_has_calls(calls)
@@ -706,15 +784,21 @@ class TestS3FileList:
         self.mock_s3_client.list_objects.return_value = {}
 
         dataset_files = self.persistence_adapter.list_dataset_files(
-            "my_domain", "my_dataset", "PROTECTED"
+            DatasetMetadata(
+                "layer",
+                "my_domain",
+                "my_dataset",
+            ),
+            "PROTECTED",
         )
         assert dataset_files == []
 
         calls = [
-            call(Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset"),
-            call(Bucket="my-bucket", Prefix="data/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset"),
+            call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
-                Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
+                Bucket="my-bucket",
+                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.list_objects.assert_has_calls(calls)
@@ -776,6 +860,7 @@ class TestS3AdapterFunctions:
         mock_s3_adapter_list_all_schemas.return_value = SchemaMetadatas(
             metadatas=[
                 SchemaMetadata(
+                    layer="raw",
                     domain="test_domain",
                     dataset="test_dataset",
                     sensitivity="PUBLIC",
@@ -785,7 +870,7 @@ class TestS3AdapterFunctions:
             ]
         )
         metadata = self.persistence_adapter.retrieve_schema_metadata(
-            "test_domain", "test_dataset", 1
+            DatasetMetadata("raw", "test_domain", "test_dataset", 1)
         )
 
         assert metadata.domain == "test_domain"

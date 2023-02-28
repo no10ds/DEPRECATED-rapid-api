@@ -27,6 +27,7 @@ from api.common.custom_exceptions import (
 )
 from api.domain.Jobs.QueryJob import QueryStep
 from api.domain.Jobs.UploadJob import UploadStep
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.enriched_schema import (
     EnrichedSchema,
     EnrichedSchemaMetadata,
@@ -35,7 +36,6 @@ from api.domain.enriched_schema import (
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 from api.domain.sql_query import SQLQuery
-from api.domain.storage_metadata import StorageMetaData
 
 
 class TestUploadSchema:
@@ -54,6 +54,7 @@ class TestUploadSchema:
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -83,7 +84,8 @@ class TestUploadSchema:
 
         self.s3_adapter.save_schema.assert_called_once_with(self.valid_schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
-            "some", "other", {"sensitivity": "PUBLIC", "no_of_versions": "1"}
+            DatasetMetadata("raw", "some", "other", 1),
+            {"sensitivity": "PUBLIC", "no_of_versions": "1"},
         )
         assert result == "some-other.json"
 
@@ -97,7 +99,8 @@ class TestUploadSchema:
 
         self.s3_adapter.save_schema.assert_called_once_with(schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
-            "some", "other", {"sensitivity": "PUBLIC", "no_of_versions": "1"}
+            DatasetMetadata("raw", "some", "other", 1),
+            {"sensitivity": "PUBLIC", "no_of_versions": "1"},
         )
         assert result == "some-other.json"
 
@@ -116,6 +119,7 @@ class TestUploadSchema:
     def test_check_for_protected_domain_success(self):
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="domain",
                 dataset="dataset",
                 sensitivity="PROTECTED",
@@ -142,6 +146,7 @@ class TestUploadSchema:
     def test_check_for_protected_domain_fails(self):
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="domain1",
                 dataset="dataset2",
                 sensitivity="PROTECTED",
@@ -177,6 +182,7 @@ class TestUploadSchema:
         invalid_partition_index = -1
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -214,9 +220,11 @@ class TestUpdateSchema:
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="testdomain",
                 dataset="testdataset",
                 sensitivity="PUBLIC",
+                version=1,
                 owners=[Owner(name="owner", email="owner@email.com")],
                 key_value_tags={"key1": "val1", "testkey2": "testval2"},
                 key_only_tags=["ktag1", "ktag2"],
@@ -239,6 +247,7 @@ class TestUpdateSchema:
         )
         self.valid_updated_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="testdomain",
                 dataset="testdataset",
                 sensitivity="PUBLIC",
@@ -271,16 +280,18 @@ class TestUpdateSchema:
         ):
             self.data_service.update_schema(self.valid_schema)
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
+    @patch.object(DatasetMetadata, "get_latest_version")
     def test_update_schema_throws_error_when_schema_invalid(
-        self, mock_handle_version_retrieval
+        self, mock_get_latest_version
     ):
         invalid_partition_index = -1
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
+                version=1,
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
             columns=[
@@ -293,15 +304,12 @@ class TestUpdateSchema:
             ],
         )
         self.s3_adapter.find_schema.return_value = self.valid_schema
-        mock_handle_version_retrieval.return_value = 1
 
         with pytest.raises(SchemaValidationError):
             self.data_service.update_schema(invalid_schema)
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_update_schema_for_protected_domain_failure(
-        self, mock_handle_version_retrieval
-    ):
+    @patch.object(DatasetMetadata, "get_latest_version")
+    def test_update_schema_for_protected_domain_failure(self, mock_get_latest_version):
         original_schema = self.valid_schema.copy(deep=True)
         original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
         new_schema = self.valid_updated_schema.copy(deep=True)
@@ -310,7 +318,6 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_handle_version_retrieval.return_value = 1
         self.protected_domain_service.list_protected_domains.return_value = ["other"]
 
         with pytest.raises(
@@ -319,10 +326,8 @@ class TestUpdateSchema:
         ):
             self.data_service.update_schema(new_schema)
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_update_schema_when_crawler_raises_error(
-        self, mock_handle_version_retrieval
-    ):
+    @patch.object(DatasetMetadata, "get_latest_version")
+    def test_update_schema_when_crawler_raises_error(self, mock_get_latest_version):
         new_schema = self.valid_updated_schema
         expected_schema = self.valid_updated_schema.copy(deep=True)
         expected_schema.metadata.version = 2
@@ -330,7 +335,7 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = self.valid_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_handle_version_retrieval.return_value = 1
+        mock_get_latest_version.return_value = 1
         self.glue_adapter.set_crawler_version_tag.side_effect = CrawlerUpdateError(
             "error occurred"
         )
@@ -339,45 +344,38 @@ class TestUpdateSchema:
             self.data_service.update_schema(new_schema)
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.get_domain(), new_schema.get_dataset()
+            new_schema.get_dataset_metadata()
         )
         self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
         self.delete_service.delete_schema.assert_called_once_with(
-            expected_schema.get_domain(),
-            expected_schema.get_dataset(),
-            expected_schema.get_sensitivity(),
-            expected_schema.get_version(),
+            expected_schema.metadata
         )
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_update_schema_success(self, mock_handle_version_retrieval):
+    @patch.object(DatasetMetadata, "get_latest_version")
+    def test_update_schema_success(self, mock_get_latest_version):
         original_schema = self.valid_schema
         new_schema = self.valid_updated_schema
         expected_schema = self.valid_updated_schema.copy(deep=True)
-        expected_schema.metadata.version = 2
+        expected_schema.metadata.version = 3
 
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_handle_version_retrieval.return_value = 1
+        mock_get_latest_version.return_value = 2
 
         result = self.data_service.update_schema(new_schema)
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.get_domain(), new_schema.get_dataset()
+            new_schema.get_dataset_metadata()
         )
         self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
         self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.get_domain(),
-            expected_schema.get_dataset(),
-            expected_schema.metadata.version,
+            expected_schema.get_dataset_metadata()
         )
         assert result == "some-other.json"
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_update_schema_success_uppercase_domain(
-        self, mock_handle_version_retrieval
-    ):
+    @patch.object(DatasetMetadata, "get_latest_version")
+    def test_update_schema_success_uppercase_domain(self, mock_get_latest_version):
         original_schema = self.valid_schema
         new_schema = self.valid_updated_schema.copy(deep=True)
         new_schema.metadata.domain = new_schema.metadata.domain.upper()
@@ -387,24 +385,20 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_handle_version_retrieval.return_value = 1
+        mock_get_latest_version.return_value = 1
 
         result = self.data_service.update_schema(new_schema)
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.get_domain(), new_schema.get_dataset()
+            new_schema.get_dataset_metadata()
         )
         self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
         self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.get_domain(),
-            expected_schema.get_dataset(),
-            expected_schema.metadata.version,
+            expected_schema.get_dataset_metadata()
         )
         assert result == "some-other.json"
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_update_schema_maintains_original_metadata(
-        self, mock_handle_version_retrieval
-    ):
+    @patch.object(DatasetMetadata, "get_latest_version")
+    def test_update_schema_maintains_original_metadata(self, mock_get_latest_version):
         original_schema = self.valid_schema
         new_schema = self.valid_updated_schema.copy(deep=True)
         new_schema.metadata.sensitivity = SensitivityLevel.PRIVATE.value
@@ -417,25 +411,21 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_handle_version_retrieval.return_value = 1
+        mock_get_latest_version.return_value = 1
 
         result = self.data_service.update_schema(new_schema)
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.get_domain(), new_schema.get_dataset()
+            new_schema.get_dataset_metadata()
         )
         self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
         self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.get_domain(),
-            expected_schema.get_dataset(),
-            expected_schema.metadata.version,
+            expected_schema.get_dataset_metadata()
         )
         assert result == "some-other.json"
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_update_schema_for_protected_domain_success(
-        self, mock_handle_version_retrieval
-    ):
+    @patch.object(DatasetMetadata, "get_latest_version")
+    def test_update_schema_for_protected_domain_success(self, mock_get_latest_version):
         original_schema = self.valid_schema.copy(deep=True)
         original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
         new_schema = self.valid_updated_schema.copy(deep=True)
@@ -447,7 +437,7 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_handle_version_retrieval.return_value = 1
+        mock_get_latest_version.return_value = 1
         self.protected_domain_service.list_protected_domains = Mock(
             return_value=[original_schema.get_domain(), "other"]
         )
@@ -455,25 +445,21 @@ class TestUpdateSchema:
         result = self.data_service.update_schema(new_schema)
 
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.get_domain(), new_schema.get_dataset()
+            new_schema.get_dataset_metadata()
         )
         self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
         self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.get_domain(),
-            expected_schema.get_dataset(),
-            expected_schema.metadata.version,
+            expected_schema.get_dataset_metadata()
         )
         assert result == "some-other.json"
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_aborts_updating_if_schema_update_fails(
-        self, mock_handle_version_retrieval
-    ):
+    @patch.object(DatasetMetadata, "get_latest_version")
+    def test_aborts_updating_if_schema_update_fails(self, mock_get_latest_version):
         self.s3_adapter.find_schema.return_value = self.valid_schema
         self.s3_adapter.save_schema.side_effect = ClientError(
             error_response={"Error": {"Code": "Failed"}}, operation_name="PutObject"
         )
-        mock_handle_version_retrieval.return_value = 1
+        mock_get_latest_version.return_value = 1
 
         with pytest.raises(ClientError):
             self.data_service.update_schema(self.valid_schema)
@@ -500,6 +486,7 @@ class TestUploadDataset:
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 version="2",
@@ -545,30 +532,30 @@ class TestUploadDataset:
         )
 
     # Schema retrieval -------------------------------
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_raises_error_when_schema_does_not_exist(self, mock_get_version):
+    def test_raises_error_when_schema_does_not_exist(
+        self,
+    ):
         self.s3_adapter.find_schema.return_value = None
-        mock_get_version.return_value = 1
-
+        dataset_metadata = DatasetMetadata("raw", "some", "other", 1)
         with pytest.raises(SchemaNotFoundError):
             self.data_service.upload_dataset(
-                "subject-123", "some", "other", None, Path("data.csv")
+                "subject-123",
+                dataset_metadata,
+                Path("data.csv"),
             )
 
-        self.s3_adapter.find_schema.assert_called_once_with("some", "other", 1)
+        self.s3_adapter.find_schema.assert_called_once_with(dataset_metadata)
 
     # Upload Dataset  -------------------------------------
 
     @patch("api.application.services.data_service.UploadJob")
     @patch("api.application.services.data_service.Thread")
-    @patch("api.application.services.data_service.handle_version_retrieval")
     @patch("api.application.services.data_service.construct_chunked_dataframe")
     @patch.object(DataService, "process_upload")
     def test_upload_dataset_triggers_process_upload_and_returns_expected_data(
         self,
         mock_process_upload,
         _mock_construct_chunked_dataframe,
-        mock_get_version,
         mock_thread,
         mock_upload_job,
     ):
@@ -576,8 +563,6 @@ class TestUploadDataset:
         schema = self.valid_schema
 
         self.s3_adapter.find_schema.return_value = schema
-
-        mock_get_version.return_value = 1
 
         self.data_service.generate_raw_file_identifier = Mock(
             return_value="123-456-789"
@@ -591,12 +576,15 @@ class TestUploadDataset:
 
         # WHEN
         uploaded_raw_file = self.data_service.upload_dataset(
-            "subject-123", "some", "other", None, Path("data.csv")
+            "subject-123", DatasetMetadata("raw", "some", "other", 1), Path("data.csv")
         )
 
         # THEN
         self.job_service.create_upload_job.assert_called_once_with(
-            "subject-123", "data.csv", "123-456-789", "some", "other", 1
+            "subject-123",
+            "data.csv",
+            "123-456-789",
+            DatasetMetadata("raw", "some", "other", 1),
         )
         self.data_service.generate_raw_file_identifier.assert_called_once()
         mock_thread.assert_called_once_with(
@@ -651,12 +639,14 @@ class TestUploadDataset:
         )
 
         # THEN
-        mock_wait_until_crawler_is_ready.assert_called_once_with(schema)
+        mock_wait_until_crawler_is_ready.assert_called_once_with(
+            schema.get_dataset_metadata()
+        )
         mock_validate_incoming_data.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
         self.s3_adapter.upload_raw_data.assert_called_once_with(
-            schema, Path("data.csv"), "123-456-789"
+            schema.metadata, Path("data.csv"), "123-456-789"
         )
         mock_process_chunks.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
@@ -681,7 +671,7 @@ class TestUploadDataset:
 
         # WHEN/THEN
         try:
-            self.data_service.wait_until_crawler_is_ready(schema)
+            self.data_service.wait_until_crawler_is_ready(schema.get_dataset_metadata())
         except Exception as error:
             pytest.fail("Unexpected failure occurred", error)
 
@@ -698,7 +688,7 @@ class TestUploadDataset:
 
         # WHEN/THEN
         with pytest.raises(CrawlerIsNotReadyError, match="some message"):
-            self.data_service.wait_until_crawler_is_ready(schema)
+            self.data_service.wait_until_crawler_is_ready(schema.get_dataset_metadata())
 
         assert mock_sleep.call_count == 19
 
@@ -715,7 +705,9 @@ class TestUploadDataset:
         self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
 
         # Then
-        self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
+        self.glue_adapter.start_crawler.assert_called_once_with(
+            DatasetMetadata("raw", "some", "other", 2)
+        )
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
     @patch.object(DataService, "delete_incoming_raw_file")
@@ -825,7 +817,9 @@ class TestUploadDataset:
 
         try:
             self.data_service.upload_dataset(
-                "subject-123", "some", "other", 2, Path("data.csv")
+                "subject-123",
+                DatasetMetadata("raw", "some", "other", 2),
+                Path("data.csv"),
             )
         except DatasetValidationError as error:
             assert {
@@ -860,7 +854,9 @@ class TestUploadDataset:
 
         try:
             self.data_service.upload_dataset(
-                "subject-123", "some", "other", 2, Path("data.csv")
+                "subject-123",
+                DatasetMetadata("raw", "some", "other", 2),
+                Path("data.csv"),
             )
         except DatasetValidationError as error:
             assert {
@@ -878,7 +874,7 @@ class TestUploadDataset:
         )
 
         with pytest.raises(AWSServiceError, match="Some message"):
-            self.data_service.wait_until_crawler_is_ready(schema)
+            self.data_service.wait_until_crawler_is_ready(schema.get_dataset_metadata())
 
     # Process Chunks -----------------------------------------
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -925,6 +921,7 @@ class TestUploadDataset:
         # Given
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -980,9 +977,11 @@ class TestUploadDataset:
             call(schema, "123-456-789", chunk2),
         ]
         self.data_service.process_chunk.assert_has_calls(expected_calls)
-        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other", 4)
+        self.s3_adapter.list_raw_files.assert_called_once_with(
+            DatasetMetadata("raw", "some", "other", 4)
+        )
         self.s3_adapter.delete_dataset_files.assert_called_once_with(
-            "some", "other", 4, "987-654-321.csv"
+            DatasetMetadata("raw", "some", "other", 4), "987-654-321.csv"
         )
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -992,6 +991,7 @@ class TestUploadDataset:
         # Given
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1025,7 +1025,9 @@ class TestUploadDataset:
         self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
 
         # Then
-        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other", 6)
+        self.s3_adapter.list_raw_files.assert_called_once_with(
+            DatasetMetadata("raw", "some", "other", 6)
+        )
         self.s3_adapter.delete_dataset_files.assert_not_called()
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -1035,6 +1037,7 @@ class TestUploadDataset:
         # Given
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1072,14 +1075,16 @@ class TestUploadDataset:
         # When
         with pytest.raises(
             AWSServiceError,
-            match=r"Overriding existing data failed for domain \[some\] and dataset \[other\]. Raw file identifier: 123-456-789",
+            match=r"Overriding existing data failed for layer \[raw\], domain \[some\] and dataset \[other\]. Raw file identifier: 123-456-789",
         ):
             self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
 
         # Then
-        self.s3_adapter.list_raw_files.assert_called_once_with("some", "other", 12)
+        self.s3_adapter.list_raw_files.assert_called_once_with(
+            DatasetMetadata("raw", "some", "other", 12)
+        )
         self.s3_adapter.delete_dataset_files.assert_called_once_with(
-            "some", "other", 12, "987-654-321.csv"
+            DatasetMetadata("raw", "some", "other", 12), "987-654-321.csv"
         )
 
     # Process Chunks -----------------------------------------
@@ -1142,7 +1147,7 @@ class TestUploadDataset:
 
         # Then
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
-            "some", "other", 2, filename, partitioned_dataframe
+            DatasetMetadata("raw", "some", "other", 2), filename, partitioned_dataframe
         )
 
 
@@ -1163,6 +1168,7 @@ class TestUpdateTableConfig:
     def test_update_table_config(self):
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="layer",
                 domain="domain1",
                 dataset="dataset1",
                 version="1",
@@ -1186,9 +1192,13 @@ class TestUpdateTableConfig:
         )
 
         self.s3_adapter.find_schema.return_value = schema
-        self.data_service.update_table_config("domain1", "dataset1")
+        self.data_service.update_table_config(
+            DatasetMetadata("layer", "domain1", "dataset1", 1)
+        )
 
-        self.s3_adapter.find_schema.assert_called_once_with("domain1", "dataset1", 1)
+        self.s3_adapter.find_schema.assert_called_once_with(
+            DatasetMetadata("layer", "domain1", "dataset1", 1)
+        )
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
 
@@ -1204,28 +1214,30 @@ class TestListRawFiles:
         )
 
     def test_list_raw_files_from_domain_and_dataset(self):
+        dataset_metadata = DatasetMetadata("raw", "domain", "dataset", 2)
         self.s3_adapter.list_raw_files.return_value = [
             "2022-01-01T12:00:00-my_first_file.csv",
             "2022-02-10T15:00:00-my_second_file.csv",
             "2022-03-03T16:00:00-my_third_file.csv",
         ]
-        list_raw_files = self.data_service.list_raw_files("domain", "dataset", 2)
+        list_raw_files = self.data_service.list_raw_files(dataset_metadata)
         assert list_raw_files == [
             "2022-01-01T12:00:00-my_first_file.csv",
             "2022-02-10T15:00:00-my_second_file.csv",
             "2022-03-03T16:00:00-my_third_file.csv",
         ]
-        self.s3_adapter.list_raw_files.assert_called_once_with("domain", "dataset", 2)
+        self.s3_adapter.list_raw_files.assert_called_once_with(dataset_metadata)
 
     def test_raises_exception_when_no_raw_files_found_for_domain_and_dataset(self):
         self.s3_adapter.list_raw_files.return_value = []
+        dataset_metadata = DatasetMetadata("raw", "domain", "dataset", 1)
         with pytest.raises(
             UserError,
-            match="There are no uploaded files for the domain \\[domain\\] or dataset \\[dataset\\]",
+            match="There are no uploaded files for the layer \\[raw\\], domain \\[domain\\], dataset \\[dataset\\] and version \\[1\\]",
         ):
-            self.data_service.list_raw_files("domain", "dataset", 1)
+            self.data_service.list_raw_files(dataset_metadata)
 
-        self.s3_adapter.list_raw_files.assert_called_once_with("domain", "dataset", 1)
+        self.s3_adapter.list_raw_files.assert_called_once_with(dataset_metadata)
 
 
 class TestDatasetInfoRetrieval:
@@ -1237,6 +1249,7 @@ class TestDatasetInfoRetrieval:
         self.protected_domain_service = Mock()
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1279,6 +1292,7 @@ class TestDatasetInfoRetrieval:
     def test_get_schema_information(self):
         expected_schema = EnrichedSchema(
             metadata=EnrichedSchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1319,12 +1333,11 @@ class TestDatasetInfoRetrieval:
                 "min_date": ["2014-01-01"],
             }
         )
-        actual_schema = self.data_service.get_dataset_info("some", "other", 2)
+        dataset_metadata = DatasetMetadata("raw", "some", "other", 2)
+        actual_schema = self.data_service.get_dataset_info(dataset_metadata)
 
         self.query_adapter.query.assert_called_once_with(
-            "some",
-            "other",
-            2,
+            dataset_metadata,
             SQLQuery(
                 select_columns=[
                     "count(*) as data_size",
@@ -1335,15 +1348,13 @@ class TestDatasetInfoRetrieval:
         )
         assert actual_schema == expected_schema
         self.glue_adapter.get_table_last_updated_date.assert_called_once_with(
-            StorageMetaData("some", "other", 2).glue_table_name()
+            dataset_metadata.glue_table_name()
         )
 
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_get_schema_information_for_multiple_dates(
-        self, mock_handle_version_retrieval
-    ):
+    def test_get_schema_information_for_multiple_dates(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1376,6 +1387,7 @@ class TestDatasetInfoRetrieval:
 
         expected_schema = EnrichedSchema(
             metadata=EnrichedSchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1421,13 +1433,13 @@ class TestDatasetInfoRetrieval:
             }
         )
 
-        mock_handle_version_retrieval.return_value = 1
-        actual_schema = self.data_service.get_dataset_info("some", "other", None)
+        actual_schema = self.data_service.get_dataset_info(
+            DatasetMetadata("raw", "some", "other", 1)
+        )
 
+        expected_dataset_metadata = DatasetMetadata("raw", "some", "other", 1)
         self.query_adapter.query.assert_called_once_with(
-            "some",
-            "other",
-            1,
+            expected_dataset_metadata,
             SQLQuery(
                 select_columns=[
                     "count(*) as data_size",
@@ -1438,13 +1450,13 @@ class TestDatasetInfoRetrieval:
                 ]
             ),
         )
-        mock_handle_version_retrieval.assert_called_once_with("some", "other", None)
 
         assert actual_schema == expected_schema
 
     def test_get_schema_size_for_datasets_with_no_dates(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1462,6 +1474,7 @@ class TestDatasetInfoRetrieval:
         )
         expected_schema = EnrichedSchema(
             metadata=EnrichedSchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -1483,10 +1496,13 @@ class TestDatasetInfoRetrieval:
         self.s3_adapter.find_schema.return_value = valid_schema
         self.query_adapter.query.return_value = pd.DataFrame({"data_size": [48718]})
 
-        actual_schema = self.data_service.get_dataset_info("some", "other", 3)
+        actual_schema = self.data_service.get_dataset_info(
+            DatasetMetadata("raw", "some", "other", 3)
+        )
 
         self.query_adapter.query.assert_called_once_with(
-            "some", "other", 3, SQLQuery(select_columns=["count(*) as data_size"])
+            DatasetMetadata("raw", "some", "other", 3),
+            SQLQuery(select_columns=["count(*) as data_size"]),
         )
 
         assert actual_schema == expected_schema
@@ -1495,7 +1511,9 @@ class TestDatasetInfoRetrieval:
         self.s3_adapter.find_schema.return_value = None
 
         with pytest.raises(SchemaNotFoundError):
-            self.data_service.get_dataset_info("some", "other", 1)
+            self.data_service.get_dataset_info(
+                DatasetMetadata("raw", "some", "other", 1)
+            )
 
     def test_generates_raw_file_identifier(self):
         filename = self.data_service.generate_raw_file_identifier()
@@ -1518,21 +1536,27 @@ class TestQueryDataset:
     def test_is_query_too_large_with_limit_under(self):
         query = SQLQuery(limit=100)
 
-        response = self.data_service.is_query_too_large("domain1", "dataset1", 2, query)
+        response = self.data_service.is_query_too_large(
+            DatasetMetadata("raw", "domain1", "dataset1", 2), query
+        )
         assert response is False
 
     def test_is_query_too_large_with_rows_under(self):
         query = SQLQuery()
         self.glue_adapter.get_no_of_rows.return_value = 1000
 
-        response = self.data_service.is_query_too_large("domain1", "dataset1", 2, query)
+        response = self.data_service.is_query_too_large(
+            DatasetMetadata("raw", "domain1", "dataset1", 2), query
+        )
         assert response is False
 
     def test_is_query_too_large_with_rows_over(self):
         query = SQLQuery()
         self.glue_adapter.get_no_of_rows.return_value = DATASET_QUERY_LIMIT + 1
 
-        response = self.data_service.is_query_too_large("domain1", "dataset1", 2, query)
+        response = self.data_service.is_query_too_large(
+            DatasetMetadata("raw", "domain1", "dataset1", 2), query
+        )
         assert response is True
 
     def test_query_data_success(self):
@@ -1540,44 +1564,28 @@ class TestQueryDataset:
         expected_response = pd.DataFrame().empty
         self.data_service.is_query_too_large = Mock(return_value=False)
         self.athena_adapter.query.return_value = expected_response
+        dataset_metadata = DatasetMetadata("raw", "domain1", "dataset1", 2)
 
-        response = self.data_service.query_data("domain1", "dataset1", 2, query)
+        response = self.data_service.query_data(dataset_metadata, query)
         assert response == expected_response
 
-        self.athena_adapter.query.assert_called_once_with(
-            "domain1", "dataset1", 2, query
-        )
+        self.athena_adapter.query.assert_called_once_with(dataset_metadata, query)
         self.data_service.is_query_too_large.assert_called_once_with(
-            "domain1", "dataset1", 2, query
+            dataset_metadata, query
         )
 
     def test_query_data_for_query_too_large(self):
         query = SQLQuery()
         self.data_service.is_query_too_large = Mock(return_value=True)
+        dataset_metadata = DatasetMetadata("raw", "domain1", "dataset1", 1)
+
         with pytest.raises(UnprocessableDatasetError):
-            self.data_service.query_data("domain1", "dataset1", 1, query)
+            self.data_service.query_data(dataset_metadata, query)
 
         self.data_service.is_query_too_large.assert_called_once_with(
-            "domain1", "dataset1", 1, query
+            dataset_metadata, query
         )
         self.athena_adapter.query.assert_not_called()
-
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_query_data_for_version_not_specified(self, mock_handle_version_retrieval):
-        domain = "domain1"
-        dataset = "dataset1"
-        version = None
-        query = SQLQuery()
-        self.glue_adapter.get_no_of_rows.return_value = 2343
-        mock_handle_version_retrieval.return_value = 3
-
-        self.data_service.query_data(domain, dataset, version, query)
-
-        self.glue_adapter.get_no_of_rows.assert_called_once_with("domain1_dataset1_3")
-        self.athena_adapter.query.assert_called_once_with(
-            "domain1", "dataset1", 3, query
-        )
-        mock_handle_version_retrieval.assert_called_once_with(domain, dataset, version)
 
 
 class TestQueryLargeDataset:
@@ -1599,9 +1607,7 @@ class TestQueryLargeDataset:
     @patch("api.application.services.data_service.Thread")
     def test_query_large_creates_query_job_and_triggers_async_query(self, mock_thread):
         subject_id = "subject-123"
-        domain = "domain1"
-        dataset = "dataset1"
-        version = 4
+        dataset_metadata = DatasetMetadata("raw", "domain1", "dataset1", 4)
         query = SQLQuery()
         query_job = Mock()
         query_job.job_id = "12838"
@@ -1610,51 +1616,15 @@ class TestQueryLargeDataset:
         self.athena_adapter.query_async.return_value = query_execution_id
 
         response = self.data_service.query_large_data(
-            subject_id, domain, dataset, version, query
+            subject_id, dataset_metadata, query
         )
 
         assert response == "12838"
         self.job_service.create_query_job.assert_called_once_with(
-            subject_id, domain, dataset, version
+            subject_id, dataset_metadata
         )
-        self.athena_adapter.query_async.assert_called_once_with(
-            domain, dataset, version, query
-        )
+        self.athena_adapter.query_async.assert_called_once_with(dataset_metadata, query)
 
-        mock_thread.assert_called_once_with(
-            target=self.data_service.generate_results_download_url_async,
-            args=(
-                query_job,
-                query_execution_id,
-            ),
-        )
-
-    @patch("api.application.services.data_service.Thread")
-    @patch("api.application.services.data_service.handle_version_retrieval")
-    def test_query_large_data_for_version_not_specified(
-        self, mock_handle_version_retrieval, mock_thread
-    ):
-        subject_id = "subject-123"
-        domain = "domain1"
-        dataset = "dataset1"
-        version = None
-        query = SQLQuery()
-        query_job = Mock()
-        query_job.job_id = "12838"
-        mock_handle_version_retrieval.return_value = 3
-        self.job_service.create_query_job.return_value = query_job
-        query_execution_id = "111-222-333"
-        self.athena_adapter.query_async.return_value = query_execution_id
-
-        response = self.data_service.query_large_data(
-            subject_id, domain, dataset, version, query
-        )
-
-        assert response == "12838"
-        self.job_service.create_query_job.assert_called_once_with(
-            subject_id, domain, dataset, 3
-        )
-        mock_handle_version_retrieval.assert_called_once_with(domain, dataset, version)
         mock_thread.assert_called_once_with(
             target=self.data_service.generate_results_download_url_async,
             args=(

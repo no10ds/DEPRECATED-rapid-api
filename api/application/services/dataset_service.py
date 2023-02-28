@@ -91,7 +91,6 @@ class DatasetService:
         self, authorised_datasets, sensitivities_and_domains
     ):
         datasets_metadata_list_sensitivities = []
-
         for sensitivity in sensitivities_and_domains.get("sensitivities"):
             query = DatasetFilters(sensitivity=sensitivity)
             datasets_metadata_list_sensitivities.extend(

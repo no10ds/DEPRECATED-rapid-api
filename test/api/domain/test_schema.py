@@ -4,6 +4,7 @@ import pytest
 
 from api.adapter.s3_adapter import S3Adapter
 from api.common.custom_exceptions import SchemaNotFoundError
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata, SchemaMetadatas
 
@@ -12,6 +13,7 @@ class TestSchema:
     def setup_method(self):
         self.schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="test_sensitivity",
@@ -88,18 +90,20 @@ class TestSchemaMetadata:
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
 
     def test_creates_metadata_from_s3_key(self):
-        key = "data/schemas/PRIVATE/test_domain/test_dataset/2/schema.json"
+        key = "data/schemas/raw/PRIVATE/test_domain/test_dataset/2/schema.json"
         result = SchemaMetadata.from_path(key, self.s3_adapter)
 
+        assert result.get_layer() == "raw"
         assert result.get_domain() == "test_domain"
         assert result.get_dataset() == "test_dataset"
         assert result.get_version() == 2
         assert result.get_sensitivity() == "PRIVATE"
 
     def test_creates_metadata_from_s3_key_for_older_files(self):
-        key = "data/schemas/PRIVATE/test_domain-test_dataset.json"
+        key = "data/schemas/raw/PRIVATE/test_domain-test_dataset.json"
         result = SchemaMetadata.from_path(key, self.s3_adapter)
 
+        assert result.get_layer() == "raw"
         assert result.get_domain() == "test_domain"
         assert result.get_dataset() == "test_dataset"
         assert result.get_version() is None
@@ -113,6 +117,7 @@ class TestSchemaMetadata:
 
     def test_schema_path(self):
         schema_metadata = SchemaMetadata(
+            layer="raw",
             domain="DOMAIN",
             dataset="DATASET",
             sensitivity="sensitivity",
@@ -121,11 +126,12 @@ class TestSchemaMetadata:
         )
         assert (
             schema_metadata.schema_path()
-            == "data/schemas/sensitivity/DOMAIN/DATASET/4/schema.json"
+            == "data/schemas/raw/sensitivity/DOMAIN/DATASET/4/schema.json"
         )
 
     def test_schema_name(self):
         schema_metadata = SchemaMetadata(
+            layer="raw",
             domain="DOMAIN",
             dataset="DATASET",
             sensitivity="sensitivity",
@@ -136,6 +142,7 @@ class TestSchemaMetadata:
 
     def test_schema_version(self):
         schema_metadata = SchemaMetadata(
+            layer="raw",
             domain="DOMAIN",
             dataset="DATASET",
             sensitivity="sensitivity",
@@ -146,6 +153,7 @@ class TestSchemaMetadata:
 
     def test_schema_for_default_version(self):
         schema_metadata = SchemaMetadata(
+            layer="raw",
             domain="DOMAIN",
             dataset="DATASET",
             sensitivity="sensitivity",
@@ -155,6 +163,7 @@ class TestSchemaMetadata:
 
     def test_initialises_with_default_tags_when_no_tags_provided(self):
         result = SchemaMetadata(
+            layer="raw",
             domain="domain",
             dataset="dataset",
             sensitivity="PUBLIC",
@@ -173,6 +182,7 @@ class TestSchemaMetadata:
         provided_key_only_tags = ["tag4_key", "tag5_key"]
 
         result = SchemaMetadata(
+            layer="raw",
             domain="domain",
             dataset="dataset",
             sensitivity="PUBLIC",
@@ -193,6 +203,7 @@ class TestSchemaMetadata:
 class TestSchemaMetadatas:
     def test_find_by_domain_and_dataset_and_version(self):
         desired_metadata = SchemaMetadata(
+            layer="raw",
             domain="domain2",
             dataset="dataset2",
             sensitivity="sensitivity",
@@ -202,6 +213,7 @@ class TestSchemaMetadatas:
         data = SchemaMetadatas(
             [
                 SchemaMetadata(
+                    layer="raw",
                     domain="domain1",
                     dataset="dataset1",
                     sensitivity="sensitivity",
@@ -210,7 +222,11 @@ class TestSchemaMetadatas:
                 desired_metadata,
             ]
         )
-        result = data.find(domain="domain2", dataset="dataset2", version=1)
+        result = data.find(
+            DatasetMetadata(
+                layer="raw", domain="domain2", dataset="dataset2", version=1
+            )
+        )
 
         assert result is desired_metadata
 
@@ -218,6 +234,7 @@ class TestSchemaMetadatas:
         data = SchemaMetadatas(
             [
                 SchemaMetadata(
+                    layer="raw",
                     domain="domain1",
                     dataset="dataset1",
                     sensitivity="sensitivity",
@@ -226,6 +243,7 @@ class TestSchemaMetadatas:
                 ),
                 (
                     SchemaMetadata(
+                        layer="raw",
                         domain="domain2",
                         dataset="dataset2",
                         sensitivity="sensitivity",
@@ -238,6 +256,10 @@ class TestSchemaMetadatas:
 
         with pytest.raises(
             SchemaNotFoundError,
-            match="Schema not found for domain=domain3 and dataset=dataset3 and version=1",
+            match="Schema not found for layer=raw, domain=domain3, dataset=dataset3 and version=1",
         ):
-            data.find(domain="domain3", dataset="dataset3", version=1)
+            data.find(
+                DatasetMetadata(
+                    layer="raw", domain="domain3", dataset="dataset3", version=1
+                )
+            )

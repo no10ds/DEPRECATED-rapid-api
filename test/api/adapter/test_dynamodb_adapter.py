@@ -13,6 +13,7 @@ from api.common.custom_exceptions import (
 from api.domain.Jobs.Job import JobStatus
 from api.domain.Jobs.QueryJob import QueryJob, QueryStep
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
 
@@ -569,7 +570,10 @@ class TestDynamoDBAdapterServiceTable:
 
         self.dynamo_adapter.store_upload_job(
             UploadJob(
-                "subject-123", "filename.csv", "111-222-333", "domain1", "dataset2", 4
+                "subject-123",
+                "filename.csv",
+                "111-222-333",
+                DatasetMetadata("layer", "domain1", "dataset2", 4),
             )
         )
 
@@ -584,6 +588,7 @@ class TestDynamoDBAdapterServiceTable:
                 "Errors": None,
                 "Filename": "filename.csv",
                 "RawFileIdentifier": "111-222-333",
+                "Layer": "layer",
                 "Domain": "domain1",
                 "Dataset": "dataset2",
                 "Version": 4,
@@ -601,7 +606,9 @@ class TestDynamoDBAdapterServiceTable:
         version = 5
 
         self.dynamo_adapter.store_query_job(
-            QueryJob("subject-123", "domain1", "dataset1", version)
+            QueryJob(
+                "subject-123", DatasetMetadata("layer", "domain1", "dataset1", version)
+            )
         )
 
         self.service_table.put_item.assert_called_once_with(
@@ -613,6 +620,7 @@ class TestDynamoDBAdapterServiceTable:
                 "Status": "IN PROGRESS",
                 "Step": "INITIALISATION",
                 "Errors": None,
+                "Layer": "layer",
                 "Domain": "domain1",
                 "Dataset": "dataset1",
                 "Version": 5,
@@ -776,7 +784,10 @@ class TestDynamoDBAdapterServiceTable:
         mock_uuid.uuid4.return_value = "abc-123"
 
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "file1.csv",
+            "111-222-333",
+            DatasetMetadata("layer", "domain1", "dataset2", 4),
         )
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
@@ -809,7 +820,10 @@ class TestDynamoDBAdapterServiceTable:
         mock_uuid.uuid4.return_value = "abc-123"
 
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "file1.csv",
+            "111-222-333",
+            DatasetMetadata("layer", "domain1", "dataset2", 4),
         )
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
@@ -841,7 +855,10 @@ class TestDynamoDBAdapterServiceTable:
         mock_uuid.uuid4.return_value = "abc-123"
 
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "file1.csv",
+            "111-222-333",
+            DatasetMetadata("layer", "domain1", "dataset2", 4),
         )
 
         self.service_table.update_item.side_effect = ClientError(
@@ -858,7 +875,9 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_query_job(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = QueryJob("subject-123", "domain1", "dataset2", 4)
+        job = QueryJob(
+            "subject-123", DatasetMetadata("layer", "domain1", "dataset2", 4)
+        )
         job.set_results_url("https://some-url.com")
         job.set_status(JobStatus.SUCCESS)
         job.set_step(QueryStep.NONE)
@@ -891,7 +910,9 @@ class TestDynamoDBAdapterServiceTable:
     def test_update_query_job_raises_error_when_fails(self, mock_uuid):
         mock_uuid.uuid4.return_value = "abc-123"
 
-        job = QueryJob("subject-123", "domain1", "dataset2", 4)
+        job = QueryJob(
+            "subject-123", DatasetMetadata("layer", "domain1", "dataset2", 4)
+        )
 
         self.service_table.update_item.side_effect = ClientError(
             error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
