@@ -82,77 +82,77 @@ function get_image_sha_if_exists {
   fi
 }
 
-function tag_prod_image {
-  EXISTING_PROD_SHA=$(get_image_sha_if_exists "$PROD_TAG")
-  LATEST_IMAGE_SHA=$(get_image_sha_if_exists "$LATEST_TAG")
+#function tag_prod_image {
+#  EXISTING_PROD_SHA=$(get_image_sha_if_exists "$PROD_TAG")
+#  LATEST_IMAGE_SHA=$(get_image_sha_if_exists "$LATEST_TAG")
+#
+#  if [[ "$EXISTING_PROD_SHA" = "$LATEST_IMAGE_SHA" ]]; then
+#    echo "Image SHAs are the same - NOT re-tagging"
+#  else
+#    echo "Image SHAs are different - tagging PROD candidate"
+#    tag_image "$PROD_TAG" "$LATEST_TAG"
+#  fi
+#}
 
-  if [[ "$EXISTING_PROD_SHA" = "$LATEST_IMAGE_SHA" ]]; then
-    echo "Image SHAs are the same - NOT re-tagging"
-  else
-    echo "Image SHAs are different - tagging PROD candidate"
-    tag_image "$PROD_TAG" "$LATEST_TAG"
-  fi
-}
+#function tag_prod_failure {
+#  tag_image "$DEPLOYMENT_FAILED_TAG-$LATEST_TAG" "$PROD_TAG"
+#  _untag_and_delete "$PROD_TAG"
+#  _untag_and_delete "$LATEST_TAG"
+#}
 
-function tag_prod_failure {
-  tag_image "$DEPLOYMENT_FAILED_TAG-$LATEST_TAG" "$PROD_TAG"
-  _untag_and_delete "$PROD_TAG"
-  _untag_and_delete "$LATEST_TAG"
-}
+#function tag_latest_patch {
+#  TAG=$(sed -E 's|(((v[[:digit:]]+)\.[[:digit:]]+)\.[[:digit:]]+)|\2.x-latest|' <<< "$1")
+#  echo "$TAG"
+#  tag_image "$TAG" "$1"
+#}
 
-function tag_latest_patch {
-  TAG=$(sed -E 's|(((v[[:digit:]]+)\.[[:digit:]]+)\.[[:digit:]]+)|\2.x-latest|' <<< "$1")
-  echo "$TAG"
-  tag_image "$TAG" "$1"
-}
+#function tag_latest_minor {
+#  TAG=$(sed -E 's|(((v[[:digit:]]+)\.[[:digit:]]+)\.[[:digit:]]+)|\3.x.x-latest|' <<< "$1")
+#  echo "$TAG"
+#  tag_image "$TAG" "$1"
+#}
+#
+#function tag_image {
+#  echo "Tagging image $2 as $1"
+#
+#  MANIFEST=$(aws ecr batch-get-image \
+#  --region "$AWS_REGION" \
+#  --repository-name "$IMAGE_NAME" \
+#  --image-ids imageTag="$2" \
+#  --query 'images[].imageManifest' --output text)
+#
+#  aws ecr put-image \
+#  --region "$AWS_REGION" \
+#  --repository-name "$IMAGE_NAME" \
+#  --image-tag "$1" \
+#  --image-manifest "$MANIFEST" > /dev/null
+#}
 
-function tag_latest_minor {
-  TAG=$(sed -E 's|(((v[[:digit:]]+)\.[[:digit:]]+)\.[[:digit:]]+)|\3.x.x-latest|' <<< "$1")
-  echo "$TAG"
-  tag_image "$TAG" "$1"
-}
+#function _untag_and_delete {
+#  echo "Untagging image with tag $1"
+#
+#  aws ecr batch-delete-image \
+#  --region "$AWS_REGION" \
+#  --repository-name "$IMAGE_NAME" \
+#  --image-ids imageTag="$1" > /dev/null
+#}
+#
+#function _handle_exhausted_retries {
+#  echo "Exhausted scan check retries"
+#  retag_image "$SCAN_TIMEOUT_TAG"
+#  exit 1;
+#}
 
-function tag_image {
-  echo "Tagging image $2 as $1"
-
-  MANIFEST=$(aws ecr batch-get-image \
-  --region "$AWS_REGION" \
-  --repository-name "$IMAGE_NAME" \
-  --image-ids imageTag="$2" \
-  --query 'images[].imageManifest' --output text)
-
-  aws ecr put-image \
-  --region "$AWS_REGION" \
-  --repository-name "$IMAGE_NAME" \
-  --image-tag "$1" \
-  --image-manifest "$MANIFEST" > /dev/null
-}
-
-function _untag_and_delete {
-  echo "Untagging image with tag $1"
-
-  aws ecr batch-delete-image \
-  --region "$AWS_REGION" \
-  --repository-name "$IMAGE_NAME" \
-  --image-ids imageTag="$1" > /dev/null
-}
-
-function _handle_exhausted_retries {
-  echo "Exhausted scan check retries"
-  retag_image "$SCAN_TIMEOUT_TAG"
-  exit 1;
-}
-
-function _handle_unknown_vulnerabilities {
-  echo "Breached vulnerability threshold. Please see details of unknown unknown vulnerabilities above."
-  retag_image "$VULNERABLE_TAG"
-  exit 1
-}
-
-function retag_image {
-  tag_image "$1-$LATEST_TAG" "$LATEST_TAG"
-  _untag_and_delete "$LATEST_TAG"
-}
+#function _handle_unknown_vulnerabilities {
+#  echo "Breached vulnerability threshold. Please see details of unknown unknown vulnerabilities above."
+#  retag_image "$VULNERABLE_TAG"
+#  exit 1
+#}
+#
+#function retag_image {
+#  tag_image "$1-$LATEST_TAG" "$LATEST_TAG"
+#  _untag_and_delete "$LATEST_TAG"
+#}
 
 function _check_for_vulnerabilities {
   _get_high_or_critical_vulnerabilities "$1"
