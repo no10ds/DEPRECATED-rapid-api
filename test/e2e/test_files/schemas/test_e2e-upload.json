@@ -1,5 +1,6 @@
 {
   "metadata": {
+    "layer": "default",
     "domain": "test_e2e",
     "dataset": "upload",
     "sensitivity": "PUBLIC",

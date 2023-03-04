@@ -77,6 +77,18 @@ tasks:
       container: service-image
       command: "pytest test/api -vv -m focus"
 
+  test-migration:
+    description: Run migration tests
+    run:
+      container: service-image
+      command: "pytest test/migrations -v"
+
+  test-migration-focus:
+    description: Run migration tests
+    run:
+      container: service-image
+      command: "pytest test/migrations -vv -m focus"
+
   test-e2e:
     description: Run E2E tests
     run:

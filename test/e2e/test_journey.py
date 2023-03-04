@@ -28,24 +28,28 @@ class BaseJourneyTest(ABC):
     schema_endpoint = f"{base_url}/schema"
 
     e2e_test_domain = "test_e2e"
-
-    schemas_directory = "data/schemas"
-    data_directory = f"data/{e2e_test_domain}"
-    raw_data_directory = f"raw_data/{e2e_test_domain}"
+    layer = "default"
+    schemas_directory = "schemas"
+    data_directory = f"data/{layer}/{e2e_test_domain}"
+    raw_data_directory = f"raw_data/{layer}/{e2e_test_domain}"
 
     filename = "test_journey_file.csv"
 
-    def upload_dataset_url(self, domain: str, dataset: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}"
+    def upload_dataset_url(self, layer: str, domain: str, dataset: str) -> str:
+        return f"{self.datasets_endpoint}/{layer}/{domain}/{dataset}"
 
-    def query_dataset_url(self, domain: str, dataset: str, version: int = 0) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/query?version={version}"
+    def query_dataset_url(
+        self, layer: str, domain: str, dataset: str, version: int = 0
+    ) -> str:
+        return f"{self.datasets_endpoint}/{layer}/{domain}/{dataset}/query?version={version}"
 
-    def info_dataset_url(self, domain: str, dataset: str, version: int = 0) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/info?version={version}"
+    def info_dataset_url(
+        self, layer: str, domain: str, dataset: str, version: int = 0
+    ) -> str:
+        return f"{self.datasets_endpoint}/{layer}/{domain}/{dataset}/info?version={version}"
 
-    def list_dataset_raw_files_url(self, domain: str, dataset: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/1/files"
+    def list_dataset_raw_files_url(self, layer: str, domain: str, dataset: str) -> str:
+        return f"{self.datasets_endpoint}/{layer}/{domain}/{dataset}/1/files"
 
     def create_protected_domain_url(self, domain: str) -> str:
         return f"{self.base_url}/protected_domains/{domain}"
@@ -56,8 +60,10 @@ class BaseJourneyTest(ABC):
     def modify_subjects_permissions_url(self) -> str:
         return f"{self.base_url}/subjects/permissions"
 
-    def delete_data_url(self, domain: str, dataset: str, raw_filename: str) -> str:
-        return f"{self.datasets_endpoint}/{domain}/{dataset}/1/{raw_filename}"
+    def delete_data_url(
+        self, layer: str, domain: str, dataset: str, raw_filename: str
+    ) -> str:
+        return f"{self.datasets_endpoint}/{layer}/{domain}/{dataset}/1/{raw_filename}"
 
     def permissions_url(self) -> str:
         return f"{self.base_url}/permissions"
@@ -82,13 +88,13 @@ class TestGeneralBehaviour(BaseJourneyTest):
 
 class TestUnauthenticatedJourneys(BaseJourneyTest):
     def test_query_is_forbidden_when_no_token_provided(self):
-        url = self.query_dataset_url("mydomain", "unknowndataset")
+        url = self.query_dataset_url(self.layer, "mydomain", "unknowndataset")
         response = requests.post(url)
         assert response.status_code == HTTPStatus.FORBIDDEN
 
     def test_upload_is_forbidden_when_no_token_provided(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
-        url = self.upload_dataset_url(self.e2e_test_domain, "upload")
+        url = self.upload_dataset_url(self.layer, self.e2e_test_domain, "upload")
         response = requests.post(url, files=files)
         assert response.status_code == HTTPStatus.FORBIDDEN
 
@@ -137,12 +143,12 @@ class TestUnauthorisedJourney(BaseJourneyTest):
     # Tests -------------
 
     def test_query_existing_dataset_when_not_authorised_to_read(self):
-        url = self.query_dataset_url(self.e2e_test_domain, "query")
+        url = self.query_dataset_url(self.layer, self.e2e_test_domain, "query")
         response = requests.post(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
     def test_existing_dataset_info_when_not_authorised_to_read(self):
-        url = self.info_dataset_url(self.e2e_test_domain, "query")
+        url = self.info_dataset_url(self.layer, self.e2e_test_domain, "query")
         response = requests.get(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
@@ -191,10 +197,12 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
     def generate_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"}
 
-    def upload_test_file_to_(self, data_directory: str, domain: str, filename: str):
+    def upload_test_file_to_(
+        self, data_directory: str, layer: str, domain: str, filename: str
+    ):
         self.s3_client.put_object(
             Bucket=DATA_BUCKET,
-            Key=f"{data_directory}/{domain}/1/{filename}",
+            Key=f"{data_directory}/{layer}/{domain}/1/{filename}",
             Body=open("./test/e2e/" + self.filename, "rb"),
         )
 
@@ -210,7 +218,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
 
     def test_uploads_when_authorised(self):
         files = {"file": (self.filename, open("./test/e2e/" + self.filename, "rb"))}
-        upload_url = self.upload_dataset_url(self.e2e_test_domain, "upload")
+        upload_url = self.upload_dataset_url(self.layer, self.e2e_test_domain, "upload")
         response = requests.post(
             upload_url, headers=self.generate_auth_headers(), files=files
         )
@@ -218,25 +226,27 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         assert response.status_code == HTTPStatus.ACCEPTED
 
         raw_filename = json.loads(response.text)["details"]["raw_filename"]
-        delete_url = self.delete_data_url(self.e2e_test_domain, "upload", raw_filename)
+        delete_url = self.delete_data_url(
+            self.layer, self.e2e_test_domain, "upload", raw_filename
+        )
         requests.delete(delete_url, headers=self.generate_auth_headers())
 
     def test_gets_existing_dataset_info_when_authorised(self):
         url = self.info_dataset_url(
-            domain=self.e2e_test_domain, dataset="query", version=1
+            layer=self.layer, domain=self.e2e_test_domain, dataset="query", version=1
         )
 
         response = requests.get(url, headers=(self.generate_auth_headers()))
         assert response.status_code == HTTPStatus.OK
 
     def test_queries_non_existing_dataset_when_authorised(self):
-        url = self.query_dataset_url("mydomain", "unknowndataset")
+        url = self.query_dataset_url(self.layer, "mydomain", "unknowndataset")
         response = requests.post(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.NOT_FOUND
 
     def test_queries_existing_dataset_as_csv_when_authorised(self):
         url = self.query_dataset_url(
-            domain=self.e2e_test_domain, dataset="query", version=1
+            layer=self.layer, domain=self.e2e_test_domain, dataset="query", version=1
         )
         headers = {
             "Accept": "text/csv",
@@ -246,7 +256,9 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         assert response.status_code == HTTPStatus.OK
 
     def test_fails_to_query_when_authorised_and_sql_injection_attempted(self):
-        url = self.query_dataset_url(domain=self.e2e_test_domain, dataset="query")
+        url = self.query_dataset_url(
+            layer=self.layer, domain=self.e2e_test_domain, dataset="query"
+        )
         body = {"filter": "';DROP TABLE test_e2e--"}
         response = requests.post(url, headers=(self.generate_auth_headers()), json=body)
         assert response.status_code == HTTPStatus.FORBIDDEN
@@ -254,15 +266,21 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
     def test_deletes_existing_data_when_authorised(self):
         # Upload files directly to relevant directories in S3
         self.upload_test_file_to_(
-            self.raw_data_directory, domain="delete", filename="test_journey_file.csv"
+            self.raw_data_directory,
+            layer=self.layer,
+            domain="delete",
+            filename="test_journey_file.csv",
         )
         self.upload_test_file_to_(
-            self.data_directory, domain="delete", filename="test_journey_file.parquet"
+            self.data_directory,
+            layer=self.layer,
+            domain="delete",
+            filename="test_journey_file.parquet",
         )
 
         # Get available raw dataset names
         list_raw_files_url = self.list_dataset_raw_files_url(
-            domain=self.e2e_test_domain, dataset="delete"
+            layer=self.layer, domain=self.e2e_test_domain, dataset="delete"
         )
         available_datasets_response = requests.get(
             list_raw_files_url, headers=(self.generate_auth_headers())
@@ -275,6 +293,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         # Delete chosen dataset file (raw file and actual data file)
         first_dataset_file = response_list[0]
         delete_raw_data_url = self.delete_data_url(
+            layer=self.layer,
             domain=self.e2e_test_domain,
             dataset="delete",
             raw_filename=first_dataset_file,
@@ -345,7 +364,7 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
             "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(
                 region=AWS_REGION,
                 account_id=AWS_ACCOUNT,
-                glue_crawler=f"{RESOURCE_PREFIX}_crawler/test_e2e/update",
+                glue_crawler=f"{RESOURCE_PREFIX}_crawler/default/test_e2e/update",
             )
         )
 
@@ -362,16 +381,16 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
                 Delete={
                     "Objects": [
                         {
-                            "Key": f"{self.schemas_directory}/PUBLIC/test_e2e/update/1/schema.json"
+                            "Key": f"{self.schemas_directory}/default/PUBLIC/test_e2e/update/1/schema.json"
                         },
                         {
-                            "Key": f"{self.schemas_directory}/PUBLIC/test_e2e/update/2/schema.json"
+                            "Key": f"{self.schemas_directory}/default/PUBLIC/test_e2e/update/2/schema.json"
                         },
                     ]
                 },
             )
             self.glue_client.delete_crawler(
-                Name=f"{RESOURCE_PREFIX}_crawler/test_e2e/update"
+                Name=f"{RESOURCE_PREFIX}_crawler/default/test_e2e/update"
             )
 
 
@@ -542,7 +561,7 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
 
         # Not authorised to access existing protected domain
         url = self.query_dataset_url(
-            domain="test_e2e_protected", dataset="do_not_delete"
+            layer="default", domain="test_e2e_protected", dataset="do_not_delete"
         )
         response = requests.post(url, headers=self.generate_auth_headers())
         assert response.status_code == HTTPStatus.UNAUTHORIZED
@@ -550,7 +569,7 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
     def test_allows_access_to_protected_domain_when_granted_permission(self):
         self.assume_permissions(["READ_PROTECTED_TEST_E2E_PROTECTED"])
 
-        url = self.query_dataset_url("test_e2e_protected", "do_not_delete")
+        url = self.query_dataset_url("default", "test_e2e_protected", "do_not_delete")
         response = requests.post(url, headers=self.generate_auth_headers())
 
         assert response.status_code == HTTPStatus.OK
