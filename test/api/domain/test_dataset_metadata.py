@@ -51,7 +51,7 @@ class TestDatasetMetadata:
     def test_construct_schema_dataset_location(self):
         assert (
             self.dataset_metadata.construct_schema_dataset_location("PROTECTED")
-            == "data/schemas/layer/PROTECTED/DOMAIN/DATASET"
+            == "schemas/layer/PROTECTED/DOMAIN/DATASET"
         )
 
     @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")

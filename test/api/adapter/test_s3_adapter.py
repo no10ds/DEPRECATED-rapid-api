@@ -142,7 +142,7 @@ class TestS3AdapterUpload:
 
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
-            Key="data/schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Key="schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
             Body=b'{"metadata": {"layer": "raw", "domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
         )
 
@@ -172,7 +172,7 @@ class TestS3AdapterUpload:
 
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
-            Key="data/schemas/layer/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Key="schemas/layer/PUBLIC/test_domain/test_dataset/1/schema.json",
             Body=b'{"metadata": {"layer": "layer", "domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
         )
 
@@ -267,7 +267,7 @@ class TestS3AdapterDataRetrieval:
         )
         self.mock_s3_client.get_object.assert_called_once_with(
             Bucket="dataset",
-            Key="data/schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Key="schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
         )
 
         assert schema == valid_schema
@@ -279,7 +279,7 @@ class TestS3AdapterDataRetrieval:
         )
 
         self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="dataset", Prefix="data/schemas"
+            Bucket="dataset", Prefix="schemas"
         )
 
         assert schema is None
@@ -333,7 +333,7 @@ class TestS3Deletion:
 
         self.mock_s3_client.delete_object.assert_called_once_with(
             Bucket="data-bucket",
-            Key="data/schemas/raw/PUBLIC/domain/dataset/2/schema.json",
+            Key="schemas/raw/PUBLIC/domain/dataset/2/schema.json",
         )
 
     def test_deletion_of_dataset_files_with_no_partitions(self):
@@ -713,9 +713,9 @@ class TestS3FileList:
             },
             {
                 "Contents": [
-                    {"Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/"},
+                    {"Key": "schemas/layer/PROTECTED/my_domain/my_dataset/"},
                     {
-                        "Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"
+                        "Key": "schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"
                     },
                 ],
                 "Name": "my-bucket",
@@ -744,8 +744,8 @@ class TestS3FileList:
             {
                 "Key": "data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"
             },
-            {"Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/"},
-            {"Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"},
+            {"Key": "schemas/layer/PROTECTED/my_domain/my_dataset/"},
+            {"Key": "schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"},
         ]
 
         calls = [
@@ -753,7 +753,7 @@ class TestS3FileList:
             call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
                 Bucket="my-bucket",
-                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
+                Prefix="schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.list_objects.assert_has_calls(calls)
@@ -775,7 +775,7 @@ class TestS3FileList:
             call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
                 Bucket="my-bucket",
-                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
+                Prefix="schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.list_objects.assert_has_calls(calls)
@@ -798,7 +798,7 @@ class TestS3FileList:
             call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
                 Bucket="my-bucket",
-                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
+                Prefix="schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.list_objects.assert_has_calls(calls)
