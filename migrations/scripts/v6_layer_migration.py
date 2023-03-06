@@ -76,16 +76,20 @@ def format_tags_acceptably_for_crawler_creation(tags: List[dict]) -> dict:
 def create_new_crawler(layer: str, crawler_info: dict, glue_client) -> str:
     res = glue_client.get_crawler(Name=crawler_info["Name"])
     new_crawler = res["Crawler"]
-
     # Add layer to the name
     new_crawler["Name"] = new_crawler["Name"].replace(
         f"{RESOURCE_PREFIX}_crawler", f"{RESOURCE_PREFIX}_crawler/{layer}"
     )
-
+    # Add layer to table prefix
+    new_crawler["TablePrefix"] = f"{layer}_{new_crawler['TablePrefix']}"
+    # Increment TableLevelConfiguration level to 6
+    new_crawler[
+        "Configuration"
+    ] = """{"Version":1.0,"Grouping":{"TableGroupingPolicy":"CombineCompatibleSchemas","TableLevelConfiguration":6}}"""
     # Add layer to the target path
     s3_target = new_crawler["Targets"]["S3Targets"][0]
     s3_target["Path"] = s3_target["Path"].replace(
-        f"{RESOURCE_PREFIX}/{DATA_PATH}", f"{RESOURCE_PREFIX}/{DATA_PATH}/{layer}"
+        f"/{DATA_PATH}", f"/{DATA_PATH}/{layer}"
     )
 
     # Delete unacceptable attributes

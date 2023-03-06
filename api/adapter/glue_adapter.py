@@ -64,7 +64,7 @@ class GlueAdapter:
                     {
                         "Version": 1.0,
                         "Grouping": {
-                            "TableLevelConfiguration": 5,
+                            "TableLevelConfiguration": 6,
                             "TableGroupingPolicy": "CombineCompatibleSchemas",
                         },
                     }

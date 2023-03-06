@@ -197,12 +197,10 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
     def generate_auth_headers(self):
         return {"Authorization": f"Bearer {self.token}"}
 
-    def upload_test_file_to_(
-        self, data_directory: str, layer: str, domain: str, filename: str
-    ):
+    def upload_test_file_to_(self, data_directory: str, dataset: str, filename: str):
         self.s3_client.put_object(
             Bucket=DATA_BUCKET,
-            Key=f"{data_directory}/{layer}/{domain}/1/{filename}",
+            Key=f"{data_directory}/{dataset}/1/{filename}",
             Body=open("./test/e2e/" + self.filename, "rb"),
         )
 
@@ -267,14 +265,12 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         # Upload files directly to relevant directories in S3
         self.upload_test_file_to_(
             self.raw_data_directory,
-            layer=self.layer,
-            domain="delete",
+            dataset="delete",
             filename="test_journey_file.csv",
         )
         self.upload_test_file_to_(
             self.data_directory,
-            layer=self.layer,
-            domain="delete",
+            dataset="delete",
             filename="test_journey_file.parquet",
         )
 
