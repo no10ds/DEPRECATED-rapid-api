@@ -161,13 +161,14 @@ class TestSecureDatasetEndpoint:
             browser_request=True,
             client_token=None,
             user_token=user_token,
+            layer="layer",
             domain="mydomain",
             dataset="mydataset",
         )
 
         mock_parse_token.assert_called_once_with("user-token")
         mock_check_permissions.assert_called_once_with(
-            token, ["READ"], "mydomain", "mydataset"
+            token, ["READ"], "layer", "mydomain", "mydataset"
         )
 
     @patch(
@@ -192,13 +193,14 @@ class TestSecureDatasetEndpoint:
             browser_request=False,
             client_token=client_token,
             user_token=user_token,
+            layer="layer",
             domain="mydomain",
             dataset=None,
         )
 
         mock_parse_token.assert_called_once_with("client-token")
         mock_check_permissions.assert_called_once_with(
-            token, ["READ"], "mydomain", None
+            token, ["READ"], "layer", "mydomain", None
         )
 
     @patch(
@@ -222,13 +224,14 @@ class TestSecureDatasetEndpoint:
             browser_request=False,
             client_token=client_token,
             user_token=None,
+            layer="layer",
             domain="mydomain",
             dataset=None,
         )
 
         mock_parse_token.assert_called_once_with("client-token")
         mock_check_permissions.assert_called_once_with(
-            token, ["READ"], "mydomain", None
+            token, ["READ"], "layer", "mydomain", None
         )
 
     @patch(
@@ -244,14 +247,15 @@ class TestSecureDatasetEndpoint:
         endpoint_scopes = ["READ"]
         domain = "test-domain"
         dataset = "test-dataset"
+        layer = "default"
 
         subject_permissions = ["Permission1", "Permission2"]
         mock_retrieve_permissions.return_value = subject_permissions
 
-        check_permissions(mock_token, endpoint_scopes, domain, dataset)
+        check_permissions(mock_token, endpoint_scopes, layer, domain, dataset)
 
         mock_match_permissions.assert_called_once_with(
-            subject_permissions, endpoint_scopes, domain, dataset
+            subject_permissions, endpoint_scopes, layer, domain, dataset
         )
 
 

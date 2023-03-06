@@ -19,6 +19,7 @@ from api.common.config.auth import (
     IDENTITY_PROVIDER_TOKEN_URL,
     RAPID_ACCESS_TOKEN,
 )
+from api.common.config.layers import Layer
 from api.common.custom_exceptions import (
     AuthorisationError,
     UserCredentialsUnavailableError,
@@ -84,6 +85,7 @@ def secure_dataset_endpoint(
     browser_request: bool = Depends(is_browser_request),
     client_token: Optional[str] = Depends(oauth2_scheme),
     user_token: Optional[str] = Depends(oauth2_user_scheme),
+    layer: Optional[Layer] = None,
     domain: Optional[str] = None,
     dataset: Optional[str] = None,
 ):
@@ -92,7 +94,7 @@ def secure_dataset_endpoint(
     try:
         token = client_token if client_token else user_token
         token = parse_token(token)
-        check_permissions(token, security_scopes.scopes, domain, dataset)
+        check_permissions(token, security_scopes.scopes, layer, domain, dataset)
     except InvalidTokenError as error:
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
     except AuthorisationError as error:
@@ -145,11 +147,12 @@ def have_credentials(client_token: str, user_token: str) -> bool:
 def check_permissions(
     token: Token,
     endpoint_scopes: List[str],
+    layer: Optional[Layer],
     domain: Optional[str],
     dataset: Optional[str],
 ):
     subject_permissions = retrieve_permissions(token)
-    match_permissions(subject_permissions, endpoint_scopes, domain, dataset)
+    match_permissions(subject_permissions, endpoint_scopes, layer, domain, dataset)
 
 
 def retrieve_permissions(token: Token) -> List[str]:
