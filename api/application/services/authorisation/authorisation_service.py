@@ -162,10 +162,11 @@ def retrieve_permissions(token: Token) -> List[str]:
 def match_permissions(
     permissions: list,
     endpoint_scopes: list[str],
+    layer: str = None,
     domain: str = None,
     dataset: str = None,
 ):
-    sensitivity = s3_adapter.get_dataset_sensitivity(domain, dataset)
+    sensitivity = s3_adapter.get_dataset_sensitivity(layer, domain, dataset)
     acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
     if not acceptable_scopes.satisfied_by(permissions):
         AppLogger.info(

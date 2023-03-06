@@ -7,7 +7,14 @@ performed that require the relevant resources to be available in AWS (files in S
 
 ### Data setup
 
-Run [this](./setup_e2e_tests.py) script, passing in the necessary environment variables.
+Run [this](./setup_e2e_tests.py) script, passing in values for the environment variables listed below.
+
+``` bash
+CLIENT_ID
+CLIENT_SECRET
+BASE_URL
+```
+
 > Note: After running this it will take a few minutes for the uploaded data to become available and for the tests to pass.
 
 ## Running the tests

@@ -39,11 +39,13 @@ class JobService:
                 # Filter query jobs by what user is allowed to access
                 domain = job.get("domain", None)
                 dataset = job.get("dataset", None)
-                if domain and dataset:
+                layer = job.get("layer", None)
+                if all([domain, dataset, layer]):
                     try:
                         match_permissions(
                             permissions,
                             [Action.READ.value],
+                            layer,
                             domain,
                             dataset,
                         )
