@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 from botocore.exceptions import ClientError
 
+from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.data_service import (
     DataService,
     construct_chunked_dataframe,
@@ -280,9 +281,9 @@ class TestUpdateSchema:
         ):
             self.data_service.update_schema(self.valid_schema)
 
-    @patch.object(DatasetMetadata, "get_latest_version")
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
     def test_update_schema_throws_error_when_schema_invalid(
-        self, mock_get_latest_version
+        self, mock_get_version_from_crawler_tags
     ):
         invalid_partition_index = -1
         invalid_schema = Schema(
@@ -308,8 +309,10 @@ class TestUpdateSchema:
         with pytest.raises(SchemaValidationError):
             self.data_service.update_schema(invalid_schema)
 
-    @patch.object(DatasetMetadata, "get_latest_version")
-    def test_update_schema_for_protected_domain_failure(self, mock_get_latest_version):
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
+    def test_update_schema_for_protected_domain_failure(
+        self, mock_get_version_from_crawler_tags
+    ):
         original_schema = self.valid_schema.copy(deep=True)
         original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
         new_schema = self.valid_updated_schema.copy(deep=True)
@@ -326,8 +329,10 @@ class TestUpdateSchema:
         ):
             self.data_service.update_schema(new_schema)
 
-    @patch.object(DatasetMetadata, "get_latest_version")
-    def test_update_schema_when_crawler_raises_error(self, mock_get_latest_version):
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
+    def test_update_schema_when_crawler_raises_error(
+        self, mock_get_version_from_crawler_tags
+    ):
         new_schema = self.valid_updated_schema
         expected_schema = self.valid_updated_schema.copy(deep=True)
         expected_schema.metadata.version = 2
@@ -335,7 +340,7 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = self.valid_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_latest_version.return_value = 1
+        mock_get_version_from_crawler_tags.return_value = 1
         self.glue_adapter.set_crawler_version_tag.side_effect = CrawlerUpdateError(
             "error occurred"
         )
@@ -351,8 +356,8 @@ class TestUpdateSchema:
             expected_schema.metadata
         )
 
-    @patch.object(DatasetMetadata, "get_latest_version")
-    def test_update_schema_success(self, mock_get_latest_version):
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
+    def test_update_schema_success(self, mock_get_version_from_crawler_tags):
         original_schema = self.valid_schema
         new_schema = self.valid_updated_schema
         expected_schema = self.valid_updated_schema.copy(deep=True)
@@ -361,7 +366,7 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_latest_version.return_value = 2
+        mock_get_version_from_crawler_tags.return_value = 2
 
         result = self.data_service.update_schema(new_schema)
 
@@ -374,8 +379,10 @@ class TestUpdateSchema:
         )
         assert result == "some-other.json"
 
-    @patch.object(DatasetMetadata, "get_latest_version")
-    def test_update_schema_success_uppercase_domain(self, mock_get_latest_version):
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
+    def test_update_schema_success_uppercase_domain(
+        self, mock_get_version_from_crawler_tags
+    ):
         original_schema = self.valid_schema
         new_schema = self.valid_updated_schema.copy(deep=True)
         new_schema.metadata.domain = new_schema.metadata.domain.upper()
@@ -385,7 +392,7 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_latest_version.return_value = 1
+        mock_get_version_from_crawler_tags.return_value = 1
 
         result = self.data_service.update_schema(new_schema)
         self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
@@ -397,8 +404,10 @@ class TestUpdateSchema:
         )
         assert result == "some-other.json"
 
-    @patch.object(DatasetMetadata, "get_latest_version")
-    def test_update_schema_maintains_original_metadata(self, mock_get_latest_version):
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
+    def test_update_schema_maintains_original_metadata(
+        self, mock_get_version_from_crawler_tags
+    ):
         original_schema = self.valid_schema
         new_schema = self.valid_updated_schema.copy(deep=True)
         new_schema.metadata.sensitivity = SensitivityLevel.PRIVATE.value
@@ -411,7 +420,7 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_latest_version.return_value = 1
+        mock_get_version_from_crawler_tags.return_value = 1
 
         result = self.data_service.update_schema(new_schema)
 
@@ -424,8 +433,10 @@ class TestUpdateSchema:
         )
         assert result == "some-other.json"
 
-    @patch.object(DatasetMetadata, "get_latest_version")
-    def test_update_schema_for_protected_domain_success(self, mock_get_latest_version):
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
+    def test_update_schema_for_protected_domain_success(
+        self, mock_get_version_from_crawler_tags
+    ):
         original_schema = self.valid_schema.copy(deep=True)
         original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
         new_schema = self.valid_updated_schema.copy(deep=True)
@@ -437,7 +448,7 @@ class TestUpdateSchema:
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
         self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_latest_version.return_value = 1
+        mock_get_version_from_crawler_tags.return_value = 1
         self.protected_domain_service.list_protected_domains = Mock(
             return_value=[original_schema.get_domain(), "other"]
         )
@@ -453,13 +464,15 @@ class TestUpdateSchema:
         )
         assert result == "some-other.json"
 
-    @patch.object(DatasetMetadata, "get_latest_version")
-    def test_aborts_updating_if_schema_update_fails(self, mock_get_latest_version):
+    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
+    def test_aborts_updating_if_schema_update_fails(
+        self, mock_get_version_from_crawler_tags
+    ):
         self.s3_adapter.find_schema.return_value = self.valid_schema
         self.s3_adapter.save_schema.side_effect = ClientError(
             error_response={"Error": {"Code": "Failed"}}, operation_name="PutObject"
         )
-        mock_get_latest_version.return_value = 1
+        mock_get_version_from_crawler_tags.return_value = 1
 
         with pytest.raises(ClientError):
             self.data_service.update_schema(self.valid_schema)

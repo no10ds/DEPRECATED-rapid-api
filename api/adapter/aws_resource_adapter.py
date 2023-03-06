@@ -101,6 +101,7 @@ class AWSResourceAdapter:
         return int(version_tag[0]) if version_tag else FIRST_SCHEMA_VERSION_NUMBER
 
     def get_version_from_crawler_tags(self, dataset: DatasetMetadata) -> int:
+        """Fetches the latest version from the tags"""
         aws_resources = self._get_resources(["glue:crawler"], [])
 
         crawler_resource = None

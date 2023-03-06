@@ -239,13 +239,10 @@ class DataService:
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = FIRST_SCHEMA_VERSION_NUMBER
         schema.metadata.domain = schema.metadata.domain.lower()
-        if self._get_schema(schema.get_dataset_metadata()) is not None:
+        dataset = schema.get_dataset_metadata()
+        if self._get_schema(dataset) is not None:
             AppLogger.warning(
-                "Schema already exists for layer=%s domain=%s dataset=%s and version=%s",
-                schema.get_layer(),
-                schema.get_domain(),
-                schema.get_dataset(),
-                schema.get_version(),
+                f"Schema already exists for {dataset.string_representation()}"
             )
             raise ConflictError("Schema already exists")
 
@@ -274,7 +271,9 @@ class DataService:
 
             new_schema_description = schema.metadata.description
             new_version = (
-                dataset_metadata.get_latest_version(self.aws_resource_adapter)
+                self.aws_resource_adapter.get_version_from_crawler_tags(
+                    dataset_metadata
+                )
                 + SCHEMA_VERSION_INCREMENT
             )
             schema.metadata = original_schema.metadata

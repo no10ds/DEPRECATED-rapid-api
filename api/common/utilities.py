@@ -25,7 +25,7 @@ def construct_dataset_metadata(
     layer: Layer, domain: str, dataset: str, version: Optional[int] = None
 ) -> DatasetMetadata:
     dataset = DatasetMetadata(layer, domain, dataset, version)
-    dataset.handle_version_retrieval(aws_resource_adapter)
+    dataset.set_version(aws_resource_adapter)
     return dataset
 
 
