@@ -6,9 +6,9 @@ The resources that get changed are the:
 - Glue tables
 - Glue crawlers
 
-# TODO: Add a warning that none of the crawlers can be running when you run this script
+Please ensure that none of the crawlers are running when you start this script
 """
-
+import argparse
 import os
 import json
 from typing import List
@@ -146,7 +146,7 @@ def migrate_files(layer: str, s3_client):
     print("- Migrating the files")
     # Schemas
     move_files_by_prefix(s3_client, "data/schemas", f"schemas/{layer}")
-    add_layer_to_schemas(s3_client, f"schemas/{layer}")
+    add_layer_to_schemas(s3_client, layer, f"schemas/{layer}")
 
     # Data
     move_files_by_prefix(s3_client, "data", f"data/{layer}")
@@ -156,7 +156,7 @@ def migrate_files(layer: str, s3_client):
     print("- Finished migrating the files")
 
 
-def add_layer_to_schemas(s3_client, path: str):
+def add_layer_to_schemas(s3_client, layer: str, path: str):
     print("-- Adding layer to the schemas")
     paginator = s3_client.get_paginator("list_objects_v2")
     page_iterator = paginator.paginate(Bucket=DATA_BUCKET, Prefix=path)
@@ -164,7 +164,7 @@ def add_layer_to_schemas(s3_client, path: str):
     for file in files:
         res = s3_client.get_object(Bucket=DATA_BUCKET, Key=file["Key"])
         json_object = json.loads(res["Body"].read().decode("utf-8"))
-        json_object["metadata"] = {"layer": "default", **json_object["metadata"]}
+        json_object["metadata"] = {"layer": layer, **json_object["metadata"]}
         s3_client.put_object(
             Body=json.dumps(json_object), Bucket=DATA_BUCKET, Key=file["Key"]
         )
@@ -197,10 +197,21 @@ def move_files_by_prefix(s3_client, src_prefix: str, dest_prefix: str):
 
 
 if __name__ == "__main__":
-    print("Migration starting")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--layer",
+        help="Specify the layer to migrate the resources to. Defaults to 'default'",
+    )
+    args = parser.parse_args()
+    if args.layer:
+        layer = args.layer
+    else:
+        layer = "default"
+
+    print(f"Migration to layer [{layer}] starting")
     s3_client = boto3.client("s3")
     glue_client = boto3.client("glue", region_name=AWS_REGION)
     resource_client = boto3.client("resourcegroupstaggingapi", region_name=AWS_REGION)
 
-    main("default", s3_client, glue_client, resource_client)
+    main(layer, s3_client, glue_client, resource_client)
     print("Migration finished")
