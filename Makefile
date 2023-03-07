@@ -48,12 +48,6 @@ test-e2e:		## Run E2E tests
 test-e2e-focus:		## Run E2E tests marked with `@pytest.mark.focus`
 	@./batect test-e2e-focus
 
-test-migration:		## Run Migration tests
-	@./batect test-migration-focus
-
-test-migration-focus: ## Run Migration tests marked with `@pytest.mark.focus`
-	@./batect test-migration
-
 test-coverage:  	## Run python tests with coverage report
 	@./batect test-coverage
 
