@@ -103,9 +103,7 @@ class S3Adapter:
         self, domain: str, dataset: str, version: int | None, sensitivity: str
     ) -> str:
         version = version if version else 1
-        path = (
-            f"{SCHEMAS_LOCATION}/{sensitivity}/{domain}/{dataset}/{version}/schema.json"
-        )
+        path = f"{SCHEMAS_LOCATION}/{sensitivity}/{domain}/{dataset.lower()}/{version}/schema.json"
         schema = SchemaMetadata.from_path(path, self)
         return schema.get_description()
 

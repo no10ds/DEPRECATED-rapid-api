@@ -1,15 +1,20 @@
-from dataclasses import dataclass
 from typing import Optional
 
 from api.common.config.aws import DATA_BUCKET
 
 
-@dataclass(frozen=True)
 class StorageMetaData:
-    domain: str
-    dataset: str
-    version: Optional[int] = 1
-    description: Optional[str] = ""
+    def __init__(
+        self,
+        domain: str,
+        dataset: str,
+        version: Optional[int] = 1,
+        description: Optional[str] = "",
+    ):
+        self.domain = domain
+        self.dataset = dataset.lower()
+        self.version = version
+        self.description = description
 
     def dataset_location(self) -> str:
         return self.construct_dataset_location()
