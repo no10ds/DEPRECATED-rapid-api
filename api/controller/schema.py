@@ -69,7 +69,7 @@ async def generate_schema(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -115,7 +115,7 @@ async def upload_schema(schema: Schema):
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -166,7 +166,7 @@ async def update_schema(schema: Schema):
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 

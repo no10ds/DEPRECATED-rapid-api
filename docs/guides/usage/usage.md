@@ -1298,6 +1298,30 @@ List of subjects:
 
 In order to use this endpoint you need the `USER_ADMIN` permission
 
+## List layers
+
+Use this endpoint to retrieve list of layers for this rAPId instance.
+
+### General structure
+
+`GET /layers`
+
+### Outputs
+
+List of layers:
+
+```json
+[
+  "raw",
+  "staging",
+  "presentation"
+]
+```
+
+### Accepted permissions
+
+Any level of permission will grant you access to this endpoint.
+
 [//]: # (Job management)
 
 ## List all jobs

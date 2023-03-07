@@ -20,6 +20,15 @@ layers_router = APIRouter(
     dependencies=[Security(secure_endpoint)],
 )
 async def list_layers():
-    """"""
-    print(Layer)
-    return {"data": 1}
+    """
+    ## List layers
+
+    Use this endpoint to retrieve list of layers for this rAPId instance.
+
+    ### Accepted permissions
+
+    Any level of permission will grant you access to this endpoint.
+
+    ### Click  `Try it out` to use the endpoint
+    """
+    return list(Layer)
