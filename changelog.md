@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v5.0.2 - _2023-03-09_
+
+See [v5.0.2] changes
+
+### Fixed
+- Fetching datasets for the UI was only returning write access
+
+[v5.0.2]: https://github.com/no10ds/rapid-api/compare/v5.0.1...v5.0.2
+
 ## v5.0.1 - _2023-02-02_
 
 See [v5.0.1] changes
