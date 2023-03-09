@@ -47,10 +47,13 @@ class TestStatus(BaseClientTest):
         assert response.status_code == 200
 
 
+@pytest.mark.focus
 class TestDatasetsUI(BaseClientTest):
     @patch("api.entry.parse_token")
     @patch.object(DatasetService, "get_authorised_datasets")
-    def test_gets_datasets_for_ui(self, mock_get_authorised_datasets, mock_parse_token):
+    def test_gets_datasets_for_ui_write(
+        self, mock_get_authorised_datasets, mock_parse_token
+    ):
         subject_id = "123abc"
         mock_token = Mock()
         mock_token.subject = subject_id
@@ -63,10 +66,33 @@ class TestDatasetsUI(BaseClientTest):
         ]
 
         response = self.client.get(
-            f"{BASE_API_PATH}/datasets_ui", cookies={"rat": "user_token"}
+            f"{BASE_API_PATH}/datasets_ui/WRITE", cookies={"rat": "user_token"}
         )
 
         mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.WRITE)
+        assert response.status_code == 200
+
+    @patch("api.entry.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
+    def test_gets_datasets_for_ui_read(
+        self, mock_get_authorised_datasets, mock_parse_token
+    ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
+        mock_get_authorised_datasets.return_value = [
+            "domain1/datset1/1",
+            "domain1/datset2/1",
+            "domain2/dataset3/1",
+        ]
+
+        response = self.client.get(
+            f"{BASE_API_PATH}/datasets_ui/READ", cookies={"rat": "user_token"}
+        )
+
+        mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.READ)
         assert response.status_code == 200
 
 
