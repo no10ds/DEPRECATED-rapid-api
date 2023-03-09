@@ -174,7 +174,9 @@ async def get_permissions_ui():
 @app.get(
     f"{BASE_API_PATH}/datasets_ui/{{action}}",
     status_code=HTTP_200_OK,
-    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE, Action.READ])],
+    dependencies=[
+        Security(secure_endpoint, scopes=[Action.WRITE.value, Action.READ.value])
+    ],
     include_in_schema=False,
 )
 async def get_datasets_ui(action: Action, request: Request):
