@@ -3,7 +3,7 @@ import uuid
 from typing import Set
 
 from api.common.config.constants import DEFAULT_JOB_EXPIRY_DAYS
-from api.common.utilities import BaseEnum
+from api.common.enum import BaseEnum
 
 
 class JobStatus(BaseEnum):

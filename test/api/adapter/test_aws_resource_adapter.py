@@ -27,6 +27,8 @@ class TestAWSResourceAdapterClientMethods:
                     "Tags": [
                         {"Key": "sensitivity", "Value": "PUBLIC"},
                         {"Key": "no_of_versions", "Value": "1"},
+                        {"Key": "layer", "Value": "layer"},
+                        {"Key": "domain", "Value": "domain1"},
                     ],
                 },
                 {
@@ -35,6 +37,8 @@ class TestAWSResourceAdapterClientMethods:
                         {"Key": "tag1", "Value": ""},
                         {"Key": "sensitivity", "Value": "PUBLIC"},
                         {"Key": "no_of_versions", "Value": "2"},
+                        {"Key": "layer", "Value": "layer"},
+                        {"Key": "domain", "Value": "domain2"},
                     ],
                 },
                 {
@@ -43,6 +47,8 @@ class TestAWSResourceAdapterClientMethods:
                         {"Key": "tag2", "Value": ""},
                         {"Key": "sensitivity", "Value": "PRIVATE"},
                         {"Key": "no_of_versions", "Value": "3"},
+                        {"Key": "layer", "Value": "layer"},
+                        {"Key": "domain", "Value": "domain3"},
                     ],
                 },
                 {
@@ -51,6 +57,8 @@ class TestAWSResourceAdapterClientMethods:
                         {"Key": "tag5", "Value": ""},
                         {"Key": "sensitivity", "Value": "PUBLIC"},
                         {"Key": "no_of_versions", "Value": "1"},
+                        {"Key": "layer", "Value": "layer"},
+                        {"Key": "domain", "Value": "domain3"},
                     ],
                 },
                 {
@@ -59,6 +67,8 @@ class TestAWSResourceAdapterClientMethods:
                         {"Key": "tag5", "Value": ""},
                         {"Key": "sensitivity", "Value": "PUBLIC"},
                         {"Key": "no_of_versions", "Value": "1"},
+                        {"Key": "layer", "Value": "layer"},
+                        {"Key": "domain", "Value": "domain3"},
                     ],
                 },
                 {
@@ -67,6 +77,8 @@ class TestAWSResourceAdapterClientMethods:
                         {"Key": "tag2", "Value": ""},
                         {"Key": "sensitivity", "Value": "PRIVATE"},
                         {"Key": "no_of_versions", "Value": "10"},
+                        {"Key": "layer", "Value": "layer"},
+                        {"Key": "domain", "Value": "domain36"},
                     ],
                 },
                 {
@@ -75,6 +87,8 @@ class TestAWSResourceAdapterClientMethods:
                         {"Key": "tag2", "Value": ""},
                         {"Key": "sensitivity", "Value": "PRIVATE"},
                         {"Key": "no_of_versions", "Value": "10"},
+                        {"Key": "layer", "Value": "layer"},
+                        {"Key": "domain", "Value": "domain36"},
                     ],
                 },
                 {
@@ -83,6 +97,8 @@ class TestAWSResourceAdapterClientMethods:
                         {"Key": "tag2", "Value": ""},
                         {"Key": "sensitivity", "Value": "PRIVATE"},
                         {"Key": "no_of_versions", "Value": "10"},
+                        {"Key": "layer", "Value": "raw"},
+                        {"Key": "domain", "Value": "domain34"},
                     ],
                 },
             ]

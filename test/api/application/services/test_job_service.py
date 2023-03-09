@@ -134,7 +134,7 @@ class TestGetAllJobs:
         mock_get_jobs,
     ):
         # GIVEN
-        mock_get_permissions_for_subject.return_value = ["READ_PROTECTED_DOMAIN1"]
+        mock_get_permissions_for_subject.return_value = ["READ_ALL_PROTECTED_DOMAIN1"]
         mock_get_dataset_sensitivity.side_effect = [
             SensitivityLevel.PROTECTED,
             SensitivityLevel.PROTECTED,
@@ -230,7 +230,7 @@ class TestGetAllJobs:
         mock_get_jobs,
     ):
         # GIVEN
-        mock_get_permissions_for_subject.return_value = ["READ_PRIVATE"]
+        mock_get_permissions_for_subject.return_value = ["READ_ALL_PRIVATE"]
         mock_get_dataset_sensitivity.side_effect = [
             SensitivityLevel.PROTECTED,
             SensitivityLevel.PRIVATE,
