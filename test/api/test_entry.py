@@ -47,7 +47,6 @@ class TestStatus(BaseClientTest):
         assert response.status_code == 200
 
 
-@pytest.mark.focus
 class TestDatasetsUI(BaseClientTest):
     @patch("api.entry.parse_token")
     @patch.object(DatasetService, "get_authorised_datasets")
