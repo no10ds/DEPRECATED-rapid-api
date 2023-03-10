@@ -49,10 +49,10 @@ def test_returns_tag_filter_list_when_querying_for_tags_with_and_without_values(
 
 def test_returns_layer_filter_when_querying_with_layer():
     query = DatasetFilters(
-        layer="RAW",
+        layer="raw",
     )
     expected_tag_filters = [
-        {"Key": "layer", "Values": ["RAW"]},
+        {"Key": "layer", "Values": ["raw"]},
     ]
     assert query.format_resource_query() == expected_tag_filters
 
@@ -81,7 +81,7 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
         key_value_tags={"tag1": None, "tag2": "value2"},
         key_only_tags=["tag3"],
         domain="domain",
-        layer="RAW",
+        layer="raw",
     )
 
     expected_tag_filters = [
@@ -89,7 +89,7 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
         {"Key": "tag2", "Values": ["value2"]},
         {"Key": "tag3", "Values": []},
         {"Key": "sensitivity", "Values": ["PRIVATE"]},
-        {"Key": "layer", "Values": ["RAW"]},
+        {"Key": "layer", "Values": ["raw"]},
         {"Key": "domain", "Values": ["domain"]},
     ]
 

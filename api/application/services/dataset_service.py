@@ -108,7 +108,7 @@ class DatasetService:
         Return to filter by layers if the permission is not ALL
         """
         if permission.layer != ALL:
-            return {"layer": permission.layer}
+            return {"layer": permission.layer.lower()}
         else:
             return {}
 

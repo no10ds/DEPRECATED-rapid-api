@@ -196,8 +196,8 @@ class TestWriteDatasets:
         )
 
         expected_filters = [
-            DatasetFilters(layer="RAW", domain="test2domain", sensitivity="PROTECTED"),
-            DatasetFilters(layer="RAW", sensitivity="PUBLIC"),
+            DatasetFilters(layer="raw", domain="test2domain", sensitivity="PROTECTED"),
+            DatasetFilters(layer="raw", sensitivity="PUBLIC"),
         ]
 
         mock_get_permissions_for_subject.return_value = permissions
@@ -394,8 +394,8 @@ class TestReadDatasets:
             )
         )
         expected_filters = [
-            DatasetFilters(layer="RAW", domain="test2domain", sensitivity="PROTECTED"),
-            DatasetFilters(layer="RAW", sensitivity="PUBLIC"),
+            DatasetFilters(layer="raw", domain="test2domain", sensitivity="PROTECTED"),
+            DatasetFilters(layer="raw", sensitivity="PUBLIC"),
         ]
         mock_get_permissions_for_subject.return_value = permissions
         mock_get_datasets_metadata.side_effect = [

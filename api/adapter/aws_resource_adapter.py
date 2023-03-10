@@ -29,7 +29,6 @@ class AWSResourceAdapter:
         description: Optional[str] = ""
         tags: Optional[Dict[str, str]] = None
 
-    # TODO: Test this with the new query filters
     def get_datasets_metadata(
         self, s3_adapter: "S3Adapter", query: DatasetFilters = DatasetFilters()
     ) -> List[EnrichedDatasetMetaData]:
