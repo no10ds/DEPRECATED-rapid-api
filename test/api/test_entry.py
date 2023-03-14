@@ -72,27 +72,34 @@ class TestDatasetsUI(BaseClientTest):
 
 class TestMethodsUI(BaseClientTest):
     @pytest.mark.parametrize(
-        "permissions,can_manage_users,can_upload,can_download,can_create_schema",
+        "permissions,can_manage_users,can_upload,can_download,can_create_schema,can_search_catalog",
         [
-            ([], False, False, False, False),
-            (["READ_ALL"], False, False, True, False),
-            (["WRITE_ALL"], False, True, False, False),
-            (["DATA_ADMIN"], False, False, False, True),
-            (["USER_ADMIN"], True, False, False, False),
-            (["READ_ALL", "WRITE_ALL"], False, True, True, False),
-            (["USER_ADMIN", "READ_ALL", "WRITE_ALL"], True, True, True, False),
-            (["READ_PRIVATE", "WRITE_PUBLIC"], False, True, True, False),
+            ([], False, False, False, False, False),
+            (["READ_ALL"], False, False, True, False, True),
+            (["WRITE_ALL"], False, True, False, False, False),
+            (["DATA_ADMIN"], False, False, False, True, False),
+            (["USER_ADMIN"], True, False, False, False, False),
+            (["READ_ALL", "WRITE_ALL"], False, True, True, False, True),
+            (["USER_ADMIN", "READ_ALL", "WRITE_ALL"], True, True, True, False, True),
+            (["READ_PRIVATE", "WRITE_PUBLIC"], False, True, True, False, True),
             (
                 ["READ_PROTECTED_domain1", "WRITE_PROTECTED_domain2"],
                 False,
                 True,
                 True,
                 False,
+                True,
             ),
         ],
     )
     def test_determines_user_allowed_ui_actions(
-        self, permissions, can_manage_users, can_upload, can_download, can_create_schema
+        self,
+        permissions,
+        can_manage_users,
+        can_upload,
+        can_download,
+        can_create_schema,
+        can_search_catalog,
     ):
         allowed_actions = _determine_user_ui_actions(permissions)
 
@@ -100,6 +107,7 @@ class TestMethodsUI(BaseClientTest):
         assert allowed_actions["can_upload"] is can_upload
         assert allowed_actions["can_download"] is can_download
         assert allowed_actions["can_create_schema"] is can_create_schema
+        assert allowed_actions["can_search_catalog"] is can_search_catalog
 
     @patch("api.entry.parse_token")
     @patch("api.entry.permissions_service")
@@ -128,6 +136,7 @@ class TestMethodsUI(BaseClientTest):
             "can_upload": True,
             "can_download": True,
             "can_create_schema": True,
+            "can_search_catalog": True,
         }
 
     @patch("api.entry.parse_token")
