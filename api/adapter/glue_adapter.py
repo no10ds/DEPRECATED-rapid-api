@@ -86,7 +86,7 @@ class GlueAdapter:
     def delete_crawler(self, domain: str, dataset: str):
         try:
             self.glue_client.delete_crawler(
-                self._generate_crawler_name(domain, dataset)
+                Name=self._generate_crawler_name(domain, dataset)
             )
         except ClientError:
             raise AWSServiceError("Failed to delete crawler")

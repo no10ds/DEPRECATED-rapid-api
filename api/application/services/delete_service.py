@@ -30,6 +30,7 @@ class DeleteService:
         # 1. Generate a list of file keys from S3 to delete, raw_data, data & schemas
         # 2. Remove keys
         # 3. Delete Glue Tables
+        # 4. Delete crawler
         sensitivity = self.persistence_adapter.get_dataset_sensitivity(domain, dataset)
         dataset_files = self.persistence_adapter.list_dataset_files(
             domain, dataset, sensitivity
@@ -39,6 +40,7 @@ class DeleteService:
         )
         tables = self.glue_adapter.get_tables_for_dataset(domain, dataset)
         self.glue_adapter.delete_tables(tables)
+        self.glue_adapter.delete_crawler(domain, dataset)
 
     def _validate_filename(self, filename: str):
         if not re.match(FILENAME_WITH_TIMESTAMP_REGEX, filename):
