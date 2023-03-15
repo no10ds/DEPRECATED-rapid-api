@@ -174,14 +174,16 @@ async def get_permissions_ui():
 
 
 @app.get(
-    f"{BASE_API_PATH}/datasets_ui",
+    f"{BASE_API_PATH}/datasets_ui/{{action}}",
     status_code=HTTP_200_OK,
-    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[
+        Security(secure_endpoint, scopes=[Action.WRITE.value, Action.READ.value])
+    ],
     include_in_schema=False,
 )
-async def get_datasets_ui(request: Request):
+async def get_datasets_ui(action: Action, request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
+    datasets = upload_service.get_authorised_datasets(subject_id, action)
 
     return _group_datasets_by_domain(datasets)
 
