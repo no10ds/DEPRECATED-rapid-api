@@ -136,7 +136,7 @@ class TestGlueAdapterCrawlerMethods:
     def test_delete_crawler(self):
         self.glue_adapter.delete_crawler("domain", "dataset")
         self.glue_boto_client.delete_crawler.assert_called_once_with(
-            RESOURCE_PREFIX + "_crawler/domain/dataset"
+            Name=RESOURCE_PREFIX + "_crawler/domain/dataset"
         )
 
     def test_delete_crawler_fails(self):
