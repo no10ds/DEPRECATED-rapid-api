@@ -246,11 +246,11 @@ class S3Adapter:
 
     def _list_files_from_path(self, file_path: str) -> List[Dict]:
         try:
-            response = self.__s3_client.list_objects(
-                Bucket=self.__s3_bucket,
-                Prefix=file_path,
+            paginator = self.__s3_client.get_paginator("list_objects")
+            page_iterator = paginator.paginate(
+                Bucket=self.__s3_bucket, Prefix=file_path
             )
-            return response["Contents"]
+            return [item for page in page_iterator for item in page["Contents"]]
         except KeyError:
             return []
 
