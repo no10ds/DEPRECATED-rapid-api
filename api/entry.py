@@ -23,6 +23,7 @@ from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VE
 from api.common.config.constants import BASE_API_PATH
 from api.common.logger import AppLogger, init_logger
 from api.common.custom_exceptions import UserError, AWSServiceError
+from api.common.utilities import strtobool
 from api.controller.auth import auth_router
 from api.controller.client import client_router
 from api.controller.datasets import datasets_router
@@ -45,6 +46,7 @@ PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
 PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
+CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
 permissions_service = PermissionsService()
 upload_service = DatasetService()
@@ -228,6 +230,14 @@ def _determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool
         "can_create_schema": any(
             (
                 permission.startswith(Action.DATA_ADMIN.value)
+                for permission in subject_permissions
+            )
+        ),
+        "can_search_catalog": False
+        if CATALOG_DISABLED
+        else any(
+            (
+                permission.startswith(Action.READ.value)
                 for permission in subject_permissions
             )
         ),

@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +21,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
+from api.common.utilities import strtobool
 from api.common.config.auth import Action
 from api.common.config.constants import (
     BASE_API_PATH,
@@ -37,6 +39,7 @@ from api.domain.metadata_search import metadata_search_query
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
 
+CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
 s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
@@ -83,18 +86,20 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
 
 
-@datasets_router.get(
-    "/search/{term}",
-    dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
-    status_code=http_status.HTTP_200_OK,
-    include_in_schema=False,
-)
-async def search_dataset_metadata(term: str):
-    sql_query = metadata_search_query(term)
-    df = athena_adapter.query_sql(sql_query)
-    df["version"] = df["version"].fillna(value="0")
-    df["data"] = df["data"].fillna(value="")
-    return df.to_dict("records")
+if not CATALOG_DISABLED:
+
+    @datasets_router.get(
+        "/search/{term}",
+        dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
+        status_code=http_status.HTTP_200_OK,
+        include_in_schema=False,
+    )
+    async def search_dataset_metadata(term: str):
+        sql_query = metadata_search_query(term)
+        df = athena_adapter.query_sql(sql_query)
+        df["version"] = df["version"].fillna(value="0")
+        df["data"] = df["data"].fillna(value="")
+        return df.to_dict("records")
 
 
 @datasets_router.get(
