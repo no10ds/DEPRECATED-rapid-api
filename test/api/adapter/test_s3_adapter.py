@@ -263,10 +263,13 @@ class TestS3AdapterDataRetrieval:
         assert schema == valid_schema
 
     def test_retrieve_non_existent_schema(self):
-        self.mock_s3_client.list_objects.return_value = mock_list_schemas_response()
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = (
+            mock_list_schemas_response()
+        )
         schema = self.persistence_adapter.find_schema("bad", "data", 1)
 
-        self.mock_s3_client.list_objects.assert_called_once_with(
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="dataset", Prefix="data/schemas"
         )
 
@@ -312,18 +315,22 @@ class TestS3Deletion:
         )
 
     def test_deletion_of_dataset_files_with_no_partitions(self):
-        self.mock_s3_client.list_objects.return_value = {
-            "Contents": [
-                {"Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet"},
-                {"Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet"},
-                {"Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet"},
-                {"Key": "data/domain/dataset/1/999-999-999_111-888-999.parquet"},
-                {"Key": "data/domain/dataset/2/888-888-888_777-888-999.parquet"},
-            ],
-            "Name": "data-bucket",
-            "Prefix": "data/domain/dataset",
-            "EncodingType": "url",
-        }
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
+            {
+                "NextToken": "xxx",
+                "ResponseMetadata": {"key": "value"},
+                "Contents": [
+                    {"Key": "data/domain/dataset/1/123-456-789_111-222-333.parquet"},
+                    {"Key": "data/domain/dataset/1/123-456-789_444-555-666.parquet"},
+                    {"Key": "data/domain/dataset/1/123-456-789_777-888-999.parquet"},
+                    {"Key": "data/domain/dataset/1/999-999-999_111-888-999.parquet"},
+                    {"Key": "data/domain/dataset/2/888-888-888_777-888-999.parquet"},
+                ],
+                "Name": "data-bucket",
+                "Prefix": "data/domain/dataset",
+                "EncodingType": "url",
+            }
+        ]
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
                 {
@@ -341,7 +348,8 @@ class TestS3Deletion:
         self.persistence_adapter.delete_dataset_files(
             "domain", "dataset", 1, "123-456-789.csv"
         )
-        self.mock_s3_client.list_objects.assert_called_once_with(
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/domain/dataset/1"
         )
 
@@ -363,18 +371,32 @@ class TestS3Deletion:
         )
 
     def test_deletion_of_dataset_files_with_partitions(self):
-        self.mock_s3_client.list_objects.return_value = {
-            "Contents": [
-                {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
-                {"Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"},
-                {"Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"},
-                {"Key": "data/domain/dataset/1/2019/999-999-999_111-888-999.parquet"},
-                {"Key": "data/domain/dataset/2/2022/888-888-888_777-888-999.parquet"},
-            ],
-            "Name": "data-bucket",
-            "Prefix": "data/domain/dataset",
-            "EncodingType": "url",
-        }
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
+            {
+                "NextToken": "xxx",
+                "ResponseMetadata": {"key": "value"},
+                "Contents": [
+                    {
+                        "Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"
+                    },
+                    {
+                        "Key": "data/domain/dataset/1/2021/123-456-789_444-555-666.parquet"
+                    },
+                    {
+                        "Key": "data/domain/dataset/1/2019/123-456-789_777-888-999.parquet"
+                    },
+                    {
+                        "Key": "data/domain/dataset/1/2019/999-999-999_111-888-999.parquet"
+                    },
+                    {
+                        "Key": "data/domain/dataset/2/2022/888-888-888_777-888-999.parquet"
+                    },
+                ],
+                "Name": "data-bucket",
+                "Prefix": "data/domain/dataset",
+                "EncodingType": "url",
+            }
+        ]
         self.mock_s3_client.delete_objects.return_value = {
             "Deleted": [
                 {"Key": "data/domain/dataset/1/2022/123-456-789_111-222-333.parquet"},
@@ -386,7 +408,8 @@ class TestS3Deletion:
         self.persistence_adapter.delete_dataset_files(
             "domain", "dataset", 1, "123-456-789.csv"
         )
-        self.mock_s3_client.list_objects.assert_called_once_with(
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/domain/dataset/1"
         )
 
@@ -408,7 +431,7 @@ class TestS3Deletion:
         )
 
     def test_deletion_of_dataset_files_when_error_is_thrown(self):
-        self.mock_s3_client.list_objects.return_value = {}
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = {}
 
         self.mock_s3_client.delete_objects.return_value = {
             "Errors": [
@@ -433,7 +456,8 @@ class TestS3Deletion:
                 "domain", "dataset", 3, "123-456-789.csv"
             )
 
-        self.mock_s3_client.list_objects.assert_called_once_with(
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/domain/dataset/3"
         )
 
@@ -506,15 +530,14 @@ class TestDatasetMetadataRetrieval:
     def test_retrieves_dataset_sensitivity(
         self, domain: str, dataset: str, sensitivity: str, expected: SensitivityLevel
     ):
-        self.mock_s3_client.list_objects.return_value = mock_list_schemas_response(
-            domain,
-            dataset,
-            sensitivity,
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = (
+            mock_list_schemas_response(domain, dataset, sensitivity)
         )
 
         result = self.persistence_adapter.get_dataset_sensitivity(domain, dataset)
 
-        self.mock_s3_client.list_objects.assert_called_once_with(
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix=SCHEMAS_LOCATION
         )
 
@@ -522,11 +545,12 @@ class TestDatasetMetadataRetrieval:
 
     def test_returns_none_if_not_schemas_exist(self):
         domain, dataset = "test_domain", "test_dataset"
-        self.mock_s3_client.list_objects.return_value = {}
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = {}
 
         result = self.persistence_adapter.find_schema(domain, dataset, 1)
 
-        self.mock_s3_client.list_objects.assert_called_once_with(
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix=SCHEMAS_LOCATION
         )
 
@@ -559,64 +583,10 @@ class TestS3FileList:
         )
 
     def test_list_raw_files(self):
-        self.mock_s3_client.list_objects.return_value = {
-            "Contents": [
-                {"Key": "raw_data/my_domain/my_dataset/"},
-                {"Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"},
-                {"Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"},
-                {
-                    "Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
-                },
-            ],
-            "Name": "my-bucket",
-            "Prefix": "raw_data/my_domain/my_dataset",
-            "EncodingType": "url",
-        }
-
-        raw_files = self.persistence_adapter.list_raw_files(
-            "my_domain", "my_dataset", 1
-        )
-        assert raw_files == [
-            "2020-01-01T12:00:00-file1.csv",
-            "2020-06-01T15:00:00-file2.csv",
-            "2020-11-15T16:00:00-file3.csv",
-        ]
-
-        self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
-        )
-
-    def test_list_raw_files_when_empty(self):
-        self.mock_s3_client.list_objects.return_value = {
-            "Name": "my-bucket",
-            "Prefix": "raw_data/my_domain/my_dataset",
-            "EncodingType": "url",
-        }
-
-        raw_files = self.persistence_adapter.list_raw_files(
-            "my_domain", "my_dataset", 2
-        )
-        assert raw_files == []
-
-        self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/2"
-        )
-
-    def test_list_raw_files_when_empty_response(self):
-        self.mock_s3_client.list_objects.return_value = {}
-
-        raw_files = self.persistence_adapter.list_raw_files(
-            "my_domain", "my_dataset", 1
-        )
-        assert raw_files == []
-
-        self.mock_s3_client.list_objects.assert_called_once_with(
-            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
-        )
-
-    def test_list_dataset_files(self):
-        self.mock_s3_client.list_objects.side_effect = [
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
             {
+                "NextToken": "xxx",
+                "ResponseMetadata": {"key": "value"},
                 "Contents": [
                     {"Key": "raw_data/my_domain/my_dataset/"},
                     {
@@ -630,31 +600,112 @@ class TestS3FileList:
                     },
                 ],
                 "Name": "my-bucket",
+                "Prefix": "raw_data/my_domain/my_dataset",
                 "EncodingType": "url",
-            },
+            }
+        ]
+
+        raw_files = self.persistence_adapter.list_raw_files(
+            "my_domain", "my_dataset", 1
+        )
+        assert raw_files == [
+            "2020-01-01T12:00:00-file1.csv",
+            "2020-06-01T15:00:00-file2.csv",
+            "2020-11-15T16:00:00-file3.csv",
+        ]
+
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
+            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
+        )
+
+    def test_list_raw_files_when_empty(self):
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
             {
-                "Contents": [
-                    {"Key": "data/my_domain/my_dataset/"},
-                    {
-                        "Key": "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"
-                    },
-                    {
-                        "Key": "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"
-                    },
-                ],
+                "NextToken": "xxx",
+                "ResponseMetadata": {"key": "value"},
                 "Name": "my-bucket",
+                "Prefix": "raw_data/my_domain/my_dataset",
                 "EncodingType": "url",
-            },
-            {
-                "Contents": [
-                    {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/"},
-                    {
-                        "Key": "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json"
-                    },
-                ],
-                "Name": "my-bucket",
-                "EncodingType": "url",
-            },
+            }
+        ]
+
+        raw_files = self.persistence_adapter.list_raw_files(
+            "my_domain", "my_dataset", 2
+        )
+        assert raw_files == []
+
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
+            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/2"
+        )
+
+    def test_list_raw_files_when_empty_response(self):
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = {}
+
+        raw_files = self.persistence_adapter.list_raw_files(
+            "my_domain", "my_dataset", 1
+        )
+        assert raw_files == []
+
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
+            Bucket="my-bucket", Prefix="raw_data/my_domain/my_dataset/1"
+        )
+
+    def test_list_dataset_files(self):
+        self.mock_s3_client.get_paginator.return_value.paginate.side_effect = [
+            [
+                {
+                    "NextToken": "xxx",
+                    "ResponseMetadata": {"key": "value"},
+                    "Contents": [
+                        {"Key": "raw_data/my_domain/my_dataset/"},
+                        {
+                            "Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"
+                        },
+                        {
+                            "Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"
+                        },
+                        {
+                            "Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
+                        },
+                    ],
+                    "Name": "my-bucket",
+                    "EncodingType": "url",
+                },
+            ],
+            [
+                {
+                    "NextToken": "xxx",
+                    "ResponseMetadata": {"key": "value"},
+                    "Contents": [
+                        {"Key": "data/my_domain/my_dataset/"},
+                        {
+                            "Key": "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"
+                        },
+                        {
+                            "Key": "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"
+                        },
+                    ],
+                    "Name": "my-bucket",
+                    "EncodingType": "url",
+                },
+            ],
+            [
+                {
+                    "NextToken": "xxx",
+                    "ResponseMetadata": {"key": "value"},
+                    "Contents": [
+                        {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/"},
+                        {
+                            "Key": "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json"
+                        },
+                    ],
+                    "Name": "my-bucket",
+                    "EncodingType": "url",
+                },
+            ],
         ]
 
         dataset_files = self.persistence_adapter.list_dataset_files(
@@ -679,15 +730,18 @@ class TestS3FileList:
                 Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
             ),
         ]
-        self.mock_s3_client.list_objects.assert_has_calls(calls)
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_has_calls(calls)
 
     def test_list_dataset_files_when_empty(self):
-        self.mock_s3_client.list_objects.return_value = {
-            "Name": "my-bucket",
-            "Prefix": "raw_data/my_domain/my_dataset",
-            "EncodingType": "url",
-        }
-
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
+            {
+                "NextToken": "xxx",
+                "ResponseMetadata": {"key": "value"},
+                "Name": "my-bucket",
+                "Prefix": "raw_data/my_domain/my_dataset",
+                "EncodingType": "url",
+            }
+        ]
         dataset_files = self.persistence_adapter.list_dataset_files(
             "my_domain", "my_dataset", "PROTECTED"
         )
@@ -700,10 +754,10 @@ class TestS3FileList:
                 Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
             ),
         ]
-        self.mock_s3_client.list_objects.assert_has_calls(calls)
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_has_calls(calls)
 
     def test_list_dataset_files_when_empty_response(self):
-        self.mock_s3_client.list_objects.return_value = {}
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = {}
 
         dataset_files = self.persistence_adapter.list_dataset_files(
             "my_domain", "my_dataset", "PROTECTED"
@@ -717,7 +771,7 @@ class TestS3FileList:
                 Bucket="my-bucket", Prefix="data/schemas/PROTECTED/my_domain/my_dataset"
             ),
         ]
-        self.mock_s3_client.list_objects.assert_has_calls(calls)
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_has_calls(calls)
 
 
 class TestGenerateS3PreSignedUrl:
