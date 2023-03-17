@@ -20,7 +20,7 @@ def get_full_path(prefix):
 
 def move_s3_object(path):
     result = s3_client.copy_object(
-        Bucket=DATA_BUCKET, CopySource=f"{DATA_BUCKET}/{path}", Key=f"{path.lower()}"
+        Bucket=DATA_BUCKET, CopySource=f"{DATA_BUCKET}/{path}", Key=f"{path}"
     )
     return result
 
@@ -31,9 +31,13 @@ def remove_s3_object(path):
 
 
 def delete_crawler(resource_name_prefix, raw_name):
-    splits = raw_name.split("/")
-    name = f"{resource_name_prefix}_crawler/{splits[0]}/{splits[1]}"
-    result = glue_client.delete_crawler(Name=name)
+    try:
+        splits = raw_name.split("/")
+        name = f"{resource_name_prefix}_crawler/{splits[0]}/{splits[1]}"
+        result = glue_client.delete_crawler(Name=name)
+    except Exception:
+        print("Skipping crawler deletion")
+        return None
     return result
 
 
