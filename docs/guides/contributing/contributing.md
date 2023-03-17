@@ -78,7 +78,6 @@ There are currently four scripts located in the `test/scripts`, these are:
 - User Permission Test
 - Migrate Datasets to Schema Versioning
 - v5.0.0 Schema Migration
-- v6.0.0 Domain Case Insensitive
 
 #### Delete Protected Domain Permission
 
@@ -104,15 +103,7 @@ python test/scripts/migrate_datasets_to_new_versioning_structure.py
 rAPId v5.0.0 introduced a new search over data metadata as part of introductionary work into a data catalog. The data catalog search introduces a breaking change as the current pretty-printed schemas are not compatiable for searching within Athena. The v5.0.0 migration script removes the pretty-printed format from the saved schemas.
 
 ```commandline
-python migrations/scripts/v5_schema_migration.py
-```
-
-### v6.0.0 Domain Case Insensitive
-
-rAPId v6.0.0 made domains case insensitive. This was a design decision but also helped clear up some core issues around permissions. For instance you could create a protected domain with a domain uppercase and the exact same protected domain with a domain lowercase would not get picked up by the uppercase. The v6.0.0 migration script migrates over all non-lowercase domains.
-
-```commandline
-python migrations/scripts/v6_domain_case_insensitive.py
+python test/scripts/v5_schema_migration.py
 ```
 
 ### Checking your code

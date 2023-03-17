@@ -6,7 +6,6 @@ from botocore.exceptions import ClientError
 from api.adapter.glue_adapter import GlueAdapter
 from api.common.config.aws import (
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
-    GLUE_CATALOGUE_DB_NAME,
     DATA_BUCKET,
     AWS_REGION,
     AWS_ACCOUNT,
@@ -55,7 +54,6 @@ class TestGlueAdapterCrawlerMethods:
                     },
                 ]
             },
-            SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"},
             Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5, "TableGroupingPolicy": "CombineCompatibleSchemas"}}',
             Tags={
                 "tag1": "value1",
@@ -136,7 +134,7 @@ class TestGlueAdapterCrawlerMethods:
     def test_delete_crawler(self):
         self.glue_adapter.delete_crawler("domain", "dataset")
         self.glue_boto_client.delete_crawler.assert_called_once_with(
-            Name=RESOURCE_PREFIX + "_crawler/domain/dataset"
+            RESOURCE_PREFIX + "_crawler/domain/dataset"
         )
 
     def test_delete_crawler_fails(self):
@@ -377,34 +375,6 @@ class TestGlueAdapterTableMethods:
         result = self.glue_adapter.get_no_of_rows("qa_carsales_25_1")
 
         assert result == 990300
-
-    def test_get_tables_for_dataset(self):
-        paginate = self.glue_boto_client.get_paginator.return_value.paginate
-        paginate.return_value = [
-            {"TableList": [{"Name": "domain_dataset_1"}]},
-            {"TableList": [{"Name": "domain_dataset_2"}]},
-        ]
-
-        result = self.glue_adapter.get_tables_for_dataset("domain", "dataset")
-
-        assert result == ["domain_dataset_1", "domain_dataset_2"]
-
-    def test_delete_tables(self):
-        table_names = ["domain_dataset_1", "domain_dataset_2"]
-        self.glue_adapter.delete_tables(table_names)
-        self.glue_boto_client.batch_delete_table.assert_called_once_with(
-            DatabaseName=GLUE_CATALOGUE_DB_NAME, TablesToDelete=table_names
-        )
-
-    def test_delete_tables_fails(self):
-        table_names = ["domain_dataset_1", "domain_dataset_2"]
-        self.glue_boto_client.batch_delete_table.side_effect = ClientError(
-            error_response={"Error": {"Code": "SomethingElse"}},
-            operation_name="BatchDeleteTable",
-        )
-
-        with pytest.raises(AWSServiceError):
-            self.glue_adapter.delete_tables(table_names)
 
     @patch("api.adapter.glue_adapter.sleep")
     def test_raises_error_when_table_does_not_exist_and_retries_exhausted(

@@ -320,7 +320,7 @@ class DataService:
     def check_for_protected_domain(self, schema: Schema) -> str:
         if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
             if (
-                schema.get_domain()
+                schema.get_domain().lower()
                 not in self.protected_domain_service.list_protected_domains()
             ):
                 raise UserError(

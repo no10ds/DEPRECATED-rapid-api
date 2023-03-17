@@ -60,7 +60,6 @@ class GlueAdapter:
                         },
                     ]
                 },
-                SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"},
                 Configuration=json.dumps(
                     {
                         "Version": 1.0,
@@ -86,7 +85,7 @@ class GlueAdapter:
     def delete_crawler(self, domain: str, dataset: str):
         try:
             self.glue_client.delete_crawler(
-                Name=self._generate_crawler_name(domain, dataset)
+                self._generate_crawler_name(domain, dataset)
             )
         except ClientError:
             raise AWSServiceError("Failed to delete crawler")
@@ -160,21 +159,6 @@ class GlueAdapter:
         table = self._get_table(table_name)
         return int(table["Table"]["StorageDescriptor"]["Parameters"]["recordCount"])
 
-    def get_tables_for_dataset(self, domain: str, dataset: str) -> List[str]:
-        search_term = StorageMetaData(
-            domain=domain, dataset=dataset
-        ).glue_table_prefix()
-        tables = [item["Name"] for item in self._search_tables(search_term)]
-        return tables
-
-    def delete_tables(self, table_names: List[str]):
-        try:
-            self.glue_client.batch_delete_table(
-                DatabaseName=GLUE_CATALOGUE_DB_NAME, TablesToDelete=table_names
-            )
-        except ClientError:
-            raise AWSServiceError("Failed to delete tables")
-
     def update_glue_table_partition_column_types(
         self, table_definition: Dict, partition_columns: List[Column]
     ) -> Dict:
@@ -235,17 +219,3 @@ class GlueAdapter:
         except ClientError as error:
             if error.response["Error"]["Code"] == "EntityNotFoundException":
                 raise TableDoesNotExistError(f"The table [{table_name}] does not exist")
-
-    def _search_tables(self, search_term: str) -> Dict:
-        try:
-            paginator = self.glue_client.get_paginator("get_tables")
-            page_iterator = paginator.paginate(
-                DatabaseName=GLUE_CATALOGUE_DB_NAME,
-            )
-            tables = []
-            for page in page_iterator:
-                tables.extend(page["TableList"])
-
-            return [table for table in tables if table["Name"].startswith(search_term)]
-        except ClientError:
-            raise AWSServiceError(f"Failed to search tables with term={search_term}")

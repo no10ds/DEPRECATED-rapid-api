@@ -433,14 +433,3 @@ class TestSchemaGeneration(BaseClientTest):
 
         assert response.status_code == 400
         assert response.json() == {"details": error_message}
-
-    def test_returns_error_response_when_domain_uppercase(self):
-        response = self.client.post(
-            f"{BASE_API_PATH}/datasets/MYDOMAIN/mydataset/query",
-            headers={"Authorization": "Bearer test-token"},
-        )
-
-        assert response.status_code == 400
-        assert response.json() == {
-            "details": ["domain -> was required to be lowercase only."]
-        }

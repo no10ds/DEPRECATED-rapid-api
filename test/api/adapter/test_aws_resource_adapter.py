@@ -19,75 +19,65 @@ class TestAWSResourceAdapterClientMethods:
         self.mock_s3_client = Mock()
         self.resource_adapter = AWSResourceAdapter(self.resource_boto_client)
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
-        self.aws_return_value = [
-            {
-                "PaginationToken": "xxxx",
-                "ResponseMetadata": {"key": "value"},
-                "ResourceTagMappingList": [
-                    {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain1/dataset1",
-                        "Tags": [
-                            {"Key": "sensitivity", "Value": "PUBLIC"},
-                            {"Key": "no_of_versions", "Value": "1"},
-                        ],
-                    },
-                    {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain2/dataset2",
-                        "Tags": [
-                            {"Key": "tag1", "Value": ""},
-                            {"Key": "sensitivity", "Value": "PUBLIC"},
-                            {"Key": "no_of_versions", "Value": "2"},
-                        ],
-                    },
-                    {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset",
-                        "Tags": [
-                            {"Key": "tag2", "Value": ""},
-                            {"Key": "sensitivity", "Value": "PRIVATE"},
-                            {"Key": "no_of_versions", "Value": "3"},
-                        ],
-                    },
-                ],
-            },
-            {
-                "PaginationToken": "xxxx",
-                "ResponseMetadata": {"key": "value"},
-                "ResourceTagMappingList": [
-                    {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_PREFIX_crawler/domain3/dataset3",
-                        "Tags": [
-                            {"Key": "tag5", "Value": ""},
-                            {"Key": "sensitivity", "Value": "PUBLIC"},
-                            {"Key": "no_of_versions", "Value": "1"},
-                        ],
-                    },
-                    {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset3",
-                        "Tags": [
-                            {"Key": "tag5", "Value": ""},
-                            {"Key": "sensitivity", "Value": "PUBLIC"},
-                            {"Key": "no_of_versions", "Value": "1"},
-                        ],
-                    },
-                    {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_{RESOURCE_PREFIX}_crawler/domain36/dataset3",
-                        "Tags": [
-                            {"Key": "tag2", "Value": ""},
-                            {"Key": "sensitivity", "Value": "PRIVATE"},
-                            {"Key": "no_of_versions", "Value": "10"},
-                        ],
-                    },
-                    {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain36/dataset3",
-                        "Tags": [
-                            {"Key": "tag2", "Value": ""},
-                            {"Key": "sensitivity", "Value": "PRIVATE"},
-                            {"Key": "no_of_versions", "Value": "10"},
-                        ],
-                    },
-                ],
-            },
-        ]
+        self.aws_return_value = {
+            "ResourceTagMappingList": [
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain1/dataset1",
+                    "Tags": [
+                        {"Key": "sensitivity", "Value": "PUBLIC"},
+                        {"Key": "no_of_versions", "Value": "1"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain2/dataset2",
+                    "Tags": [
+                        {"Key": "tag1", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PUBLIC"},
+                        {"Key": "no_of_versions", "Value": "2"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset",
+                    "Tags": [
+                        {"Key": "tag2", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PRIVATE"},
+                        {"Key": "no_of_versions", "Value": "3"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_PREFIX_crawler/domain3/dataset3",
+                    "Tags": [
+                        {"Key": "tag5", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PUBLIC"},
+                        {"Key": "no_of_versions", "Value": "1"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset3",
+                    "Tags": [
+                        {"Key": "tag5", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PUBLIC"},
+                        {"Key": "no_of_versions", "Value": "1"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_{RESOURCE_PREFIX}_crawler/domain36/dataset3",
+                    "Tags": [
+                        {"Key": "tag2", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PRIVATE"},
+                        {"Key": "no_of_versions", "Value": "10"},
+                    ],
+                },
+                {
+                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain36/dataset3",
+                    "Tags": [
+                        {"Key": "tag2", "Value": ""},
+                        {"Key": "sensitivity", "Value": "PRIVATE"},
+                        {"Key": "no_of_versions", "Value": "10"},
+                    ],
+                },
+            ]
+        }
 
     def test_gets_all_datasets_metadata_for_specific_resource_when_query_is_empty(self):
         query = DatasetFilters()
@@ -130,32 +120,27 @@ class TestAWSResourceAdapterClientMethods:
             ),
         ]
 
-        self.resource_boto_client.get_paginator.return_value.paginate.return_value = (
-            self.aws_return_value
-        )
+        self.resource_boto_client.get_resources.return_value = self.aws_return_value
 
         actual_metadatas = self.resource_adapter.get_datasets_metadata(
             self.s3_adapter, query
         )
 
-        self.resource_boto_client.get_paginator.assert_called_once_with("get_resources")
-        self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
+        self.resource_boto_client.get_resources.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"], TagFilters=[]
         )
-
         assert actual_metadatas == expected_metadatas
 
     def test_returns_empty_list_of_datasets_when_none_exist(self):
         query = DatasetFilters()
 
-        self.resource_boto_client.get_paginator.return_value.paginate.return_value = {}
+        self.resource_boto_client.get_resources.return_value = {}
 
         actual_metadatas = self.resource_adapter.get_datasets_metadata(
             self.s3_adapter, query
         )
 
-        self.resource_boto_client.get_paginator.assert_called_once_with("get_resources")
-        self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
+        self.resource_boto_client.get_resources.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"], TagFilters=[]
         )
 
@@ -169,12 +154,11 @@ class TestAWSResourceAdapterClientMethods:
             }
         )
 
-        self.resource_boto_client.get_paginator.return_value.paginate.return_value = {}
+        self.resource_boto_client.get_resources.return_value = {}
 
         self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
 
-        self.resource_boto_client.get_paginator.assert_called_once_with("get_resources")
-        self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
+        self.resource_boto_client.get_resources.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"],
             TagFilters=[
                 {"Key": "tag1", "Values": ["value1"]},
@@ -190,11 +174,9 @@ class TestAWSResourceAdapterClientMethods:
             }
         )
 
-        self.resource_boto_client.get_paginator.return_value.paginate.side_effect = (
-            ClientError(
-                error_response={"Error": {"Code": "InvalidParameterException"}},
-                operation_name="GetResources",
-            )
+        self.resource_boto_client.get_resources.side_effect = ClientError(
+            error_response={"Error": {"Code": "InvalidParameterException"}},
+            operation_name="GetResources",
         )
 
         with pytest.raises(UserError, match="Wrong parameters sent to list datasets"):
@@ -217,11 +199,9 @@ class TestAWSResourceAdapterClientMethods:
             }
         )
 
-        self.resource_boto_client.get_paginator.return_value.paginate.side_effect = (
-            ClientError(
-                error_response={"Error": {"Code": f"{error_code}"}},
-                operation_name="GetResources",
-            )
+        self.resource_boto_client.get_resources.side_effect = ClientError(
+            error_response={"Error": {"Code": f"{error_code}"}},
+            operation_name="GetResources",
         )
 
         with pytest.raises(
@@ -242,9 +222,7 @@ class TestAWSResourceAdapterClientMethods:
     )
     def test_get_version_from_crawler(self, domain, dataset, expected_version):
 
-        self.resource_boto_client.get_paginator.return_value.paginate.return_value = (
-            self.aws_return_value
-        )
+        self.resource_boto_client.get_resources.return_value = self.aws_return_value
 
         actual_version = self.resource_adapter.get_version_from_crawler_tags(
             domain, dataset

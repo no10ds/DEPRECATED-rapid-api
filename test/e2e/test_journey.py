@@ -283,6 +283,7 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         response2 = requests.delete(
             delete_raw_data_url, headers=(self.generate_auth_headers())
         )
+
         assert response2.status_code == HTTPStatus.NO_CONTENT
 
 
@@ -336,7 +337,7 @@ class TestAuthenticatedSchemaJourney(BaseJourneyTest):
 
     def test_uploads_new_schema_version(self):
         response1 = self.upload_schema_version1()
-        assert response1.status_code in [HTTPStatus.CREATED, HTTPStatus.CONFLICT]
+        assert response1.status_code == HTTPStatus.CREATED
 
         response2 = self.upload_schema_version2()
         assert response2.status_code == HTTPStatus.OK
