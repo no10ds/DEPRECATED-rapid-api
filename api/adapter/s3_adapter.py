@@ -55,7 +55,7 @@ class S3Adapter:
 
     def find_schema(self, domain: str, dataset: str, version: int) -> Optional[Schema]:
         try:
-            schema_metadata = self.retrieve_schema_metadata(
+            schema_metadata = self._retrieve_schema_metadata(
                 domain=domain, dataset=dataset, version=version
             )
             dataset = self.retrieve_data(schema_metadata.schema_path())
@@ -76,7 +76,6 @@ class S3Adapter:
                 raise UserError(f"The file [{filename}] does not exist")
 
     def save_schema(self, schema: Schema) -> str:
-        schema.metadata.domain = schema.metadata.domain.lower()
         schema_metadata = schema.metadata
         self.store_data(
             object_full_path=schema_metadata.schema_path(),
@@ -96,7 +95,7 @@ class S3Adapter:
         if not domain or not dataset:
             return SensitivityLevel.from_string("PUBLIC")
         # all datasets have the same sensitivity - take the first version
-        schema_metadata = self.retrieve_schema_metadata(domain, dataset, version=1)
+        schema_metadata = self._retrieve_schema_metadata(domain, dataset, version=1)
         return SensitivityLevel.from_string(schema_metadata.get_sensitivity())
 
     def get_dataset_description(
@@ -147,21 +146,6 @@ class S3Adapter:
         )
         return self._map_object_list_to_filename(object_list)
 
-    def list_dataset_files(
-        self, domain: str, dataset: str, sensitivity: str
-    ) -> List[Dict]:
-        storage_metadata = StorageMetaData(domain, dataset)
-
-        return [
-            *self._list_files_from_path(
-                storage_metadata.construct_raw_dataset_uploads_location()
-            ),
-            *self._list_files_from_path(storage_metadata.construct_dataset_location()),
-            *self._list_files_from_path(
-                storage_metadata.construct_schema_dataset_location(sensitivity)
-            ),
-        ]
-
     def delete_dataset_files(
         self, domain: str, dataset: str, version: int, raw_data_filename: str
     ) -> None:
@@ -175,18 +159,9 @@ class S3Adapter:
             if self._clean_filename(data_file["Key"]).startswith(raw_file_identifier)
         ]
 
-        self._delete_objects(files_to_delete, raw_data_filename)
-
-    def delete_dataset_files_using_key(self, keys: List[Dict], filename: str):
-        files_to_delete = [{"Key": key["Key"]} for key in keys]
-        self._delete_objects(files_to_delete, filename)
-
-    def delete_raw_dataset_files(
-        self, domain: str, dataset: str, version: int, raw_data_filename: str
-    ):
-        dataset_metadata = StorageMetaData(domain, dataset, version)
-        files_to_delete = [{"Key": dataset_metadata.raw_data_path(raw_data_filename)}]
-
+        files_to_delete.append(
+            {"Key": dataset_metadata.raw_data_path(raw_data_filename)}
+        )
         self._delete_objects(files_to_delete, raw_data_filename)
 
     def generate_query_result_download_url(self, query_execution_id: str) -> str:
@@ -205,12 +180,6 @@ class S3Adapter:
                 f"Unable to generate pre-signed URL for execution ID {query_execution_id}, {error}"
             )
             raise AWSServiceError("Unable to generate download URL")
-
-    def retrieve_schema_metadata(
-        self, domain: str, dataset: str, version: int
-    ) -> SchemaMetadata:
-        schemas = self._list_all_schemas()
-        return schemas.find(domain=domain, dataset=dataset, version=version)
 
     def _clean_filename(self, file_key: str) -> str:
         return file_key.rsplit("/", 1)[-1].split(".")[0]
@@ -241,16 +210,16 @@ class S3Adapter:
             message = "\n".join([str(error) for error in response["Errors"]])
             AppLogger.error(f"Error during file deletion [{filename}]: \n{message}")
             raise AWSServiceError(
-                f"The item [{filename}] could not be deleted. Please contact your administrator."
+                f"The file [{filename}] could not be deleted. Please contact your administrator."
             )
 
     def _list_files_from_path(self, file_path: str) -> List[Dict]:
         try:
-            paginator = self.__s3_client.get_paginator("list_objects")
-            page_iterator = paginator.paginate(
-                Bucket=self.__s3_bucket, Prefix=file_path
+            response = self.__s3_client.list_objects(
+                Bucket=self.__s3_bucket,
+                Prefix=file_path,
             )
-            return [item for page in page_iterator for item in page["Contents"]]
+            return response["Contents"]
         except KeyError:
             return []
 
@@ -286,6 +255,12 @@ class S3Adapter:
 
     def _delete_data(self, object_full_path: str):
         self.__s3_client.delete_object(Bucket=self.__s3_bucket, Key=object_full_path)
+
+    def _retrieve_schema_metadata(
+        self, domain: str, dataset: str, version: int
+    ) -> SchemaMetadata:
+        schemas = self._list_all_schemas()
+        return schemas.find(domain=domain, dataset=dataset, version=version)
 
     def _list_all_schemas(self) -> SchemaMetadatas:
         items = self._list_files_from_path(SCHEMAS_LOCATION)

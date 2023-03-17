@@ -134,9 +134,8 @@ class TestUserDeletion(BaseClientTest):
             username="my_user", user_id="some-uu-id-b226-e5fd18c59b85"
         )
 
-        response = self.client.request(
-            method="delete",
-            url=f"{BASE_API_PATH}/user",
+        response = self.client.delete(
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",
@@ -155,9 +154,8 @@ class TestUserDeletion(BaseClientTest):
             "The user 'my_user' does not exist cognito"
         )
 
-        response = self.client.request(
-            method="delete",
-            url=f"{BASE_API_PATH}/user",
+        response = self.client.delete(
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",
@@ -176,9 +174,8 @@ class TestUserDeletion(BaseClientTest):
             "Something went wrong. Please Contact your administrator."
         )
 
-        response = self.client.request(
-            method="delete",
-            url=f"{BASE_API_PATH}/user",
+        response = self.client.delete(
+            f"{BASE_API_PATH}/user",
             headers={"Authorization": "Bearer test-token"},
             json={
                 "username": "my_user",

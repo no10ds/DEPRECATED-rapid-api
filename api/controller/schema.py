@@ -1,7 +1,6 @@
 from fastapi import APIRouter
 from fastapi import UploadFile, File, Security
 from fastapi import status as http_status
-from fastapi import Path as FastApiPath
 
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.application.services.authorisation.authorisation_service import secure_endpoint
@@ -9,11 +8,7 @@ from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
 from api.common.config.auth import Action
-from api.common.config.constants import (
-    BASE_API_PATH,
-    LOWERCASE_REGEX,
-    LOWERCASE_ROUTE_DESCRIPTION,
-)
+from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerAlreadyExistsError,
@@ -36,12 +31,7 @@ schema_router = APIRouter(
 
 @schema_router.post("/{sensitivity}/{domain}/{dataset}/generate")
 async def generate_schema(
-    sensitivity: str,
-    dataset: str,
-    domain: str = FastApiPath(
-        default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
-    ),
-    file: UploadFile = File(...),
+    sensitivity: str, domain: str, dataset: str, file: UploadFile = File(...)
 ):
     """
     ## Generate schema
@@ -70,8 +60,6 @@ async def generate_schema(
 
     - Only alphanumeric and underscore `_` characters allowed
     - Start with an alphabetic character
-
-    The domain must also be lowercase only.
 
     ### Click  `Try it out` to use the endpoint
 

@@ -34,20 +34,3 @@ class TestStorageMetaData:
             self.dataset_meta_data.s3_path()
             == f"s3://{DATA_BUCKET}/data/DOMAIN/DATASET/"
         )
-
-    def test_construct_dataset_location(self):
-        assert (
-            self.dataset_meta_data.construct_dataset_location() == "data/DOMAIN/DATASET"
-        )
-
-    def test_construct_raw_dataset_uploads_location(self):
-        assert (
-            self.dataset_meta_data.construct_raw_dataset_uploads_location()
-            == "raw_data/DOMAIN/DATASET"
-        )
-
-    def test_construct_schema_dataset_location(self):
-        assert (
-            self.dataset_meta_data.construct_schema_dataset_location("PROTECTED")
-            == "data/schemas/PROTECTED/DOMAIN/DATASET"
-        )

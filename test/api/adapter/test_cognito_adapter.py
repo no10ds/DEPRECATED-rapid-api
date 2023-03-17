@@ -28,14 +28,6 @@ class TestCognitoAdapterClientApps(BaseCognitoAdapter):
             "UserPoolClients": []
         }
 
-        self.cognito_boto_client.get_paginator.return_value.paginate.return_value = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key": "value"},
-                "UserPoolClients": [],
-            }
-        ]
-
         client_request = ClientRequest(
             client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
         )
@@ -100,13 +92,9 @@ class TestCognitoAdapterClientApps(BaseCognitoAdapter):
         assert actual_response == expected_response
 
     def test_creates_client_app_with_default_allowed_oauth_scope(self):
-        self.cognito_boto_client.get_paginator.return_value.paginate.return_value = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key": "value"},
-                "UserPoolClients": [],
-            }
-        ]
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": []
+        }
 
         client_request = ClientRequest(
             client_name="my_client", permissions=["WRITE_PUBLIC", "READ_PRIVATE"]
@@ -182,13 +170,9 @@ class TestCognitoAdapterClientApps(BaseCognitoAdapter):
             self.cognito_adapter.delete_client_app("my_client")
 
     def test_raises_error_when_the_client_fails_to_create_in_aws(self):
-        self.cognito_boto_client.get_paginator.return_value.paginate.return_value = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key": "value"},
-                "UserPoolClients": [],
-            }
-        ]
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": []
+        }
 
         client_request = ClientRequest(
             client_name="my_client", permissions=["NOT_VALID"]
@@ -209,16 +193,12 @@ class TestCognitoAdapterClientApps(BaseCognitoAdapter):
             client_name="existing_name_2", permissions=["VALID"]
         )
 
-        self.cognito_boto_client.get_paginator.return_value.paginate.return_value = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key": "value"},
-                "UserPoolClients": [
-                    {"ClientName": "existing_name_1"},
-                    {"ClientName": "existing_name_2"},
-                ],
-            }
-        ]
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": [
+                {"ClientName": "existing_name_1"},
+                {"ClientName": "existing_name_2"},
+            ]
+        }
 
         with pytest.raises(
             UserError, match="Client name 'existing_name_2' already exists"
@@ -234,13 +214,9 @@ class TestCognitoAdapterClientApps(BaseCognitoAdapter):
             client_name=placeholder_client_name, permissions=["VALID"]
         )
 
-        self.cognito_boto_client.get_paginator.return_value.paginate.return_value = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key": "value"},
-                "UserPoolClients": [],
-            }
-        ]
+        self.cognito_boto_client.list_user_pool_clients.return_value = {
+            "UserPoolClients": []
+        }
 
         with pytest.raises(UserError, match="You must specify a valid client name"):
             self.cognito_adapter.create_client_app(client_request)
@@ -358,44 +334,36 @@ class TestCognitoAdapterUsers(BaseCognitoAdapter):
 
 class TestGetSubjects(BaseCognitoAdapter):
     def test_gets_all_subjects(self):
-        list_clients_response = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key": "value"},
-                "UserPoolClients": [
-                    {"ClientId": "the-client-id-1", "ClientName": "the_client_name_1"},
-                    {"ClientId": "the-client-id-2", "ClientName": "the_client_name_2"},
-                ],
-            }
-        ]
+        list_clients_response = {
+            "UserPoolClients": [
+                {"ClientId": "the-client-id-1", "ClientName": "the_client_name_1"},
+                {"ClientId": "the-client-id-2", "ClientName": "the_client_name_2"},
+            ],
+        }
 
-        list_users_response = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key": "value"},
-                "Users": [
-                    {
-                        "Username": "user-name-1",
-                        "Attributes": [
-                            {"Name": "sub", "Value": "the-user-id-1"},
-                            {"Name": "email_verified", "Value": "True"},
-                            {"Name": "email", "Value": "fake@test.com"},
-                        ],
-                    },
-                    {
-                        "Username": "user-name-2",
-                        "Attributes": [
-                            {"Name": "sub", "Value": "the-user-id-2"},
-                        ],
-                    },
-                ],
-            }
-        ]
+        list_users_response = {
+            "Users": [
+                {
+                    "Username": "user-name-1",
+                    "Attributes": [
+                        {"Name": "sub", "Value": "the-user-id-1"},
+                        {"Name": "email_verified", "Value": "True"},
+                        {"Name": "email", "Value": "fake@test.com"},
+                    ],
+                },
+                {
+                    "Username": "user-name-2",
+                    "Attributes": [
+                        {"Name": "sub", "Value": "the-user-id-2"},
+                    ],
+                },
+            ]
+        }
 
-        self.cognito_boto_client.get_paginator.return_value.paginate.side_effect = [
-            list_clients_response,
-            list_users_response,
-        ]
+        self.cognito_boto_client.list_user_pool_clients.return_value = (
+            list_clients_response
+        )
+        self.cognito_boto_client.list_users.return_value = list_users_response
 
         expected = [
             {
@@ -427,11 +395,9 @@ class TestGetSubjects(BaseCognitoAdapter):
         assert result == expected
 
     def test_raises_error_when_listing_clients_fails(self):
-        self.cognito_boto_client.get_paginator.return_value.paginate.side_effect = (
-            ClientError(
-                error_response={"Error": {"Code": "SomeException"}},
-                operation_name="ListUserPoolClients",
-            )
+        self.cognito_boto_client.list_user_pool_clients.side_effect = ClientError(
+            error_response={"Error": {"Code": "SomeException"}},
+            operation_name="ListUserPoolClients",
         )
 
         with pytest.raises(
@@ -441,30 +407,29 @@ class TestGetSubjects(BaseCognitoAdapter):
             self.cognito_adapter.get_all_subjects()
 
     def test_raises_error_when_listing_users_fails(self):
-        list_clients_response = [
-            {
-                "NextToken": "xxx",
-                "ResponseMetadata": {"key", "value"},
-                "UserPoolClients": [
-                    {"ClientId": "the-client-id-1", "ClientName": "the_client_name_1"},
-                    {"ClientId": "the-client-id-2", "ClientName": "the_client_name_2"},
-                ],
-            }
-        ]
+        list_clients_response = {
+            "UserPoolClients": [
+                {"ClientId": "the-client-id-1", "ClientName": "the_client_name_1"},
+                {"ClientId": "the-client-id-2", "ClientName": "the_client_name_2"},
+            ],
+        }
 
-        self.cognito_boto_client.get_paginator.return_value.paginate.side_effect = [
-            list_clients_response,
-            ClientError(
-                error_response={"Error": {"Code": "SomeException"}},
-                operation_name="ListUsers",
-            ),
-        ]
+        self.cognito_boto_client.list_user_pool_clients.return_value = (
+            list_clients_response
+        )
+
+        self.cognito_boto_client.list_users.side_effect = ClientError(
+            error_response={"Error": {"Code": "SomeException"}},
+            operation_name="ListUsers",
+        )
 
         with pytest.raises(
             AWSServiceError,
             match="The list of client apps and users could not be retrieved",
         ):
             self.cognito_adapter.get_all_subjects()
+
+        self.cognito_boto_client.list_user_pool_clients.assert_called_once()
 
 
 class TestCognitoScopes(BaseCognitoAdapter):

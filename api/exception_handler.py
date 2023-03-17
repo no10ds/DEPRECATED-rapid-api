@@ -67,7 +67,7 @@ def add_exception_handlers(app: FastAPI) -> None:
 
     # Override handlers
     @app.exception_handler(RequestValidationError)
-    async def pydantic_error_handler(request, exc: RequestValidationError):
+    async def pydantic_error_handler(request, exc):
         return JSONResponse(
             content={"details": _generate_pydantic_error_message(exc.json())},
             status_code=400,
@@ -75,25 +75,17 @@ def add_exception_handlers(app: FastAPI) -> None:
 
     def _generate_pydantic_error_message(json_message: json) -> List[str]:
         PYDANTIC_JSON_DECODE_ERROR = "value_error.jsondecode"
-        PATH_STR_REGEX_ERROR = "value_error.str.regex"
-        REGEX_ERROR_MAP = {r"^[a-z0-9_\-]+$": "was required to be lowercase only."}
 
         error_messages = []
 
         for error in json.loads(json_message):
             if error.get("type") == PYDANTIC_JSON_DECODE_ERROR:
                 error_output = error.get("msg")
-            elif error.get("type") == PATH_STR_REGEX_ERROR:
-                error_pattern = error.get("ctx").get("pattern")
-                error_output = _format_error_message_with_location(
-                    error, REGEX_ERROR_MAP[error_pattern]
-                )
             else:
                 error_output = _format_error_message_with_location(error)
             error_messages.append(error_output)
         return error_messages
 
-    def _format_error_message_with_location(error, msg=None):
+    def _format_error_message_with_location(error):
         location_path = ": ".join([str(item) for item in error.get("loc")[1:]])
-        message = error.get("msg") if msg is None else msg
-        return f"{location_path} -> {message}"
+        return f"{location_path} -> {error.get('msg')}"
