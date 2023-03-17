@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v6.0.0 - _2023-03-17_
+
+See [v6.0.0] changes
+
+### Fixed
+- All required calls in the API are now paginated by Boto3. This fixes some large issues where, when there were more than 50 crawlers in the account the API would fail to retrieve all datasets as the backend call would paginate onto a next page.
+- Fixes an issue where the delete data file endpoint was deleting the raw data file from S3 and now instead deletes the processed file instead.
+
+### Added
+- New optional environment variable `CATALOG_DISABLED` that can be passed to disable the internal data catalog if required.
+- New endpoint that allows for protected domains to be deleted. Can be called using the method `DELETE /api/protected_domains/{domain}`.
+- New endpoint that allows for the entire deletion of a dataset from within rAPId. This new method removes all raw and uploaded data files, any schemas, tables and crawlers. Can be thought of an entire dataset wiping from rAPId. The method can be called using `DELETE /api/datasets/{domain}/{dataset}`.
+
+### Changed
+- When downloading data the extra Pandas DataFrame index column is not included now.
+- ***(Breaking Change)*** Domains are now case insensitive. This fixes an issue where if you created a Protected domain with an uppercase domain and then the same with a lowercase domain the permissions do not match up as they are interpreted as different endpoints. All domains are now case insensitive and are lower case. To migrate over it is required to run the migration `migrations/scripts/v6_domain_case_insensitive.py`.
+- FastAPI has been upgraded to 0.92.0.
+
+[v6.0.0]: https://github.com/no10ds/rapid-api/compare/v5.0.2...v6.0.0
+
 ## v5.0.2 - _2023-03-09_
 
 See [v5.0.2] changes
