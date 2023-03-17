@@ -102,6 +102,21 @@ class TestDataUpload(BaseClientTest):
             }
         }
 
+    def test_calls_data_upload_service_fails_when_domain_uppercase(self):
+        file_content = b"some,content"
+        incoming_file_name = "filename.csv"
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets/DOMAIN/dataset",
+            files={"file": (incoming_file_name, file_content, "text/csv")},
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": ["domain -> was required to be lowercase only."]
+        }
+
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
@@ -494,8 +509,30 @@ class TestDatasetInfo(BaseClientTest):
             "details": "Could not find schema for mydomain/mydataset"
         }
 
+    def test_returns_error_response_when_domain_uppercase(self):
+        response = self.client.get(
+            f"{BASE_API_PATH}/datasets/MYDOMAIN/mydataset/info",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": ["domain -> was required to be lowercase only."]
+        }
+
 
 class TestQuery(BaseClientTest):
+    def test_returns_error_response_when_domain_uppercase(self):
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets/MYDOMAIN/mydataset/query",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": ["domain -> was required to be lowercase only."]
+        }
+
     @patch.object(DataService, "query_data")
     def test_call_service_with_only_domain_dataset_when_no_json_provided(
         self, mock_query_method
@@ -677,6 +714,17 @@ class TestQuery(BaseClientTest):
 
 
 class TestLargeDatasetQuery(BaseClientTest):
+    def test_returns_error_response_when_domain_uppercase(self):
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets/MYDOMAIN/mydataset/query/large",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": ["domain -> was required to be lowercase only."]
+        }
+
     @patch.object(DataService, "query_large_data")
     @patch("api.controller.datasets.get_subject_id")
     def test_call_service_with_only_domain_dataset_when_no_json_provided(
@@ -829,6 +877,17 @@ class TestListFilesFromDataset(BaseClientTest):
 
         assert response.status_code == 200
 
+    def test_returns_error_response_when_domain_uppercase(self):
+        response = self.client.get(
+            f"{BASE_API_PATH}/datasets/MYDOMAIN/mydataset/2/files",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": ["domain -> was required to be lowercase only."]
+        }
+
 
 class TestDeleteFiles(BaseClientTest):
     @patch.object(DeleteService, "delete_dataset_file")
@@ -899,3 +958,28 @@ class TestDeleteFiles(BaseClientTest):
 
         assert response.status_code == 400
         assert response.json() == {"details": "Some random message"}
+
+    def test_returns_error_response_when_domain_uppercase(self):
+        response = self.client.delete(
+            f"{BASE_API_PATH}/datasets/MYDOMAIN/mydataset/5/2022-01-01T00:00:00-file.csv",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": ["domain -> was required to be lowercase only."]
+        }
+
+
+class TestDeleteDataset(BaseClientTest):
+    @patch.object(DeleteService, "delete_dataset")
+    def test_returns_202_when_dataset_is_deleted(self, mock_delete_dataset):
+        response = self.client.delete(
+            f"{BASE_API_PATH}/datasets/mydomain/mydataset",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        mock_delete_dataset.assert_called_once_with("mydomain", "mydataset")
+
+        assert response.status_code == 202
+        assert response.json() == {"details": "mydataset has been deleted."}
