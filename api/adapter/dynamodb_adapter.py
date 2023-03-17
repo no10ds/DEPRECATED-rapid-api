@@ -230,6 +230,11 @@ class DynamoDBAdapter(DatabaseAdapter):
     def delete_subject(self, subject_id: str) -> None:
         self.permissions_table.delete_item(Key={"PK": "SUBJECT", "SK": subject_id})
 
+    def delete_permission(self, permission_id: str) -> None:
+        self.permissions_table.delete_item(
+            Key={"PK": "PERMISSION", "SK": permission_id}
+        )
+
     def store_upload_job(self, upload_job: UploadJob) -> None:
         item_config = {
             "PK": "JOB",

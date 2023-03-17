@@ -8,6 +8,8 @@ TAG_KEYS_REGEX = BASE_REGEX + "{1,128}$"
 TAG_VALUES_REGEX = BASE_REGEX + "{0,256}$"
 
 COLUMN_NAME_REGEX = "[^a-z0-9_]+"
+LOWERCASE_REGEX = r"^[a-z0-9_\-]+$"
+LOWERCASE_ROUTE_DESCRIPTION = "Please note this parameter needs to be lowercase"
 
 DATE_FORMAT_REGEX = "(%[Ymd][/-]%[Ymd][/-]%[Ymd]|%[Ym][/-]%[Ym])"
 
