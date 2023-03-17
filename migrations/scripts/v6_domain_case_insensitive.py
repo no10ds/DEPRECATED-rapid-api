@@ -1,7 +1,6 @@
 import os
 import dotenv
 import boto3
-import time
 
 dotenv.load_dotenv()
 
@@ -27,18 +26,14 @@ def move_s3_object(path):
 
 
 def remove_s3_object(path):
-    result = s3_client.delete_object(Bucket=DATA_BUCKET, Key=f"{path}")
+    result = s3_client.delete_object(Bucket=DATA_BUCKET, Key=f"{DATA_BUCKET}/{path}")
     return result
 
 
 def delete_crawler(resource_name_prefix, raw_name):
-    try:
-        splits = raw_name.split("/")
-        name = f"{resource_name_prefix}_crawler/{splits[0]}/{splits[1]}"
-        result = glue_client.delete_crawler(Name=name)
-    except Exception:
-        print("Crawler not found - skipping")
-        result = None
+    splits = raw_name.split("/")
+    name = f"{resource_name_prefix}_crawler/{splits[0]}/{splits[1]}"
+    result = glue_client.delete_crawler(Name=name)
     return result
 
 
@@ -123,7 +118,6 @@ def edit_crawlers():
         glue_client.update_crawler(
             Name=crawler, SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"}
         )
-        time.sleep(1)
 
 
 loop_map_raw = retrieve_all_raw()
