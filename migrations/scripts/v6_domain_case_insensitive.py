@@ -12,15 +12,22 @@ s3_client = boto3.client("s3")
 glue_client = boto3.client("glue", region_name=AWS_REGION)
 
 
-def get_full_path(prefix):
+def get_raw_full_path(prefix):
     item = s3_client.list_objects_v2(Bucket=DATA_BUCKET, Prefix=f"data/{prefix}")
     contents = item["Contents"]
     return contents[0]["Key"]
 
 
-def move_s3_object(path):
+def get_lower_full_path(prefix):
+    item = s3_client.list_objects_v2(Bucket=DATA_BUCKET, Prefix=f"data/{prefix}")
+    contents = item["Contents"]
+    splits = contents[0]["Key"].split("/")
+    return f"{splits[0]}/{splits[1].lower()}/{splits[2]}/{splits[3]}/{splits[4]}"
+
+
+def move_s3_object(path_raw, path_lower):
     result = s3_client.copy_object(
-        Bucket=DATA_BUCKET, CopySource=f"{DATA_BUCKET}/{path}", Key=f"{path}"
+        Bucket=DATA_BUCKET, CopySource=f"{DATA_BUCKET}/{path_raw}", Key=f"{path_lower}"
     )
     return result
 
@@ -70,8 +77,8 @@ def retrieve_all_raw():
 
 
 def retrieve_move_delete(loop_map_raw):
-    to_delete = {}
-    to_move = {}
+    to_delete = []
+    to_move = []
 
     for key in loop_map_raw:
         key_splits = key.split("/")
@@ -84,15 +91,15 @@ def retrieve_move_delete(loop_map_raw):
             # If the lowercase key last modified date is more recent than the
             # uppercase - we remove the uppercase version
             if match_last_modified > last_modified:
-                to_delete[key] = get_full_path(key)
+                to_delete.append(key)
 
             # Otherwise we want to move the uppecase
             else:
-                to_move[key] = get_full_path(key)
+                to_move.append(key)
 
         # The uppercase does not have a lower case version and therefore needs to be moved
         elif key != key_lower:
-            to_move[key] = get_full_path(key)
+            to_move.append(key)
 
     return to_delete, to_move
 
@@ -130,22 +137,28 @@ to_delete, to_move = retrieve_move_delete(loop_map_raw)
 
 try:
 
-    for key, value in to_move.items():
-        print(f"Moving item {key}")
-        move_s3_object(value)
+    for key in to_move:
+        key_raw = get_raw_full_path(key)
+        key_lower = get_lower_full_path(key)
+
+        print(f"Moving item {key_raw} to new item {key_lower}")
+        move_s3_object(key_raw, key_lower)
 
         print("Deleting crawler")
         delete_crawler(RESOURCE_NAME_PREFIX, key)
 
-        print(f"Deleting old file {key}")
-        remove_s3_object(value)
+        print(f"Deleting old file {key_raw}")
+        remove_s3_object(key_raw)
 
-    for key, value in to_delete.items():
+    for key in to_delete:
+        key_raw = get_raw_full_path(key)
+        key_lower = get_lower_full_path(key)
+
         print("Deleting crawler")
         delete_crawler(RESOURCE_NAME_PREFIX, key)
 
-        print(f"Deleting old file {key}")
-        remove_s3_object(value)
+        print(f"Deleting old file {key_raw}")
+        remove_s3_object(key_raw)
 
     edit_crawlers()
 
