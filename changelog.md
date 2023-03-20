@@ -18,8 +18,23 @@ See [v6.0.0] changes
 
 ### Changed
 - When downloading data the extra Pandas DataFrame index column is not included now.
-- ***(Breaking Change)*** Domains are now case insensitive. This fixes an issue where if you created a Protected domain with an uppercase domain and then the same with a lowercase domain the permissions do not match up as they are interpreted as different endpoints. All domains are now case insensitive and are lower case. To migrate over it is required to run the migration `migrations/scripts/v6_domain_case_insensitive.py`.
+- ***(Breaking Change)*** Domains are now case insensitive. This fixes an issue where if you created a Protected domain with an uppercase domain and then the same with a lowercase domain the permissions do not match up as they are interpreted as different endpoints. All domains now have to be lower case. To migrate them, you will need to run: `migrations/scripts/v6_domain_case_insensitive.py`.
 - FastAPI has been upgraded to 0.92.0.
+
+### Migration
+
+To migrate from v5 to v6, you will need to run the migration script: `migrations/scripts/v6_domain_case_insensitive.py`.
+
+This can be done by first installing the Python requirements from `requirements.txt` and then running `python migrations/scripts/v6_domain_case_insensitive.py`
+
+You will also need to provide values for the following environment variables, either by defining them in a `.env` file in the repo root or exporting them to the environment where the script is run.
+
+```
+AWS_REGION
+DATA_BUCKET
+RESOURCE_NAME_PREFIX
+AWS_ACCOUNT_ID
+```
 
 [v6.0.0]: https://github.com/no10ds/rapid-api/compare/v5.0.2...v6.0.0
 
