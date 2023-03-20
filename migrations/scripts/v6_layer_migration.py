@@ -5,6 +5,9 @@ The resources that get changed are the:
 - Data and Schemas in S3
 - Glue tables
 - Glue crawlers
+- Permissions get updated
+    1. Migrate old ones to the given layer
+    2. Create new permissions for all the possible layers in the permissions table
 
 Please ensure that none of the crawlers are running when you start this script
 """
@@ -106,6 +109,7 @@ def create_new_crawler(layer: str, crawler_info: dict, glue_client) -> str:
     ]
 
     # Add tags
+    # TODO: Add layer and domain to this
     new_crawler["Tags"] = format_tags_acceptably_for_crawler_creation(
         crawler_info["Tags"]
     )
