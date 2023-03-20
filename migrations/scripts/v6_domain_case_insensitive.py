@@ -39,7 +39,7 @@ def remove_s3_object(path):
     return result
 
 
-def retrieve_all_raw():
+def retrieve_all_rapid_data_file_keys():
     paginator = s3_client.get_paginator("list_objects_v2")
     pages = paginator.paginate(Bucket=DATA_BUCKET, Prefix="data/")
     loop_map_raw = {}
@@ -67,7 +67,7 @@ def retrieve_all_raw():
     return loop_map_raw
 
 
-def retrieve_move_delete(loop_map_raw):
+def retrieve_rapid_files_to_move_and_to_delete(loop_map_raw):
     to_delete = []
     to_move = []
 
@@ -180,8 +180,8 @@ def delete_crawler(resource_name_prefix, raw_name):
     return result
 
 
-loop_map_raw = retrieve_all_raw()
-to_delete, to_move = retrieve_move_delete(loop_map_raw)
+rapid_data_files = retrieve_all_rapid_data_file_keys()
+to_delete, to_move = retrieve_rapid_files_to_move_and_to_delete(rapid_data_files)
 
 try:
 
@@ -211,7 +211,7 @@ try:
         print(f"Deleting old file {key_raw}")
         remove_s3_object(key_raw)
 
-#    edit_crawlers()
+    edit_crawlers()
 
 except Exception as e:
     print(e)
