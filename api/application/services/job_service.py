@@ -57,6 +57,7 @@ class JobService:
     def create_upload_job(
         self,
         subject_id: str,
+        job_id: str,
         filename: str,
         raw_file_identifier: str,
         domain: str,
@@ -64,7 +65,7 @@ class JobService:
         version: int,
     ) -> UploadJob:
         job = UploadJob(
-            subject_id, filename, raw_file_identifier, domain, dataset, version
+            subject_id, job_id, filename, raw_file_identifier, domain, dataset, version
         )
         self.db_adapter.store_upload_job(job)
         return job

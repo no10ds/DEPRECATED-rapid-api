@@ -38,6 +38,8 @@ from api.domain.dataset_filters import DatasetFilters
 from api.domain.metadata_search import metadata_search_query
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
+from api.domain.Jobs.Job import generate_uuid
+
 
 CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
@@ -364,9 +366,10 @@ def upload_data(
     """
     try:
         subject_id = get_subject_id(request)
-        incoming_file_path = store_file_to_disk(file)
+        job_id = generate_uuid()
+        incoming_file_path = store_file_to_disk(job_id, file)
         raw_filename, version, job_id = data_service.upload_dataset(
-            subject_id, domain, dataset, version, incoming_file_path
+            subject_id, job_id, domain, dataset, version, incoming_file_path
         )
         response.status_code = http_status.HTTP_202_ACCEPTED
         return {
@@ -383,8 +386,8 @@ def upload_data(
         raise UserError(message=error.args[0])
 
 
-def store_file_to_disk(file: UploadFile = File(...)) -> Path:
-    file_path = Path(file.filename)
+def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
+    file_path = Path(f"{id}-{file.filename}")
     chunk_size_mb = 50
     mb_1 = 1024 * 1024
 

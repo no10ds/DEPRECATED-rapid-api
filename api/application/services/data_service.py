@@ -90,6 +90,7 @@ class DataService:
     def upload_dataset(
         self,
         subject_id: str,
+        job_id: str,
         domain: str,
         dataset: str,
         version: Optional[int],
@@ -105,6 +106,7 @@ class DataService:
             raw_file_identifier = self.generate_raw_file_identifier()
             upload_job = self.job_service.create_upload_job(
                 subject_id,
+                job_id,
                 file_path.name,
                 raw_file_identifier,
                 domain,

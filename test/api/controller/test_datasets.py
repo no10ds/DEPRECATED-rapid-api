@@ -29,15 +29,22 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_calls_data_upload_service_successfully(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
+        job_id = "abc-123"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 5, "abc-123"
@@ -48,9 +55,9 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(ANY)
+        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
-            subject_id, "domain", "dataset", None, incoming_file_path
+            subject_id, job_id, "domain", "dataset", None, incoming_file_path
         )
 
         assert response.status_code == 202
@@ -67,15 +74,22 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_calls_data_upload_service_with_version_successfully(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "abc-123"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 2, "abc-123"
@@ -86,9 +100,9 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(ANY)
+        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
-            subject_id, "domain", "dataset", 2, incoming_file_path
+            subject_id, job_id, "domain", "dataset", 2, incoming_file_path
         )
 
         assert response.status_code == 202
@@ -120,14 +134,21 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_calls_data_upload_service_fails_when_invalid_dataset_is_uploaded(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "job_id"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = DatasetValidationError(
@@ -141,7 +162,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            subject_id, "domain", "dataset", None, incoming_file_path
+            subject_id, job_id, "domain", "dataset", None, incoming_file_path
         )
 
         assert response.status_code == 400
@@ -192,14 +213,21 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_raises_error_when_crawler_is_already_running(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "job_id"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = CrawlerIsNotReadyError("Some message")
@@ -211,7 +239,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            subject_id, "domain", "dataset", None, incoming_file_path
+            subject_id, job_id, "domain", "dataset", None, incoming_file_path
         )
 
         assert response.status_code == 429
@@ -220,14 +248,21 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_raises_error_when_fails_to_get_crawler_state(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "job_id"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = AWSServiceError("Some message")
@@ -239,7 +274,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         mock_upload_dataset.assert_called_once_with(
-            subject_id, "domain", "dataset", 3, incoming_file_path
+            subject_id, job_id, "domain", "dataset", 3, incoming_file_path
         )
 
         assert response.status_code == 500
