@@ -74,9 +74,10 @@ def retrieve_move_delete(loop_map_raw):
     to_move = {}
 
     for key in loop_map_raw:
-        key_lower = key.lower()
-        last_modified = loop_map_raw[key]
+        key_splits = key.split("/")
+        key_lower = f"{key_splits[0].lower()}/{key_splits[1]}/{key_splits[2]}"
 
+        last_modified = loop_map_raw[key]
         if (key != key_lower) and (key_lower in loop_map_raw):
             match_last_modified = loop_map_raw[key_lower]
 
