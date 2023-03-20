@@ -1,12 +1,14 @@
 import os
 import dotenv
 import boto3
+import time
 
 dotenv.load_dotenv()
 
 AWS_REGION = os.environ["AWS_REGION"]
 DATA_BUCKET = os.environ["DATA_BUCKET"]
 RESOURCE_NAME_PREFIX = os.environ["RESOURCE_PREFIX"]
+AWS_ACCOUNT_ID = os.environ["AWS_ACCOUNT"]
 
 s3_client = boto3.client("s3")
 glue_client = boto3.client("glue", region_name=AWS_REGION)
@@ -33,18 +35,7 @@ def move_s3_object(path_raw, path_lower):
 
 
 def remove_s3_object(path):
-    result = s3_client.delete_object(Bucket=DATA_BUCKET, Key=f"{DATA_BUCKET}/{path}")
-    return result
-
-
-def delete_crawler(resource_name_prefix, raw_name):
-    try:
-        splits = raw_name.split("/")
-        name = f"{resource_name_prefix}_crawler/{splits[0]}/{splits[1]}"
-        result = glue_client.delete_crawler(Name=name)
-    except Exception:
-        print("Skipping crawler deletion")
-        return None
+    result = s3_client.delete_object(Bucket=DATA_BUCKET, Key=f"{path}")
     return result
 
 
@@ -123,6 +114,51 @@ def list_crawlers():
     return crawlers
 
 
+def delete_crawler_attribute(crawler, attribute):
+    try:
+        del crawler[attribute]
+    # Fail gracefully, it is fine if the attribute is not present, we were deleting it anyway
+    except KeyError:
+        pass
+
+
+def create_crawler(resource_name_prefix, raw_name):
+    splits = raw_name.split("/")
+    old_crawler = f"{resource_name_prefix}_crawler/{splits[0]}/{splits[1]}"
+    crawler = glue_client.get_crawler(Name=old_crawler)["Crawler"]
+    tags = glue_client.get_tags(
+        ResourceArn=f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT_ID}:crawler/{crawler['Name']}"
+    )["Tags"]
+    crawler[
+        "Name"
+    ] = f"{resource_name_prefix}_crawler/{crawler['Name'].split('/')[1].lower()}/{crawler['Name'].split('/')[2]}"
+    crawler[
+        "TablePrefix"
+    ] = f"{crawler['TablePrefix'].split('_')[0].lower()}_{crawler['TablePrefix'].split('_')[1]}_"
+    s3_target = crawler["Targets"]["S3Targets"][0]
+    splits = s3_target["Path"].strip("/").split("/")
+    path = f"s3://{resource_name_prefix}/data/{splits[-2].lower()}/{splits[-1]}"
+    s3_target["Path"] = path
+
+    # Delete unacceptable attributes
+    [
+        delete_crawler_attribute(crawler, attribute)
+        for attribute in [
+            "State",
+            "CrawlElapsedTime",
+            "CreationTime",
+            "LastUpdated",
+            "LastCrawl",
+            "Version",
+        ]
+    ]
+
+    # Add tags
+    crawler["Tags"] = tags
+    glue_client.create_crawler(**crawler)
+    print(f"Crawler created {crawler['Name']}")
+
+
 def edit_crawlers():
     crawlers = list_crawlers()
     for crawler in crawlers:
@@ -130,6 +166,18 @@ def edit_crawlers():
         glue_client.update_crawler(
             Name=crawler, SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"}
         )
+        time.sleep(1)
+
+
+def delete_crawler(resource_name_prefix, raw_name):
+    try:
+        splits = raw_name.split("/")
+        name = f"{resource_name_prefix}_crawler/{splits[0]}/{splits[1]}"
+        result = glue_client.delete_crawler(Name=name)
+    except Exception as exception:
+        print("Skipping crawler deletion", exception)
+        return None
+    return result
 
 
 loop_map_raw = retrieve_all_raw()
@@ -143,6 +191,9 @@ try:
 
         print(f"Moving item {key_raw} to new item {key_lower}")
         move_s3_object(key_raw, key_lower)
+
+        print("Creating new crawler")
+        create_crawler(RESOURCE_NAME_PREFIX, key)
 
         print("Deleting crawler")
         delete_crawler(RESOURCE_NAME_PREFIX, key)
@@ -160,7 +211,7 @@ try:
         print(f"Deleting old file {key_raw}")
         remove_s3_object(key_raw)
 
-    edit_crawlers()
+#    edit_crawlers()
 
 except Exception as e:
     print(e)
