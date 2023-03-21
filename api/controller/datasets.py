@@ -215,7 +215,7 @@ async def list_raw_files(
 
 @datasets_router.delete(
     "/{domain}/{dataset}",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def delete_dataset(domain: str, dataset: str, response: Response):
     """
@@ -234,8 +234,7 @@ async def delete_dataset(domain: str, dataset: str, response: Response):
     | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
 
     ### Accepted permissions
-    In order to use this endpoint you need a relevant WRITE permission that matches the dataset sensitivity level,
-    e.g. `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
+    In order to use this endpoint you need the DATA_ADMIN permission.
 
     ### Click `Try it out` to use the endpoint
 
