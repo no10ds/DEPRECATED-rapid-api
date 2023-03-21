@@ -383,11 +383,10 @@ class TestCreateUploadJob:
     def setup(self):
         self.job_service = JobService()
 
-    @patch("api.domain.Jobs.Job.uuid")
     @patch.object(DynamoDBAdapter, "store_upload_job")
-    def test_creates_upload_job(self, mock_store_upload_job, mock_uuid):
+    def test_creates_upload_job(self, mock_store_upload_job):
         # GIVEN
-        mock_uuid.uuid4.return_value = "abc-123"
+        job_id = "abc-123"
         subject_id = "subject-123"
         filename = "file1.csv"
         raw_file_identifier = "123-456-789"
@@ -397,11 +396,11 @@ class TestCreateUploadJob:
 
         # WHEN
         result = self.job_service.create_upload_job(
-            subject_id, filename, raw_file_identifier, domain, dataset, version
+            subject_id, job_id, filename, raw_file_identifier, domain, dataset, version
         )
 
         # THEN
-        assert result.job_id == "abc-123"
+        assert result.job_id == job_id
         assert result.subject_id == subject_id
         assert result.filename == filename
         assert result.step == UploadStep.INITIALISATION
@@ -438,13 +437,17 @@ class TestUpdateJob:
     def setup(self):
         self.job_service = JobService()
 
-    @patch("api.domain.Jobs.Job.uuid")
     @patch.object(DynamoDBAdapter, "update_job")
-    def test_updates_job(self, mock_update_job, mock_uuid):
+    def test_updates_job(self, mock_update_job):
         # GIVEN
-        mock_uuid.uuid4.return_value = "abc-123"
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "abc-123",
+            "file1.csv",
+            "111-222-333",
+            "domain1",
+            "dataset2",
+            4,
         )
 
         assert job.step == UploadStep.INITIALISATION
@@ -477,13 +480,17 @@ class TestSucceedsJob:
     def setup(self):
         self.job_service = JobService()
 
-    @patch("api.domain.Jobs.Job.uuid")
     @patch.object(DynamoDBAdapter, "update_job")
-    def test_updates_job(self, mock_update_job, mock_uuid):
+    def test_updates_job(self, mock_update_job):
         # GIVEN
-        mock_uuid.uuid4.return_value = "abc-123"
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "abc-123",
+            "file1.csv",
+            "111-222-333",
+            "domain1",
+            "dataset2",
+            4,
         )
 
         assert job.status == JobStatus.IN_PROGRESS
@@ -525,13 +532,17 @@ class TestFailsJob:
     def setup(self):
         self.job_service = JobService()
 
-    @patch("api.domain.Jobs.Job.uuid")
     @patch.object(DynamoDBAdapter, "update_job")
-    def test_updates_job(self, mock_update_job, mock_uuid):
+    def test_updates_job(self, mock_update_job):
         # GIVEN
-        mock_uuid.uuid4.return_value = "abc-123"
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "abc-123",
+            "file1.csv",
+            "111-222-333",
+            "domain1",
+            "dataset2",
+            4,
         )
 
         assert job.status == JobStatus.IN_PROGRESS

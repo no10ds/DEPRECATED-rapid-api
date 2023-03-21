@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -5,6 +6,7 @@ import psutil
 from fastapi import APIRouter, Request
 from fastapi import UploadFile, File, Response, Security
 from fastapi import status as http_status
+from fastapi import Path as FastApiPath
 from pandas import DataFrame
 from starlette.responses import PlainTextResponse
 
@@ -19,8 +21,13 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
+from api.common.utilities import strtobool
 from api.common.config.auth import Action
-from api.common.config.constants import BASE_API_PATH
+from api.common.config.constants import (
+    BASE_API_PATH,
+    LOWERCASE_ROUTE_DESCRIPTION,
+    LOWERCASE_REGEX,
+)
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
@@ -31,7 +38,10 @@ from api.domain.dataset_filters import DatasetFilters
 from api.domain.metadata_search import metadata_search_query
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
+from api.domain.Jobs.Job import generate_uuid
 
+
+CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
 s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
@@ -78,25 +88,33 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
 
 
-@datasets_router.get(
-    "/search/{term}",
-    dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
-    status_code=http_status.HTTP_200_OK,
-    include_in_schema=False,
-)
-async def search_dataset_metadata(term: str):
-    sql_query = metadata_search_query(term)
-    df = athena_adapter.query_sql(sql_query)
-    df["version"] = df["version"].fillna(value="0")
-    df["data"] = df["data"].fillna(value="")
-    return df.to_dict("records")
+if not CATALOG_DISABLED:
+
+    @datasets_router.get(
+        "/search/{term}",
+        dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
+        status_code=http_status.HTTP_200_OK,
+        include_in_schema=False,
+    )
+    async def search_dataset_metadata(term: str):
+        sql_query = metadata_search_query(term)
+        df = athena_adapter.query_sql(sql_query)
+        df["version"] = df["version"].fillna(value="0")
+        df["data"] = df["data"].fillna(value="")
+        return df.to_dict("records")
 
 
 @datasets_router.get(
     "/{domain}/{dataset}/info",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
-async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = None):
+async def get_dataset_info(
+    dataset: str,
+    domain: str = FastApiPath(
+        default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
+    ),
+    version: Optional[int] = None,
+):
     """
     ## Dataset info
 
@@ -117,6 +135,15 @@ async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = N
     | `dataset`  | True     | URL parameter     | `train_journeys` | dataset title         |
     | `version`  | False    | Query parameter   | `3`              | dataset version       |
 
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Only alphanumeric and underscore `_` characters allowed
+    - Start with an alphabetic character
+
+    The domain must also be lowercase only.
+
     ### Accepted permissions
 
     You will always be able to get info on all available datasets, regardless of their sensitivity level, provided you have
@@ -132,7 +159,13 @@ async def get_dataset_info(domain: str, dataset: str, version: Optional[int] = N
     "/{domain}/{dataset}/{version}/files",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
-async def list_raw_files(domain: str, dataset: str, version: int):
+async def list_raw_files(
+    dataset: str,
+    version: int,
+    domain: str = FastApiPath(
+        default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
+    ),
+):
     """
     ## List Raw Files
 
@@ -149,6 +182,15 @@ async def list_raw_files(domain: str, dataset: str, version: int):
     | `dataset`     | True      | URL parameter                           | `train_journeys`             | dataset title         |
     | `version`     | True      | URL parameter                           | `3`                          | dataset version       |
 
+
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Only alphanumeric and underscore `_` characters allowed
+    - Start with an alphabetic character
+
+    The domain must also be lowercase only.
 
     ### Outputs
 
@@ -174,11 +216,48 @@ async def list_raw_files(domain: str, dataset: str, version: int):
 
 
 @datasets_router.delete(
+    "/{domain}/{dataset}",
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
+)
+async def delete_dataset(domain: str, dataset: str, response: Response):
+    """
+    ## Delete Dataset
+
+    Use this endpoint to delete all the contents linked to a domain/dataset. It deletes the crawler, raw data, uploaded data
+    and all schemas.
+
+    When all valid items in the domain/dataset have been deleted, a success message will be displayed.
+
+    ### Inputs
+
+    | Parameters | Required | Usage         | Example values                  | Definition                    |
+    |------------|----------|---------------|---------------------------------|-------------------------------|
+    | `domain`   | True     | URL parameter | `land`                          | domain of the dataset         |
+    | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
+
+    ### Accepted permissions
+    In order to use this endpoint you need the DATA_ADMIN permission.
+
+    ### Click `Try it out` to use the endpoint
+
+    """
+    delete_service.delete_dataset(domain, dataset)
+    response.status_code = http_status.HTTP_202_ACCEPTED
+    return {"details": f"{dataset} has been deleted."}
+
+
+@datasets_router.delete(
     "/{domain}/{dataset}/{version}/{filename}",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 async def delete_data_file(
-    domain: str, dataset: str, version: int, filename: str, response: Response
+    dataset: str,
+    version: int,
+    filename: str,
+    response: Response,
+    domain: str = FastApiPath(
+        default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
+    ),
 ):
     """
     ## Delete Data File
@@ -200,6 +279,15 @@ async def delete_data_file(
     | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
     | `version`  | True     | URL parameter | `3`                             | dataset version               |
     | `filename` | True     | URL parameter | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
+
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Only alphanumeric and underscore `_` characters allowed
+    - Start with an alphabetic character
+
+    The domain must also be lowercase only.
 
     ### Accepted permissions
     In order to use this endpoint you need a relevant WRITE permission that matches the dataset sensitivity level,
@@ -223,10 +311,12 @@ async def delete_data_file(
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 def upload_data(
-    domain: str,
     dataset: str,
     request: Request,
     response: Response,
+    domain: str = FastApiPath(
+        default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
+    ),
     version: Optional[int] = None,
     file: UploadFile = File(...),
 ):
@@ -253,6 +343,8 @@ def upload_data(
     - Only alphanumeric and underscore `_` characters allowed
     - Start with an alphabetic character
 
+    The domain must also be lowercase only.
+
     ### Output
 
     If successful returns file name with a timestamp included, e.g.:
@@ -273,9 +365,10 @@ def upload_data(
     """
     try:
         subject_id = get_subject_id(request)
-        incoming_file_path = store_file_to_disk(file)
+        job_id = generate_uuid()
+        incoming_file_path = store_file_to_disk(job_id, file)
         raw_filename, version, job_id = data_service.upload_dataset(
-            subject_id, domain, dataset, version, incoming_file_path
+            subject_id, job_id, domain, dataset, version, incoming_file_path
         )
         response.status_code = http_status.HTTP_202_ACCEPTED
         return {
@@ -292,8 +385,8 @@ def upload_data(
         raise UserError(message=error.args[0])
 
 
-def store_file_to_disk(file: UploadFile = File(...)) -> Path:
-    file_path = Path(file.filename)
+def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
+    file_path = Path(f"{id}-{file.filename}")
     chunk_size_mb = 50
     mb_1 = 1024 * 1024
 
@@ -330,9 +423,11 @@ def store_file_to_disk(file: UploadFile = File(...)) -> Path:
     },
 )
 async def query_dataset(
-    domain: str,
     dataset: str,
     request: Request,
+    domain: str = FastApiPath(
+        default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
+    ),
     version: Optional[int] = None,
     query: Optional[SQLQuery] = SQLQuery(),
 ):
@@ -350,6 +445,14 @@ async def query_dataset(
     | `version`     | False        | Query parameter         | '3'                                                                                                                         | dataset version               |
     | `query`       | False        | JSON Request Body       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#how-to-construct-a-query-object)| the query object              |
 
+    #### Domain and dataset
+
+    The domain and dataset names must adhere to the following conditions:
+
+    - Only alphanumeric and underscore `_` characters allowed
+    - Start with an alphabetic character
+
+    The domain must also be lowercase only.
 
     ### Outputs
 
@@ -398,9 +501,11 @@ async def query_dataset(
     status_code=http_status.HTTP_202_ACCEPTED,
 )
 async def query_large_dataset(
-    domain: str,
     dataset: str,
     request: Request,
+    domain: str = FastApiPath(
+        default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
+    ),
     version: Optional[int] = None,
     query: Optional[SQLQuery] = SQLQuery(),
 ):
@@ -423,6 +528,8 @@ async def query_large_dataset(
     | `version`     | False        | Query parameter         | '3'                                                                                                                         | dataset version               |
     | `query`       | False        | JSON Request Body       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#how-to-construct-a-query-object)| the query object              |
 
+
+    #### Domain and dataset
 
     ### Outputs
 

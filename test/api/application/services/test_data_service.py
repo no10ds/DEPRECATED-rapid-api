@@ -87,6 +87,20 @@ class TestUploadSchema:
         )
         assert result == "some-other.json"
 
+    def test_upload_schema_uppercase_domain(self):
+        self.s3_adapter.find_schema.return_value = None
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+
+        schema = self.valid_schema.copy()
+        schema.metadata.domain = schema.metadata.domain.upper()
+        result = self.data_service.upload_schema(schema)
+
+        self.s3_adapter.save_schema.assert_called_once_with(schema)
+        self.glue_adapter.create_crawler.assert_called_once_with(
+            "some", "other", {"sensitivity": "PUBLIC", "no_of_versions": "1"}
+        )
+        assert result == "some-other.json"
+
     def test_aborts_uploading_if_schema_upload_fails(self):
         self.s3_adapter.find_schema.return_value = None
         self.s3_adapter.save_schema.side_effect = ClientError(
@@ -361,6 +375,33 @@ class TestUpdateSchema:
         assert result == "some-other.json"
 
     @patch("api.application.services.data_service.handle_version_retrieval")
+    def test_update_schema_success_uppercase_domain(
+        self, mock_handle_version_retrieval
+    ):
+        original_schema = self.valid_schema
+        new_schema = self.valid_updated_schema.copy(deep=True)
+        new_schema.metadata.domain = new_schema.metadata.domain.upper()
+        expected_schema = self.valid_updated_schema.copy(deep=True)
+        expected_schema.metadata.version = 2
+
+        self.glue_adapter.check_crawler_is_ready.return_value = None
+        self.s3_adapter.find_schema.return_value = original_schema
+        self.s3_adapter.save_schema.return_value = "some-other.json"
+        mock_handle_version_retrieval.return_value = 1
+
+        result = self.data_service.update_schema(new_schema)
+        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
+            new_schema.get_domain(), new_schema.get_dataset()
+        )
+        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
+        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
+            expected_schema.get_domain(),
+            expected_schema.get_dataset(),
+            expected_schema.metadata.version,
+        )
+        assert result == "some-other.json"
+
+    @patch("api.application.services.data_service.handle_version_retrieval")
     def test_update_schema_maintains_original_metadata(
         self, mock_handle_version_retrieval
     ):
@@ -511,7 +552,7 @@ class TestUploadDataset:
 
         with pytest.raises(SchemaNotFoundError):
             self.data_service.upload_dataset(
-                "subject-123", "some", "other", None, Path("data.csv")
+                "subject-123", "234", "some", "other", None, Path("data.csv")
             )
 
         self.s3_adapter.find_schema.assert_called_once_with("some", "other", 1)
@@ -550,12 +591,12 @@ class TestUploadDataset:
 
         # WHEN
         uploaded_raw_file = self.data_service.upload_dataset(
-            "subject-123", "some", "other", None, Path("data.csv")
+            "subject-123", "abc-123", "some", "other", None, Path("data.csv")
         )
 
         # THEN
         self.job_service.create_upload_job.assert_called_once_with(
-            "subject-123", "data.csv", "123-456-789", "some", "other", 1
+            "subject-123", "abc-123", "data.csv", "123-456-789", "some", "other", 1
         )
         self.data_service.generate_raw_file_identifier.assert_called_once()
         mock_thread.assert_called_once_with(
@@ -784,7 +825,7 @@ class TestUploadDataset:
 
         try:
             self.data_service.upload_dataset(
-                "subject-123", "some", "other", 2, Path("data.csv")
+                "subject-123", "abc-123", "some", "other", 2, Path("data.csv")
             )
         except DatasetValidationError as error:
             assert {
@@ -819,7 +860,7 @@ class TestUploadDataset:
 
         try:
             self.data_service.upload_dataset(
-                "subject-123", "some", "other", 2, Path("data.csv")
+                "subject-123", "abc-123", "some", "other", 2, Path("data.csv")
             )
         except DatasetValidationError as error:
             assert {
