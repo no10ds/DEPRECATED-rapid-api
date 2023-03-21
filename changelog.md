@@ -11,6 +11,7 @@ See [v6.0.0] changes
 
 - All required calls in the API are now paginated by Boto3. This fixes some large issues where, when there were more than 50 crawlers in the account the API would fail to retrieve all datasets as the backend call would paginate onto a next page.
 - Fixes an issue where the delete data file endpoint was deleting the raw data file from S3 and now instead deletes the processed file instead.
+- Fixes an issue where the uploaded files were temporarily stored with just the name they were uploaded with, this was causing errors if two identically names files were uploaded within a small window.
 
 ### Added
 

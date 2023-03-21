@@ -561,15 +561,19 @@ class TestDynamoDBAdapterServiceTable:
         self.test_service_table_name = "TEST SERVICE TABLE"
         self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
 
-    @patch("api.domain.Jobs.Job.uuid")
     @patch("api.domain.Jobs.UploadJob.time")
-    def test_store_async_upload_job(self, mock_time, mock_uuid):
+    def test_store_async_upload_job(self, mock_time):
         mock_time.time.return_value = 1000
-        mock_uuid.uuid4.return_value = "abc-123"
 
         self.dynamo_adapter.store_upload_job(
             UploadJob(
-                "subject-123", "filename.csv", "111-222-333", "domain1", "dataset2", 4
+                "subject-123",
+                "abc-123",
+                "filename.csv",
+                "111-222-333",
+                "domain1",
+                "dataset2",
+                4,
             )
         )
 
@@ -771,12 +775,16 @@ class TestDynamoDBAdapterServiceTable:
         ):
             self.dynamo_adapter.get_jobs("subject-123")
 
-    @patch("api.domain.Jobs.Job.uuid")
-    def test_update_job(self, mock_uuid):
-        mock_uuid.uuid4.return_value = "abc-123"
+    def test_update_job(self):
 
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "abc-123",
+            "file1.csv",
+            "111-222-333",
+            "domain1",
+            "dataset2",
+            4,
         )
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
@@ -804,12 +812,16 @@ class TestDynamoDBAdapterServiceTable:
             },
         )
 
-    @patch("api.domain.Jobs.Job.uuid")
-    def test_update_job_without_errors(self, mock_uuid):
-        mock_uuid.uuid4.return_value = "abc-123"
+    def test_update_job_without_errors(self):
 
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "abc-123",
+            "file1.csv",
+            "111-222-333",
+            "domain1",
+            "dataset2",
+            4,
         )
         job.set_step(UploadStep.VALIDATION)
         job.set_status(JobStatus.FAILED)
@@ -836,12 +848,16 @@ class TestDynamoDBAdapterServiceTable:
             },
         )
 
-    @patch("api.domain.Jobs.Job.uuid")
-    def test_update_job_raises_error_when_fails(self, mock_uuid):
-        mock_uuid.uuid4.return_value = "abc-123"
+    def test_update_job_raises_error_when_fails(self):
 
         job = UploadJob(
-            "subject-123", "file1.csv", "111-222-333", "domain1", "dataset2", 4
+            "subject-123",
+            "abc-123",
+            "file1.csv",
+            "111-222-333",
+            "domain1",
+            "dataset2",
+            4,
         )
 
         self.service_table.update_item.side_effect = ClientError(

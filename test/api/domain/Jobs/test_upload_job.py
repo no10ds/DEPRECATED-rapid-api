@@ -4,14 +4,18 @@ from api.domain.Jobs.Job import JobType, JobStatus
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 
 
-@patch("api.domain.Jobs.Job.uuid")
 @patch("api.domain.Jobs.UploadJob.time")
-def test_initialise_upload_job(mock_time, mock_uuid):
+def test_initialise_upload_job(mock_time):
     mock_time.time.return_value = 1000
-    mock_uuid.uuid4.return_value = "abc-123"
 
     job = UploadJob(
-        "subject-123", "some-filename.csv", "111-222-333", "domain1", "dataset2", 12
+        "subject-123",
+        "abc-123",
+        "some-filename.csv",
+        "111-222-333",
+        "domain1",
+        "dataset2",
+        12,
     )
 
     assert job.job_id == "abc-123"
