@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Set, List
 
-from api.common.config.auth import Action, SensitivityLevel, ALL
+from api.common.config.auth import Action, SensitivityLevel, ALL, LayerPermissions
 from api.common.config.layers import Layer
 
 
@@ -43,8 +43,7 @@ def generate_acceptable_scopes(
         acceptable_sensitivities = _get_acceptable_sensitivity_values(
             domain, sensitivity
         )
-
-        acceptable_layer_scopes = [layer.upper(), ALL]
+        acceptable_layer_scopes = _get_acceptable_layer_scopes(layer)
 
         optional_scopes.add(f"{action.value}_{ALL}")
 
@@ -55,6 +54,15 @@ def generate_acceptable_scopes(
                 )
 
     return AcceptablePermissions(required_scopes, optional_scopes)
+
+
+def _get_acceptable_layer_scopes(
+    layer: Layer = None,
+) -> List[str]:
+    if layer:
+        return [layer.upper(), ALL]
+    else:
+        return list(LayerPermissions)
 
 
 def _get_acceptable_sensitivity_values(

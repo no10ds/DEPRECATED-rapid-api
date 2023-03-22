@@ -8,11 +8,13 @@ class TestPermissionItem:
             type="READ",
             sensitivity="PROTECTED",
             domain="DOMAIN",
+            layer="LAYER",
         )
         expected_permission_dictionary = {
             "PermissionName": "READ_PROTECTED_DOMAIN",
             "Type": "READ",
             "Sensitivity": "PROTECTED",
             "Domain": "DOMAIN",
+            "Layer": "LAYER",
         }
         assert permission.to_dict() == expected_permission_dictionary

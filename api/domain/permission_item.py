@@ -1,6 +1,7 @@
 from typing import Optional
 
 from pydantic import BaseModel
+from api.common.config.auth import LayerPermissions
 
 
 class PermissionItem(BaseModel):
@@ -8,6 +9,7 @@ class PermissionItem(BaseModel):
     type: str
     sensitivity: Optional[str] = None
     domain: Optional[str] = None
+    layer: Optional[LayerPermissions] = None
 
     def to_dict(self):
         return {
@@ -15,4 +17,5 @@ class PermissionItem(BaseModel):
             "Type": self.type,
             "Sensitivity": self.sensitivity,
             "Domain": self.domain,
+            "Layer": self.layer,
         }

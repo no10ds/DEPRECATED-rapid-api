@@ -6,14 +6,15 @@ The resources that get changed are the:
 - Glue tables
 - Glue crawlers
 - Permissions get updated
-    1. Migrate old ones to the given layer
-    2. Create new permissions for all the possible layers in the permissions table
+    1. Migrate old subjects have access to the migrated layer
+    2. Alter the protected domain permissions to include the new possible layers
 
 Please ensure that none of the crawlers are running when you start this script
 """
 import argparse
-import os
+from copy import deepcopy
 import json
+import os
 from typing import List
 
 import boto3
@@ -28,11 +29,149 @@ DATA_PATH = "data"
 SCHEMAS_PATH = "data/schemas"
 RAW_DATA_PATH = "raw_data"
 GLUE_DB = f"{RESOURCE_PREFIX}_catalogue_db"
+DYNAMODB_PERMISSIONS_TABLE = f"{RESOURCE_PREFIX}_users_permissions"
 
 
-def main(layer: str, s3_client, glue_client, resource_client):
+def main(
+    layer: str,
+    all_layers: List[str],
+    s3_client,
+    glue_client,
+    resource_client,
+    dynamodb_client,
+):
     migrate_files(layer, s3_client)
     migrate_crawlers(layer, glue_client, resource_client)
+    migrate_permissions(layer, all_layers, dynamodb_client)
+
+
+def migrate_permissions(layer, all_layers, dynamodb_client):
+    print("- Migrating the permissions")
+    migrate_protected_domain_permissions(layer, all_layers, dynamodb_client)
+    migrate_subject_permissions(layer, dynamodb_client)
+    print("- Finished migrating the permissions")
+
+
+def migrate_subject_permissions(layer, dynamodb_client):
+    print("-- Migrating the permissions of the subjects")
+
+    PERMISSIONS_TO_CHANGE = [
+        "READ_PUBLIC",
+        "READ_PROTECTED",
+        "READ_PRIVATE",
+        "WRITE_PUBLIC",
+        "WRITE_PRIVATE",
+        "WRITE_PROTECTED",
+    ]
+    paginator = dynamodb_client.get_paginator("scan")
+    page_iterator = paginator.paginate(
+        TableName=DYNAMODB_PERMISSIONS_TABLE,
+        ScanFilter={
+            "PK": {
+                "AttributeValueList": [
+                    {
+                        "S": "SUBJECT",
+                    },
+                ],
+                "ComparisonOperator": "EQ",
+            },
+        },
+    )
+    items = [item for page in page_iterator for item in page["Items"]]
+    for item in items:
+        permissions = item["Permissions"]["SS"]
+        to_replace = False
+        for idx, permission in enumerate(permissions):
+            for permission_to_change in PERMISSIONS_TO_CHANGE:
+                # Amend the permission to include the layer
+                if permission.startswith(permission_to_change):
+                    to_replace = True
+                    permissions[idx] = permission.replace(
+                        permission_to_change,
+                        permission_to_change.replace("_", f"_{layer.upper()}_"),
+                    )
+        if to_replace:
+            print(f"--- Adding layer to the permissions for subject {item['SK']['S']}")
+            pass
+            dynamodb_client.update_item(
+                TableName=DYNAMODB_PERMISSIONS_TABLE,
+                Key={key: value for key, value in item.items() if key in ["PK", "SK"]},
+                UpdateExpression="set #P = :r",
+                ExpressionAttributeNames={"#P": "Permissions"},
+                ExpressionAttributeValues={
+                    ":r": {"SS": permissions},
+                },
+            )
+
+    print("-- Finished migrating the permissions of the subjects")
+
+
+def migrate_protected_domain_permissions(layer, all_layers, dynamodb_client):
+    print("-- Migrating the protected domain permissions")
+    layer_permissions = [layer.upper() for layer in all_layers] + ["ALL"]
+    PROTECTED = "PROTECTED"
+    actions = ["READ", "WRITE"]
+
+    for action in actions:
+        print(f"--- Migrating the {action} protected domain permissions")
+        paginator = dynamodb_client.get_paginator("scan")
+        page_iterator = paginator.paginate(
+            TableName=DYNAMODB_PERMISSIONS_TABLE,
+            ScanFilter={
+                "PK": {
+                    "AttributeValueList": [
+                        {
+                            "S": "PERMISSION",
+                        },
+                    ],
+                    "ComparisonOperator": "EQ",
+                },
+                "SK": {
+                    "AttributeValueList": [
+                        {
+                            "S": action,
+                        },
+                    ],
+                    "ComparisonOperator": "BEGINS_WITH",
+                },
+                "Sensitivity": {
+                    "AttributeValueList": [
+                        {
+                            "S": PROTECTED,
+                        },
+                    ],
+                    "ComparisonOperator": "EQ",
+                },
+                "Layer": {
+                    "ComparisonOperator": "NULL",
+                },
+            },
+        )
+        items = [item for page in page_iterator for item in page["Items"]]
+        for item in items:
+            print(f"---- Adding layer permissions to the permission {item['SK']['S']}")
+            for layer in layer_permissions:
+                new_item = deepcopy(item)
+                current_prefix = f"{action}_{PROTECTED}"
+                future_prefix = f"{action}_{layer}_{PROTECTED}"
+                new_item["SK"]["S"] = future_prefix + new_item["SK"]["S"].removeprefix(
+                    current_prefix
+                )
+                new_item["Id"]["S"] = future_prefix + new_item["Id"]["S"].removeprefix(
+                    current_prefix
+                )
+                new_item["Layer"] = {"S": layer}
+                dynamodb_client.put_item(
+                    TableName=DYNAMODB_PERMISSIONS_TABLE, Item=new_item
+                )
+            item_keys = {
+                key: value for key, value in item.items() if key in ["PK", "SK"]
+            }
+            dynamodb_client.delete_item(
+                TableName=DYNAMODB_PERMISSIONS_TABLE, Key=item_keys
+            )
+
+    print("-- Finished migrating the protected domain permissions")
 
 
 def migrate_crawlers(layer: str, glue_client, resource_client):
@@ -109,10 +248,12 @@ def create_new_crawler(layer: str, crawler_info: dict, glue_client) -> str:
     ]
 
     # Add tags
-    # TODO: Add layer and domain to this
     new_crawler["Tags"] = format_tags_acceptably_for_crawler_creation(
         crawler_info["Tags"]
     )
+    domain = new_crawler["Name"].split("/")[1]
+    new_crawler["Tags"]["domain"] = domain
+    new_crawler["Tags"]["layer"] = layer
     glue_client.create_crawler(**new_crawler)
 
     return new_crawler["Name"]
@@ -206,16 +347,25 @@ if __name__ == "__main__":
         "--layer",
         help="Specify the layer to migrate the resources to. Defaults to 'default'",
     )
+    parser.add_argument(
+        "--all-layers",
+        help="Specify all the layers that will exist on this rAPId instance as strings separated by commas e.g 'raw,staging,presentation'. Defaults to 'default'",
+    )
     args = parser.parse_args()
     if args.layer:
         layer = args.layer
     else:
         layer = "default"
 
-    print(f"Migration to layer [{layer}] starting")
+    if args.all_layers:
+        all_layers = args.all_layers.split(",")
+    else:
+        all_layers = ["default"]
+
+    print(f"Migration to layer [{layer}] with {all_layers} starting")
     s3_client = boto3.client("s3")
     glue_client = boto3.client("glue", region_name=AWS_REGION)
     resource_client = boto3.client("resourcegroupstaggingapi", region_name=AWS_REGION)
-
-    main(layer, s3_client, glue_client, resource_client)
+    dynamodb_client = boto3.client("dynamodb", region_name=AWS_REGION)
+    main(layer, all_layers, s3_client, glue_client, resource_client, dynamodb_client)
     print("Migration finished")
