@@ -65,6 +65,7 @@ You will need to add some environment variables to your run configuration templa
 - `DOMAIN_NAME=example.com`
 - `COGNITO_USER_POOL_ID=11111111`
 - `ALLOWED_EMAIL_DOMAINS=example1.com,example2.com`
+- `LAYERS=raw,layer`
 
 We use pytest as our test runner. This can be run by calling
 

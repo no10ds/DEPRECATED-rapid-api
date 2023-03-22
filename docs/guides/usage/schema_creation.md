@@ -8,6 +8,7 @@ as a user you can either create the schema [from scratch](#from-scratch-) or use
 The schema will have the following structure:
 
 - `metadata` - General information of the schema.
+  - `layer` - String value, this is the name of the layer within rAPId that you wish to place the dataset within. The possible values of this are unique to the rAPId instance and specified on creation. If none are provided, it will default to `default`.
   - `domain` - String value, is the name of the domain that owns the dataset, it could be for example the name of the department that handles the data.
   - `dataset` - String value, is the name of the dataset. e.g.: "receipts" or "address".
   - `sensitivity` - String value, is the sensitivity level of the dataset. e.g.: "PUBLIC", "PRIVATE", "PROTECTED"

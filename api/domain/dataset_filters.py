@@ -3,9 +3,12 @@ from typing import Optional, Dict, List
 from pydantic.main import BaseModel
 
 from api.common.custom_exceptions import UserError
+from api.common.config.auth import Layer
 
 
 class DatasetFilters(BaseModel):
+    layer: Optional[Layer] = None
+    domain: Optional[str] = None
     sensitivity: Optional[str] = None
     key_value_tags: Optional[Dict[str, Optional[str]]] = dict()
     key_only_tags: Optional[List[str]] = list()
@@ -17,7 +20,12 @@ class DatasetFilters(BaseModel):
             raise UserError(
                 "You cannot specify sensitivity both at the root level and in the tags"
             )
-        return [*self._tag_filters(), *self._sensitivity_filters()]
+        return [
+            *self._tag_filters(),
+            *self._build_generic_filter("sensitivity", self.sensitivity),
+            *self._build_generic_filter("layer", self.layer),
+            *self._build_generic_filter("domain", self.domain),
+        ]
 
     def _tag_filters(self) -> List[Dict]:
 
@@ -36,9 +44,5 @@ class DatasetFilters(BaseModel):
             for key, value in self.key_value_tags.items()
         ]
 
-    def _sensitivity_filters(self) -> List[Dict]:
-        return (
-            [{"Key": "sensitivity", "Values": [self.sensitivity]}]
-            if self.sensitivity is not None
-            else []
-        )
+    def _build_generic_filter(self, name: str, value: str) -> List[Dict]:
+        return [{"Key": name, "Values": [value]}] if value is not None else []

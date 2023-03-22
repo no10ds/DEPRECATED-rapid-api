@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Set, List
 
-from api.application.services.protected_domain_service import ProtectedDomainService
-from api.common.config.auth import Action, SensitivityLevel
+from api.common.config.auth import Action, SensitivityLevel, ALL, LayerPermissions
+from api.common.config.layers import Layer
 
 
 @dataclass
@@ -24,9 +24,11 @@ class AcceptablePermissions:
 
 
 def generate_acceptable_scopes(
-    endpoint_actions: List[str], sensitivity: SensitivityLevel, domain: str = None
+    endpoint_actions: List[str],
+    sensitivity: SensitivityLevel,
+    layer: Layer = None,
+    domain: str = None,
 ) -> AcceptablePermissions:
-    protected_domain_service = ProtectedDomainService()
     endpoint_actions = [Action.from_string(action) for action in endpoint_actions]
 
     required_scopes = set()
@@ -41,20 +43,26 @@ def generate_acceptable_scopes(
         acceptable_sensitivities = _get_acceptable_sensitivity_values(
             domain, sensitivity
         )
+        acceptable_layer_scopes = _get_acceptable_layer_scopes(layer)
 
-        optional_scopes.add(f"{action.value}_ALL")
+        optional_scopes.add(f"{action.value}_{ALL}")
+
         for acceptable_sensitivity in acceptable_sensitivities:
-            optional_scopes.add(f"{action.value}_{acceptable_sensitivity}")
-
-        if not domain and sensitivity == SensitivityLevel.PUBLIC:
-            optional_scopes.update(
-                [
-                    f"{action.value}_{SensitivityLevel.PROTECTED.value}_{item.upper()}"
-                    for item in protected_domain_service.list_protected_domains()
-                ]
-            )
+            for acceptable_layer in acceptable_layer_scopes:
+                optional_scopes.add(
+                    f"{action.value}_{acceptable_layer}_{acceptable_sensitivity}"
+                )
 
     return AcceptablePermissions(required_scopes, optional_scopes)
+
+
+def _get_acceptable_layer_scopes(
+    layer: Layer = None,
+) -> List[str]:
+    if layer:
+        return [layer.upper(), ALL]
+    else:
+        return list(LayerPermissions)
 
 
 def _get_acceptable_sensitivity_values(

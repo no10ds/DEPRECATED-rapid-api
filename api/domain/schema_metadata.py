@@ -6,9 +6,11 @@ from pydantic import BaseModel, EmailStr
 
 from api.common.config.auth import SensitivityLevel
 from api.common.config.aws import SCHEMAS_LOCATION
+from api.common.config.layers import Layer
 from api.common.custom_exceptions import SchemaNotFoundError
 from api.common.data_parsers import parse_categorisation
-from api.common.utilities import BaseEnum
+from api.common.enum import BaseEnum
+from api.domain.dataset_metadata import DatasetMetadata
 
 if TYPE_CHECKING:
     from api.adapter.s3_adapter import S3Adapter
@@ -25,6 +27,7 @@ class UpdateBehaviour(BaseEnum):
 
 
 class SchemaMetadata(BaseModel):
+    layer: Layer
     domain: str
     dataset: str
     sensitivity: str
@@ -34,6 +37,9 @@ class SchemaMetadata(BaseModel):
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
     update_behaviour: str = UpdateBehaviour.APPEND.value
+
+    def get_layer(self) -> str:
+        return self.layer
 
     def get_domain(self) -> str:
         return self.domain
@@ -47,11 +53,16 @@ class SchemaMetadata(BaseModel):
     def get_version(self) -> int:
         return self.version
 
+    def get_dataset_metadata(self) -> DatasetMetadata:
+        return DatasetMetadata(self.layer, self.domain, self.dataset, self.version)
+
     def get_description(self) -> str:
         return self.description
 
     def schema_path(self) -> str:
-        return f"{SCHEMAS_LOCATION}/{self.sensitivity}/{self.schema_name()}"
+        return (
+            f"{SCHEMAS_LOCATION}/{self.layer}/{self.sensitivity}/{self.schema_name()}"
+        )
 
     def schema_name(self) -> str:
         return f"{self.domain}/{self.dataset.lower()}/{self.version}/schema.json"
@@ -66,6 +77,7 @@ class SchemaMetadata(BaseModel):
 
             if metadata:
                 return cls(
+                    layer=metadata["layer"],
                     domain=metadata["domain"],
                     dataset=metadata["dataset"],
                     sensitivity=metadata["sensitivity"],
@@ -76,10 +88,12 @@ class SchemaMetadata(BaseModel):
                 raise Exception
         except Exception:
             split_path = path.split("/")
+            layer = split_path[-6]
             domain = split_path[-4]
             dataset = split_path[-3]
             version = split_path[-2]
             return cls(
+                layer=layer,
                 domain=domain,
                 dataset=dataset,
                 sensitivity=sensitivity,
@@ -95,6 +109,8 @@ class SchemaMetadata(BaseModel):
             **self.get_custom_tags(),
             "sensitivity": self.get_sensitivity(),
             "no_of_versions": str(self.get_version()),
+            "layer": self.get_layer(),
+            "domain": self.get_domain(),
         }
 
     def get_owners(self) -> Optional[List[Owner]]:
@@ -118,19 +134,20 @@ class SchemaMetadata(BaseModel):
 class SchemaMetadatas:
     metadatas: List[SchemaMetadata]
 
-    def find(self, domain: str, dataset: str, version: int) -> SchemaMetadata:
+    def find(self, dataset: DatasetMetadata) -> SchemaMetadata:
         try:
             return list(
                 filter(
-                    lambda data: data.domain == domain
-                    and data.dataset.lower() == dataset.lower()
-                    and data.version == version,
+                    lambda data: data.layer == dataset.layer
+                    and data.domain == dataset.domain
+                    and data.dataset.lower() == dataset.dataset.lower()
+                    and data.version == dataset.version,
                     self.metadatas,
                 )
             )[0]
         except IndexError:
             raise SchemaNotFoundError(
-                f"Schema not found for domain={domain} and dataset={dataset} and version={version}"
+                f"Schema not found for layer={dataset.layer}, domain={dataset.domain}, dataset={dataset.dataset} and version={dataset.version}"
             )
 
     @classmethod

@@ -5,10 +5,7 @@ from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.schema_validation import valid_domain_name
-from api.common.config.auth import (
-    SensitivityLevel,
-    Action,
-)
+from api.common.config.auth import SensitivityLevel, Action, LayerPermissions
 from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
 from api.common.logger import AppLogger
 from api.domain.permission_item import PermissionItem
@@ -40,7 +37,7 @@ class ProtectedDomainService:
 
         self._verify_protected_domain_does_not_exist(domain)
 
-        generated_permissions = self._generate_protected_permission_items(domain)
+        generated_permissions = self.generate_protected_permission_items(domain)
 
         self.dynamodb_adapter.store_protected_permissions(generated_permissions, domain)
 
@@ -60,23 +57,15 @@ class ProtectedDomainService:
         self._verify_protected_domain_is_empty(domain)
 
         # Delete the read and write protected permissions from the table
-        read_protected_id = (
-            f"{Action.READ.value}_{SensitivityLevel.PROTECTED.value}_{domain.upper()}"
-        )
-        write_protected_id = (
-            f"{Action.WRITE.value}_{SensitivityLevel.PROTECTED.value}_{domain.upper()}"
-        )
-        self.dynamodb_adapter.delete_permission(read_protected_id)
-        self.dynamodb_adapter.delete_permission(write_protected_id)
+        permissions_to_delete = self.generate_protected_permission_items(domain.upper())
+        for permission in permissions_to_delete:
+            self.dynamodb_adapter.delete_permission(permission.id)
 
         for user in user_subjects_list:
             user_permissions = self.dynamodb_adapter.get_permissions_for_subject(user)
-            # Drop the read protected permission from the user
-            if read_protected_id in user_permissions:
-                user_permissions.remove(read_protected_id)
-            # Drop the write protected permission from the user
-            if write_protected_id in user_permissions:
-                user_permissions.remove(write_protected_id)
+            for permission in permissions_to_delete:
+                if permission.id in user_permissions:
+                    user_permissions.remove(permission.id)
 
             # Push changes back for updated user
             self.dynamodb_adapter.update_subject_permissions(
@@ -111,18 +100,17 @@ class ProtectedDomainService:
                 f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {datasets}."
             )
 
-    def _generate_protected_permission_items(self, domain) -> List[PermissionItem]:
-        read_permission_item = PermissionItem(
-            id=f"{Action.READ.value}_{SensitivityLevel.PROTECTED.value}_{domain}",
-            type=Action.READ.value,
-            sensitivity=SensitivityLevel.PROTECTED.value,
-            domain=domain,
-        )
-        write_permission_item = PermissionItem(
-            id=f"{Action.WRITE.value}_{SensitivityLevel.PROTECTED.value}_{domain}",
-            type=Action.WRITE.value,
-            sensitivity=SensitivityLevel.PROTECTED.value,
-            domain=domain,
-        )
-
-        return [read_permission_item, write_permission_item]
+    def generate_protected_permission_items(self, domain) -> List[PermissionItem]:
+        permissions = []
+        for action in [Action.READ, Action.WRITE]:
+            for layer in LayerPermissions:
+                permissions.append(
+                    PermissionItem(
+                        id=f"{action.value}_{layer}_{SensitivityLevel.PROTECTED.value}_{domain}",
+                        type=action.value,
+                        sensitivity=SensitivityLevel.PROTECTED.value,
+                        domain=domain,
+                        layer=layer,
+                    )
+                )
+        return permissions

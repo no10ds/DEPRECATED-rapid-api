@@ -20,6 +20,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerUpdateError,
 )
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Column, Schema
 from api.domain.schema_metadata import SchemaMetadata
 
@@ -38,25 +39,28 @@ class TestGlueAdapterCrawlerMethods:
 
     def test_create_crawler(self):
         self.glue_adapter.create_crawler(
-            "domain",
-            "dataset",
+            DatasetMetadata(
+                "layer",
+                "domain",
+                "dataset",
+            ),
             {"tag1": "value1", "tag2": "value2", "tag3": "value3"},
         )
         self.glue_boto_client.create_crawler.assert_called_once_with(
-            Name=f"{RESOURCE_PREFIX}_crawler/domain/dataset",
+            Name=f"{RESOURCE_PREFIX}_crawler/layer/domain/dataset",
             Role="GLUE_CRAWLER_ROLE",
             DatabaseName="GLUE_CATALOGUE_DB_NAME",
-            TablePrefix="domain_dataset_",
+            TablePrefix="layer_domain_dataset_",
             Targets={
                 "S3Targets": [
                     {
-                        "Path": f"s3://{DATA_BUCKET}/data/domain/dataset/",
+                        "Path": f"s3://{DATA_BUCKET}/data/layer/domain/dataset/",
                         "ConnectionName": "GLUE_CONNECTION_DB_NAME",
                     },
                 ]
             },
             SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"},
-            Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5, "TableGroupingPolicy": "CombineCompatibleSchemas"}}',
+            Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 6, "TableGroupingPolicy": "CombineCompatibleSchemas"}}',
             Tags={
                 "tag1": "value1",
                 "tag2": "value2",
@@ -65,35 +69,33 @@ class TestGlueAdapterCrawlerMethods:
         )
 
     def test_set_crawler_version_tag(self):
+        layer = "layer"
         domain = "testdomain323"
         dataset = "testdataset4243"
-        glue_crawler_arn = f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/rapid_crawler/{domain}/{dataset}"
+        glue_crawler_arn = f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/rapid_crawler/{layer}/{domain}/{dataset}"
         self.glue_adapter.set_crawler_version_tag(
-            domain,
-            dataset,
-            42,
+            DatasetMetadata(layer, domain, dataset, 42),
         )
         self.glue_boto_client.tag_resource.assert_called_once_with(
             ResourceArn=glue_crawler_arn, TagsToAdd={"no_of_versions": "42"}
         )
 
     def test_set_crawler_version_tag_failure(self):
+        layer = "layer"
         domain = "testdomain323"
         dataset = "testdataset4243"
         new_version = 42
-        glue_crawler_arn = f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/rapid_crawler/{domain}/{dataset}"
+        glue_crawler_arn = f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/rapid_crawler/{layer}/{domain}/{dataset}"
         self.glue_boto_client.tag_resource.side_effect = ClientError(
             error_response={"Error": {"Code": "SomeProblem"}},
             operation_name="tag_resource",
         )
         with pytest.raises(
             CrawlerUpdateError,
-            match=f"Failed to update crawler version tag for domain = {domain} dataset = {dataset} version = {new_version}",
+            match=f"Failed to update crawler version tag for layer = {layer} domain = {domain} dataset = {dataset} version = {new_version}",
         ):
             self.glue_adapter.set_crawler_version_tag(
-                domain,
-                dataset,
-                new_version,
+                DatasetMetadata(layer, domain, dataset, new_version),
             )
 
         self.glue_boto_client.tag_resource.assert_called_once_with(
@@ -107,7 +109,9 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(CrawlerAlreadyExistsError):
-            self.glue_adapter.create_crawler("domain", "dataset", {})
+            self.glue_adapter.create_crawler(
+                DatasetMetadata("layer", "domain", "dataset"), {}
+            )
 
     def test_create_crawler_fails(self):
         self.glue_boto_client.create_crawler.side_effect = ClientError(
@@ -116,12 +120,14 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(CrawlerCreationError):
-            self.glue_adapter.create_crawler("domain", "dataset", {})
+            self.glue_adapter.create_crawler(
+                DatasetMetadata("layer", "domain", "dataset"), {}
+            )
 
     def test_start_crawler(self):
-        self.glue_adapter.start_crawler("domain", "dataset")
+        self.glue_adapter.start_crawler(DatasetMetadata("layer", "domain", "dataset"))
         self.glue_boto_client.start_crawler.assert_called_once_with(
-            Name=RESOURCE_PREFIX + "_crawler/domain/dataset"
+            Name=RESOURCE_PREFIX + "_crawler/layer/domain/dataset"
         )
 
     def test_start_crawler_fails(self):
@@ -131,12 +137,14 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(CrawlerStartFailsError):
-            self.glue_adapter.start_crawler("domain", "dataset")
+            self.glue_adapter.start_crawler(
+                DatasetMetadata("layer", "domain", "dataset")
+            )
 
     def test_delete_crawler(self):
-        self.glue_adapter.delete_crawler("domain", "dataset")
+        self.glue_adapter.delete_crawler(DatasetMetadata("layer", "domain", "dataset"))
         self.glue_boto_client.delete_crawler.assert_called_once_with(
-            RESOURCE_PREFIX + "_crawler/domain/dataset"
+            RESOURCE_PREFIX + "_crawler/layer/domain/dataset"
         )
 
     def test_delete_crawler_fails(self):
@@ -146,7 +154,9 @@ class TestGlueAdapterCrawlerMethods:
         )
 
         with pytest.raises(AWSServiceError):
-            self.glue_adapter.delete_crawler("domain", "dataset")
+            self.glue_adapter.delete_crawler(
+                DatasetMetadata("layer", "domain", "dataset")
+            )
 
     @patch("api.adapter.glue_adapter.RESOURCE_PREFIX", "the-resource-prefix")
     def test_fails_to_check_if_crawler_is_running(self):
@@ -157,9 +167,11 @@ class TestGlueAdapterCrawlerMethods:
 
         with pytest.raises(
             AWSServiceError,
-            match="Failed to get crawler state resource_prefix=the-resource-prefix, domain = domain1 dataset = dataset2",
+            match="Failed to get crawler state resource_prefix=the-resource-prefix, layer = layer, domain = domain1 and dataset = dataset2",
         ):
-            self.glue_adapter.check_crawler_is_ready("domain1", "dataset2")
+            self.glue_adapter.check_crawler_is_ready(
+                DatasetMetadata("layer", "domain1", "dataset2")
+            )
 
     def test_check_crawler_is_ready(self):
         self.glue_boto_client.get_crawler.return_value = {
@@ -167,9 +179,11 @@ class TestGlueAdapterCrawlerMethods:
                 "State": "READY",
             }
         }
-        self.glue_adapter.check_crawler_is_ready("domain", "dataset")
+        self.glue_adapter.check_crawler_is_ready(
+            DatasetMetadata("layer", "domain", "dataset")
+        )
         self.glue_boto_client.get_crawler.assert_called_once_with(
-            Name=f"{RESOURCE_PREFIX}_crawler/domain/dataset"
+            Name=f"{RESOURCE_PREFIX}_crawler/layer/domain/dataset"
         )
 
     def test_check_crawler_is_not_ready(self):
@@ -180,10 +194,12 @@ class TestGlueAdapterCrawlerMethods:
                 }
             }
             with pytest.raises(CrawlerIsNotReadyError):
-                self.glue_adapter.check_crawler_is_ready("domain", "dataset")
+                self.glue_adapter.check_crawler_is_ready(
+                    DatasetMetadata("layer", "domain", "dataset")
+                )
 
             self.glue_boto_client.get_crawler.assert_called_with(
-                Name=f"{RESOURCE_PREFIX}_crawler/domain/dataset"
+                Name=f"{RESOURCE_PREFIX}_crawler/layer/domain/dataset"
             )
 
 
@@ -211,6 +227,7 @@ class TestGlueAdapterTableMethods:
         schema = Mock()
         schema.get_domain.return_value = "a-domain"
         schema.get_dataset.return_value = "b-dataset"
+        schema.get_layer.return_value = "layer"
 
         self.glue_adapter.update_catalog_table_config(schema)
 
@@ -286,7 +303,11 @@ class TestGlueAdapterTableMethods:
 
         schema = Schema(
             metadata=SchemaMetadata(
-                domain="some", dataset="other", sensitivity="PUBLIC", owners=[]
+                layer="layer",
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=[],
             ),
             columns=[
                 Column(
@@ -381,13 +402,15 @@ class TestGlueAdapterTableMethods:
     def test_get_tables_for_dataset(self):
         paginate = self.glue_boto_client.get_paginator.return_value.paginate
         paginate.return_value = [
-            {"TableList": [{"Name": "domain_dataset_1"}]},
-            {"TableList": [{"Name": "domain_dataset_2"}]},
+            {"TableList": [{"Name": "layer_domain_dataset_1"}]},
+            {"TableList": [{"Name": "layer_domain_dataset_2"}]},
         ]
 
-        result = self.glue_adapter.get_tables_for_dataset("domain", "dataset")
+        result = self.glue_adapter.get_tables_for_dataset(
+            DatasetMetadata("layer", "domain", "dataset")
+        )
 
-        assert result == ["domain_dataset_1", "domain_dataset_2"]
+        assert result == ["layer_domain_dataset_1", "layer_domain_dataset_2"]
 
     def test_delete_tables(self):
         table_names = ["domain_dataset_1", "domain_dataset_2"]

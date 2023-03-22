@@ -2,6 +2,7 @@ from unittest.mock import patch
 
 from api.domain.Jobs.Job import JobType, JobStatus
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
+from api.domain.dataset_metadata import DatasetMetadata
 
 
 @patch("api.domain.Jobs.Job.uuid")
@@ -11,7 +12,10 @@ def test_initialise_upload_job(mock_time, mock_uuid):
     mock_uuid.uuid4.return_value = "abc-123"
 
     job = UploadJob(
-        "subject-123", "some-filename.csv", "111-222-333", "domain1", "dataset2", 12
+        "subject-123",
+        "some-filename.csv",
+        "111-222-333",
+        DatasetMetadata("raw", "domain1", "dataset2", 12),
     )
 
     assert job.job_id == "abc-123"
@@ -24,5 +28,6 @@ def test_initialise_upload_job(mock_time, mock_uuid):
     assert job.subject_id == "subject-123"
     assert job.domain == "domain1"
     assert job.dataset == "dataset2"
+    assert job.layer == "raw"
     assert job.version == 12
     assert job.expiry_time == 605800

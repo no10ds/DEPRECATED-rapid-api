@@ -1,14 +1,15 @@
 from dataclasses import dataclass
-from typing import List, Dict, Tuple, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 import boto3
 from botocore.exceptions import ClientError
 
 from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX
-from api.common.custom_exceptions import UserError, AWSServiceError
+from api.common.config.constants import FIRST_SCHEMA_VERSION_NUMBER
+from api.common.custom_exceptions import AWSServiceError, UserError
 from api.common.logger import AppLogger
 from api.domain.dataset_filters import DatasetFilters
-from api.domain.storage_metadata import StorageMetaData
+from api.domain.dataset_metadata import DatasetMetadata
 
 if TYPE_CHECKING:
     from api.adapter.s3_adapter import S3Adapter
@@ -23,8 +24,9 @@ class AWSResourceAdapter:
     ):
         self.__resource_client = resource_client
 
-    @dataclass(frozen=True)
-    class EnrichedDatasetMetaData(StorageMetaData):
+    @dataclass
+    class EnrichedDatasetMetaData(DatasetMetadata):
+        description: Optional[str] = ""
         tags: Optional[Dict[str, str]] = None
 
     def get_datasets_metadata(
@@ -75,16 +77,20 @@ class AWSResourceAdapter:
     def _to_dataset_metadata(
         self, resource_tag_mapping: Dict, s3_adapter: "S3Adapter"
     ) -> EnrichedDatasetMetaData:
-        domain, dataset = self._infer_domain_and_dataset_from_crawler_arn(
+        dataset = self._infer_dataset_metadata_from_crawler_arn(
             resource_tag_mapping["ResourceARN"]
         )
         tags = {tag["Key"]: tag["Value"] for tag in resource_tag_mapping["Tags"]}
-        version = self.get_version_from_tags(resource_tag_mapping)
-        senstivity = tags["sensitivity"]
-        description = s3_adapter.get_dataset_description(
-            domain, dataset, version, senstivity
+        dataset.version = self.get_version_from_tags(resource_tag_mapping)
+        description = s3_adapter.get_dataset_description(dataset)
+        return self.EnrichedDatasetMetaData(
+            dataset.layer,
+            dataset.domain,
+            dataset.dataset,
+            dataset.version,
+            description,
+            tags,
         )
-        return self.EnrichedDatasetMetaData(domain, dataset, version, description, tags)
 
     def get_version_from_tags(self, resource_tag_mapping):
         version_tag = [
@@ -92,23 +98,25 @@ class AWSResourceAdapter:
             for tag in resource_tag_mapping["Tags"]
             if tag["Key"] == "no_of_versions"
         ]
-        return int(version_tag[0]) if version_tag else None
+        return int(version_tag[0]) if version_tag else FIRST_SCHEMA_VERSION_NUMBER
 
-    def get_version_from_crawler_tags(self, domain: str, dataset: str) -> int:
+    def get_version_from_crawler_tags(self, dataset: DatasetMetadata) -> int:
         aws_resources = self._get_resources(["glue:crawler"], [])
 
         crawler_resource = None
 
-        AppLogger.info(f"Getting version for domain {domain} and dataset {dataset}")
+        AppLogger.info(
+            f"Getting version for layer {dataset.layer} domain {dataset.domain} and dataset {dataset.dataset}"
+        )
         for resource in aws_resources["ResourceTagMappingList"]:
-            if resource["ResourceARN"].endswith(
-                f":crawler/{RESOURCE_PREFIX}_crawler/{domain}/{dataset}"
-            ):
+            if resource["ResourceARN"].endswith(dataset.generate_crawler_name()):
                 crawler_resource = resource
 
         return self.get_version_from_tags(crawler_resource)
 
-    def _infer_domain_and_dataset_from_crawler_arn(self, arn: str) -> Tuple[str, str]:
+    def _infer_dataset_metadata_from_crawler_arn(self, arn: str) -> DatasetMetadata:
         table_name = arn.split(f"{RESOURCE_PREFIX}_crawler/")[-1]
         table_name_elements = table_name.split("/")
-        return table_name_elements[0], table_name_elements[1]
+        return DatasetMetadata(
+            table_name_elements[0], table_name_elements[1], table_name_elements[2]
+        )

@@ -118,6 +118,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                             "Type": permission.type,
                             "Sensitivity": permission.sensitivity,
                             "Domain": permission.domain,
+                            "Layer": permission.layer,
                         }
                     )
         except ClientError as error:
@@ -246,6 +247,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Errors": upload_job.errors if upload_job.errors else None,
             "Filename": upload_job.filename,
             "RawFileIdentifier": upload_job.raw_file_identifier,
+            "Layer": upload_job.layer,
             "Domain": upload_job.domain,
             "Dataset": upload_job.dataset,
             "Version": upload_job.version,
@@ -262,6 +264,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Status": query_job.status.value,
             "Step": query_job.step.value,
             "Errors": query_job.errors if query_job.errors else None,
+            "Layer": query_job.layer,
             "Domain": query_job.domain,
             "Dataset": query_job.dataset,
             "Version": query_job.version,
@@ -392,4 +395,5 @@ class DynamoDBAdapter(DatabaseAdapter):
             sensitivity=item["Sensitivity"],
             type=item["Type"],
             domain=item["Domain"],
+            layer=item["Layer"],
         )
