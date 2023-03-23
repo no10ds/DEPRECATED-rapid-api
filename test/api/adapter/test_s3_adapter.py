@@ -508,6 +508,46 @@ class TestS3Deletion:
                 "domain", "dataset", 3, "123-456-789.csv"
             )
 
+    def test_delete_previous_dataset_files(self):
+        self.persistence_adapter._list_files_from_path = Mock(
+            return_value=[
+                "data/domain/dataset/1/abc-def.parquet",
+                "data/domain/dataset/1/123-456.parquet",
+                "data/domain/dataset/1/789-123.parquet",
+            ]
+        )
+        self.persistence_adapter._delete_data = Mock()
+
+        self.persistence_adapter.delete_previous_dataset_files(
+            "domain", "dataset", 1, "123-456"
+        )
+        expected_calls = [
+            call("data/domain/dataset/1/abc-def.parquet"),
+            call("data/domain/dataset/1/789-123.parquet"),
+        ]
+
+        self.persistence_adapter._list_files_from_path.assert_called_once_with(
+            "data/domain/dataset/1"
+        )
+        self.persistence_adapter._delete_data.assert_has_calls(expected_calls)
+
+    def test_delete_previous_dataset_files_when_none_exist(self):
+        self.persistence_adapter._list_files_from_path = Mock(
+            return_value=[
+                "data/domain/dataset/1/123-456.parquet",
+            ]
+        )
+        self.persistence_adapter._delete_data = Mock()
+
+        self.persistence_adapter.delete_previous_dataset_files(
+            "domain", "dataset", 1, "123-456"
+        )
+
+        self.persistence_adapter._list_files_from_path.assert_called_once_with(
+            "data/domain/dataset/1"
+        )
+        self.persistence_adapter._delete_data.assert_not_called()
+
 
 class TestDatasetMetadataRetrieval:
     mock_s3_client = None
@@ -712,15 +752,15 @@ class TestS3FileList:
             "my_domain", "my_dataset", "PROTECTED"
         )
         assert dataset_files == [
-            {"Key": "raw_data/my_domain/my_dataset/"},
-            {"Key": "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv"},
-            {"Key": "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv"},
-            {"Key": "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv"},
-            {"Key": "data/my_domain/my_dataset/"},
-            {"Key": "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet"},
-            {"Key": "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet"},
-            {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/"},
-            {"Key": "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json"},
+            "raw_data/my_domain/my_dataset/",
+            "raw_data/my_domain/my_dataset/2020-01-01T12:00:00-file1.csv",
+            "raw_data/my_domain/my_dataset/2020-06-01T15:00:00-file2.csv",
+            "raw_data/my_domain/my_dataset/2020-11-15T16:00:00-file3.csv",
+            "data/my_domain/my_dataset/",
+            "data/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet",
+            "data/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet",
+            "data/schemas/PROTECTED/my_domain/my_dataset/",
+            "data/schemas/PROTECTED/my_domain/my_dataset/1/schema.json",
         ]
 
         calls = [
