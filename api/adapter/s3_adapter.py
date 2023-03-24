@@ -165,17 +165,33 @@ class S3Adapter:
     def delete_dataset_files(
         self, domain: str, dataset: str, version: int, raw_data_filename: str
     ) -> None:
+        """
+        Deletes the raw file and the corresponding data file
+        """
         dataset_metadata = StorageMetaData(domain, dataset, version)
         files = self._list_files_from_path(dataset_metadata.file_location())
         raw_file_identifier = self._clean_filename(raw_data_filename)
 
         files_to_delete = [
-            {"Key": data_file["Key"]}
+            {"Key": data_file}
             for data_file in files
-            if self._clean_filename(data_file["Key"]).startswith(raw_file_identifier)
+            if self._clean_filename(data_file).startswith(raw_file_identifier)
         ]
 
         self._delete_objects(files_to_delete, raw_data_filename)
+
+    def delete_previous_dataset_files(
+        self, domain: str, dataset: str, version: int, raw_file_identifier: str
+    ):
+        file_location = StorageMetaData(domain, dataset, version).file_location()
+        files = self._list_files_from_path(file_location)
+        files_to_delete = [
+            file
+            for file in files
+            if not self._extract_filename(file).startswith(raw_file_identifier)
+        ]
+        for file in files_to_delete:
+            self._delete_data(file)
 
     def delete_dataset_files_using_key(self, keys: List[Dict], filename: str):
         files_to_delete = [{"Key": key["Key"]} for key in keys]
@@ -250,16 +266,16 @@ class S3Adapter:
             page_iterator = paginator.paginate(
                 Bucket=self.__s3_bucket, Prefix=file_path
             )
-            return [item for page in page_iterator for item in page["Contents"]]
+            return [item["Key"] for page in page_iterator for item in page["Contents"]]
         except KeyError:
             return []
 
     def _map_object_list_to_filename(self, object_list) -> List[str]:
         if len(object_list) > 0:
             return [
-                self._extract_filename(item["Key"])
+                self._extract_filename(item)
                 for item in object_list
-                if item["Key"].endswith(".csv")
+                if self._extract_filename(item)
             ]
         return object_list
 
@@ -292,9 +308,9 @@ class S3Adapter:
         if len(items) > 0:
             return SchemaMetadatas(
                 [
-                    SchemaMetadata.from_path(item["Key"], self)
+                    SchemaMetadata.from_path(item, self)
                     for item in items
-                    if item["Key"].endswith(".json")
+                    if item.endswith(".json")
                 ]
             )
         return SchemaMetadatas.empty()
