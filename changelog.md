@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v6.0.2 - _2023-03-24_
+
+See [v6.0.2] changes
+
+### Fixed
+
+- Fixed a bug concerning dataset uploading with overwrite behaviour, making it much less brittle.
+
 ## v6.0.0 - _2023-03-17_
 
 See [v6.0.0] changes
