@@ -13,11 +13,13 @@ from api.common.config.constants import (
     BASE_API_PATH,
     LOWERCASE_REGEX,
     LOWERCASE_ROUTE_DESCRIPTION,
+    VALID_FILE_MIME_TYPES,
 )
 from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerAlreadyExistsError,
     CrawlerCreationError,
+    InvalidFileUploadError,
 )
 from api.common.logger import AppLogger
 from api.domain.schema import Schema
@@ -76,6 +78,10 @@ async def generate_schema(
     ### Click  `Try it out` to use the endpoint
 
     """
+    if file.content_type not in VALID_FILE_MIME_TYPES:
+        raise InvalidFileUploadError(
+            f"This file type {file.content_type}, is not supported."
+        )
     infer_contents = get_first_mb_of_file(file)
     return schema_infer_service.infer_schema(
         domain, dataset, sensitivity, infer_contents
