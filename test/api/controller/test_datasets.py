@@ -131,6 +131,21 @@ class TestDataUpload(BaseClientTest):
             "details": ["domain -> was required to be lowercase only."]
         }
 
+    def test_calls_data_upload_service_fails_when_filetype_is_invalid(self):
+        file_content = b"some content"
+        incoming_file_name = "filename.txt"
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets/domain/dataset",
+            files={"file": (incoming_file_name, file_content, "text/plain")},
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": "This file type text/plain, is not supported."
+        }
+
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")

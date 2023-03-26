@@ -415,6 +415,21 @@ class TestSchemaGeneration(BaseClientTest):
         assert response.status_code == 200
         assert response.json() == expected_response
 
+    def test_bad_request_when_filetype_is_invalid(self):
+        file_content = b"some content"
+        file_name = "filename.txt"
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/schema/PUBLIC/mydomain/mydataset/generate",
+            files={"file": (file_name, file_content, "text/plain")},
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {
+            "details": "This file type text/plain, is not supported."
+        }
+
     @patch.object(SchemaInferService, "infer_schema")
     def test_bad_request_when_schema_is_invalid(self, mock_infer_schema):
         file_content = b"colname1,colname2\nsomething,123\notherthing,456\n\n"
