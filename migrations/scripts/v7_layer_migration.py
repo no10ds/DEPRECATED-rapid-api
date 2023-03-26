@@ -92,7 +92,6 @@ def migrate_subject_permissions(layer, dynamodb_client):
                     )
         if to_replace:
             print(f"--- Adding layer to the permissions for subject {item['SK']['S']}")
-            pass
             dynamodb_client.update_item(
                 TableName=DYNAMODB_PERMISSIONS_TABLE,
                 Key={key: value for key, value in item.items() if key in ["PK", "SK"]},
