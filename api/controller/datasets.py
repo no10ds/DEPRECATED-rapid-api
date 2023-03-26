@@ -27,11 +27,13 @@ from api.common.config.constants import (
     BASE_API_PATH,
     LOWERCASE_ROUTE_DESCRIPTION,
     LOWERCASE_REGEX,
+    VALID_FILE_MIME_TYPES,
 )
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
     UserError,
+    InvalidFileUploadError,
 )
 from api.common.logger import AppLogger
 from api.domain.dataset_filters import DatasetFilters
@@ -364,6 +366,11 @@ def upload_data(
 
     """
     try:
+        if file.content_type not in VALID_FILE_MIME_TYPES:
+            raise InvalidFileUploadError(
+                f"This file type {file.content_type}, is not supported."
+            )
+
         subject_id = get_subject_id(request)
         job_id = generate_uuid()
         incoming_file_path = store_file_to_disk(job_id, file)

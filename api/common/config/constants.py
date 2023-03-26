@@ -3,6 +3,8 @@ BASE_REGEX = "^[a-zA-Z0-9_-]"
 FILENAME_WITH_TIMESTAMP_REGEX = r"[a-zA-Z0-9:_\-]+.csv$"
 
 CONTENT_ENCODING = "utf-8"
+# https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
+VALID_FILE_MIME_TYPES = ["text/csv"]
 
 TAG_KEYS_REGEX = BASE_REGEX + "{1,128}$"
 TAG_VALUES_REGEX = BASE_REGEX + "{0,256}$"
