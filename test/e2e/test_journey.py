@@ -110,7 +110,6 @@ class TestUnauthenticatedJourneys(BaseJourneyTest):
 class TestUnauthorisedJourney(BaseJourneyTest):
     def setup_class(self):
         token_url = f"https://{DOMAIN_NAME}/oauth2/token"
-
         write_all_credentials = get_secret(
             secret_name=f"{RESOURCE_PREFIX}_E2E_TEST_CLIENT_WRITE_ALL"
         )
@@ -127,13 +126,13 @@ class TestUnauthorisedJourney(BaseJourneyTest):
         payload = {"grant_type": "client_credentials", "client_id": cognito_client_id}
 
         response = requests.post(token_url, auth=auth, headers=headers, json=payload)
+        res = json.loads(response.content.decode(CONTENT_ENCODING))
 
         if response.status_code != HTTPStatus.OK:
             raise AuthenticationFailedError(f"{response.status_code}")
 
-        self.token = json.loads(response.content.decode(CONTENT_ENCODING))[
-            "access_token"
-        ]
+        res = json.loads(response.content.decode(CONTENT_ENCODING))
+        self.token = res["access_token"]
 
     # Utils -------------
 
@@ -141,7 +140,6 @@ class TestUnauthorisedJourney(BaseJourneyTest):
         return {"Authorization": f"Bearer {self.token}"}
 
     # Tests -------------
-
     def test_query_existing_dataset_when_not_authorised_to_read(self):
         url = self.query_dataset_url(self.layer, self.e2e_test_domain, "query")
         response = requests.post(url, headers=self.generate_auth_headers())
@@ -205,7 +203,6 @@ class TestAuthenticatedDataJourneys(BaseJourneyTest):
         )
 
     # Tests -------------
-
     def test_list_when_authorised(self):
         response = requests.post(
             self.datasets_endpoint,
@@ -437,18 +434,22 @@ class TestAuthenticatedSubjectJourneys(BaseJourneyTest):
         expected_permissions = [
             "READ_ALL",
             "WRITE_ALL",
-            "READ_PUBLIC",
-            "WRITE_PUBLIC",
-            "READ_PRIVATE",
-            "WRITE_PRIVATE",
+            "READ_ALL_PUBLIC",
+            "WRITE_ALL_PUBLIC",
+            "READ_ALL_PRIVATE",
+            "WRITE_ALL_PRIVATE",
+            "READ_DEFAULT_PUBLIC",
+            "WRITE_DEFAULT_PUBLIC",
+            "READ_DEFAULT_PRIVATE",
+            "WRITE_DEFAULT_PRIVATE",
             "DATA_ADMIN",
             "USER_ADMIN",
         ]
 
         response_json = response.json()
-
         assert response.status_code == HTTPStatus.OK
-        assert all((permission in response_json for permission in expected_permissions))
+        for permission in expected_permissions:
+            assert permission in response_json
 
     def test_lists_subject_permissions(self):
         response = requests.get(
@@ -563,7 +564,7 @@ class TestAuthenticatedProtectedDomainJourneys(BaseJourneyTest):
         assert response.status_code == HTTPStatus.UNAUTHORIZED
 
     def test_allows_access_to_protected_domain_when_granted_permission(self):
-        self.assume_permissions(["READ_PROTECTED_TEST_E2E_PROTECTED"])
+        self.assume_permissions(["READ_DEFAULT_PROTECTED_TEST_E2E_PROTECTED"])
 
         url = self.query_dataset_url("default", "test_e2e_protected", "do_not_delete")
         response = requests.post(url, headers=self.generate_auth_headers())

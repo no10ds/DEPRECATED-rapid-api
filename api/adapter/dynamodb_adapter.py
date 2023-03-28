@@ -118,6 +118,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                             "Type": permission.type,
                             "Sensitivity": permission.sensitivity,
                             "Domain": permission.domain,
+                            "Layer": permission.layer,
                         }
                     )
         except ClientError as error:
@@ -394,4 +395,5 @@ class DynamoDBAdapter(DatabaseAdapter):
             sensitivity=item["Sensitivity"],
             type=item["Type"],
             domain=item["Domain"],
+            layer=item["Layer"],
         )
