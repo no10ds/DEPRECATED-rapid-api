@@ -30,6 +30,8 @@ class TestAWSResourceAdapterClientMethods:
                         "Tags": [
                             {"Key": "sensitivity", "Value": "PUBLIC"},
                             {"Key": "no_of_versions", "Value": "1"},
+                            {"Key": "layer", "Value": "layer"},
+                            {"Key": "domain", "Value": "domain1"},
                         ],
                     },
                     {
@@ -38,6 +40,8 @@ class TestAWSResourceAdapterClientMethods:
                             {"Key": "tag1", "Value": ""},
                             {"Key": "sensitivity", "Value": "PUBLIC"},
                             {"Key": "no_of_versions", "Value": "2"},
+                            {"Key": "layer", "Value": "layer"},
+                            {"Key": "domain", "Value": "domain2"},
                         ],
                     },
                     {
@@ -46,6 +50,8 @@ class TestAWSResourceAdapterClientMethods:
                             {"Key": "tag2", "Value": ""},
                             {"Key": "sensitivity", "Value": "PRIVATE"},
                             {"Key": "no_of_versions", "Value": "3"},
+                            {"Key": "layer", "Value": "layer"},
+                            {"Key": "domain", "Value": "domain3"},
                         ],
                     },
                 ],
@@ -60,6 +66,8 @@ class TestAWSResourceAdapterClientMethods:
                             {"Key": "tag5", "Value": ""},
                             {"Key": "sensitivity", "Value": "PUBLIC"},
                             {"Key": "no_of_versions", "Value": "1"},
+                            {"Key": "layer", "Value": "layer"},
+                            {"Key": "domain", "Value": "domain3"},
                         ],
                     },
                     {
@@ -68,6 +76,8 @@ class TestAWSResourceAdapterClientMethods:
                             {"Key": "tag5", "Value": ""},
                             {"Key": "sensitivity", "Value": "PUBLIC"},
                             {"Key": "no_of_versions", "Value": "1"},
+                            {"Key": "layer", "Value": "layer"},
+                            {"Key": "domain", "Value": "domain3"},
                         ],
                     },
                     {
@@ -76,6 +86,8 @@ class TestAWSResourceAdapterClientMethods:
                             {"Key": "tag2", "Value": ""},
                             {"Key": "sensitivity", "Value": "PRIVATE"},
                             {"Key": "no_of_versions", "Value": "10"},
+                            {"Key": "layer", "Value": "layer"},
+                            {"Key": "domain", "Value": "domain36"},
                         ],
                     },
                     {
@@ -84,6 +96,8 @@ class TestAWSResourceAdapterClientMethods:
                             {"Key": "tag2", "Value": ""},
                             {"Key": "sensitivity", "Value": "PRIVATE"},
                             {"Key": "no_of_versions", "Value": "10"},
+                            {"Key": "layer", "Value": "layer"},
+                            {"Key": "domain", "Value": "domain36"},
                         ],
                     },
                     {
@@ -92,6 +106,8 @@ class TestAWSResourceAdapterClientMethods:
                             {"Key": "tag2", "Value": ""},
                             {"Key": "sensitivity", "Value": "PRIVATE"},
                             {"Key": "no_of_versions", "Value": "10"},
+                            {"Key": "layer", "Value": "raw"},
+                            {"Key": "domain", "Value": "domain34"},
                         ],
                     },
                 ],
@@ -107,7 +123,12 @@ class TestAWSResourceAdapterClientMethods:
                 domain="domain1",
                 dataset="dataset1",
                 description="",
-                tags={"sensitivity": "PUBLIC", "no_of_versions": "1"},
+                tags={
+                    "sensitivity": "PUBLIC",
+                    "no_of_versions": "1",
+                    "domain": "domain1",
+                    "layer": "layer",
+                },
                 version=1,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
@@ -115,7 +136,13 @@ class TestAWSResourceAdapterClientMethods:
                 domain="domain2",
                 dataset="dataset2",
                 description="",
-                tags={"tag1": "", "sensitivity": "PUBLIC", "no_of_versions": "2"},
+                tags={
+                    "tag1": "",
+                    "sensitivity": "PUBLIC",
+                    "no_of_versions": "2",
+                    "domain": "domain2",
+                    "layer": "layer",
+                },
                 version=2,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
@@ -123,7 +150,13 @@ class TestAWSResourceAdapterClientMethods:
                 domain="domain3",
                 dataset="dataset",
                 description="",
-                tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "3"},
+                tags={
+                    "tag2": "",
+                    "sensitivity": "PRIVATE",
+                    "no_of_versions": "3",
+                    "domain": "domain3",
+                    "layer": "layer",
+                },
                 version=3,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
@@ -131,7 +164,13 @@ class TestAWSResourceAdapterClientMethods:
                 domain="domain3",
                 dataset="dataset3",
                 description="",
-                tags={"tag5": "", "sensitivity": "PUBLIC", "no_of_versions": "1"},
+                tags={
+                    "tag5": "",
+                    "sensitivity": "PUBLIC",
+                    "no_of_versions": "1",
+                    "domain": "domain3",
+                    "layer": "layer",
+                },
                 version=1,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
@@ -139,7 +178,13 @@ class TestAWSResourceAdapterClientMethods:
                 domain="domain36",
                 dataset="dataset3",
                 description="",
-                tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "10"},
+                tags={
+                    "tag2": "",
+                    "sensitivity": "PRIVATE",
+                    "no_of_versions": "10",
+                    "domain": "domain36",
+                    "layer": "layer",
+                },
                 version=10,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
@@ -147,7 +192,13 @@ class TestAWSResourceAdapterClientMethods:
                 domain="domain34",
                 dataset="dataset2",
                 description="",
-                tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "10"},
+                tags={
+                    "tag2": "",
+                    "sensitivity": "PRIVATE",
+                    "no_of_versions": "10",
+                    "domain": "domain34",
+                    "layer": "raw",
+                },
                 version=10,
             ),
         ]

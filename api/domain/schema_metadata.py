@@ -9,7 +9,7 @@ from api.common.config.aws import SCHEMAS_LOCATION
 from api.common.config.layers import Layer
 from api.common.custom_exceptions import SchemaNotFoundError
 from api.common.data_parsers import parse_categorisation
-from api.common.utilities import BaseEnum
+from api.common.enum import BaseEnum
 from api.domain.dataset_metadata import DatasetMetadata
 
 if TYPE_CHECKING:
@@ -69,13 +69,14 @@ class SchemaMetadata(BaseModel):
 
     @classmethod
     def from_path(cls, path: str, s3_adapter: "S3Adapter"):
+        print("This is the path")
+        print(path)
         sensitivity = parse_categorisation(path, SensitivityLevel.values(), "PUBLIC")
         if path.endswith("schema.json"):
             try:
                 data = s3_adapter.retrieve_data(path).read()
                 data_json = json.loads(data)
                 metadata = data_json["metadata"]
-
                 if metadata:
                     return cls(
                         layer=metadata["layer"],
@@ -122,6 +123,8 @@ class SchemaMetadata(BaseModel):
             **self.get_custom_tags(),
             "sensitivity": self.get_sensitivity(),
             "no_of_versions": str(self.get_version()),
+            "layer": self.get_layer(),
+            "domain": self.get_domain(),
         }
 
     def get_owners(self) -> Optional[List[Owner]]:

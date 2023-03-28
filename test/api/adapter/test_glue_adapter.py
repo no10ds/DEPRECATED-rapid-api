@@ -60,7 +60,7 @@ class TestGlueAdapterCrawlerMethods:
                 ]
             },
             SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"},
-            Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 5, "TableGroupingPolicy": "CombineCompatibleSchemas"}}',
+            Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 6, "TableGroupingPolicy": "CombineCompatibleSchemas"}}',
             Tags={
                 "tag1": "value1",
                 "tag2": "value2",

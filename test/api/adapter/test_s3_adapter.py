@@ -142,7 +142,7 @@ class TestS3AdapterUpload:
 
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
-            Key="data/schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Key="schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
             Body=b'{"metadata": {"layer": "raw", "domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
         )
 
@@ -172,7 +172,7 @@ class TestS3AdapterUpload:
 
         self.mock_s3_client.put_object.assert_called_with(
             Bucket="dataset",
-            Key="data/schemas/layer/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Key="schemas/layer/PUBLIC/test_domain/test_dataset/1/schema.json",
             Body=b'{"metadata": {"layer": "layer", "domain": "test_domain", "dataset": "test_dataset", "sensitivity": "PUBLIC", "version": 1, "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
         )
 
@@ -267,7 +267,7 @@ class TestS3AdapterDataRetrieval:
         )
         self.mock_s3_client.get_object.assert_called_once_with(
             Bucket="dataset",
-            Key="data/schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
+            Key="schemas/raw/PUBLIC/test_domain/test_dataset/1/schema.json",
         )
 
         assert schema == valid_schema
@@ -279,10 +279,9 @@ class TestS3AdapterDataRetrieval:
         schema = self.persistence_adapter.find_schema(
             DatasetMetadata("raw", "bad", "data", 1)
         )
-
         self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
         self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
-            Bucket="dataset", Prefix="data/schemas"
+            Bucket="dataset", Prefix="schemas"
         )
 
         assert schema is None
@@ -336,7 +335,7 @@ class TestS3Deletion:
 
         self.mock_s3_client.delete_object.assert_called_once_with(
             Bucket="data-bucket",
-            Key="data/schemas/raw/PUBLIC/domain/dataset/2/schema.json",
+            Key="schemas/raw/PUBLIC/domain/dataset/2/schema.json",
         )
 
     def test_deletion_of_dataset_files_with_no_partitions(self):
@@ -362,7 +361,7 @@ class TestS3Deletion:
                     },
                 ],
                 "Name": "data-bucket",
-                "Prefix": "data/domain/dataset",
+                "Prefix": "data/layer/domain/dataset",
                 "EncodingType": "url",
             }
         ]
@@ -389,7 +388,6 @@ class TestS3Deletion:
             ),
             "123-456-789.csv",
         )
-
         self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
         self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/layer/domain/dataset/1"
@@ -729,7 +727,7 @@ class TestS3FileList:
                 "Name": "my-bucket",
                 "Prefix": "raw_data/layer/my_domain/my_dataset",
                 "EncodingType": "url",
-            }
+            },
         ]
 
         raw_files = self.persistence_adapter.list_raw_files(
@@ -799,9 +797,9 @@ class TestS3FileList:
                     "NextToken": "xxx",
                     "ResponseMetadata": {"key": "value"},
                     "Contents": [
-                        {"Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/"},
+                        {"Key": "schemas/layer/PROTECTED/my_domain/my_dataset/"},
                         {
-                            "Key": "data/schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"
+                            "Key": "schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json"
                         },
                     ],
                     "Name": "my-bucket",
@@ -821,8 +819,8 @@ class TestS3FileList:
             "data/layer/my_domain/my_dataset/",
             "data/layer/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet",
             "data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet",
-            "data/schemas/layer/PROTECTED/my_domain/my_dataset/",
-            "data/schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json",
+            "schemas/layer/PROTECTED/my_domain/my_dataset/",
+            "schemas/layer/PROTECTED/my_domain/my_dataset/1/schema.json",
         ]
 
         calls = [
@@ -830,7 +828,7 @@ class TestS3FileList:
             call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
                 Bucket="my-bucket",
-                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
+                Prefix="schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.get_paginator.return_value.paginate.assert_has_calls(calls)
@@ -855,7 +853,7 @@ class TestS3FileList:
             call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
                 Bucket="my-bucket",
-                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
+                Prefix="schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.get_paginator.return_value.paginate.assert_has_calls(calls)
@@ -878,7 +876,7 @@ class TestS3FileList:
             call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
             call(
                 Bucket="my-bucket",
-                Prefix="data/schemas/layer/PROTECTED/my_domain/my_dataset",
+                Prefix="schemas/layer/PROTECTED/my_domain/my_dataset",
             ),
         ]
         self.mock_s3_client.get_paginator.return_value.paginate.assert_has_calls(calls)

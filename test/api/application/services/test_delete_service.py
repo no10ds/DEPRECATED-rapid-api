@@ -8,8 +8,8 @@ from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     UserError,
 )
-from api.domain.dataset_metadata import DatasetMetadata
 from api.common.config.auth import SensitivityLevel
+from api.domain.dataset_metadata import DatasetMetadata
 
 
 class TestDeleteService:

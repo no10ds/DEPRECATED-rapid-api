@@ -1,10 +1,14 @@
 import os
 import urllib.parse
+from strenum import StrEnum
 from typing import List
 
 from api.common.config.aws import DOMAIN_NAME, RESOURCE_PREFIX, AWS_REGION
 from api.common.config.constants import BASE_API_PATH
-from api.common.utilities import BaseEnum
+from api.common.config.layers import Layer
+from api.common.enum import BaseEnum
+
+ALL = "ALL"
 
 RAPID_ACCESS_TOKEN = "rat"  # nosec B105
 COOKIE_MAX_AGE_IN_SECONDS = 3600
@@ -81,6 +85,13 @@ class SensitivityLevel(BaseEnum):
     @classmethod
     def get_all_values(cls) -> List[str]:
         return [cls.PUBLIC.value, cls.PRIVATE.value, cls.PROTECTED.value]
+
+
+# Creates the possible Layer Permissions from the existing Layer Enum
+LayerPermissions = StrEnum(
+    "LayerPermissions",
+    dict([(layer.upper(), layer.upper()) for layer in [*list(Layer), ALL]]),
+)
 
 
 class SubjectType(BaseEnum):

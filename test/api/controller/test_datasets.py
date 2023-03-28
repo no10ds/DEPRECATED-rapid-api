@@ -93,7 +93,7 @@ class TestDataUpload(BaseClientTest):
         incoming_file_name = "filename.csv"
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
-        job_id = "123-abc"
+        job_id = "abc-123"
         mock_construct_datset_metadata.return_value = DatasetMetadata(
             "layer", "domain", "dataset", 14
         )

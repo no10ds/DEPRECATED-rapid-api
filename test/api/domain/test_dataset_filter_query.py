@@ -47,6 +47,26 @@ def test_returns_tag_filter_list_when_querying_for_tags_with_and_without_values(
     assert query.format_resource_query() == expected_tag_filters
 
 
+def test_returns_layer_filter_when_querying_with_layer():
+    query = DatasetFilters(
+        layer="raw",
+    )
+    expected_tag_filters = [
+        {"Key": "layer", "Values": ["raw"]},
+    ]
+    assert query.format_resource_query() == expected_tag_filters
+
+
+def test_returns_domain_filter_when_querying_with_domain():
+    query = DatasetFilters(
+        domain="test",
+    )
+    expected_tag_filters = [
+        {"Key": "domain", "Values": ["test"]},
+    ]
+    assert query.format_resource_query() == expected_tag_filters
+
+
 def test_returns_tag_filter_list_when_querying_for_sensitivity_level():
     query = DatasetFilters(sensitivity="PUBLIC")
 
@@ -60,6 +80,8 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
         sensitivity="PRIVATE",
         key_value_tags={"tag1": None, "tag2": "value2"},
         key_only_tags=["tag3"],
+        domain="domain",
+        layer="raw",
     )
 
     expected_tag_filters = [
@@ -67,6 +89,8 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
         {"Key": "tag2", "Values": ["value2"]},
         {"Key": "tag3", "Values": []},
         {"Key": "sensitivity", "Values": ["PRIVATE"]},
+        {"Key": "layer", "Values": ["raw"]},
+        {"Key": "domain", "Values": ["domain"]},
     ]
 
     assert query.format_resource_query() == expected_tag_filters

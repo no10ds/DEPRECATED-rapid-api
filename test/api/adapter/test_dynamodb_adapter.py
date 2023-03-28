@@ -124,12 +124,14 @@ class TestDynamoDBAdapterPermissionsTable:
                 type="READ",
                 sensitivity="PROTECTED",
                 domain=domain,
+                layer="LAYER",
             ),
             PermissionItem(
                 id="WRITE_PROTECTED_TRAIN",
                 type="WRITE",
                 sensitivity="PROTECTED",
                 domain=domain,
+                layer="LAYER",
             ),
         ]
 
@@ -145,6 +147,7 @@ class TestDynamoDBAdapterPermissionsTable:
                         "Type": "WRITE",
                         "Sensitivity": "PROTECTED",
                         "Domain": "TRAIN",
+                        "Layer": "LAYER",
                     }
                 ),
                 call(
@@ -155,6 +158,7 @@ class TestDynamoDBAdapterPermissionsTable:
                         "Type": "READ",
                         "Sensitivity": "PROTECTED",
                         "Domain": "TRAIN",
+                        "Layer": "LAYER",
                     }
                 ),
             ),
@@ -181,12 +185,14 @@ class TestDynamoDBAdapterPermissionsTable:
                 type="READ",
                 sensitivity="PROTECTED",
                 domain=domain,
+                layer="LAYER",
             ),
             PermissionItem(
                 id="WRITE_PROTECTED_TRAIN",
                 type="WRITE",
                 sensitivity="PROTECTED",
                 domain=domain,
+                layer="LAYER",
             ),
         ]
         with pytest.raises(
@@ -427,6 +433,7 @@ class TestDynamoDBAdapterPermissionsTable:
                     "Sensitivity": "PROTECTED",
                     "Type": "WRITE",
                     "Domain": "DOMAIN",
+                    "Layer": "LAYER",
                 },
                 {
                     "PK": "PERMISSION",
@@ -435,6 +442,7 @@ class TestDynamoDBAdapterPermissionsTable:
                     "Sensitivity": "PROTECTED",
                     "Type": "READ",
                     "Domain": "DOMAIN",
+                    "Layer": "LAYER",
                 },
             ],
             "Count": 2,
@@ -446,12 +454,14 @@ class TestDynamoDBAdapterPermissionsTable:
                 type="WRITE",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
+                layer="LAYER",
             ),
             PermissionItem(
                 id="READ_PROTECTED_DOMAIN",
                 type="READ",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
+                layer="LAYER",
             ),
         ]
 

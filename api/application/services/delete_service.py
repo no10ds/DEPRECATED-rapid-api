@@ -28,6 +28,7 @@ class DeleteService:
         # 1. Generate a list of file keys from S3 to delete, raw_data, data & schemas
         # 2. Remove keys
         # 3. Delete Glue Tables
+        # 4. Delete crawler
         sensitivity = self.persistence_adapter.get_dataset_sensitivity(
             dataset.layer, dataset.domain, dataset.dataset
         )

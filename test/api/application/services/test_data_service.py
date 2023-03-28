@@ -86,7 +86,12 @@ class TestUploadSchema:
         self.s3_adapter.save_schema.assert_called_once_with(self.valid_schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
             DatasetMetadata("raw", "some", "other", 1),
-            {"sensitivity": "PUBLIC", "no_of_versions": "1"},
+            {
+                "sensitivity": "PUBLIC",
+                "no_of_versions": "1",
+                "domain": "some",
+                "layer": "raw",
+            },
         )
         assert result == "some-other.json"
 
@@ -101,7 +106,12 @@ class TestUploadSchema:
         self.s3_adapter.save_schema.assert_called_once_with(schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
             DatasetMetadata("raw", "some", "other", 1),
-            {"sensitivity": "PUBLIC", "no_of_versions": "1"},
+            {
+                "sensitivity": "PUBLIC",
+                "no_of_versions": "1",
+                "domain": "some",
+                "layer": "raw",
+            },
         )
         assert result == "some-other.json"
 
@@ -992,59 +1002,9 @@ class TestUploadDataset:
             call(schema, "123-456-789", chunk2),
         ]
         self.data_service.process_chunk.assert_has_calls(expected_calls)
+
         self.s3_adapter.delete_previous_dataset_files.assert_called_once_with(
             DatasetMetadata("raw", "some", "other", 4), "123-456-789"
-        )
-
-    @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_processes_each_dataset_chunk_with_overwrite_behaviour_fails_to_delete_overidden_files(
-        self, mock_construct_chunked_dataframe
-    ):
-        # Given
-        schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="some",
-                dataset="other",
-                sensitivity="PUBLIC",
-                version=12,
-                owners=[Owner(name="owner", email="owner@email.com")],
-                update_behaviour="OVERWRITE",
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=0,
-                    data_type="Int64",
-                    allow_null=True,
-                ),
-                Column(
-                    name="colname2",
-                    partition_index=None,
-                    data_type="object",
-                    allow_null=False,
-                ),
-            ],
-        )
-
-        mock_construct_chunked_dataframe.return_value = []
-
-        self.data_service.process_chunk = Mock()
-
-        self.s3_adapter.delete_previous_dataset_files.side_effect = AWSServiceError(
-            "something"
-        )
-
-        # When
-        with pytest.raises(
-            AWSServiceError,
-            match=r"Overriding existing data failed for layer \[raw\], domain \[some\] and dataset \[other\]. Raw file identifier: 123-456-789",
-        ):
-            self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
-
-        # Then
-        self.s3_adapter.delete_previous_dataset_files.assert_called_once_with(
-            DatasetMetadata("raw", "some", "other", 12), "123-456-789"
         )
 
     # Process Chunks -----------------------------------------

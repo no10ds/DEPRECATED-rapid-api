@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, TYPE_CHECKING
 
-from api.common.config.aws import DATA_BUCKET, RESOURCE_PREFIX
+from api.common.config.aws import DATA_BUCKET, RESOURCE_PREFIX, SCHEMAS_LOCATION
 from api.common.config.layers import Layer
 from api.common.logger import AppLogger
 
@@ -44,7 +44,9 @@ class DatasetMetadata:
         return f"raw_data/{self.layer}/{self.domain}/{self.dataset}"
 
     def construct_schema_dataset_location(self, sensitvity: str):
-        return f"data/schemas/{self.layer}/{sensitvity}/{self.domain}/{self.dataset}"
+        return (
+            f"{SCHEMAS_LOCATION}/{self.layer}/{sensitvity}/{self.domain}/{self.dataset}"
+        )
 
     def generate_crawler_name(self) -> str:
         return f"{RESOURCE_PREFIX}_crawler/{self.layer}/{self.domain}/{self.dataset}"

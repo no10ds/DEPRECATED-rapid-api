@@ -51,7 +51,7 @@ class TestDatasetMetadata:
     def test_construct_schema_dataset_location(self):
         assert (
             self.dataset_metadata.construct_schema_dataset_location("PROTECTED")
-            == "data/schemas/layer/PROTECTED/DOMAIN/DATASET"
+            == "schemas/layer/PROTECTED/DOMAIN/DATASET"
         )
 
     def test_set_version_when_version_not_present(self):

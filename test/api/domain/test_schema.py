@@ -90,7 +90,7 @@ class TestSchemaMetadata:
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
 
     def test_creates_metadata_from_s3_key(self):
-        key = "data/schemas/raw/PRIVATE/test_domain/test_dataset/2/schema.json"
+        key = "schemas/raw/PRIVATE/test_domain/test_dataset/2/schema.json"
         result = SchemaMetadata.from_path(key, self.s3_adapter)
 
         assert result.get_layer() == "raw"
@@ -100,7 +100,7 @@ class TestSchemaMetadata:
         assert result.get_sensitivity() == "PRIVATE"
 
     def test_creates_metadata_from_s3_key_for_older_files(self):
-        key = "data/schemas/raw/PRIVATE/test_domain-test_dataset.json"
+        key = "schemas/raw/PRIVATE/test_domain-test_dataset.json"
         result = SchemaMetadata.from_path(key, self.s3_adapter)
 
         assert result.get_layer() == "raw"
@@ -110,7 +110,7 @@ class TestSchemaMetadata:
         assert result.get_sensitivity() == "PRIVATE"
 
     def test_throws_error_if_sensitivity_is_not_found(self):
-        key = "data/schemas/HYPERSECRET/test_domain/test_dataset/2/schema.json"
+        key = "schemas/HYPERSECRET/test_domain/test_dataset/2/schema.json"
 
         with pytest.raises(ValueError):
             SchemaMetadata.from_path(key, self.s3_adapter)
@@ -126,7 +126,7 @@ class TestSchemaMetadata:
         )
         assert (
             schema_metadata.schema_path()
-            == "data/schemas/raw/sensitivity/DOMAIN/DATASET/4/schema.json"
+            == "schemas/raw/sensitivity/DOMAIN/DATASET/4/schema.json"
         )
 
     def test_schema_name(self):
@@ -171,7 +171,12 @@ class TestSchemaMetadata:
             owners=[Owner(name="owner", email="owner@email.com")],
         )
 
-        assert result.get_tags() == {"no_of_versions": "1", "sensitivity": "PUBLIC"}
+        assert result.get_tags() == {
+            "no_of_versions": "1",
+            "sensitivity": "PUBLIC",
+            "layer": "raw",
+            "domain": "domain",
+        }
 
     def test_gets_tags(self):
         provided_key_value_tags = {
@@ -197,6 +202,8 @@ class TestSchemaMetadata:
             **provided_key_value_tags,
             **dict.fromkeys(provided_key_only_tags, ""),
             "sensitivity": "PUBLIC",
+            "domain": "domain",
+            "layer": "raw",
         }
 
 

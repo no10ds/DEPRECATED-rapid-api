@@ -284,6 +284,7 @@ class S3Adapter:
     def _list_all_schemas(self) -> SchemaMetadatas:
         items = self._list_files_from_path(SCHEMAS_LOCATION)
         if len(items) > 0:
+            print("THE ITEM IS ")
             return SchemaMetadatas(
                 [
                     SchemaMetadata.from_path(item, self)

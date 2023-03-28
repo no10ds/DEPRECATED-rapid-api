@@ -68,14 +68,15 @@ def mock_list_schemas_response(
             "NextToken": "xxx",
             "ResponseMetadata": {"key": "value"},
             "Contents": [
-                {"Key": "data/schemas/"},
-                {"Key": f"data/schemas/{layer}/{sensitivity}/"},
+                {"Key": "schemas"},
+                {"Key": f"schemas/{layer}/"},
+                {"Key": f"schemas/{layer}/{sensitivity}/"},
                 {
-                    "Key": f"data/schemas/{layer}/{sensitivity}/{domain}/{dataset}/1/schema.json",
+                    "Key": f"schemas/{layer}/{sensitivity}/{domain}/{dataset}/1/schema.json",
                 },
             ],
             "Name": "bucket-name",
-            "Prefix": "data/schemas",
+            "Prefix": "schemas",
             "EncodingType": "url",
         }
     ]
