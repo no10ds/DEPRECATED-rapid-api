@@ -85,7 +85,12 @@ class TestUploadSchema:
         self.s3_adapter.save_schema.assert_called_once_with(self.valid_schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
             DatasetMetadata("raw", "some", "other", 1),
-            {"sensitivity": "PUBLIC", "no_of_versions": "1"},
+            {
+                "sensitivity": "PUBLIC",
+                "no_of_versions": "1",
+                "domain": "some",
+                "layer": "raw",
+            },
         )
         assert result == "some-other.json"
 
@@ -100,7 +105,12 @@ class TestUploadSchema:
         self.s3_adapter.save_schema.assert_called_once_with(schema)
         self.glue_adapter.create_crawler.assert_called_once_with(
             DatasetMetadata("raw", "some", "other", 1),
-            {"sensitivity": "PUBLIC", "no_of_versions": "1"},
+            {
+                "sensitivity": "PUBLIC",
+                "no_of_versions": "1",
+                "domain": "some",
+                "layer": "raw",
+            },
         )
         assert result == "some-other.json"
 

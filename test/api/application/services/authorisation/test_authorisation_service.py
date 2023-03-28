@@ -62,6 +62,7 @@ class TestSecureDatasetEndpoint:
                 browser_request=browser_request,
                 client_token=client_token,
                 user_token=user_token,
+                layer="layer",
                 domain="mydomain",
                 dataset="mydataset",
             )
@@ -95,6 +96,7 @@ class TestSecureDatasetEndpoint:
                 browser_request=browser_request,
                 client_token=client_token,
                 user_token=None,
+                layer="layer",
                 domain="mydomain",
                 dataset="mydataset",
             )
@@ -118,6 +120,7 @@ class TestSecureDatasetEndpoint:
                 browser_request=browser_request,
                 client_token=client_token,
                 user_token=None,
+                layer="layer",
                 domain="mydomain",
                 dataset="mydataset",
             )
@@ -140,6 +143,7 @@ class TestSecureDatasetEndpoint:
                 browser_request=True,
                 client_token=None,
                 user_token=user_token,
+                layer="layer",
                 domain="mydomain",
                 dataset="mydataset",
             )
@@ -372,43 +376,109 @@ class TestPermissionsMatching:
 
     @patch("api.application.services.authorisation.authorisation_service.s3_adapter")
     @pytest.mark.parametrize(
-        "domain, dataset, sensitivity, token_scopes, endpoint_scopes",
+        "layer, domain, dataset, sensitivity, token_scopes, endpoint_scopes",
         [
             # No endpoint scopes allow anyone access
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_PUBLIC"], []),
-            # Token with correct action and sensitivity privilege
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_PUBLIC"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["READ_PRIVATE"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["WRITE_PUBLIC"], ["WRITE"]),
             (
-                "domain",
-                "dataset",
-                SensitivityLevel.PRIVATE,
-                ["WRITE_PRIVATE"],
-                ["WRITE"],
-            ),
-            # Token with ALL permission
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_ALL"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["READ_ALL"], ["READ"]),
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["WRITE_ALL"], ["WRITE"]),
-            ("domain", "dataset", SensitivityLevel.PRIVATE, ["WRITE_ALL"], ["WRITE"]),
-            # Higher sensitivity levels imply lower ones
-            ("domain", "dataset", SensitivityLevel.PUBLIC, ["READ_PRIVATE"], ["READ"]),
-            (
+                "layer",
                 "domain",
                 "dataset",
                 SensitivityLevel.PUBLIC,
-                ["WRITE_PRIVATE"],
+                ["READ_ALL_PUBLIC"],
+                [],
+            ),
+            # Token with correct action and sensitivity privilege
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PUBLIC,
+                ["READ_ALL_PUBLIC"],
+                ["READ"],
+            ),
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PRIVATE,
+                ["READ_ALL_PRIVATE"],
+                ["READ"],
+            ),
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PUBLIC,
+                ["WRITE_ALL_PUBLIC"],
                 ["WRITE"],
             ),
-            # Standalone scopes (no domain or dataset, different type of action)
-            (None, None, None, ["USER_ADMIN"], ["USER_ADMIN"]),
-            (None, None, None, ["DATA_ADMIN"], ["DATA_ADMIN"]),
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PRIVATE,
+                ["WRITE_ALL_PRIVATE"],
+                ["WRITE"],
+            ),
+            # Token with ALL permission
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PUBLIC,
+                ["READ_ALL"],
+                ["READ"],
+            ),
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PRIVATE,
+                ["READ_ALL"],
+                ["READ"],
+            ),
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PUBLIC,
+                ["WRITE_ALL"],
+                ["WRITE"],
+            ),
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PRIVATE,
+                ["WRITE_ALL"],
+                ["WRITE"],
+            ),
+            # Higher sensitivity levels imply lower ones
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PUBLIC,
+                ["READ_ALL_PRIVATE"],
+                ["READ"],
+            ),
+            (
+                "layer",
+                "domain",
+                "dataset",
+                SensitivityLevel.PUBLIC,
+                ["WRITE_ALL_PRIVATE"],
+                ["WRITE"],
+            ),
+            # Standalone scopes (no layer, domain or dataset, different type of action)
+            (None, None, None, None, ["USER_ADMIN"], ["USER_ADMIN"]),
+            (None, None, None, None, ["DATA_ADMIN"], ["DATA_ADMIN"]),
         ],
     )
     def test_matches_permissions(
         self,
         mock_s3_adapter,
+        layer: str,
         domain: str,
         dataset: str,
         sensitivity: SensitivityLevel,
@@ -417,7 +487,7 @@ class TestPermissionsMatching:
     ):
         mock_s3_adapter.get_dataset_sensitivity.return_value = sensitivity
         try:
-            match_permissions(token_scopes, endpoint_scopes, domain, dataset)
+            match_permissions(token_scopes, endpoint_scopes, layer, domain, dataset)
         except AuthorisationError:
             pytest.fail("Unexpected Unauthorised Error was thrown")
 

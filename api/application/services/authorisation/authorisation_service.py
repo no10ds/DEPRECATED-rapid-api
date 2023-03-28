@@ -170,7 +170,9 @@ def match_permissions(
     dataset: str = None,
 ):
     sensitivity = s3_adapter.get_dataset_sensitivity(layer, domain, dataset)
-    acceptable_scopes = generate_acceptable_scopes(endpoint_scopes, sensitivity, domain)
+    acceptable_scopes = generate_acceptable_scopes(
+        endpoint_scopes, sensitivity, layer, domain
+    )
     if not acceptable_scopes.satisfied_by(permissions):
         AppLogger.info(
             f"Users list of permissions: {permissions} do not match endpoint permissions: {acceptable_scopes}."

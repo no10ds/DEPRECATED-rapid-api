@@ -6,7 +6,11 @@ from api.common.config.layers import LAYERS, get_layers_from_environment
 
 @pytest.mark.parametrize(
     "input, expected",
-    [("raw,curated", ["raw", "curated"]), ("raw", ["raw"])],
+    [
+        ("raw,curated", ["raw", "curated"]),
+        ("RAW,CURATED", ["raw", "curated"]),
+        ("Raw", ["raw"]),
+    ],
 )
 def test_get_layers_from_environment_with_values(
     monkeypatch: MonkeyPatch, input: str, expected: str
