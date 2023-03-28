@@ -1,9 +1,10 @@
 from enum import Enum
-from typing import List, Union
+from typing import List, Optional, Union
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.common.config.layers import Layer
 from api.common.custom_exceptions import BaseAppException
-from api.common.logger import AppLogger
+from api.domain.dataset_metadata import DatasetMetadata
 
 aws_resource_adapter = AWSResourceAdapter()
 
@@ -20,13 +21,12 @@ class BaseEnum(Enum):
         return cls(value)
 
 
-def handle_version_retrieval(domain, dataset, version) -> int:
-    if not version:
-        AppLogger.info(
-            "No version provided by the user. Retrieving the latest version from the crawler."
-        )
-        version = aws_resource_adapter.get_version_from_crawler_tags(domain, dataset)
-    return version
+def construct_dataset_metadata(
+    layer: Layer, domain: str, dataset: str, version: Optional[int] = None
+) -> DatasetMetadata:
+    dataset = DatasetMetadata(layer, domain, dataset, version)
+    dataset.set_version(aws_resource_adapter)
+    return dataset
 
 
 def build_error_message_list(error: Union[Exception, BaseAppException]) -> List[str]:

@@ -5,6 +5,7 @@ import pandas as pd
 
 from api.application.services.schema_validation import validate_schema
 from api.common.config.constants import CONTENT_ENCODING
+from api.common.config.layers import Layer
 from api.common.custom_exceptions import UserError
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
@@ -15,6 +16,7 @@ from api.domain.schema_metadata import Owner, SchemaMetadata
 class SchemaInferService:
     def infer_schema(
         self,
+        layer: Layer,
         domain: str,
         dataset: str,
         sensitivity: str,
@@ -23,6 +25,7 @@ class SchemaInferService:
         dataframe = self._construct_dataframe(file_content)
         schema = Schema(
             metadata=SchemaMetadata(
+                layer=layer,
                 domain=domain,
                 dataset=dataset,
                 sensitivity=sensitivity,

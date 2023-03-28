@@ -18,6 +18,7 @@ class TestSchemaValidation:
     def setup_method(self):
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="someDomain",
                 dataset="otherDataset",
                 sensitivity="PUBLIC",
@@ -60,6 +61,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_no_columns(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -74,6 +76,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_domain_name_containing_hyphen(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test-domain",
                 dataset="dataset",
                 sensitivity="PUBLIC",
@@ -96,6 +99,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_dataset_name_containing_hyphen(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="domain",
                 dataset="test-dataset",
                 sensitivity="PUBLIC",
@@ -118,6 +122,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_empty_column_name(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -139,6 +144,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_invalid_inferred_column_name_from_empty_name(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -160,6 +166,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_duplicate_column_name(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -187,6 +194,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_empty_domain(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -214,6 +222,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_empty_dataset(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="domain",
                 dataset="",
                 sensitivity="PUBLIC",
@@ -241,6 +250,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_empty_sensitivity(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="domain",
                 dataset="dataset",
                 sensitivity="",
@@ -277,6 +287,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_invalid_column_name(self, col_name: str):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="domain",
                 dataset="dataset",
                 sensitivity="PUBLIC",
@@ -298,6 +309,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_duplicate_partition_number(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -325,6 +337,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_with_negative_partition_number(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -354,6 +367,7 @@ class TestSchemaValidation:
     ):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -388,6 +402,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_when_all_columns_are_partitioned(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -415,6 +430,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_when_partitioned_columns_allow_null_values(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -462,6 +478,7 @@ class TestSchemaValidation:
     def test_is_invalid_schema_when_has_not_accepted_data_types(self, data_type: str):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -484,6 +501,7 @@ class TestSchemaValidation:
     def test_is_invalid_when_date_type_column_does_not_define_format(self):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -523,6 +541,7 @@ class TestSchemaValidation:
     ):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -566,6 +585,7 @@ class TestSchemaValidation:
     ):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -596,6 +616,7 @@ class TestSchemaValidation:
     ):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity=provided_sensitivity,
@@ -635,6 +656,7 @@ class TestSchemaValidation:
     ):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity=provided_sensitivity,
@@ -664,6 +686,7 @@ class TestSchemaValidation:
     ):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -703,6 +726,7 @@ class TestSchemaValidation:
     ):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -729,6 +753,7 @@ class TestSchemaValidation:
 
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -759,6 +784,7 @@ class TestSchemaValidation:
 
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -814,6 +840,7 @@ class TestSchemaValidation:
         key_only_tags = [tag.split(":")[0].strip('"') for tag in tags]
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -860,6 +887,7 @@ class TestSchemaValidation:
     ):
         invalid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -893,6 +921,7 @@ class TestSchemaValidation:
         key_only_tags = [tag.split(":")[0].strip('"') for tag in tags]
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -918,6 +947,7 @@ class TestSchemaValidation:
     def test_validate_schema_removes_duplicated_tags(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="other",
                 sensitivity="PUBLIC",
@@ -937,6 +967,7 @@ class TestSchemaValidation:
         )
 
         result_dict = {
+            "layer": "raw",
             "domain": "some",
             "dataset": "other",
             "sensitivity": "PUBLIC",
@@ -977,7 +1008,11 @@ class TestSchemaValidation:
     ):
         invalid_upload_schema = Schema(
             metadata=SchemaMetadata(
-                domain="some", dataset="other", sensitivity="PUBLIC", owners=owners
+                layer="raw",
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=owners,
             ),
             columns=[
                 Column(
@@ -1011,7 +1046,11 @@ class TestSchemaValidation:
     def test_is_invalid_when_schema_for_upload_has_no_owners(self, owners: List[Owner]):
         invalid_upload_schema = Schema(
             metadata=SchemaMetadata(
-                domain="some", dataset="other", sensitivity="PUBLIC", owners=owners
+                layer="raw",
+                domain="some",
+                dataset="other",
+                sensitivity="PUBLIC",
+                owners=owners,
             ),
             columns=[
                 Column(
@@ -1052,6 +1091,7 @@ class TestSchemaValidation:
     def test_is_invalid_when_domain_has_incorrect_format(self, domain):
         invalid_upload_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain=domain,
                 dataset="dataset",
                 sensitivity="PUBLIC",
@@ -1096,6 +1136,7 @@ class TestSchemaValidation:
     def test_is_invalid_when_dataset_has_incorrect_format(self, dataset):
         invalid_upload_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset=dataset,
                 sensitivity="PUBLIC",

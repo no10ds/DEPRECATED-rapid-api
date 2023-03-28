@@ -7,28 +7,28 @@ import boto3
 from botocore.exceptions import ClientError
 
 from api.common.config.aws import (
+    AWS_ACCOUNT,
     AWS_REGION,
     GLUE_CATALOGUE_DB_NAME,
-    GLUE_CRAWLER_ROLE,
     GLUE_CONNECTION_NAME,
-    GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
+    GLUE_CRAWLER_ROLE,
     GLUE_TABLE_PRESENCE_CHECK_INTERVAL,
+    GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     RESOURCE_PREFIX,
-    AWS_ACCOUNT,
 )
 from api.common.custom_exceptions import (
-    CrawlerStartFailsError,
-    CrawlerIsNotReadyError,
-    TableDoesNotExistError,
+    AWSServiceError,
     CrawlerAlreadyExistsError,
     CrawlerCreationError,
-    AWSServiceError,
+    CrawlerIsNotReadyError,
+    CrawlerStartFailsError,
     CrawlerUpdateError,
+    TableDoesNotExistError,
 )
 from api.common.logger import AppLogger
 from api.domain.data_types import DataTypes
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Column, Schema
-from api.domain.storage_metadata import StorageMetaData
 
 
 class GlueAdapter:
@@ -44,18 +44,17 @@ class GlueAdapter:
         self.glue_crawler_role = glue_crawler_role
         self.glue_connection_name = glue_connection_name
 
-    def create_crawler(self, domain: str, dataset: str, tags: Dict[str, str]):
-        data_store = StorageMetaData(domain, dataset)
+    def create_crawler(self, dataset: DatasetMetadata, tags: Dict[str, str]):
         try:
             self.glue_client.create_crawler(
-                Name=self._generate_crawler_name(domain, dataset),
+                Name=dataset.generate_crawler_name(),
                 Role=self.glue_crawler_role,
                 DatabaseName=self.glue_catalogue_db_name,
-                TablePrefix=data_store.glue_table_prefix(),
+                TablePrefix=dataset.glue_table_prefix(),
                 Targets={
                     "S3Targets": [
                         {
-                            "Path": data_store.s3_path(),
+                            "Path": dataset.s3_path(),
                             "ConnectionName": self.glue_connection_name,
                         },
                     ]
@@ -75,47 +74,41 @@ class GlueAdapter:
         except ClientError as error:
             self._handle_crawler_create_error(error)
 
-    def start_crawler(self, domain: str, dataset: str):
+    def start_crawler(self, dataset: DatasetMetadata):
         try:
-            self.glue_client.start_crawler(
-                Name=self._generate_crawler_name(domain, dataset)
-            )
+            self.glue_client.start_crawler(Name=dataset.generate_crawler_name())
         except ClientError:
             raise CrawlerStartFailsError("Failed to start crawler")
 
-    def delete_crawler(self, domain: str, dataset: str):
+    def delete_crawler(self, dataset: DatasetMetadata):
         try:
-            self.glue_client.delete_crawler(
-                Name=self._generate_crawler_name(domain, dataset)
-            )
+            self.glue_client.delete_crawler(dataset.generate_crawler_name())
         except ClientError:
             raise AWSServiceError("Failed to delete crawler")
 
-    def set_crawler_version_tag(
-        self, domain: str, dataset: str, new_version: int
-    ) -> None:
+    def set_crawler_version_tag(self, dataset: DatasetMetadata) -> None:
         try:
             glue_crawler_arn = (
                 "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(
                     region=AWS_REGION,
                     account_id=AWS_ACCOUNT,
-                    glue_crawler=self._generate_crawler_name(domain, dataset),
+                    glue_crawler=dataset.generate_crawler_name(),
                 )
             )
             self.glue_client.tag_resource(
                 ResourceArn=glue_crawler_arn,
-                TagsToAdd={"no_of_versions": str(new_version)},
+                TagsToAdd={"no_of_versions": str(dataset.version)},
             )
 
         except ClientError:
             raise CrawlerUpdateError(
-                f"Failed to update crawler version tag for domain = {domain} dataset = {dataset} version = {new_version}"
+                f"Failed to update crawler version tag for layer = {dataset.layer} domain = {dataset.domain} dataset = {dataset.dataset} version = {dataset.version}"
             )
 
-    def check_crawler_is_ready(self, domain: str, dataset: str) -> None:
-        if self._get_crawler_state(domain, dataset) != "READY":
+    def check_crawler_is_ready(self, dataset: DatasetMetadata) -> None:
+        if self._get_crawler_state(dataset) != "READY":
             raise CrawlerIsNotReadyError(
-                f"Crawler is currently processing for resource_prefix={RESOURCE_PREFIX}, domain={domain} and dataset={dataset}"
+                f"Crawler is currently processing for resource_prefix={RESOURCE_PREFIX}, layer={dataset.layer}, domain={dataset.domain} and dataset={dataset.dataset}"
             )
 
     def update_catalog_table_config(self, schema: Schema) -> None:
@@ -124,9 +117,7 @@ class GlueAdapter:
         ).start()
 
     def update_partition_column_data_types(self, schema: Schema) -> None:
-        table_name = StorageMetaData(
-            schema.get_domain(), schema.get_dataset()
-        ).glue_table_name()
+        table_name = schema.get_dataset_metadata().glue_table_name()
         table_definition = self.get_table_when_created(table_name)
         updated_definition = self.update_glue_table_partition_column_types(
             table_definition, schema.get_partition_columns()
@@ -160,11 +151,10 @@ class GlueAdapter:
         table = self._get_table(table_name)
         return int(table["Table"]["StorageDescriptor"]["Parameters"]["recordCount"])
 
-    def get_tables_for_dataset(self, domain: str, dataset: str) -> List[str]:
-        search_term = StorageMetaData(
-            domain=domain, dataset=dataset
-        ).glue_table_prefix()
-        tables = [item["Name"] for item in self._search_tables(search_term)]
+    def get_tables_for_dataset(self, dataset: DatasetMetadata) -> List[str]:
+        tables = [
+            item["Name"] for item in self._search_tables(dataset.glue_table_prefix())
+        ]
         return tables
 
     def delete_tables(self, table_names: List[str]):
@@ -206,19 +196,16 @@ class GlueAdapter:
             "StorageDescriptor": table_definition["Table"]["StorageDescriptor"],
         }
 
-    def _get_crawler_state(self, domain: str, dataset: str) -> str:
+    def _get_crawler_state(self, dataset: DatasetMetadata) -> str:
         try:
             response = self.glue_client.get_crawler(
-                Name=self._generate_crawler_name(domain, dataset)
+                Name=dataset.generate_crawler_name()
             )
             return response["Crawler"]["State"]
         except ClientError:
             raise AWSServiceError(
-                f"Failed to get crawler state resource_prefix={RESOURCE_PREFIX}, domain = {domain} dataset = {dataset}"
+                f"Failed to get crawler state resource_prefix={RESOURCE_PREFIX}, layer = {dataset.layer}, domain = {dataset.domain} and dataset = {dataset.dataset}"
             )
-
-    def _generate_crawler_name(self, domain: str, dataset: str) -> str:
-        return f"{RESOURCE_PREFIX}_crawler/{domain}/{dataset}"
 
     def _handle_crawler_create_error(self, error: ClientError):
         if error.response["Error"]["Code"] == "AlreadyExistsException":

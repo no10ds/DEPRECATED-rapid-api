@@ -8,6 +8,7 @@ from api.adapter.s3_adapter import S3Adapter
 from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.dataset_filters import DatasetFilters
+from api.domain.dataset_metadata import DatasetMetadata
 
 
 class TestAWSResourceAdapterClientMethods:
@@ -25,14 +26,14 @@ class TestAWSResourceAdapterClientMethods:
                 "ResponseMetadata": {"key": "value"},
                 "ResourceTagMappingList": [
                     {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain1/dataset1",
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/layer/domain1/dataset1",
                         "Tags": [
                             {"Key": "sensitivity", "Value": "PUBLIC"},
                             {"Key": "no_of_versions", "Value": "1"},
                         ],
                     },
                     {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain2/dataset2",
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/layer/domain2/dataset2",
                         "Tags": [
                             {"Key": "tag1", "Value": ""},
                             {"Key": "sensitivity", "Value": "PUBLIC"},
@@ -40,7 +41,7 @@ class TestAWSResourceAdapterClientMethods:
                         ],
                     },
                     {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset",
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/layer/domain3/dataset",
                         "Tags": [
                             {"Key": "tag2", "Value": ""},
                             {"Key": "sensitivity", "Value": "PRIVATE"},
@@ -54,7 +55,7 @@ class TestAWSResourceAdapterClientMethods:
                 "ResponseMetadata": {"key": "value"},
                 "ResourceTagMappingList": [
                     {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_PREFIX_crawler/domain3/dataset3",
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_PREFIX_crawler/layer/domain3/dataset3",
                         "Tags": [
                             {"Key": "tag5", "Value": ""},
                             {"Key": "sensitivity", "Value": "PUBLIC"},
@@ -62,7 +63,7 @@ class TestAWSResourceAdapterClientMethods:
                         ],
                     },
                     {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain3/dataset3",
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/layer/domain3/dataset3",
                         "Tags": [
                             {"Key": "tag5", "Value": ""},
                             {"Key": "sensitivity", "Value": "PUBLIC"},
@@ -70,7 +71,7 @@ class TestAWSResourceAdapterClientMethods:
                         ],
                     },
                     {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_{RESOURCE_PREFIX}_crawler/domain36/dataset3",
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/FAKE_{RESOURCE_PREFIX}_crawler/layer/domain36/dataset3",
                         "Tags": [
                             {"Key": "tag2", "Value": ""},
                             {"Key": "sensitivity", "Value": "PRIVATE"},
@@ -78,7 +79,15 @@ class TestAWSResourceAdapterClientMethods:
                         ],
                     },
                     {
-                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/domain36/dataset3",
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/layer/domain36/dataset3",
+                        "Tags": [
+                            {"Key": "tag2", "Value": ""},
+                            {"Key": "sensitivity", "Value": "PRIVATE"},
+                            {"Key": "no_of_versions", "Value": "10"},
+                        ],
+                    },
+                    {
+                        "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/raw/domain34/dataset2",
                         "Tags": [
                             {"Key": "tag2", "Value": ""},
                             {"Key": "sensitivity", "Value": "PRIVATE"},
@@ -94,6 +103,7 @@ class TestAWSResourceAdapterClientMethods:
 
         expected_metadatas = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
                 domain="domain1",
                 dataset="dataset1",
                 description="",
@@ -101,6 +111,7 @@ class TestAWSResourceAdapterClientMethods:
                 version=1,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
                 domain="domain2",
                 dataset="dataset2",
                 description="",
@@ -108,6 +119,7 @@ class TestAWSResourceAdapterClientMethods:
                 version=2,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
                 domain="domain3",
                 dataset="dataset",
                 description="",
@@ -115,6 +127,7 @@ class TestAWSResourceAdapterClientMethods:
                 version=3,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
                 domain="domain3",
                 dataset="dataset3",
                 description="",
@@ -122,8 +135,17 @@ class TestAWSResourceAdapterClientMethods:
                 version=1,
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
                 domain="domain36",
                 dataset="dataset3",
+                description="",
+                tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "10"},
+                version=10,
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="raw",
+                domain="domain34",
+                dataset="dataset2",
                 description="",
                 tags={"tag2": "", "sensitivity": "PRIVATE", "no_of_versions": "10"},
                 version=10,
@@ -133,6 +155,7 @@ class TestAWSResourceAdapterClientMethods:
         self.resource_boto_client.get_paginator.return_value.paginate.return_value = (
             self.aws_return_value
         )
+        self.s3_adapter.get_dataset_description = Mock(return_value="")
 
         actual_metadatas = self.resource_adapter.get_datasets_metadata(
             self.s3_adapter, query
@@ -231,23 +254,26 @@ class TestAWSResourceAdapterClientMethods:
             self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
 
     @pytest.mark.parametrize(
-        "domain, dataset, expected_version",
+        "layer, domain, dataset, expected_version",
         [
-            ("domain1", "dataset1", 1),
-            ("domain2", "dataset2", 2),
-            ("domain3", "dataset", 3),
-            ("domain3", "dataset3", 1),
-            ("domain36", "dataset3", 10),
+            ("layer", "domain1", "dataset1", 1),
+            ("layer", "domain2", "dataset2", 2),
+            ("layer", "domain3", "dataset", 3),
+            ("layer", "domain3", "dataset3", 1),
+            ("layer", "domain36", "dataset3", 10),
+            ("raw", "domain34", "dataset2", 10),
         ],
     )
-    def test_get_version_from_crawler(self, domain, dataset, expected_version):
+    def test_get_version_from_crawler(
+        self, layer: str, domain: str, dataset: str, expected_version: int
+    ):
 
         self.resource_boto_client.get_paginator.return_value.paginate.return_value = (
             self.aws_return_value
         )
 
         actual_version = self.resource_adapter.get_version_from_crawler_tags(
-            domain, dataset
+            DatasetMetadata(layer, domain, dataset)
         )
 
         assert actual_version == expected_version

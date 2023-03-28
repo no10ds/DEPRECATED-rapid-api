@@ -223,7 +223,7 @@ class TestProtectedDomainService:
 
         self.resource_adapter.get_datasets_metadata.return_value = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="other", dataset="dataset"
+                layer="layer", domain="other", dataset="dataset"
             )
         ]
 
@@ -362,10 +362,10 @@ class TestProtectedDomainService:
         ]
         exisiting_datasets = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain", dataset="dataset"
+                layer="layer", domain="domain", dataset="dataset"
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain", dataset="dataset_two"
+                layer="layer", domain="domain", dataset="dataset_two"
             ),
         ]
 

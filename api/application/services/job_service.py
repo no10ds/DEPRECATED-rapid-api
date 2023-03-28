@@ -7,6 +7,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.common.config.auth import Action
 from api.common.custom_exceptions import AuthorisationError
 from api.common.logger import AppLogger
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.Jobs.Job import JobStep, Job, JobStatus, JobType
 from api.domain.Jobs.QueryJob import QueryJob, QueryStep
 from api.domain.Jobs.UploadJob import UploadJob
@@ -60,20 +61,14 @@ class JobService:
         job_id: str,
         filename: str,
         raw_file_identifier: str,
-        domain: str,
-        dataset: str,
-        version: int,
+        dataset: DatasetMetadata,
     ) -> UploadJob:
-        job = UploadJob(
-            subject_id, job_id, filename, raw_file_identifier, domain, dataset, version
-        )
+        job = UploadJob(subject_id, job_id, filename, raw_file_identifier, dataset)
         self.db_adapter.store_upload_job(job)
         return job
 
-    def create_query_job(
-        self, subject_id: str, domain: str, dataset: str, version: int
-    ) -> QueryJob:
-        job = QueryJob(subject_id, domain, dataset, version)
+    def create_query_job(self, subject_id: str, dataset: DatasetMetadata) -> QueryJob:
+        job = QueryJob(subject_id, dataset)
         self.db_adapter.store_query_job(job)
         return job
 
