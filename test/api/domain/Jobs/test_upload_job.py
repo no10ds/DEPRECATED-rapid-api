@@ -5,14 +5,13 @@ from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.dataset_metadata import DatasetMetadata
 
 
-@patch("api.domain.Jobs.Job.uuid")
 @patch("api.domain.Jobs.UploadJob.time")
-def test_initialise_upload_job(mock_time, mock_uuid):
+def test_initialise_upload_job(mock_time):
     mock_time.time.return_value = 1000
-    mock_uuid.uuid4.return_value = "abc-123"
 
     job = UploadJob(
         "subject-123",
+        "abc-123",
         "some-filename.csv",
         "111-222-333",
         DatasetMetadata("raw", "domain1", "dataset2", 12),

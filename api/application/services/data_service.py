@@ -95,6 +95,7 @@ class DataService:
     def upload_dataset(
         self,
         subject_id: str,
+        job_id: str,
         dataset: DatasetMetadata,
         file_path: Path,
     ) -> Tuple[str, int, str]:
@@ -106,7 +107,7 @@ class DataService:
         else:
             raw_file_identifier = self.generate_raw_file_identifier()
             upload_job = self.job_service.create_upload_job(
-                subject_id, file_path.name, raw_file_identifier, dataset
+                subject_id, job_id, file_path.name, raw_file_identifier, dataset
             )
 
             Thread(
@@ -181,7 +182,7 @@ class DataService:
             self.process_chunk(schema, raw_file_identifier, chunk)
 
         if schema.has_overwrite_behaviour():
-            self._overwrite_existing_data(schema, raw_file_identifier)
+            self.remove_existing_data(schema, raw_file_identifier)
 
         self.glue_adapter.start_crawler(schema.get_dataset_metadata())
         self.glue_adapter.update_catalog_table_config(schema)
@@ -209,20 +210,14 @@ class DataService:
                 f"Temporary upload file for {schema.get_layer()}/{schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
             )
 
-    def _overwrite_existing_data(
-        self, schema: Schema, raw_file_identifier: str
-    ) -> None:
+    def remove_existing_data(self, schema: Schema, raw_file_identifier: str) -> None:
         AppLogger.info(
             f"Overwriting existing data for layer [{schema.get_layer()}], domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]"
         )
-        raw_files = self.s3_adapter.list_raw_files(schema.get_dataset_metadata())
         try:
-            file_to_delete = [
-                file for file in raw_files if not file.startswith(raw_file_identifier)
-            ][0]
-            self.s3_adapter.delete_dataset_files(
+            self.s3_adapter.delete_previous_dataset_files(
                 schema.get_dataset_metadata(),
-                file_to_delete,
+                raw_file_identifier,
             )
         except IndexError:
             AppLogger.warning(

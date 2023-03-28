@@ -29,16 +29,18 @@ class DeleteService:
         # 2. Remove keys
         # 3. Delete Glue Tables
         sensitivity = self.persistence_adapter.get_dataset_sensitivity(
-            dataset.layer, dataset.domain, dataset.domain
+            dataset.layer, dataset.domain, dataset.dataset
         )
         dataset_files = self.persistence_adapter.list_dataset_files(
             dataset, sensitivity
         )
+        # 4. Delete crawler
         self.persistence_adapter.delete_dataset_files_using_key(
             dataset_files, f"{dataset.layer}/{dataset.domain}/{dataset.dataset}"
         )
         tables = self.glue_adapter.get_tables_for_dataset(dataset)
         self.glue_adapter.delete_tables(tables)
+        self.glue_adapter.delete_crawler(dataset)
 
     def _validate_filename(self, filename: str):
         if not re.match(FILENAME_WITH_TIMESTAMP_REGEX, filename):
