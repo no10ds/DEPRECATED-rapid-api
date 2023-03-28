@@ -50,7 +50,7 @@ class AWSResourceAdapter:
     def _filter_for_resource_prefix(self, aws_resources):
         return [
             resource
-            for resource in aws_resources["ResourceTagMappingList"]
+            for resource in aws_resources
             if f":crawler/{RESOURCE_PREFIX}_crawler" in resource["ResourceARN"]
         ]
 
@@ -70,8 +70,13 @@ class AWSResourceAdapter:
 
     def _get_resources(self, resource_types: List[str], tag_filters: List[Dict]):
         AppLogger.info(f"Getting AWS resources with tags {tag_filters}")
-        return self.__resource_client.get_resources(
-            ResourceTypeFilters=resource_types, TagFilters=tag_filters
+        paginator = self.__resource_client.get_paginator("get_resources")
+        page_iterator = paginator.paginate(
+            ResourceTypeFilters=resource_types,
+            TagFilters=tag_filters,
+        )
+        return (
+            item for page in page_iterator for item in page["ResourceTagMappingList"]
         )
 
     def _to_dataset_metadata(
@@ -108,7 +113,7 @@ class AWSResourceAdapter:
         AppLogger.info(
             f"Getting version for layer {dataset.layer} domain {dataset.domain} and dataset {dataset.dataset}"
         )
-        for resource in aws_resources["ResourceTagMappingList"]:
+        for resource in aws_resources:
             if resource["ResourceARN"].endswith(dataset.generate_crawler_name()):
                 crawler_resource = resource
 

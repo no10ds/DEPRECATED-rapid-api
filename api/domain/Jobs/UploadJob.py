@@ -19,11 +19,12 @@ class UploadJob(Job):
     def __init__(
         self,
         subject_id: str,
+        job_id: str,
         filename: str,
         raw_file_identifier: str,
         dataset: DatasetMetadata,
     ):
-        super().__init__(JobType.UPLOAD, UploadStep.INITIALISATION, subject_id)
+        super().__init__(JobType.UPLOAD, UploadStep.INITIALISATION, subject_id, job_id)
         self.filename: str = filename
         self.raw_file_identifier: str = raw_file_identifier
         self.layer: Layer = dataset.layer

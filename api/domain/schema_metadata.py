@@ -69,13 +69,14 @@ class SchemaMetadata(BaseModel):
 
     @classmethod
     def from_path(cls, path: str, s3_adapter: "S3Adapter"):
+        print("This is the path")
+        print(path)
         sensitivity = parse_categorisation(path, SensitivityLevel.values(), "PUBLIC")
         if path.endswith("schema.json"):
             try:
                 data = s3_adapter.retrieve_data(path).read()
                 data_json = json.loads(data)
                 metadata = data_json["metadata"]
-
                 if metadata:
                     return cls(
                         layer=metadata["layer"],

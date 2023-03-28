@@ -25,3 +25,13 @@ def build_error_message_list(error: Union[Exception, BaseAppException]) -> List[
             return [error.message]
     except AttributeError:
         return [str(error)]
+
+
+def strtobool(val):
+    val = val.lower()
+    if val in ("y", "yes", "t", "true", "on", "1"):
+        return True
+    elif val in ("n", "no", "f", "false", "off", "0"):
+        return False
+    else:
+        raise ValueError("invalid truth value %r" % (val,))

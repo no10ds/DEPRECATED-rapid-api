@@ -60,11 +60,12 @@ class JobService:
     def create_upload_job(
         self,
         subject_id: str,
+        job_id: str,
         filename: str,
         raw_file_identifier: str,
         dataset: DatasetMetadata,
     ) -> UploadJob:
-        job = UploadJob(subject_id, filename, raw_file_identifier, dataset)
+        job = UploadJob(subject_id, job_id, filename, raw_file_identifier, dataset)
         self.db_adapter.store_upload_job(job)
         return job
 

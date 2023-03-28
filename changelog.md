@@ -3,6 +3,62 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v6.0.2 - _2023-03-24_
+
+See [v6.0.2] changes
+
+### Fixed
+
+- Fixed a bug concerning dataset uploading with overwrite behaviour, making it much less brittle.
+
+## v6.0.0 - _2023-03-17_
+
+See [v6.0.0] changes
+
+### Fixed
+
+- All required calls in the API are now paginated by Boto3. This fixes some large issues where, when there were more than 50 crawlers in the account the API would fail to retrieve all datasets as the backend call would paginate onto a next page.
+- Fixes an issue where the delete data file endpoint was deleting the raw data file from S3 and now instead deletes the processed file instead.
+- Fixes an issue where the uploaded files were temporarily stored with just the name they were uploaded with, this was causing errors if two identically names files were uploaded within a small window.
+
+### Added
+
+- New optional environment variable `CATALOG_DISABLED` that can be passed to disable the internal data catalog if required.
+- New endpoint that allows for protected domains to be deleted. Can be called using the method `DELETE /api/protected_domains/{domain}`.
+- New endpoint that allows for the entire deletion of a dataset from within rAPId. This new method removes all raw and uploaded data files, any schemas, tables and crawlers. Can be thought of an entire dataset wiping from rAPId. The method can be called using `DELETE /api/datasets/{domain}/{dataset}`.
+
+### Changed
+
+- __Breaking Change__ - Domains are now case insensitive. This fixes an issue where if you created a Protected domain with an uppercase domain and then the same with a lowercase domain the permissions do not match up as they are interpreted as different endpoints. All domains now have to be lower case. To migrate them, you will need to run: `migrations/scripts/v6_domain_case_insensitive.py`.
+- When downloading data the extra Pandas DataFrame index column is not included now.
+- FastAPI has been upgraded to 0.92.0.
+
+### Migration
+
+To migrate from v5 to v6, you will need to run the migration script: `migrations/scripts/v6_domain_case_insensitive.py`.
+
+This can be done by first installing the Python requirements from `requirements.txt` and then running `python migrations/scripts/v6_domain_case_insensitive.py`
+
+You will also need to provide values for the following environment variables, either by defining them in a `.env` file in the repo root or exporting them to the environment where the script is run.
+
+```
+AWS_REGION
+DATA_BUCKET
+RESOURCE_NAME_PREFIX
+AWS_ACCOUNT_ID
+```
+
+[v6.0.0]: https://github.com/no10ds/rapid-api/compare/v5.0.2...v6.0.0
+
+## v5.0.2 - _2023-03-09_
+
+See [v5.0.2] changes
+
+### Fixed
+- Fetching datasets for the UI was only returning write access
+
+[v5.0.2]: https://github.com/no10ds/rapid-api/compare/v5.0.1...v5.0.2
+
 ## v5.0.1 - _2023-02-02_
 
 See [v5.0.1] changes

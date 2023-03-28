@@ -125,9 +125,7 @@ class CognitoAdapter:
                     "subject_name": client["ClientName"],
                     "type": "CLIENT",
                 }
-                for client in self.cognito_client.list_user_pool_clients(
-                    UserPoolId=COGNITO_USER_POOL_ID
-                )["UserPoolClients"]
+                for client in self._list_user_pool_clients(COGNITO_USER_POOL_ID)
             ]
 
             users = [
@@ -137,9 +135,7 @@ class CognitoAdapter:
                     "subject_name": user["Username"],
                     "type": "USER",
                 }
-                for user in self.cognito_client.list_users(
-                    UserPoolId=COGNITO_USER_POOL_ID,
-                )["Users"]
+                for user in self._list_users(COGNITO_USER_POOL_ID)
             ]
 
             return [*clients, *users]
@@ -160,12 +156,9 @@ class CognitoAdapter:
         if client_name == self.placeholder_client_name:
             raise UserError("You must specify a valid client name")
 
-        existing_clients = self.cognito_client.list_user_pool_clients(
-            UserPoolId=COGNITO_USER_POOL_ID
-        )
+        existing_clients = self._list_user_pool_clients(COGNITO_USER_POOL_ID)
         existing_client_names = [
-            client.get("ClientName")
-            for client in existing_clients.get("UserPoolClients", [])
+            client.get("ClientName") for client in existing_clients
         ]
         if client_name in existing_client_names:
             raise UserError(f"Client name '{client_name}' already exists")
@@ -191,6 +184,16 @@ class CognitoAdapter:
             permissions=client_request.get_permissions(),
         )
         return client_response
+
+    def _list_user_pool_clients(self, user_pool_id: str):
+        paginator = self.cognito_client.get_paginator("list_user_pool_clients")
+        page_iterator = paginator.paginate(UserPoolId=user_pool_id)
+        return (item for page in page_iterator for item in page["UserPoolClients"])
+
+    def _list_users(self, user_pool_id: str):
+        paginator = self.cognito_client.get_paginator("list_users")
+        page_iterator = paginator.paginate(UserPoolId=user_pool_id)
+        return (item for page in page_iterator for item in page["Users"])
 
     def _get_attribute_value(self, attribute_name: str, attributes: List[dict]):
         response_list = [attr for attr in attributes if attr["Name"] == attribute_name]
