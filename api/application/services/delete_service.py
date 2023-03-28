@@ -35,6 +35,7 @@ class DeleteService:
         dataset_files = self.persistence_adapter.list_dataset_files(
             dataset, sensitivity
         )
+        # 4. Delete crawler
         self.persistence_adapter.delete_dataset_files_using_key(
             dataset_files, f"{dataset.layer}/{dataset.domain}/{dataset.dataset}"
         )

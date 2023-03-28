@@ -28,6 +28,7 @@ from api.controller.auth import auth_router
 from api.controller.client import client_router
 from api.controller.datasets import datasets_router
 from api.controller.jobs import jobs_router
+from api.controller.layers import layers_router
 from api.controller.permissions import permissions_router
 from api.controller.protected_domain import protected_domain_router
 from api.controller.schema import schema_router
@@ -67,6 +68,7 @@ app.include_router(protected_domain_router)
 app.include_router(subjects_router)
 app.include_router(jobs_router)
 app.include_router(table_router)
+app.include_router(layers_router)
 
 
 @app.on_event("startup")

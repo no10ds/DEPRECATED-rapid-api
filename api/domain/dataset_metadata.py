@@ -51,18 +51,15 @@ class DatasetMetadata:
     def generate_crawler_name(self) -> str:
         return f"{RESOURCE_PREFIX}_crawler/{self.layer}/{self.domain}/{self.dataset}"
 
-    def get_latest_version(self, aws_resource_adapter: "AWSResourceAdapter") -> int:
-        return aws_resource_adapter.get_version_from_crawler_tags(self)
-
     def string_representation(self) -> str:
         if self.version:
             return f"layer [{self.layer}], domain [{self.domain}], dataset [{self.dataset}] and version [{self.version}]"
         else:
             return f"layer [{self.layer}], domain [{self.domain}] and dataset [{self.dataset}]"
 
-    def handle_version_retrieval(self, aws_resource_adapter: "AWSResourceAdapter"):
+    def set_version(self, aws_resource_adapter: "AWSResourceAdapter"):
         if not self.version:
             AppLogger.info(
                 "No version provided by the user. Retrieving the latest version from the crawler."
             )
-            self.version = self.get_latest_version(aws_resource_adapter)
+            self.version = aws_resource_adapter.get_version_from_crawler_tags(self)

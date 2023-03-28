@@ -167,8 +167,7 @@ class S3Adapter:
     def delete_previous_dataset_files(
         self, dataset: DatasetMetadata, raw_file_identifier: str
     ):
-        file_location = dataset.file_location()
-        files = self._list_files_from_path(file_location)
+        files = self._list_files_from_path(dataset.file_location())
         files_to_delete = [
             file
             for file in files
@@ -243,6 +242,8 @@ class S3Adapter:
             page_iterator = paginator.paginate(
                 Bucket=self.__s3_bucket, Prefix=file_path
             )
+            print(page_iterator)
+            print("This is the page iterator")
             return [item["Key"] for page in page_iterator for item in page["Contents"]]
         except KeyError:
             return []

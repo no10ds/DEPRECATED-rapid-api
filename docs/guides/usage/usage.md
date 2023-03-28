@@ -108,7 +108,7 @@ output of this endpoint in the Schema Upload endpoint.
 
 | Parameters    | Usage                                   | Example values               | Definition                 |
 |---------------|-----------------------------------------|------------------------------|----------------------------|
-| `layer`       | URL parameter                           | `default`                    | layer       of the dataset |
+| `layer`       | URL parameter                           | `default`                    | layer of the dataset       |
 | `sensitivity` | URL parameter                           | `PUBLIC, PRIVATE, PROTECTED` | sensitivity of the dataset |
 | `domain`      | URL parameter                           | `land`                       | domain of the dataset      |
 | `dataset`     | URL parameter                           | `train_journeys`             | dataset title              |
@@ -693,7 +693,7 @@ Data can be queried provided data has been uploaded at some point in the past an
 
 | Parameters | Required | Usage             | Example values   | Definition            |
 |------------|----------|-------------------|------------------|-----------------------|
-| `layer`    | True     | URL parameter     | `defalt`         | layer of the dataset  |
+| `layer`    | True     | URL parameter     | `default`        | layer of the dataset  |
 | `domain`   | True     | URL parameter     | `space`          | domain of the dataset |
 | `dataset`  | True     | URL parameter     | `rocket_lauches` | dataset title         |
 | `version`  | False    | Query parameter   | `3`              | dataset version       |
@@ -1297,6 +1297,30 @@ List of subjects:
 ### Accepted permissions
 
 In order to use this endpoint you need the `USER_ADMIN` permission
+
+## List layers
+
+Use this endpoint to retrieve list of layers for this rAPId instance.
+
+### General structure
+
+`GET /layers`
+
+### Outputs
+
+List of layers:
+
+```json
+[
+  "raw",
+  "staging",
+  "presentation"
+]
+```
+
+### Accepted permissions
+
+Any level of permission will grant you access to this endpoint.
 
 [//]: # (Job management)
 

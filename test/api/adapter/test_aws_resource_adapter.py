@@ -207,6 +207,7 @@ class TestAWSResourceAdapterClientMethods:
             self.aws_return_value
         )
         self.s3_adapter.get_dataset_description = Mock(return_value="")
+
         actual_metadatas = self.resource_adapter.get_datasets_metadata(
             self.s3_adapter, query
         )

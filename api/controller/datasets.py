@@ -143,7 +143,7 @@ async def get_dataset_info(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -198,7 +198,7 @@ async def list_raw_files(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -304,7 +304,7 @@ async def delete_data_file(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -368,7 +368,7 @@ def upload_data(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -486,7 +486,7 @@ async def query_dataset(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -577,7 +577,7 @@ async def query_large_dataset(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 

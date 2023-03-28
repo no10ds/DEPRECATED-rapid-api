@@ -725,7 +725,7 @@ class TestS3FileList:
                 "NextToken": "xxx",
                 "ResponseMetadata": {"key": "value"},
                 "Name": "my-bucket",
-                "Prefix": "raw_data/my_domain/my_dataset",
+                "Prefix": "raw_data/layer/my_domain/my_dataset",
                 "EncodingType": "url",
             },
         ]

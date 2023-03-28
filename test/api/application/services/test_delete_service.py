@@ -114,7 +114,7 @@ class TestDeleteService:
     def test_delete_filename_error_for_bad_filenames(self, filename: str):
         with pytest.raises(UserError, match=f"Invalid file name \\[{filename}\\]"):
             self.delete_service.delete_dataset_file(
-                DatasetMetadata("later", "domain", "dataset", 1), filename
+                DatasetMetadata("layer", "domain", "dataset", 1), filename
             )
 
     def test_delete_dataset(self):
