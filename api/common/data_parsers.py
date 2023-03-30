@@ -1,3 +1,4 @@
+import os
 import re
 import psutil
 from typing import List, Any
@@ -15,6 +16,7 @@ from api.common.config.constants import (
     PARQUET_CHUNK_SIZE,
     CONTENT_ENCODING,
 )
+from api.domain.schema import Schema
 
 CHUNK_SIZE = 200_000
 
@@ -87,3 +89,18 @@ def construct_chunked_dataframe(
     elif extension == "parquet":
         parquet_file = pq.ParquetFile(file_path.as_posix())
         return parquet_file.iter_batches(batch_size=CHUNK_SIZE)
+
+
+def delete_incoming_raw_file(
+    schema: Schema, file_path: Path, raw_file_identifier: str = None
+):
+    raw_file_identifier_string = f"Raw file identifier: {raw_file_identifier}"
+    try:
+        os.remove(file_path.name)
+        AppLogger.info(
+            f"""Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted. {raw_file_identifier_string if raw_file_identifier is not None else ''}"""
+        )
+    except (FileNotFoundError, TypeError) as error:
+        AppLogger.error(
+            f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. {raw_file_identifier_string if raw_file_identifier is not None else ''}. Detail: {error}"
+        )

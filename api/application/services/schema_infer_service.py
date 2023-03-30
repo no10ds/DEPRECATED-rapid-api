@@ -6,7 +6,10 @@ import pyarrow as pa
 
 from api.application.services.schema_validation import validate_schema
 from api.common.custom_exceptions import UserError
-from api.common.data_parsers import construct_chunked_dataframe
+from api.common.data_parsers import (
+    construct_chunked_dataframe,
+    delete_incoming_raw_file,
+)
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema, Column
@@ -22,9 +25,6 @@ class SchemaInferService:
         file_path: Path,
     ) -> dict[str, Any]:
         dataframe = self._construct_dataframe(file_path)
-
-        print(dataframe.info())
-
         schema = Schema(
             metadata=SchemaMetadata(
                 domain=domain,
@@ -35,6 +35,7 @@ class SchemaInferService:
             columns=self._infer_columns(dataframe),
         )
         validate_schema(schema)
+        delete_incoming_raw_file(schema, file_path)
         return schema.dict(exclude={"metadata": {"version"}})
 
     def transform_to_nullable_data_type(self, data_type_name: str) -> str:

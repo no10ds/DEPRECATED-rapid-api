@@ -1,4 +1,3 @@
-import os
 import uuid
 from pathlib import Path
 from threading import Thread
@@ -31,7 +30,10 @@ from api.common.custom_exceptions import (
     UnprocessableDatasetError,
     QueryExecutionError,
 )
-from api.common.data_parsers import construct_chunked_dataframe
+from api.common.data_parsers import (
+    construct_chunked_dataframe,
+    delete_incoming_raw_file,
+)
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval, build_error_message_list
 from api.domain.Jobs.QueryJob import QueryJob, QueryStep
@@ -132,14 +134,14 @@ class DataService:
             self.job_service.update_step(job, UploadStep.DATA_UPLOAD)
             self.process_chunks(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.CLEAN_UP)
-            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.NONE)
             self.job_service.succeed(job)
         except Exception as error:
             AppLogger.error(
                 f"Processing upload failed for {schema.get_domain()}, dataset {schema.get_dataset()}, and version {schema.get_version()}: {error}"
             )
-            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             self.job_service.fail(job, build_error_message_list(error))
             raise error
 
@@ -172,7 +174,7 @@ class DataService:
             except DatasetValidationError as error:
                 dataset_errors.update(error.message)
         if dataset_errors:
-            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             raise DatasetValidationError(list(dataset_errors))
 
     def process_chunks(
@@ -205,19 +207,6 @@ class DataService:
     def update_table_config(self, domain: str, dataset: str) -> None:
         schema = self.s3_adapter.find_schema(domain, dataset, 1)
         self.glue_adapter.update_catalog_table_config(schema)
-
-    def delete_incoming_raw_file(
-        self, schema: Schema, file_path: Path, raw_file_identifier: str
-    ):
-        try:
-            os.remove(file_path.name)
-            AppLogger.info(
-                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted. Raw file identifier: {raw_file_identifier}"
-            )
-        except (FileNotFoundError, TypeError) as error:
-            AppLogger.error(
-                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
-            )
 
     def remove_existing_data(self, schema: Schema, raw_file_identifier: str) -> None:
         AppLogger.info(
