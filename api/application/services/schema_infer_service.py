@@ -1,11 +1,12 @@
-from io import StringIO
-from typing import List, Union, Any
+from typing import List, Any
+from pathlib import Path
 
 import pandas as pd
+import pyarrow as pa
 
 from api.application.services.schema_validation import validate_schema
-from api.common.config.constants import CONTENT_ENCODING
 from api.common.custom_exceptions import UserError
+from api.common.data_parsers import construct_chunked_dataframe
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema, Column
@@ -18,9 +19,12 @@ class SchemaInferService:
         domain: str,
         dataset: str,
         sensitivity: str,
-        file_content: Union[bytes, str],
+        file_path: Path,
     ) -> dict[str, Any]:
-        dataframe = self._construct_dataframe(file_content)
+        dataframe = self._construct_dataframe(file_path)
+
+        print(dataframe.info())
+
         schema = Schema(
             metadata=SchemaMetadata(
                 domain=domain,
@@ -40,10 +44,12 @@ class SchemaInferService:
             data_type_name = "boolean"
         return data_type_name
 
-    def _construct_dataframe(self, file_content: Union[bytes, str]) -> pd.DataFrame:
-        parsed_contents = StringIO(str(file_content, CONTENT_ENCODING))
+    def _construct_dataframe(self, file_path: Path) -> pd.DataFrame:
         try:
-            return pd.read_csv(parsed_contents, encoding=CONTENT_ENCODING, sep=",")
+            for chunk in construct_chunked_dataframe(file_path):
+                # If the return chunk is of a pyarrow.RecordBatch convert to Pandas DataFrame
+                df = chunk.to_pandas() if isinstance(chunk, pa.RecordBatch) else chunk
+                return df
         except ValueError as error:
             raise UserError(
                 f"The dataset you have provided is not formatted correctly: {self._clean_error(error.args[0])}"

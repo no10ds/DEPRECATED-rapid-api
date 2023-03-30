@@ -1,8 +1,6 @@
 import os
-from pathlib import Path
 from typing import Optional
 
-import psutil
 from fastapi import APIRouter, Request
 from fastapi import UploadFile, File, Response, Security
 from fastapi import status as http_status
@@ -21,6 +19,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
+from api.common.data_parsers import store_file_to_disk
 from api.common.utilities import strtobool
 from api.common.config.auth import Action
 from api.common.config.constants import (
@@ -28,6 +27,7 @@ from api.common.config.constants import (
     LOWERCASE_ROUTE_DESCRIPTION,
     LOWERCASE_REGEX,
     VALID_FILE_MIME_TYPES,
+    VALID_FILE_EXTENSIONS,
 )
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
@@ -366,14 +366,18 @@ def upload_data(
 
     """
     try:
-        if file.content_type not in VALID_FILE_MIME_TYPES:
+        extension = file.filename.split(".")[-1].lower()
+        if (
+            file.content_type not in VALID_FILE_MIME_TYPES
+            and extension not in VALID_FILE_EXTENSIONS
+        ):
             raise InvalidFileUploadError(
-                f"This file type {file.content_type}, is not supported."
+                f"This file type {extension}, is not supported."
             )
 
         subject_id = get_subject_id(request)
         job_id = generate_uuid()
-        incoming_file_path = store_file_to_disk(job_id, file)
+        incoming_file_path = store_file_to_disk(extension, job_id, file)
         raw_filename, version, job_id = data_service.upload_dataset(
             subject_id, job_id, domain, dataset, version, incoming_file_path
         )
@@ -390,24 +394,6 @@ def upload_data(
     except SchemaNotFoundError as error:
         AppLogger.warning("Schema not found: %s", error.args[0])
         raise UserError(message=error.args[0])
-
-
-def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
-    file_path = Path(f"{id}-{file.filename}")
-    chunk_size_mb = 50
-    mb_1 = 1024 * 1024
-
-    with open(file_path, "wb") as incoming_file:
-        while contents := file.file.read(mb_1 * chunk_size_mb):
-            AppLogger.info(
-                f"Writing incoming file chunk ({chunk_size_mb}MB) to disk [{file.filename}]"
-            )
-            AppLogger.info(
-                f"Available disk space: {psutil.disk_usage('/').free / (2 ** 30)}GB"
-            )
-            incoming_file.write(contents)
-
-    return file_path
 
 
 @datasets_router.post(

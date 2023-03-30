@@ -6,7 +6,7 @@ from time import sleep
 from typing import List, Optional, Tuple
 
 import pandas as pd
-from pandas.io.parsers import TextFileReader
+import pyarrow as pa
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
@@ -19,7 +19,7 @@ from api.application.services.partitioning_service import generate_partitioned_d
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
 from api.common.config.auth import SensitivityLevel
-from api.common.config.constants import CONTENT_ENCODING, DATASET_QUERY_LIMIT
+from api.common.config.constants import DATASET_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
@@ -31,6 +31,7 @@ from api.common.custom_exceptions import (
     UnprocessableDatasetError,
     QueryExecutionError,
 )
+from api.common.data_parsers import construct_chunked_dataframe
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval, build_error_message_list
 from api.domain.Jobs.QueryJob import QueryJob, QueryStep
@@ -47,10 +48,6 @@ from api.domain.storage_metadata import StorageMetaData
 
 FIRST_SCHEMA_VERSION_NUMBER = 1
 SCHEMA_VERSION_INCREMENT = 1
-
-
-def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
-    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=200_000)
 
 
 class DataService:
@@ -168,6 +165,8 @@ class DataService:
         )
         dataset_errors = set()
         for chunk in construct_chunked_dataframe(file_path):
+            # If the return chunk is of a pyarrow.RecordBatch convert to Pandas DataFrame
+            chunk = chunk.to_pandas() if isinstance(chunk, pa.RecordBatch) else chunk
             try:
                 build_validated_dataframe(schema, chunk)
             except DatasetValidationError as error:
@@ -183,6 +182,8 @@ class DataService:
             f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()}"
         )
         for chunk in construct_chunked_dataframe(file_path):
+            # If the return chunk is of a pyarrow.RecordBatch convert to Pandas DataFrame
+            chunk = chunk.to_pandas() if isinstance(chunk, pa.RecordBatch) else chunk
             self.process_chunk(schema, raw_file_identifier, chunk)
 
         if schema.has_overwrite_behaviour():
