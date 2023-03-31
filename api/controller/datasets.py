@@ -411,6 +411,7 @@ def upload_data(
                 "text/csv": {
                     "example": 'col1;col2;col3\n"123","something","500"\n"456","something else","600"'
                 },
+                "application/octet-stream": {},
             }
         }
     },
@@ -472,6 +473,13 @@ async def query_dataset(
     0,"value1","value2"
     ...
     ```
+
+    ### Parquet
+
+    To get a Parquet response, the `Accept` Header has to be set to `application/octet-stream`, this can be set below. The response will be the raw Parquet
+    binary result.
+
+    We recommend using this in a programmatic sense.
 
     ### Accepted permissions
 
@@ -546,6 +554,8 @@ async def query_large_dataset(
 def _format_query_output(df: DataFrame, mime_type: MimeType) -> Response:
     formatted_output = FormatService.from_df_to_mimetype(df, mime_type)
     if mime_type == MimeType.TEXT_CSV:
+        return PlainTextResponse(status_code=200, content=formatted_output)
+    elif mime_type == MimeType.BINARY:
         return PlainTextResponse(status_code=200, content=formatted_output)
     else:
         return formatted_output
