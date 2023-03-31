@@ -842,7 +842,7 @@ class TestQuery(BaseClientTest):
 
         assert response.status_code == 400
         assert response.json() == {
-            "details": "Provided value for Accept header parameter [text/plain] is not supported. Supported formats: application/json, text/csv"
+            "details": "Provided value for Accept header parameter [text/plain] is not supported. Supported formats: application/json, text/csv, application/octet-stream"
         }
 
     @pytest.mark.parametrize(
