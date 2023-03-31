@@ -6,7 +6,7 @@ import pyarrow as pa
 
 from api.application.services.schema_validation import validate_schema
 from api.common.custom_exceptions import UserError
-from api.common.data_parsers import (
+from api.common.data_handlers import (
     construct_chunked_dataframe,
     delete_incoming_raw_file,
 )

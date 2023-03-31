@@ -55,7 +55,7 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
+        mock_store_file_to_disk.assert_called_once_with("csv", job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
             subject_id, job_id, "domain", "dataset", None, incoming_file_path
         )
@@ -100,7 +100,7 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
+        mock_store_file_to_disk.assert_called_once_with("csv", job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
             subject_id, job_id, "domain", "dataset", 2, incoming_file_path
         )
@@ -142,9 +142,7 @@ class TestDataUpload(BaseClientTest):
         )
 
         assert response.status_code == 400
-        assert response.json() == {
-            "details": "This file type text/plain, is not supported."
-        }
+        assert response.json() == {"details": "This file type txt, is not supported."}
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")

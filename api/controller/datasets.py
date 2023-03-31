@@ -19,7 +19,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
-from api.common.data_parsers import store_file_to_disk
+from api.common.data_handlers import store_file_to_disk
 from api.common.utilities import strtobool
 from api.common.config.auth import Action
 from api.common.config.constants import (

@@ -22,7 +22,7 @@ from api.common.custom_exceptions import (
     CrawlerCreationError,
     InvalidFileUploadError,
 )
-from api.common.data_parsers import store_file_to_disk
+from api.common.data_handlers import store_file_to_disk
 from api.common.logger import AppLogger
 from api.domain.Jobs.Job import generate_uuid
 from api.domain.schema import Schema

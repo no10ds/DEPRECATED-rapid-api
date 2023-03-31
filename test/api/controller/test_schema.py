@@ -1,5 +1,6 @@
+from pathlib import Path
 from typing import Tuple, Dict
-from unittest.mock import patch
+from unittest.mock import patch, ANY
 
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
@@ -374,7 +375,11 @@ class TestSchemaUpdate(BaseClientTest):
 
 class TestSchemaGeneration(BaseClientTest):
     @patch.object(SchemaInferService, "infer_schema")
-    def test_returns_schema_from_a_csv_file(self, mock_infer_schema):
+    @patch("api.controller.schema.store_file_to_disk")
+    @patch("api.controller.schema.generate_uuid")
+    def test_returns_schema_from_a_csv_file(
+        self, mock_generate_uuid, mock_store_file_to_disk, mock_infer_schema
+    ):
         expected_response = Schema(
             metadata=SchemaMetadata(
                 domain="mydomain",
@@ -401,6 +406,10 @@ class TestSchemaGeneration(BaseClientTest):
         )
         file_content = b"colname1,colname2\nsomething,123\notherthing,456\n\n"
         file_name = "filename.csv"
+        job_id = "abc-123"
+        incoming_file_path = Path(file_name)
+        mock_generate_uuid.return_value = job_id
+        mock_store_file_to_disk.return_value = incoming_file_path
         mock_infer_schema.return_value = expected_response
 
         response = self.client.post(
@@ -409,7 +418,10 @@ class TestSchemaGeneration(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
         mock_infer_schema.assert_called_once_with(
-            "mydomain", "mydataset", "PUBLIC", file_content
+            "mydomain", "mydataset", "PUBLIC", incoming_file_path
+        )
+        mock_store_file_to_disk.assert_called_once_with(
+            "csv", job_id, ANY, to_chunk=True
         )
 
         assert response.status_code == 200
@@ -426,14 +438,20 @@ class TestSchemaGeneration(BaseClientTest):
         )
 
         assert response.status_code == 400
-        assert response.json() == {
-            "details": "This file type text/plain, is not supported."
-        }
+        assert response.json() == {"details": "This file type txt, is not supported."}
 
     @patch.object(SchemaInferService, "infer_schema")
-    def test_bad_request_when_schema_is_invalid(self, mock_infer_schema):
+    @patch("api.controller.schema.store_file_to_disk")
+    @patch("api.controller.schema.generate_uuid")
+    def test_bad_request_when_schema_is_invalid(
+        self, mock_generate_uuid, mock_store_file_to_disk, mock_infer_schema
+    ):
         file_content = b"colname1,colname2\nsomething,123\notherthing,456\n\n"
         file_name = "filename.csv"
+        job_id = "abc-123"
+        incoming_file_path = Path(file_name)
+        mock_generate_uuid.return_value = job_id
+        mock_store_file_to_disk.return_value = incoming_file_path
         error_message = "The schema is wrong"
         mock_infer_schema.side_effect = SchemaValidationError(error_message)
 
@@ -443,7 +461,10 @@ class TestSchemaGeneration(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
         mock_infer_schema.assert_called_once_with(
-            "mydomain", "mydataset", "PUBLIC", file_content
+            "mydomain", "mydataset", "PUBLIC", incoming_file_path
+        )
+        mock_store_file_to_disk.assert_called_once_with(
+            "csv", job_id, ANY, to_chunk=True
         )
 
         assert response.status_code == 400
