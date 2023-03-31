@@ -325,7 +325,7 @@ def upload_data(
     """
     ## Upload dataset
 
-    Given a schema has been uploaded you can upload data which matches that schema. Uploading a CSV file via this endpoint
+    Given a schema has been uploaded you can upload data which matches that schema. Uploading a CSV or Parquet file via this endpoint
     ensures that the data matches the schema and that it is consistent and sanitised. Should any errors be detected during
     upload, these are sent back in the response to facilitate you fixing the issues.
 

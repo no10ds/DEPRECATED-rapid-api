@@ -427,6 +427,59 @@ class TestSchemaGeneration(BaseClientTest):
         assert response.status_code == 200
         assert response.json() == expected_response
 
+    @patch.object(SchemaInferService, "infer_schema")
+    @patch("api.controller.schema.store_file_to_disk")
+    @patch("api.controller.schema.generate_uuid")
+    def test_returns_schema_from_a_parquet_file(
+        self, mock_generate_uuid, mock_store_file_to_disk, mock_infer_schema
+    ):
+        expected_response = Schema(
+            metadata=SchemaMetadata(
+                domain="mydomain",
+                dataset="mydataset",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=None,
+                    data_type="object",
+                    allow_null=True,
+                    format=None,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="Int64",
+                    allow_null=True,
+                    format=None,
+                ),
+            ],
+        )
+        file_content = b"colname1,colname2\nsomething,123\notherthing,456\n\n"
+        file_name = "filename.parquet"
+        job_id = "abc-123"
+        incoming_file_path = Path(file_name)
+        mock_generate_uuid.return_value = job_id
+        mock_store_file_to_disk.return_value = incoming_file_path
+        mock_infer_schema.return_value = expected_response
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/schema/PUBLIC/mydomain/mydataset/generate",
+            files={"file": (file_name, file_content, "application/octest-stream")},
+            headers={"Authorization": "Bearer test-token"},
+        )
+        mock_infer_schema.assert_called_once_with(
+            "mydomain", "mydataset", "PUBLIC", incoming_file_path
+        )
+        mock_store_file_to_disk.assert_called_once_with(
+            "parquet", job_id, ANY, to_chunk=True
+        )
+
+        assert response.status_code == 200
+        assert response.json() == expected_response
+
     def test_bad_request_when_filetype_is_invalid(self):
         file_content = b"some content"
         file_name = "filename.txt"

@@ -135,7 +135,6 @@ def convert_dates_to_ymd(
 def remove_empty_rows(df: pd.DataFrame) -> Tuple[pd.DataFrame, list[str]]:
     error_list = []
     try:
-        print(df)
         df.dropna(how="all", inplace=True)
     except (TypeError, ValueError, KeyError) as error:
         error_list.append(f"Could not drop null values: {error}")

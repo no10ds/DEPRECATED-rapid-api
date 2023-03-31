@@ -57,7 +57,7 @@ async def generate_schema(
     output of this endpoint in the Schema Upload endpoint.
 
     ⚠️ WARNING:
-    - The first 50MB of the uploaded file (regardless of size) are used to infer the schema
+    - The first 50MB if the file is of type csv or the first 10,000 rows if Parquet, of the uploaded file (regardless of size) are used to infer the schema
     - Consider uploading a representative sample of your dataset (e.g.: the first 10,000 rows) instead of uploading the entire large file which could take a long time
 
     ### Inputs
