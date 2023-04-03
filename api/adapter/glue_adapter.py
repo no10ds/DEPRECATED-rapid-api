@@ -46,6 +46,7 @@ class GlueAdapter:
 
     def create_crawler(self, dataset: DatasetMetadata, tags: Dict[str, str]):
         try:
+            default_tags = {"db_name": GLUE_CATALOGUE_DB_NAME}
             self.glue_client.create_crawler(
                 Name=dataset.generate_crawler_name(),
                 Role=self.glue_crawler_role,
@@ -69,7 +70,7 @@ class GlueAdapter:
                         },
                     }
                 ),
-                Tags=tags,
+                Tags={**default_tags, **tags},
             )
         except ClientError as error:
             self._handle_crawler_create_error(error)
