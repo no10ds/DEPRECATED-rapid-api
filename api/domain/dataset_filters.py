@@ -4,7 +4,6 @@ from pydantic.main import BaseModel
 
 from api.common.custom_exceptions import UserError
 from api.common.config.auth import Layer
-from api.common.config.aws import GLUE_CATALOGUE_DB_NAME
 
 
 class DatasetFilters(BaseModel):
@@ -29,15 +28,11 @@ class DatasetFilters(BaseModel):
         ]
 
     def _tag_filters(self) -> List[Dict]:
-        default_tags_dict_list = {"Key": "db_name", "Values": [GLUE_CATALOGUE_DB_NAME]}
-
         key_value_tags_dict_list = self._build_key_value_tags()
 
         key_only_tags_dict_list = self._build_key_only_tags()
 
-        return (
-            default_tags_dict_list + key_value_tags_dict_list + key_only_tags_dict_list
-        )
+        return key_value_tags_dict_list + key_only_tags_dict_list
 
     def _build_key_only_tags(self):
         return [{"Key": key, "Values": []} for key in self.key_only_tags]
