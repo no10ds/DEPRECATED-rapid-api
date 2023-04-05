@@ -17,8 +17,11 @@ from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     secure_endpoint,
     get_subject_id,
+    RAPID_ACCESS_TOKEN,
 )
+from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.data_service import DataService
+from api.application.services.dataset_service import DatasetService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
 from api.common.utilities import strtobool
@@ -49,6 +52,7 @@ s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
 resource_adapter = AWSResourceAdapter()
 data_service = DataService()
+dataset_service = DatasetService()
 delete_service = DeleteService()
 
 
@@ -64,7 +68,9 @@ datasets_router = APIRouter(
     dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_200_OK,
 )
-async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
+async def list_all_datasets(
+    request: Request, tag_filters: DatasetFilters = DatasetFilters()
+):
     """
     ## List datasets
 
@@ -87,7 +93,8 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    return dataset_service.get_authorised_datasets(subject_id, Action.READ)
 
 
 if not CATALOG_DISABLED:
