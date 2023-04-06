@@ -35,13 +35,16 @@ class DatasetService:
         self.s3_adapter = s3_adapter
 
     def get_authorised_datasets(
-        self, subject_id: str, action: Action, show_as_ui_upload_path: bool = False
+        self,
+        subject_id: str,
+        action: Action,
+        tag_filters: DatasetFilters = DatasetFilters(),
     ) -> List[str]:
         permissions = self.dynamodb_adapter.get_permissions_for_subject(subject_id)
         sensitivities_and_domains = self._extract_sensitivities_and_domains(
             permissions, action
         )
-        return self._fetch_datasets(sensitivities_and_domains, show_as_ui_upload_path)
+        return self._fetch_datasets(sensitivities_and_domains, tag_filters)
 
     def _extract_sensitivities_and_domains(
         self, permissions: List[str], action: Action
@@ -63,21 +66,17 @@ class DatasetService:
         return {"protected_domains": protected_domains, "sensitivities": sensitivities}
 
     def _fetch_datasets(
-        self,
-        sensitivities_and_domains: Dict[str, Set[str]],
-        show_as_ui_upload_path: bool,
+        self, sensitivities_and_domains: Dict[str, Set[str]], tag_filters
     ):
         authorised_datasets = list()
 
-        print("SENSITIVIES AND DOMAINS", sensitivities_and_domains)
-
         if len(sensitivities_and_domains.get("sensitivities")) > 0:
             self._extract_datasets_from_sensitivities(
-                authorised_datasets, sensitivities_and_domains, show_as_ui_upload_path
+                authorised_datasets, sensitivities_and_domains, tag_filters
             )
         if len(sensitivities_and_domains.get("protected_domains")) > 0:
             self._extract_datasets_from_protected_domains(
-                authorised_datasets, sensitivities_and_domains, show_as_ui_upload_path
+                authorised_datasets, sensitivities_and_domains, tag_filters
             )
 
         # Now filter the list to only get unique values
@@ -93,39 +92,38 @@ class DatasetService:
         )
 
     def _extract_datasets_from_protected_domains(
-        self, authorised_datasets, sensitivities_and_domains, show_as_ui_upload_path
+        self, authorised_datasets, sensitivities_and_domains, tag_filters
     ):
-        query = DatasetFilters(sensitivity=SensitivityLevel.PROTECTED.value)
+        query = DatasetFilters(
+            sensitivity=SensitivityLevel.PROTECTED.value,
+            key_value_tags=tag_filters.key_value_tags,
+            key_only_tags=tag_filters.key_only_tags,
+        )
         datasets_metadata_list_protected_domains = (
             self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
         )
         for protected_domain in sensitivities_and_domains.get("protected_domains"):
-            [
-                authorised_datasets.append(
-                    dataset.get_ui_upload_path() if show_as_ui_upload_path else dataset
-                )
-                for dataset in datasets_metadata_list_protected_domains
-                if dataset.domain == protected_domain.lower()
-            ]
+            for dataset in datasets_metadata_list_protected_domains:
+                if dataset.domain == protected_domain.lower():
+                    authorised_datasets.append(dataset)
 
     def _extract_datasets_from_sensitivities(
-        self, authorised_datasets, sensitivities_and_domains, show_as_ui_upload_path
+        self, authorised_datasets, sensitivities_and_domains, tag_filters
     ):
         datasets_metadata_list_sensitivities = []
 
         for sensitivity in sensitivities_and_domains.get("sensitivities"):
-            query = DatasetFilters(sensitivity=sensitivity)
+            query = DatasetFilters(
+                sensitivity=sensitivity,
+                key_value_tags=tag_filters.key_value_tags,
+                key_only_tags=tag_filters.key_only_tags,
+            )
             datasets_metadata_list_sensitivities.extend(
                 self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
             )
-            [
-                authorised_datasets.append(
-                    datasets_metadata.get_ui_upload_path()
-                    if show_as_ui_upload_path
-                    else datasets_metadata
-                )
-                for datasets_metadata in datasets_metadata_list_sensitivities
-            ]
+
+            for datasets_metadata in datasets_metadata_list_sensitivities:
+                authorised_datasets.append(datasets_metadata)
 
     def _is_protected_permission(self, permission: str, action: Action) -> bool:
         return permission.startswith(

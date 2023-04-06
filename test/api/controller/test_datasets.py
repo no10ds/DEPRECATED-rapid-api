@@ -8,7 +8,9 @@ from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.data_service import DataService
+from api.application.services.dataset_service import DatasetService
 from api.application.services.delete_service import DeleteService
+from api.common.config.auth import Action
 from api.common.custom_exceptions import (
     UserError,
     DatasetValidationError,
@@ -301,8 +303,16 @@ class TestListDatasets(BaseClientTest):
         self.mock_s3_client = Mock()
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
 
-    @patch.object(AWSResourceAdapter, "get_datasets_metadata")
-    def test_returns_metadata_for_all_datasets(self, mock_get_datasets_metadata):
+    @patch("api.controller.datasets.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
+    def test_returns_metadata_for_all_datasets(
+        self, mock_get_authorised_datasets, mock_parse_token
+    ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
@@ -318,7 +328,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_datasets_metadata.return_value = metadata_response
+        mock_get_authorised_datasets.return_value = metadata_response
 
         expected_response = [
             {
@@ -345,16 +355,23 @@ class TestListDatasets(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        _, kwargs = mock_get_datasets_metadata.call_args
-        assert expected_query == kwargs.get("query")
+        mock_get_authorised_datasets.assert_called_once_with(
+            subject_id, Action.READ, tag_filters=expected_query
+        )
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(AWSResourceAdapter, "get_datasets_metadata")
+    @patch("api.controller.datasets.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
     def test_returns_metadata_for_datasets_with_certain_tags(
-        self, mock_get_datasets_metadata
+        self, mock_get_authorised_datasets, mock_parse_token
     ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
@@ -372,7 +389,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_datasets_metadata.return_value = metadata_response
+        mock_get_authorised_datasets.return_value = metadata_response
 
         expected_response = [
             {
@@ -404,16 +421,23 @@ class TestListDatasets(BaseClientTest):
             json={"tags": tag_filters},
         )
 
-        _, kwargs = mock_get_datasets_metadata.call_args
-        assert expected_query_object == kwargs.get("query")
+        mock_get_authorised_datasets.assert_called_once_with(
+            subject_id, Action.READ, tag_filters=expected_query_object
+        )
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(AWSResourceAdapter, "get_datasets_metadata")
+    @patch("api.controller.datasets.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
     def test_returns_metadata_for_datasets_with_certain_sensitivity(
-        self, mock_get_datasets_metadata
+        self, mock_get_authorised_datasets, mock_parse_token
     ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
@@ -429,7 +453,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_datasets_metadata.return_value = metadata_response
+        mock_get_authorised_datasets.return_value = metadata_response
 
         expected_response = [
             {
@@ -456,9 +480,9 @@ class TestListDatasets(BaseClientTest):
             json={"sensitivity": "PUBLIC"},
         )
 
-        _, kwargs = mock_get_datasets_metadata.call_args
-        assert expected_query_object == kwargs.get("query")
-
+        mock_get_authorised_datasets.assert_called_once_with(
+            subject_id, Action.READ, tag_filters=expected_query_object
+        )
         assert response.status_code == 200
         assert response.json() == expected_response
 

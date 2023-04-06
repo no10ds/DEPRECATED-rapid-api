@@ -94,7 +94,9 @@ async def list_all_datasets(
 
     """
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    return dataset_service.get_authorised_datasets(subject_id, Action.READ)
+    return dataset_service.get_authorised_datasets(
+        subject_id, Action.READ, tag_filters=tag_filters
+    )
 
 
 if not CATALOG_DISABLED:
