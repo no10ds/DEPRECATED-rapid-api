@@ -212,9 +212,7 @@ def migrate_crawlers(layer: str, glue_client, resource_client):
 
 
 def format_tags_acceptably_for_crawler_creation(tags: List[dict]) -> dict:
-    new_default_tags = {"db_name": GLUE_CATALOGUE_DB_NAME}
-    existing_formatted_tags = {tag["Key"]: tag["Value"] for tag in tags}
-    return {**new_default_tags, **existing_formatted_tags}
+    return {tag["Key"]: tag["Value"] for tag in tags}
 
 
 def create_new_crawler(layer: str, crawler_info: dict, glue_client) -> str:
