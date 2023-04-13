@@ -46,7 +46,7 @@ class GlueAdapter:
 
     def create_crawler(self, dataset: DatasetMetadata, tags: Dict[str, str]):
         try:
-            default_tags = {"db_name": GLUE_CATALOGUE_DB_NAME}
+            default_tags = {"resource_prefix": RESOURCE_PREFIX}
             self.glue_client.create_crawler(
                 Name=dataset.generate_crawler_name(),
                 Role=self.glue_crawler_role,

@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, Dict, List, Optional
 import boto3
 from botocore.exceptions import ClientError
 
-from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX, GLUE_CATALOGUE_DB_NAME
+from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX
 from api.common.config.constants import FIRST_SCHEMA_VERSION_NUMBER
 from api.common.custom_exceptions import AWSServiceError, UserError
 from api.common.logger import AppLogger
@@ -69,7 +69,7 @@ class AWSResourceAdapter:
             )
 
     def _get_resources(self, resource_types: List[str], tag_filters: List[Dict]):
-        default_tag_filters = [{"Key": "db_name", "Values": [GLUE_CATALOGUE_DB_NAME]}]
+        default_tag_filters = [{"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]}]
         filters = default_tag_filters + tag_filters
         AppLogger.info(f"Getting AWS resources with tags {filters}")
         paginator = self.__resource_client.get_paginator("get_resources")

@@ -5,7 +5,7 @@ from botocore.exceptions import ClientError
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.s3_adapter import S3Adapter
-from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX, GLUE_CATALOGUE_DB_NAME
+from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
@@ -215,7 +215,7 @@ class TestAWSResourceAdapterClientMethods:
         self.resource_boto_client.get_paginator.assert_called_once_with("get_resources")
         self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"],
-            TagFilters=[{"Key": "db_name", "Values": [GLUE_CATALOGUE_DB_NAME]}],
+            TagFilters=[{"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]}],
         )
 
         assert actual_metadatas == expected_metadatas
@@ -232,7 +232,7 @@ class TestAWSResourceAdapterClientMethods:
         self.resource_boto_client.get_paginator.assert_called_once_with("get_resources")
         self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"],
-            TagFilters=[{"Key": "db_name", "Values": [GLUE_CATALOGUE_DB_NAME]}],
+            TagFilters=[{"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]}],
         )
 
         assert len(actual_metadatas) == 0
@@ -253,7 +253,7 @@ class TestAWSResourceAdapterClientMethods:
         self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"],
             TagFilters=[
-                {"Key": "db_name", "Values": [GLUE_CATALOGUE_DB_NAME]},
+                {"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]},
                 {"Key": "tag1", "Values": ["value1"]},
                 {"Key": "tag2", "Values": []},
             ],

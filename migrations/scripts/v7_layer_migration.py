@@ -254,6 +254,7 @@ def create_new_crawler(layer: str, crawler_info: dict, glue_client) -> str:
         crawler_info["Tags"]
     )
     domain = new_crawler["Name"].split("/")[1]
+    new_crawler["Tags"]["resource_prefix"] = RESOURCE_PREFIX
     new_crawler["Tags"]["domain"] = domain
     new_crawler["Tags"]["layer"] = layer
     glue_client.create_crawler(**new_crawler)
