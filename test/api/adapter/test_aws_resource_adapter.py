@@ -229,7 +229,6 @@ class TestAWSResourceAdapterClientMethods:
             ],
         )
 
-    @pytest.mark.focus
     def test_get_enriched_datasets_metadata(self):
         self.resource_adapter.fetch_resources_from_crawlers = Mock(
             return_value=[
