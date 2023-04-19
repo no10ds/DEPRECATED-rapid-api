@@ -5,6 +5,7 @@ from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import Action
 from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import AWSServiceError, UserError
+from api.domain.dataset_metadata import DatasetMetadata
 from api.entry import _determine_user_ui_actions
 
 from test.api.common.controller_test_utils import BaseClientTest
@@ -59,9 +60,9 @@ class TestDatasetsUI(BaseClientTest):
         mock_parse_token.return_value = mock_token
 
         mock_get_authorised_datasets.return_value = [
-            "domain1/datset1/1",
-            "domain1/datset2/1",
-            "domain2/dataset3/1",
+            DatasetMetadata("layer", "domain1", "datset1", 1),
+            DatasetMetadata("layer", "domain1", "datset2", 1),
+            DatasetMetadata("layer", "domain2", "dataset3", 1),
         ]
 
         response = self.client.get(
@@ -82,9 +83,9 @@ class TestDatasetsUI(BaseClientTest):
         mock_parse_token.return_value = mock_token
 
         mock_get_authorised_datasets.return_value = [
-            "domain1/datset1/1",
-            "domain1/datset2/1",
-            "domain2/dataset3/1",
+            DatasetMetadata("layer", "domain1", "datset1", 1),
+            DatasetMetadata("layer", "domain1", "datset2", 1),
+            DatasetMetadata("layer", "domain2", "dataset3", 1),
         ]
 
         response = self.client.get(
@@ -143,7 +144,7 @@ class TestMethodsUI(BaseClientTest):
         mock_token.subject = "123abc"
         mock_parse_token.return_value = mock_token
 
-        mock_permissions_service.get_subject_permissions.return_value = [
+        mock_permissions_service.get_subject_permission_keys.return_value = [
             "READ_ALL",
             "WRITE_ALL",
             "USER_ADMIN",
@@ -173,7 +174,7 @@ class TestMethodsUI(BaseClientTest):
         mock_token.subject = "123abc"
         mock_parse_token.return_value = mock_token
 
-        mock_permissions_service.get_subject_permissions.side_effect = UserError(
+        mock_permissions_service.get_subject_permission_keys.side_effect = UserError(
             "a message"
         )
 
@@ -195,8 +196,8 @@ class TestMethodsUI(BaseClientTest):
         mock_token.subject = "123abc"
         mock_parse_token.return_value = mock_token
 
-        mock_permissions_service.get_subject_permissions.side_effect = AWSServiceError(
-            "a custom message"
+        mock_permissions_service.get_subject_permission_keys.side_effect = (
+            AWSServiceError("a custom message")
         )
 
         response = self.client.get(

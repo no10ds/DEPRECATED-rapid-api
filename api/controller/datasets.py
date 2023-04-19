@@ -65,7 +65,9 @@ datasets_router = APIRouter(
     dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_200_OK,
 )
-async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
+async def list_all_datasets(
+    tag_filters: DatasetFilters = DatasetFilters(), enriched: Optional[bool] = False
+):
     """
     ## List datasets
 
@@ -88,7 +90,12 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
+    if enriched:
+        return resource_adapter.get_enriched_datasets_metadata(
+            s3_adapter, query=tag_filters
+        )
+    else:
+        return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
 
 
 if not CATALOG_DISABLED:

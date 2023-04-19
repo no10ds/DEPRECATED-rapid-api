@@ -13,9 +13,9 @@ class PermissionItem(BaseModel):
 
     def to_dict(self):
         return {
-            "PermissionName": self.id,
-            "Type": self.type,
-            "Sensitivity": self.sensitivity,
-            "Domain": self.domain,
-            "Layer": self.layer,
+            "id": self.id,
+            "type": self.type,
+            "layer": self.layer,
+            "sensitivity": self.sensitivity,
+            "domain": self.domain,
         }

@@ -324,7 +324,7 @@ class TestRetrievePermissions:
     ):
         token_with_only_db_permissions = Token({"sub": "the-subject-id"})
 
-        mock_db_adapter.get_permissions_for_subject.return_value = [
+        mock_db_adapter.get_permission_keys_for_subject.return_value = [
             "READ_ALL",
             "WRITE_PUBLIC",
         ]
@@ -344,7 +344,7 @@ class TestRetrievePermissions:
             }
         )
 
-        mock_db_adapter.get_permissions_for_subject.side_effect = UserError(
+        mock_db_adapter.get_permission_keys_for_subject.side_effect = UserError(
             message="the message"
         )
 
@@ -363,7 +363,7 @@ class TestRetrievePermissions:
             }
         )
 
-        mock_db_adapter.get_permissions_for_subject.return_value = []
+        mock_db_adapter.get_permission_keys_for_subject.return_value = []
 
         result = retrieve_permissions(token_with_no_permissions)
 

@@ -157,7 +157,7 @@ def check_permissions(
 
 def retrieve_permissions(token: Token) -> List[str]:
     try:
-        return db_adapter.get_permissions_for_subject(token.subject)
+        return db_adapter.get_permission_keys_for_subject(token.subject)
     except UserError:
         return []
 
