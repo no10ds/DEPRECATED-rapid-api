@@ -553,9 +553,7 @@ async def query_large_dataset(
 
 def _format_query_output(df: DataFrame, mime_type: MimeType) -> Response:
     formatted_output = FormatService.from_df_to_mimetype(df, mime_type)
-    if mime_type == MimeType.TEXT_CSV:
-        return PlainTextResponse(status_code=200, content=formatted_output)
-    elif mime_type == MimeType.BINARY:
+    if mime_type in [MimeType.TEXT_CSV, MimeType.BINARY]:
         return PlainTextResponse(status_code=200, content=formatted_output)
     else:
         return formatted_output

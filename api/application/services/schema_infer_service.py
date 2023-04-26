@@ -2,13 +2,13 @@ from typing import List, Any
 from pathlib import Path
 
 import pandas as pd
-import pyarrow as pa
 
 from api.application.services.schema_validation import validate_schema
 from api.common.custom_exceptions import UserError
 from api.common.data_handlers import (
     construct_chunked_dataframe,
     delete_incoming_raw_file,
+    get_dataframe_from_chunk_type,
 )
 from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
@@ -24,7 +24,7 @@ class SchemaInferService:
         sensitivity: str,
         file_path: Path,
     ) -> dict[str, Any]:
-        dataframe = self._construct_dataframe(file_path)
+        dataframe = self._construct_single_chunk_dataframe(file_path)
         schema = Schema(
             metadata=SchemaMetadata(
                 domain=domain,
@@ -34,8 +34,12 @@ class SchemaInferService:
             ),
             columns=self._infer_columns(dataframe),
         )
-        validate_schema(schema)
-        delete_incoming_raw_file(schema, file_path)
+        try:
+            validate_schema(schema)
+        finally:
+            # We need to delete the incoming file from the local file system
+            # regardless of the schema validation was successful or not
+            delete_incoming_raw_file(schema, file_path)
         return schema.dict(exclude={"metadata": {"version"}})
 
     def transform_to_nullable_data_type(self, data_type_name: str) -> str:
@@ -45,12 +49,11 @@ class SchemaInferService:
             data_type_name = "boolean"
         return data_type_name
 
-    def _construct_dataframe(self, file_path: Path) -> pd.DataFrame:
+    def _construct_single_chunk_dataframe(self, file_path: Path) -> pd.DataFrame:
         try:
             for chunk in construct_chunked_dataframe(file_path):
-                # If the return chunk is of a pyarrow.RecordBatch convert to Pandas DataFrame
-                df = chunk.to_pandas() if isinstance(chunk, pa.RecordBatch) else chunk
-                return df
+                # We only validate a schema based on the frist chunk
+                return get_dataframe_from_chunk_type(chunk)
         except ValueError as error:
             raise UserError(
                 f"The dataset you have provided is not formatted correctly: {self._clean_error(error.args[0])}"

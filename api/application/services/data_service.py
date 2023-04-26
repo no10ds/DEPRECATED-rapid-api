@@ -5,7 +5,6 @@ from time import sleep
 from typing import List, Optional, Tuple
 
 import pandas as pd
-import pyarrow as pa
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
@@ -33,6 +32,7 @@ from api.common.custom_exceptions import (
 from api.common.data_handlers import (
     construct_chunked_dataframe,
     delete_incoming_raw_file,
+    get_dataframe_from_chunk_type,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval, build_error_message_list
@@ -167,10 +167,9 @@ class DataService:
         )
         dataset_errors = set()
         for chunk in construct_chunked_dataframe(file_path):
-            # If the return chunk is of a pyarrow.RecordBatch convert to Pandas DataFrame
-            chunk = chunk.to_pandas() if isinstance(chunk, pa.RecordBatch) else chunk
+            dataframe = get_dataframe_from_chunk_type(chunk)
             try:
-                build_validated_dataframe(schema, chunk)
+                build_validated_dataframe(schema, dataframe)
             except DatasetValidationError as error:
                 dataset_errors.update(error.message)
         if dataset_errors:
@@ -184,9 +183,8 @@ class DataService:
             f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()}"
         )
         for chunk in construct_chunked_dataframe(file_path):
-            # If the return chunk is of a pyarrow.RecordBatch convert to Pandas DataFrame
-            chunk = chunk.to_pandas() if isinstance(chunk, pa.RecordBatch) else chunk
-            self.process_chunk(schema, raw_file_identifier, chunk)
+            dataframe = get_dataframe_from_chunk_type(chunk)
+            self.process_chunk(schema, raw_file_identifier, dataframe)
 
         if schema.has_overwrite_behaviour():
             self.remove_existing_data(schema, raw_file_identifier)

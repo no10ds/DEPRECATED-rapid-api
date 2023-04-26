@@ -75,6 +75,8 @@ class TestStoreCSVFileToDisk:
         assert_frame_equal(df1, df2)
         os.remove(temp_out_path)
 
+
+class TestStoreParquetFileToDisk:
     def test_store_parquet_file_to_disk(self):
         file_data = open("./test/api/resources/test_parquet.parquet", "rb")
         mock_file = UploadFile(filename="test.parquet", file=file_data)

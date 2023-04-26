@@ -66,18 +66,34 @@ def store_parquet_file_to_disk(
 
 def construct_chunked_dataframe(
     file_path: Path,
-) -> TextFileReader | Any:
+) -> TextFileReader | Any | None:
     # Loads the file from the local path and splits into each dataframe chunk for processing
     # when loading csv Pandas returns an IO iterable TextFileReader but for a Pyarrow chunking
-    # it retuns an iterable of pyarrow.RecordBatch
+    # it retuns an iterable of pyarrow.RecordBatch, we then pass this through the extra function
+    # to return a dataframe compatiable format
     extension = file_path.as_posix().split(".")[-1].lower()
     if extension == "csv":
-        return pd.read_csv(
+        chunk = pd.read_csv(
             file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=CHUNK_SIZE
         )
+        return chunk
+        # return get_dataframe_from_chunk_type(chunk)
     elif extension == "parquet":
         parquet_file = pq.ParquetFile(file_path.as_posix())
-        return parquet_file.iter_batches(batch_size=CHUNK_SIZE)
+        chunk = parquet_file.iter_batches(batch_size=CHUNK_SIZE)
+        # return get_dataframe_from_chunk_type(chunk)
+        return chunk
+
+
+def get_dataframe_from_chunk_type(
+    chunk: TextFileReader | Any,
+) -> pd.DataFrame:
+    # Work out the processing that may need to occur on a chunk to get it into a Pandas compatible format
+    # for csv this is TextFileReader for Pyarrow Parquet we need to perform a to_pandas()
+    if isinstance(chunk, pd.DataFrame):
+        return chunk
+    elif isinstance(chunk, pa.RecordBatch):
+        return chunk.to_pandas()
 
 
 def delete_incoming_raw_file(
