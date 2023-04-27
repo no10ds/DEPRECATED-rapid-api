@@ -69,11 +69,13 @@ class AWSResourceAdapter:
             )
 
     def _get_resources(self, resource_types: List[str], tag_filters: List[Dict]):
-        AppLogger.info(f"Getting AWS resources with tags {tag_filters}")
+        default_tag_filters = [{"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]}]
+        filters = default_tag_filters + tag_filters
+        AppLogger.info(f"Getting AWS resources with tags {filters}")
         paginator = self.__resource_client.get_paginator("get_resources")
         page_iterator = paginator.paginate(
             ResourceTypeFilters=resource_types,
-            TagFilters=tag_filters,
+            TagFilters=filters,
         )
         return (
             item for page in page_iterator for item in page["ResourceTagMappingList"]

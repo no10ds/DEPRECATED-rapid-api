@@ -214,7 +214,8 @@ class TestAWSResourceAdapterClientMethods:
 
         self.resource_boto_client.get_paginator.assert_called_once_with("get_resources")
         self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
-            ResourceTypeFilters=["glue:crawler"], TagFilters=[]
+            ResourceTypeFilters=["glue:crawler"],
+            TagFilters=[{"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]}],
         )
 
         assert actual_metadatas == expected_metadatas
@@ -230,7 +231,8 @@ class TestAWSResourceAdapterClientMethods:
 
         self.resource_boto_client.get_paginator.assert_called_once_with("get_resources")
         self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
-            ResourceTypeFilters=["glue:crawler"], TagFilters=[]
+            ResourceTypeFilters=["glue:crawler"],
+            TagFilters=[{"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]}],
         )
 
         assert len(actual_metadatas) == 0
@@ -251,6 +253,7 @@ class TestAWSResourceAdapterClientMethods:
         self.resource_boto_client.get_paginator.return_value.paginate.assert_called_once_with(
             ResourceTypeFilters=["glue:crawler"],
             TagFilters=[
+                {"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]},
                 {"Key": "tag1", "Values": ["value1"]},
                 {"Key": "tag2", "Values": []},
             ],
