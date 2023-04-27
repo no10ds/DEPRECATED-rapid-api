@@ -15,6 +15,7 @@ class TestSchemaInfer:
     def test_infer_schema(self):
         expected_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="mydomain",
                 dataset="mydataset",
                 sensitivity="PUBLIC",
@@ -54,7 +55,7 @@ class TestSchemaInfer:
         file_content = b"colname1,colname2,Col name 3,Col/name 4! \nsomething,123,1,True\notherthing,123,3,False\n\n"
 
         actual_schema = self.infer_schema_service.infer_schema(
-            "mydomain", "mydataset", "PUBLIC", file_content
+            "raw", "mydomain", "mydataset", "PUBLIC", file_content
         )
         assert actual_schema == expected_schema
 
@@ -66,7 +67,7 @@ class TestSchemaInfer:
 
         with pytest.raises(UserError):
             self.infer_schema_service.infer_schema(
-                "mydomain", "mydataset", "PUBLIC", file_content
+                "raw", "mydomain", "mydataset", "PUBLIC", file_content
             )
 
     def test_raises_error_when_some_rows_contain_too_many_values(self):
@@ -76,5 +77,5 @@ class TestSchemaInfer:
 
         with pytest.raises(UserError):
             self.infer_schema_service.infer_schema(
-                "mydomain", "mydataset", "PUBLIC", file_content
+                "raw", "mydomain", "mydataset", "PUBLIC", file_content
             )

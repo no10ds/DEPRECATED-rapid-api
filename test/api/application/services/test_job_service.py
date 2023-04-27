@@ -8,6 +8,7 @@ from api.common.config.auth import SensitivityLevel
 from api.domain.Jobs.Job import JobStatus
 from api.domain.Jobs.QueryJob import QueryStep, QueryJob
 from api.domain.Jobs.UploadJob import UploadStep, UploadJob
+from api.domain.dataset_metadata import DatasetMetadata
 
 
 class TestGetAllJobs:
@@ -45,6 +46,7 @@ class TestGetAllJobs:
                 "status": "FAILED",
                 "step": "QUERY",
                 "errors": ["Invalid column name"],
+                "layer": "layer",
                 "domain": "domain1",
                 "dataset": "domain2",
                 "result_url": None,
@@ -92,6 +94,7 @@ class TestGetAllJobs:
                 "status": "FAILED",
                 "step": "QUERY",
                 "errors": ["Invalid column name"],
+                "layer": "layer",
                 "domain": "domain1",
                 "dataset": "domain2",
                 "result_url": None,
@@ -131,7 +134,7 @@ class TestGetAllJobs:
         mock_get_jobs,
     ):
         # GIVEN
-        mock_get_permissions_for_subject.return_value = ["READ_PROTECTED_DOMAIN1"]
+        mock_get_permissions_for_subject.return_value = ["READ_ALL_PROTECTED_DOMAIN1"]
         mock_get_dataset_sensitivity.side_effect = [
             SensitivityLevel.PROTECTED,
             SensitivityLevel.PROTECTED,
@@ -154,6 +157,7 @@ class TestGetAllJobs:
                 "status": "FAILED",
                 "step": "QUERY",
                 "errors": ["Invalid column name"],
+                "layer": "layer",
                 "domain": "domain1",
                 "dataset": "dataset2",
                 "result_url": None,
@@ -164,6 +168,7 @@ class TestGetAllJobs:
                 "status": "SUCCESS",
                 "step": "QUERY",
                 "errors": None,
+                "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset3",
                 "result_url": "http://something.com",
@@ -174,6 +179,7 @@ class TestGetAllJobs:
                 "status": "FAILED",
                 "step": "QUERY",
                 "errors": ["Invalid column name"],
+                "layer": "layer",
                 "domain": "domain4",
                 "dataset": "dataset9",
                 "result_url": None,
@@ -195,6 +201,7 @@ class TestGetAllJobs:
                 "status": "FAILED",
                 "step": "QUERY",
                 "errors": ["Invalid column name"],
+                "layer": "layer",
                 "domain": "domain1",
                 "dataset": "dataset2",
                 "result_url": None,
@@ -223,7 +230,7 @@ class TestGetAllJobs:
         mock_get_jobs,
     ):
         # GIVEN
-        mock_get_permissions_for_subject.return_value = ["READ_PRIVATE"]
+        mock_get_permissions_for_subject.return_value = ["READ_ALL_PRIVATE"]
         mock_get_dataset_sensitivity.side_effect = [
             SensitivityLevel.PROTECTED,
             SensitivityLevel.PRIVATE,
@@ -245,6 +252,7 @@ class TestGetAllJobs:
                 "status": "FAILED",
                 "step": "QUERY",
                 "errors": ["Invalid column name"],
+                "layer": "layer",
                 "domain": "domain1",
                 "dataset": "dataset2",
                 "result_url": None,
@@ -255,6 +263,7 @@ class TestGetAllJobs:
                 "status": "SUCCESS",
                 "step": "QUERY",
                 "errors": None,
+                "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset3",
                 "result_url": "http://something.com",
@@ -276,6 +285,7 @@ class TestGetAllJobs:
                 "status": "SUCCESS",
                 "step": "QUERY",
                 "errors": None,
+                "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset3",
                 "result_url": "http://something.com",
@@ -326,7 +336,8 @@ class TestGetAllJobs:
                 "status": "FAILED",
                 "step": "QUERY",
                 "errors": ["Invalid column name"],
-                "domain": "domain1",
+                "layer": "layer",
+                "domain": "domaisn1",
                 "dataset": "dataset2",
                 "result_url": None,
             },
@@ -336,6 +347,7 @@ class TestGetAllJobs:
                 "status": "SUCCESS",
                 "step": "QUERY",
                 "errors": None,
+                "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset3",
                 "result_url": "http://something.com",
@@ -393,10 +405,15 @@ class TestCreateUploadJob:
         domain = "domain1"
         dataset = "dataset1"
         version = 3
+        layer = "layer"
 
         # WHEN
         result = self.job_service.create_upload_job(
-            subject_id, job_id, filename, raw_file_identifier, domain, dataset, version
+            subject_id,
+            job_id,
+            filename,
+            raw_file_identifier,
+            DatasetMetadata(layer, domain, dataset, version),
         )
 
         # THEN
@@ -421,9 +438,12 @@ class TestCreateQueryJob:
         domain = "test_domain"
         dataset = "test_dataset"
         version = 43
+        layer = "layer"
 
         # WHEN
-        result = self.job_service.create_query_job(subject_id, domain, dataset, version)
+        result = self.job_service.create_query_job(
+            subject_id, DatasetMetadata(layer, domain, dataset, version)
+        )
 
         # THEN
         assert result.job_id == "abc-123"
@@ -445,9 +465,7 @@ class TestUpdateJob:
             "abc-123",
             "file1.csv",
             "111-222-333",
-            "domain1",
-            "dataset2",
-            4,
+            DatasetMetadata("layer", "domain1", "dataset2", 4),
         )
 
         assert job.step == UploadStep.INITIALISATION
@@ -464,7 +482,9 @@ class TestUpdateJob:
     def test_sets_results_url_on_query_job(self, mock_update_query_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = QueryJob("subject-123", "domain1", "dataset2", 4)
+        job = QueryJob(
+            "subject-123", DatasetMetadata("layer", "domain1", "dataset2", 4)
+        )
 
         assert job.results_url is None
 
@@ -488,9 +508,7 @@ class TestSucceedsJob:
             "abc-123",
             "file1.csv",
             "111-222-333",
-            "domain1",
-            "dataset2",
-            4,
+            DatasetMetadata("layer", "domain1", "dataset2", 4),
         )
 
         assert job.status == JobStatus.IN_PROGRESS
@@ -512,7 +530,9 @@ class TestSucceedsQueryJob:
     def test_succeeds_query_job(self, mock_update_query_job, mock_uuid):
         # GIVEN
         mock_uuid.uuid4.return_value = "abc-123"
-        job = QueryJob("subject-123", "domain1", "dataset2", 4)
+        job = QueryJob(
+            "subject-123", DatasetMetadata("layer", "domain1", "dataset2", 4)
+        )
         url = "https://some-url.com"
 
         assert job.step == QueryStep.INITIALISATION
@@ -540,9 +560,7 @@ class TestFailsJob:
             "abc-123",
             "file1.csv",
             "111-222-333",
-            "domain1",
-            "dataset2",
-            4,
+            DatasetMetadata("layer", "domain1", "dataset2", 4),
         )
 
         assert job.status == JobStatus.IN_PROGRESS

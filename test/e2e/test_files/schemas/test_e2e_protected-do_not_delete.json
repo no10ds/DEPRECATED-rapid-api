@@ -1,5 +1,6 @@
 {
  "metadata": {
+  "layer": "default",
   "domain": "test_e2e_protected",
   "dataset": "do_not_delete",
   "sensitivity": "PROTECTED",

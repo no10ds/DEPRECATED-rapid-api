@@ -63,7 +63,6 @@ async def redirect_oauth_token_request(request: Request):
         "authorization": request.headers.get("authorization"),
         "content-type": request.headers.get("content-type"),
     }
-
     payload = await _load_json_bytes_to_dict(request)
 
     response = requests.post(IDENTITY_PROVIDER_TOKEN_URL, headers=headers, data=payload)

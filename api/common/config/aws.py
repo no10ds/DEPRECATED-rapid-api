@@ -17,7 +17,7 @@ GLUE_CSV_CLASSIFIER = RESOURCE_PREFIX + "-single_column_csv_classifier"
 DYNAMO_PERMISSIONS_TABLE_NAME = RESOURCE_PREFIX + "_users_permissions"
 SERVICE_TABLE_NAME = RESOURCE_PREFIX + "_service_table"
 
-SCHEMAS_LOCATION = "data/schemas"
+SCHEMAS_LOCATION = "schemas"
 
 MAX_CUSTOM_TAG_COUNT = 30
 

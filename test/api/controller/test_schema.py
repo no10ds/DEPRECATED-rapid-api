@@ -62,6 +62,7 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {
             "details": [
+                "metadata: layer -> field required",
                 "metadata: domain -> field required",
                 "metadata: dataset -> field required",
                 "metadata: sensitivity -> field required",
@@ -113,7 +114,18 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 500
         assert response.json() == {"details": "Crawler creation error"}
 
-        mock_delete_schema.assert_called_once_with("some", "thing", "PUBLIC", None)
+        mock_delete_schema.assert_called_once_with(
+            SchemaMetadata(
+                layer="raw",
+                domain="some",
+                dataset="thing",
+                sensitivity="PUBLIC",
+                version=1,
+                key_value_tags={"tag1": "value1", "tag2": "value2"},
+                key_only_tags=["tag3", "tag4"],
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+        )
 
     @patch.object(DataService, "upload_schema")
     def test_returns_500_if_protected_domain_does_not_exist(
@@ -136,10 +148,11 @@ class TestSchemaUpload(BaseClientTest):
     def _generate_schema(self) -> Tuple[Dict, Schema]:
         request_body = {
             "metadata": {
+                "layer": "raw",
                 "domain": "some",
                 "dataset": "thing",
                 "sensitivity": "PUBLIC",
-                "version": None,
+                "version": 1,
                 "owners": [{"name": "owner", "email": "owner@email.com"}],
                 "key_value_tags": {"tag1": "value1", "tag2": "value2"},
                 "key_only_tags": ["tag3", "tag4"],
@@ -161,9 +174,11 @@ class TestSchemaUpload(BaseClientTest):
         }
         expected_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="thing",
                 sensitivity="PUBLIC",
+                version=1,
                 key_value_tags={"tag1": "value1", "tag2": "value2"},
                 key_only_tags=["tag3", "tag4"],
                 owners=[Owner(name="owner", email="owner@email.com")],
@@ -229,6 +244,7 @@ class TestSchemaUpdate(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {
             "details": [
+                "metadata: layer -> field required",
                 "metadata: domain -> field required",
                 "metadata: dataset -> field required",
                 "metadata: sensitivity -> field required",
@@ -322,6 +338,7 @@ class TestSchemaUpdate(BaseClientTest):
     def _generate_schema(self) -> Tuple[Dict, Schema]:
         request_body = {
             "metadata": {
+                "layer": "raw",
                 "domain": "some",
                 "dataset": "thing",
                 "sensitivity": "PUBLIC",
@@ -347,6 +364,7 @@ class TestSchemaUpdate(BaseClientTest):
         }
         expected_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="some",
                 dataset="thing",
                 sensitivity="PUBLIC",
@@ -377,6 +395,7 @@ class TestSchemaGeneration(BaseClientTest):
     def test_returns_schema_from_a_csv_file(self, mock_infer_schema):
         expected_response = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="mydomain",
                 dataset="mydataset",
                 sensitivity="PUBLIC",
@@ -404,12 +423,12 @@ class TestSchemaGeneration(BaseClientTest):
         mock_infer_schema.return_value = expected_response
 
         response = self.client.post(
-            f"{BASE_API_PATH}/schema/PUBLIC/mydomain/mydataset/generate",
+            f"{BASE_API_PATH}/schema/raw/PUBLIC/mydomain/mydataset/generate",
             files={"file": (file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
         mock_infer_schema.assert_called_once_with(
-            "mydomain", "mydataset", "PUBLIC", file_content
+            "raw", "mydomain", "mydataset", "PUBLIC", file_content
         )
 
         assert response.status_code == 200
@@ -423,12 +442,12 @@ class TestSchemaGeneration(BaseClientTest):
         mock_infer_schema.side_effect = SchemaValidationError(error_message)
 
         response = self.client.post(
-            f"{BASE_API_PATH}/schema/PUBLIC/mydomain/mydataset/generate",
+            f"{BASE_API_PATH}/schema/raw/PUBLIC/mydomain/mydataset/generate",
             files={"file": (file_name, file_content, "text/csv")},
             headers={"Authorization": "Bearer test-token"},
         )
         mock_infer_schema.assert_called_once_with(
-            "mydomain", "mydataset", "PUBLIC", file_content
+            "raw", "mydomain", "mydataset", "PUBLIC", file_content
         )
 
         assert response.status_code == 400
@@ -436,7 +455,7 @@ class TestSchemaGeneration(BaseClientTest):
 
     def test_returns_error_response_when_domain_uppercase(self):
         response = self.client.post(
-            f"{BASE_API_PATH}/datasets/MYDOMAIN/mydataset/query",
+            f"{BASE_API_PATH}/datasets/layer/MYDOMAIN/mydataset/query",
             headers={"Authorization": "Bearer test-token"},
         )
 

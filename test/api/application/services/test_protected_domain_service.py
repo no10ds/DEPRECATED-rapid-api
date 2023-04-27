@@ -22,18 +22,20 @@ class TestProtectedDomainService:
 
     def test_create_protected_domain_permission(self):
         domain = "domain"
-        generated_permissions = [
+        mock_generated_permissions = [
             PermissionItem(
-                id="READ_PROTECTED_DOMAIN",
+                id="READ_ALL_PROTECTED_DOMAIN",
                 type="READ",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
+                layer="ALL",
             ),
             PermissionItem(
-                id="WRITE_PROTECTED_DOMAIN",
+                id="WRITE_ALL_PROTECTED_DOMAIN",
                 type="WRITE",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
+                layer="ALL",
             ),
         ]
 
@@ -53,6 +55,9 @@ class TestProtectedDomainService:
         ]
 
         self.cognito_adapter.get_protected_scopes.return_value = []
+        self.protected_domain_service.generate_protected_permission_items = Mock(
+            return_value=mock_generated_permissions
+        )
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             existing_domain_permissions
         )
@@ -60,8 +65,59 @@ class TestProtectedDomainService:
         self.protected_domain_service.create_protected_domain_permission(domain)
 
         self.dynamodb_adapter.store_protected_permissions.assert_called_once_with(
-            generated_permissions, "DOMAIN"
+            mock_generated_permissions, "DOMAIN"
         )
+
+    def test_generate_protected_permission_items(self):
+        expected = [
+            PermissionItem(
+                id="READ_RAW_PROTECTED_DOMAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+                layer="RAW",
+            ),
+            PermissionItem(
+                id="READ_LAYER_PROTECTED_DOMAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+                layer="LAYER",
+            ),
+            PermissionItem(
+                id="READ_ALL_PROTECTED_DOMAIN",
+                type="READ",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+                layer="ALL",
+            ),
+            PermissionItem(
+                id="WRITE_RAW_PROTECTED_DOMAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+                layer="RAW",
+            ),
+            PermissionItem(
+                id="WRITE_LAYER_PROTECTED_DOMAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+                layer="LAYER",
+            ),
+            PermissionItem(
+                id="WRITE_ALL_PROTECTED_DOMAIN",
+                type="WRITE",
+                sensitivity="PROTECTED",
+                domain="DOMAIN",
+                layer="ALL",
+            ),
+        ]
+
+        res = self.protected_domain_service.generate_protected_permission_items(
+            "DOMAIN"
+        )
+        assert res == expected
 
     def test_create_protected_domain_permission_when_permission_exists_in_db(self):
         existing_domains = ["bus", "domain"]
@@ -130,23 +186,32 @@ class TestProtectedDomainService:
         self.protected_domain_service.delete_protected_domain_permission(domain, [])
 
         self.dynamodb_adapter.delete_permission.assert_has_calls(
-            [call("READ_PROTECTED_OTHER"), call("WRITE_PROTECTED_OTHER")]
+            [
+                call("READ_RAW_PROTECTED_OTHER"),
+                call("READ_LAYER_PROTECTED_OTHER"),
+                call("READ_ALL_PROTECTED_OTHER"),
+                call("WRITE_RAW_PROTECTED_OTHER"),
+                call("WRITE_LAYER_PROTECTED_OTHER"),
+                call("WRITE_ALL_PROTECTED_OTHER"),
+            ]
         )
 
     def test_delete_protected_domain_permission_when_user_subject_list_passed(self):
         domain = "other"
         existing_domain_permissions = [
             PermissionItem(
-                id="READ_PROTECTED_OTHER",
+                id="READ_ALL_PROTECTED_OTHER",
                 type="READ",
                 sensitivity="PROTECTED",
                 domain="OTHER",
+                layer="ALL",
             ),
             PermissionItem(
-                id="WRITE_PROTECTED_OTHER",
+                id="WRITE_ALL_PROTECTED_OTHER",
                 type="WRITE",
                 sensitivity="PROTECTED",
                 domain="OTHER",
+                layer="ALL",
             ),
         ]
 
@@ -154,8 +219,8 @@ class TestProtectedDomainService:
             existing_domain_permissions
         )
         self.dynamodb_adapter.get_permissions_for_subject.return_value = [
-            "READ_PROTECTED_OTHER",
-            "WRITE_PROTECTED_OTHER",
+            "READ_ALL_PROTECTED_OTHER",
+            "WRITE_ALL_PROTECTED_OTHER",
             "DATA_ADMIN",
             "USER_ADMIN",
         ]
@@ -166,7 +231,14 @@ class TestProtectedDomainService:
         )
 
         self.dynamodb_adapter.delete_permission.assert_has_calls(
-            [call("READ_PROTECTED_OTHER"), call("WRITE_PROTECTED_OTHER")]
+            [
+                call("READ_RAW_PROTECTED_OTHER"),
+                call("READ_LAYER_PROTECTED_OTHER"),
+                call("READ_ALL_PROTECTED_OTHER"),
+                call("WRITE_RAW_PROTECTED_OTHER"),
+                call("WRITE_LAYER_PROTECTED_OTHER"),
+                call("WRITE_ALL_PROTECTED_OTHER"),
+            ]
         )
         self.dynamodb_adapter.update_subject_permissions.assert_called_once_with(
             subject_permissions=SubjectPermissions(
@@ -223,7 +295,7 @@ class TestProtectedDomainService:
 
         self.resource_adapter.get_datasets_metadata.return_value = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="other", dataset="dataset"
+                layer="layer", domain="other", dataset="dataset"
             )
         ]
 
@@ -299,16 +371,18 @@ class TestProtectedDomainService:
     def test_delete_protected_domain(self):
         generated_permissions = [
             PermissionItem(
-                id="READ_PROTECTED_DOMAIN",
+                id="READ_ALL_PROTECTED_DOMAIN",
                 type="READ",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
+                layer="ALL",
             ),
             PermissionItem(
-                id="WRITE_PROTECTED_DOMAIN",
+                id="WRITE_ALL_PROTECTED_DOMAIN",
                 type="WRITE",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
+                layer="ALL",
             ),
         ]
 
@@ -317,8 +391,8 @@ class TestProtectedDomainService:
         )
         self.resource_adapter.get_datasets_metadata.return_value = []
         self.dynamodb_adapter.get_permissions_for_subject.return_value = [
-            "READ_PROTECTED_DOMAIN",
-            "WRITE_PROTECTED_DOMAIN",
+            "READ_ALL_PROTECTED_DOMAIN",
+            "WRITE_ALL_PROTECTED_DOMAIN",
         ]
 
         self.protected_domain_service.delete_protected_domain_permission(
@@ -326,12 +400,20 @@ class TestProtectedDomainService:
         )
 
         self.dynamodb_adapter.delete_permission.assert_has_calls(
-            [call("READ_PROTECTED_DOMAIN"), call("WRITE_PROTECTED_DOMAIN")]
+            [
+                call("READ_RAW_PROTECTED_DOMAIN"),
+                call("READ_LAYER_PROTECTED_DOMAIN"),
+                call("READ_ALL_PROTECTED_DOMAIN"),
+                call("WRITE_RAW_PROTECTED_DOMAIN"),
+                call("WRITE_LAYER_PROTECTED_DOMAIN"),
+                call("WRITE_ALL_PROTECTED_DOMAIN"),
+            ]
         )
 
         self.dynamodb_adapter.update_subject_permissions.assert_called_once_with(
             subject_permissions=SubjectPermissions(
-                subject_id="xxx-yyy-zzz", permissions=[]
+                subject_id="xxx-yyy-zzz",
+                permissions=[],
             )
         )
 
@@ -362,10 +444,10 @@ class TestProtectedDomainService:
         ]
         exisiting_datasets = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain", dataset="dataset"
+                layer="layer", domain="domain", dataset="dataset"
             ),
             AWSResourceAdapter.EnrichedDatasetMetaData(
-                domain="domain", dataset="dataset_two"
+                layer="layer", domain="domain", dataset="dataset_two"
             ),
         ]
 

@@ -28,13 +28,16 @@ from api.common.config.constants import (
     LOWERCASE_ROUTE_DESCRIPTION,
     LOWERCASE_REGEX,
 )
+from api.common.config.layers import Layer
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
     UserError,
 )
 from api.common.logger import AppLogger
+from api.common.utilities import construct_dataset_metadata
 from api.domain.dataset_filters import DatasetFilters
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.metadata_search import metadata_search_query
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
@@ -105,10 +108,11 @@ if not CATALOG_DISABLED:
 
 
 @datasets_router.get(
-    "/{domain}/{dataset}/info",
+    "/{layer}/{domain}/{dataset}/info",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
 async def get_dataset_info(
+    layer: Layer,
     dataset: str,
     domain: str = FastApiPath(
         default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
@@ -131,9 +135,15 @@ async def get_dataset_info(
 
     | Parameters | Required | Usage             | Example values   | Definition            |
     |------------|----------|-------------------|------------------|-----------------------|
+    | `layer`    | True     | URL parameter     | `raw`            | layer of the dataset  |
     | `domain`   | True     | URL parameter     | `land`           | domain of the dataset |
     | `dataset`  | True     | URL parameter     | `train_journeys` | dataset title         |
     | `version`  | False    | Query parameter   | `3`              | dataset version       |
+
+
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -152,14 +162,17 @@ async def get_dataset_info(
     ### Click  `Try it out` to use the endpoint
 
     """
-    return data_service.get_dataset_info(domain, dataset, version)
+    return data_service.get_dataset_info(
+        construct_dataset_metadata(layer, domain, dataset, version)
+    )
 
 
 @datasets_router.get(
-    "/{domain}/{dataset}/{version}/files",
+    "/{layer}/{domain}/{dataset}/{version}/files",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
 )
 async def list_raw_files(
+    layer: Layer,
     dataset: str,
     version: int,
     domain: str = FastApiPath(
@@ -169,8 +182,8 @@ async def list_raw_files(
     """
     ## List Raw Files
 
-    Use this endpoint to retrieve all raw files linked to a specific domain/dataset/version, if there is no data stored for the
-    domain/dataset/version an error will be thrown.
+    Use this endpoint to retrieve all raw files linked to a specific layer/domain/dataset/version, if there is no data stored for the
+    layer/domain/dataset/version an error will be thrown.
 
     When a valid domain/dataset/version is retrieved the available raw file uploads will be displayed in list format.
 
@@ -178,10 +191,14 @@ async def list_raw_files(
 
     | Parameters    | Required  | Usage                                   | Example values               | Definition            |
     |---------------|-----------|-----------------------------------------|------------------------------|-----------------------|
+    | `layer`       | True      | URL parameter                           | `raw`                        | layer of the dataset  |
     | `domain`      | True      | URL parameter                           | `land`                       | domain of the dataset |
     | `dataset`     | True      | URL parameter                           | `train_journeys`             | dataset title         |
     | `version`     | True      | URL parameter                           | `3`                          | dataset version       |
 
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -211,19 +228,21 @@ async def list_raw_files(
     ### Click  `Try it out` to use the endpoint
 
     """
-    raw_files = data_service.list_raw_files(domain, dataset, version)
+    raw_files = data_service.list_raw_files(
+        DatasetMetadata(layer, domain, dataset, version)
+    )
     return raw_files
 
 
 @datasets_router.delete(
-    "/{domain}/{dataset}",
-    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
+    "/{layer}/{domain}/{dataset}",
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
-async def delete_dataset(domain: str, dataset: str, response: Response):
+async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Response):
     """
     ## Delete Dataset
 
-    Use this endpoint to delete all the contents linked to a domain/dataset. It deletes the crawler, raw data, uploaded data
+    Use this endpoint to delete all the contents linked to a layer/domain/dataset. It deletes the crawler, raw data, uploaded data
     and all schemas.
 
     When all valid items in the domain/dataset have been deleted, a success message will be displayed.
@@ -232,6 +251,7 @@ async def delete_dataset(domain: str, dataset: str, response: Response):
 
     | Parameters | Required | Usage         | Example values                  | Definition                    |
     |------------|----------|---------------|---------------------------------|-------------------------------|
+    | `layer`    | True     | URL parameter | `raw`                           | layer of the dataset          |
     | `domain`   | True     | URL parameter | `land`                          | domain of the dataset         |
     | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
 
@@ -241,16 +261,17 @@ async def delete_dataset(domain: str, dataset: str, response: Response):
     ### Click `Try it out` to use the endpoint
 
     """
-    delete_service.delete_dataset(domain, dataset)
+    delete_service.delete_dataset(DatasetMetadata(layer, domain, dataset))
     response.status_code = http_status.HTTP_202_ACCEPTED
     return {"details": f"{dataset} has been deleted."}
 
 
 @datasets_router.delete(
-    "/{domain}/{dataset}/{version}/{filename}",
+    "/{layer}/{domain}/{dataset}/{version}/{filename}",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 async def delete_data_file(
+    layer: Layer,
     dataset: str,
     version: int,
     filename: str,
@@ -262,23 +283,28 @@ async def delete_data_file(
     """
     ## Delete Data File
 
-    Use this endpoint to delete a specific file linked to a domain/dataset/version. If there is no data stored for the
-    domain/dataset/version or the file name is invalid an error will be thrown.
+    Use this endpoint to delete a specific file linked to a layer/domain/dataset/version. If there is no data stored for the
+    layer/domain/dataset/version or the file name is invalid an error will be thrown.
 
-    When a valid file in the domain/dataset/version is deleted, a success message will be displayed.
+    When a valid file in the layer/domain/dataset/version is deleted, a success message will be displayed.
 
     ### General structure
 
-    `GET /datasets/{domain}/{dataset}/{version}/{filename}`
+    `GET /datasets/{layer}/{domain}/{dataset}/{version}/{filename}`
 
     ### Inputs
 
     | Parameters | Required | Usage         | Example values                  | Definition                    |
     |------------|----------|---------------|---------------------------------|-------------------------------|
+    | `layer`    | True     | URL parameter | `raw`                           | layer of the dataset          |
     | `domain`   | True     | URL parameter | `land`                          | domain of the dataset         |
     | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
     | `version`  | True     | URL parameter | `3`                             | dataset version               |
     | `filename` | True     | URL parameter | `2022-01-21T17:12:31-file1.csv` | previously uploaded file name |
+
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -297,7 +323,9 @@ async def delete_data_file(
 
     """
     try:
-        delete_service.delete_dataset_file(domain, dataset, version, filename)
+        delete_service.delete_dataset_file(
+            DatasetMetadata(layer, domain, dataset, version), filename
+        )
         return Response(status_code=http_status.HTTP_204_NO_CONTENT)
     except CrawlerStartFailsError as error:
         AppLogger.warning("Failed to start crawler: %s", error.args[0])
@@ -306,11 +334,12 @@ async def delete_data_file(
 
 
 @datasets_router.post(
-    "/{domain}/{dataset}",
+    "/{layer}/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
 )
 def upload_data(
+    layer: Layer,
     dataset: str,
     request: Request,
     response: Response,
@@ -331,10 +360,15 @@ def upload_data(
 
     | Parameters | Required | Usage                                   | Example values              | Definition              |
     |------------|----------|-----------------------------------------|-----------------------------|-------------------------|
+    | `layer`    | True     | URL parameter                           | `raw`                       | layer of the dataset    |
     | `domain`   | True     | URL parameter                           | `air`                       | domain of the dataset   |
     | `dataset`  | True     | URL parameter                           | `passengers_by_airport`     | dataset title           |
     | `version`  | False    | Query parameter                         | `3`                         | dataset version         |
     | `file`     | True     | File in form data with key value `file` | `passengers_by_airport.csv` | the dataset file itself |
+
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -368,7 +402,10 @@ def upload_data(
         job_id = generate_uuid()
         incoming_file_path = store_file_to_disk(job_id, file)
         raw_filename, version, job_id = data_service.upload_dataset(
-            subject_id, job_id, domain, dataset, version, incoming_file_path
+            subject_id,
+            job_id,
+            construct_dataset_metadata(layer, domain, dataset, version),
+            incoming_file_path,
         )
         response.status_code = http_status.HTTP_202_ACCEPTED
         return {
@@ -404,7 +441,7 @@ def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
 
 
 @datasets_router.post(
-    "/{domain}/{dataset}/query",
+    "/{layer}/{domain}/{dataset}/query",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
     responses={
         200: {
@@ -423,6 +460,7 @@ def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
     },
 )
 async def query_dataset(
+    layer: Layer,
     dataset: str,
     request: Request,
     domain: str = FastApiPath(
@@ -440,10 +478,15 @@ async def query_dataset(
 
     | Parameters    | Required     | Usage                   | Example values                                                                                                              | Definition                    |
     |---------------|--------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+    | `layer`       | True         | URL parameter           | `raw`                                                                                                                       | layer of the dataset          |
     | `domain`      | True         | URL parameter           | `space`                                                                                                                     | domain of the dataset         |
     | `dataset`     | True         | URL parameter           | `rocket_launches`                                                                                                           | dataset title                 |
     | `version`     | False        | Query parameter         | '3'                                                                                                                         | dataset version               |
     | `query`       | False        | JSON Request Body       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#how-to-construct-a-query-object)| the query object              |
+
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -488,7 +531,9 @@ async def query_dataset(
     ### Click  `Try it out` to use the endpoint
 
     """
-    df = data_service.query_data(domain, dataset, version, query)
+    df = data_service.query_data(
+        construct_dataset_metadata(layer, domain, dataset, version), query
+    )
     string_df = df.astype("string")
     output_format = request.headers.get("Accept")
     mime_type = MimeType.to_mimetype(output_format)
@@ -496,11 +541,12 @@ async def query_dataset(
 
 
 @datasets_router.post(
-    "/{domain}/{dataset}/query/large",
+    "/{layer}/{domain}/{dataset}/query/large",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_202_ACCEPTED,
 )
 async def query_large_dataset(
+    layer: Layer,
     dataset: str,
     request: Request,
     domain: str = FastApiPath(
@@ -523,11 +569,15 @@ async def query_large_dataset(
 
     | Parameters    | Required     | Usage                   | Example values                                                                                                              | Definition                    |
     |---------------|--------------|-------------------------|-----------------------------------------------------------------------------------------------------------------------------|-------------------------------|
+    | `layer`       | True         | URL parameter           | `raw`                                                                                                                       | layer of the dataset          |
     | `domain`      | True         | URL parameter           | `space`                                                                                                                     | domain of the dataset         |
     | `dataset`     | True         | URL parameter           | `rocket_launches`                                                                                                           | dataset title                 |
     | `version`     | False        | Query parameter         | '3'                                                                                                                         | dataset version               |
     | `query`       | False        | JSON Request Body       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#how-to-construct-a-query-object)| the query object              |
 
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -546,7 +596,9 @@ async def query_large_dataset(
 
     """
     subject_id = get_subject_id(request)
-    job_id = data_service.query_large_data(subject_id, domain, dataset, version, query)
+    job_id = data_service.query_large_data(
+        subject_id, construct_dataset_metadata(layer, domain, dataset, version), query
+    )
     return {"details": {"job_id": job_id}}
 
 

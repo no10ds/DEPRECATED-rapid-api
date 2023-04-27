@@ -75,7 +75,7 @@ tasks:
     description: Run unit tests
     run:
       container: service-image
-      command: "pytest test/api -vv -m focus"
+      command: "pytest test/api -vv -s -m focus"
 
   test-e2e:
     description: Run E2E tests

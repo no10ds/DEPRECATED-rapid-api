@@ -14,6 +14,7 @@ from api.common.config.constants import (
     LOWERCASE_REGEX,
     LOWERCASE_ROUTE_DESCRIPTION,
 )
+from api.common.config.layers import Layer
 from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerAlreadyExistsError,
@@ -34,8 +35,9 @@ schema_router = APIRouter(
 )
 
 
-@schema_router.post("/{sensitivity}/{domain}/{dataset}/generate")
+@schema_router.post("/{layer}/{sensitivity}/{domain}/{dataset}/generate")
 async def generate_schema(
+    layer: Layer,
     sensitivity: str,
     dataset: str,
     domain: str = FastApiPath(
@@ -59,10 +61,15 @@ async def generate_schema(
 
     | Parameters    | Usage                                   | Example values               | Definition                 |
     |---------------|-----------------------------------------|------------------------------|----------------------------|
+    | `layer`       | URL parameter                           | `default`                    | layer of the dataset       |
     | `sensitivity` | URL parameter                           | `PUBLIC, PRIVATE, PROTECTED` | sensitivity of the dataset |
     | `domain`      | URL parameter                           | `demo`                       | domain of the dataset      |
     | `dataset`     | URL parameter                           | `gapminder`                  | dataset title              |
     | `file`        | File in form data with key value `file` | `gapminder.csv`              | the dataset file itself    |
+
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -78,7 +85,7 @@ async def generate_schema(
     """
     infer_contents = get_first_mb_of_file(file)
     return schema_infer_service.infer_schema(
-        domain, dataset, sensitivity, infer_contents
+        layer, domain, dataset, sensitivity, infer_contents
     )
 
 
@@ -105,6 +112,10 @@ async def upload_schema(schema: Schema):
     | Parameters    | Usage                                   | Example values               | Definition            |
     |---------------|-----------------------------------------|------------------------------|-----------------------|
     | schema        | JSON request body                       | see below                    | the schema definition |
+
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -153,6 +164,10 @@ async def update_schema(schema: Schema):
     |---------------|-----------------------------------------|------------------------------|-----------------------|
     | schema        | JSON request body                       | see below                    | the schema definition |
 
+    #### Layer
+
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
+
     #### Domain and dataset
 
     The domain and dataset names must match the original schema that is being updated
@@ -172,12 +187,7 @@ async def update_schema(schema: Schema):
 
 
 def _delete_uploaded_schema(schema: Schema):
-    delete_service.delete_schema(
-        schema.get_domain(),
-        schema.get_dataset(),
-        schema.get_sensitivity(),
-        schema.get_version(),
-    )
+    delete_service.delete_schema(schema.metadata)
 
 
 def _log_and_raise_error(log_message: str, error_message: str):

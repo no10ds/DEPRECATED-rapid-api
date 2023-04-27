@@ -29,6 +29,7 @@ class TestDatasetValidation:
     def setup_method(self):
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -59,6 +60,7 @@ class TestDatasetValidation:
     def test_fully_valid_dataset(self):
         full_valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -136,6 +138,7 @@ class TestDatasetValidation:
     def test_invalid_when_partition_column_with_illegal_characters(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -167,6 +170,7 @@ class TestDatasetValidation:
     def test_valid_when_date_partition_column_with_illegal_slash_character(self):
         valid_schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -217,6 +221,7 @@ class TestDatasetValidation:
     def test_retains_specified_schema_data_types_when_null_values_present(self):
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -272,6 +277,7 @@ class TestDatasetValidation:
     def test_checks_for_unacceptable_null_values(self, dataframe: pd.DataFrame):
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -309,6 +315,7 @@ class TestDatasetValidation:
 
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -352,6 +359,7 @@ class TestDatasetValidation:
 
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -396,6 +404,7 @@ class TestDatasetValidation:
 
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -461,6 +470,7 @@ class TestDatasetValidation:
 
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="test_sensitivity",
@@ -483,6 +493,7 @@ class TestDatasetValidation:
         )
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -530,6 +541,7 @@ class TestDatasetValidation:
         )
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -592,6 +604,7 @@ class TestDatasetValidation:
         )
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -653,6 +666,7 @@ class TestDatasetValidation:
         )
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -746,6 +760,7 @@ class TestDatasetTransformation:
 
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -778,6 +793,7 @@ class TestDatasetTransformation:
         )
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -822,6 +838,7 @@ class TestDatasetTransformation:
         )
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
@@ -902,6 +919,7 @@ class TestDatasetTransformation:
 
         schema = Schema(
             metadata=SchemaMetadata(
+                layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
                 sensitivity="PUBLIC",
