@@ -9,10 +9,9 @@ from botocore.exceptions import ClientError
 
 from api.application.services.data_service import (
     DataService,
-    construct_chunked_dataframe,
 )
 from api.common.config.auth import SensitivityLevel
-from api.common.config.constants import CONTENT_ENCODING, DATASET_QUERY_LIMIT
+from api.common.config.constants import DATASET_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     CrawlerIsNotReadyError,
@@ -534,16 +533,6 @@ class TestUploadDataset:
         mock_test_file_reader.__iter__.return_value = dataframes
         return mock_test_file_reader
 
-    # Dataset chunking -------------------------------
-    @patch("api.application.services.data_service.pd")
-    def test_construct_chunked_dataframe(self, mock_pd):
-        path = Path("file/path")
-
-        construct_chunked_dataframe(path)
-        mock_pd.read_csv.assert_called_once_with(
-            path, encoding=CONTENT_ENCODING, sep=",", chunksize=200_000
-        )
-
     # Schema retrieval -------------------------------
     @patch("api.application.services.data_service.handle_version_retrieval")
     def test_raises_error_when_schema_does_not_exist(self, mock_get_version):
@@ -624,7 +613,7 @@ class TestUploadDataset:
     @patch.object(DataService, "wait_until_crawler_is_ready")
     @patch.object(DataService, "validate_incoming_data")
     @patch.object(DataService, "process_chunks")
-    @patch.object(DataService, "delete_incoming_raw_file")
+    @patch("api.application.services.data_service.delete_incoming_raw_file")
     def test_process_upload_calls_relevant_methods(
         self,
         mock_delete_incoming_raw_file,
@@ -718,7 +707,7 @@ class TestUploadDataset:
         self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
         self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
-    @patch.object(DataService, "delete_incoming_raw_file")
+    @patch("api.application.services.data_service.delete_incoming_raw_file")
     @patch.object(DataService, "validate_incoming_data")
     @patch.object(DataService, "wait_until_crawler_is_ready")
     def test_deletes_incoming_file_from_disk_and_fails_job_if_any_error_during_processing(

@@ -1,4 +1,3 @@
-import os
 import uuid
 from pathlib import Path
 from threading import Thread
@@ -6,7 +5,6 @@ from time import sleep
 from typing import List, Optional, Tuple
 
 import pandas as pd
-from pandas.io.parsers import TextFileReader
 
 from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
@@ -19,7 +17,7 @@ from api.application.services.partitioning_service import generate_partitioned_d
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
 from api.common.config.auth import SensitivityLevel
-from api.common.config.constants import CONTENT_ENCODING, DATASET_QUERY_LIMIT
+from api.common.config.constants import DATASET_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
     ConflictError,
@@ -30,6 +28,11 @@ from api.common.custom_exceptions import (
     CrawlerIsNotReadyError,
     UnprocessableDatasetError,
     QueryExecutionError,
+)
+from api.common.data_handlers import (
+    construct_chunked_dataframe,
+    delete_incoming_raw_file,
+    get_dataframe_from_chunk_type,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval, build_error_message_list
@@ -47,10 +50,6 @@ from api.domain.storage_metadata import StorageMetaData
 
 FIRST_SCHEMA_VERSION_NUMBER = 1
 SCHEMA_VERSION_INCREMENT = 1
-
-
-def construct_chunked_dataframe(file_path: Path) -> TextFileReader:
-    return pd.read_csv(file_path, encoding=CONTENT_ENCODING, sep=",", chunksize=200_000)
 
 
 class DataService:
@@ -135,14 +134,14 @@ class DataService:
             self.job_service.update_step(job, UploadStep.DATA_UPLOAD)
             self.process_chunks(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.CLEAN_UP)
-            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.NONE)
             self.job_service.succeed(job)
         except Exception as error:
             AppLogger.error(
                 f"Processing upload failed for {schema.get_domain()}, dataset {schema.get_dataset()}, and version {schema.get_version()}: {error}"
             )
-            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             self.job_service.fail(job, build_error_message_list(error))
             raise error
 
@@ -168,12 +167,13 @@ class DataService:
         )
         dataset_errors = set()
         for chunk in construct_chunked_dataframe(file_path):
+            dataframe = get_dataframe_from_chunk_type(chunk)
             try:
-                build_validated_dataframe(schema, chunk)
+                build_validated_dataframe(schema, dataframe)
             except DatasetValidationError as error:
                 dataset_errors.update(error.message)
         if dataset_errors:
-            self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
+            delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             raise DatasetValidationError(list(dataset_errors))
 
     def process_chunks(
@@ -183,7 +183,8 @@ class DataService:
             f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()}"
         )
         for chunk in construct_chunked_dataframe(file_path):
-            self.process_chunk(schema, raw_file_identifier, chunk)
+            dataframe = get_dataframe_from_chunk_type(chunk)
+            self.process_chunk(schema, raw_file_identifier, dataframe)
 
         if schema.has_overwrite_behaviour():
             self.remove_existing_data(schema, raw_file_identifier)
@@ -204,19 +205,6 @@ class DataService:
     def update_table_config(self, domain: str, dataset: str) -> None:
         schema = self.s3_adapter.find_schema(domain, dataset, 1)
         self.glue_adapter.update_catalog_table_config(schema)
-
-    def delete_incoming_raw_file(
-        self, schema: Schema, file_path: Path, raw_file_identifier: str
-    ):
-        try:
-            os.remove(file_path.name)
-            AppLogger.info(
-                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} deleted. Raw file identifier: {raw_file_identifier}"
-            )
-        except (FileNotFoundError, TypeError) as error:
-            AppLogger.error(
-                f"Temporary upload file for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} not deleted. Raw file identifier: {raw_file_identifier}. Detail: {error}"
-            )
 
     def remove_existing_data(self, schema: Schema, raw_file_identifier: str) -> None:
         AppLogger.info(
