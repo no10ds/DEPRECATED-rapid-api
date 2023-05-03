@@ -115,23 +115,57 @@ class TestGetUIPermissions:
 
         self.dynamo_adapter.get_all_permissions.return_value = all_permissions
 
-        expected = [
-            {
-                "id": "WRITE_ALL",
-                "type": "WRITE",
-                "layer": "ALL",
-                "sensitivity": "ALL",
-                "domain": None,
+        expected = {
+            "WRITE": {"ALL": {"ALL": "WRITE_ALL"}},
+            "READ": {
+                "ALL": {
+                    "PROTECTED": {"domain": "READ_ALL_PROTECTED_DOMAIN"},
+                }
             },
-            {
-                "id": "READ_ALL_PROTECTED_DOMAIN",
-                "type": "READ",
-                "layer": "ALL",
-                "sensitivity": "PROTECTED",
-                "domain": "domain",
-            },
-        ]
+        }
 
         result = self.permissions_service.get_all_permissions_ui()
 
         assert result == expected
+
+    def test_format_permissions_for_the_ui(self):
+        permissions = [
+            PermissionItem(
+                id="WRITE_ALL",
+                type="WRITE",
+                layer="ALL",
+                sensitivity="ALL",
+            ),
+            PermissionItem(
+                id="READ_ALL_PROTECTED_DOMAIN",
+                type="READ",
+                layer="ALL",
+                sensitivity="PROTECTED",
+                domain="domain",
+            ),
+            PermissionItem(
+                id="READ_ALL_PUBLIC",
+                type="READ",
+                layer="ALL",
+                sensitivity="PUBLIC",
+            ),
+            PermissionItem(
+                id="DATA_ADMIN",
+                type="DATA_ADMIN",
+            ),
+        ]
+
+        expected = {
+            "DATA_ADMIN": "DATA_ADMIN",
+            "WRITE": {"ALL": {"ALL": "WRITE_ALL"}},
+            "READ": {
+                "ALL": {
+                    "PROTECTED": {"domain": "READ_ALL_PROTECTED_DOMAIN"},
+                    "PUBLIC": "READ_ALL_PUBLIC",
+                }
+            },
+        }
+
+        res = self.permissions_service.format_permissions_for_the_ui(permissions)
+
+        assert res == expected

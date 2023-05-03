@@ -1,4 +1,4 @@
-from typing import List
+from typing import Dict, List, Union
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.domain.permission_item import PermissionItem
@@ -27,4 +27,29 @@ class PermissionsService:
 
     def get_all_permissions_ui(self) -> List[dict]:
         all_permissions = self.dynamodb_adapter.get_all_permissions()
-        return [permission.to_dict() for permission in all_permissions]
+        return self.format_permissions_for_the_ui(all_permissions)
+
+    def format_permissions_for_the_ui(
+        self, permissions: List[PermissionItem]
+    ) -> Dict[str, Union[str, Dict[str, Dict[str, str]]]]:
+        result = {}
+
+        for permission in permissions:
+            # Protected Permission
+            if permission.domain:
+                result.setdefault(permission.type, {}).setdefault(
+                    permission.layer, {}
+                ).setdefault(permission.sensitivity, {})[
+                    permission.domain
+                ] = permission.id
+
+            # Global Data Permission
+            elif permission.sensitivity:
+                result.setdefault(permission.type, {}).setdefault(permission.layer, {})[
+                    permission.sensitivity
+                ] = permission.id
+            # Admin permission
+            else:
+                result[permission.type] = permission.id
+
+        return result
