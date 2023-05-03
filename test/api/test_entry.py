@@ -1,6 +1,7 @@
 from unittest.mock import patch, Mock
 
 import pytest
+from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import Action
 from api.common.config.constants import BASE_API_PATH
@@ -59,9 +60,15 @@ class TestDatasetsUI(BaseClientTest):
         mock_parse_token.return_value = mock_token
 
         mock_get_authorised_datasets.return_value = [
-            "domain1/datset1/1",
-            "domain1/datset2/1",
-            "domain2/dataset3/1",
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain1", dataset="dataset1", version=1, description=""
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain1", dataset="dataset2", version=1, description=""
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain2", dataset="dataset3", version=1, description=""
+            ),
         ]
 
         response = self.client.get(
@@ -82,9 +89,15 @@ class TestDatasetsUI(BaseClientTest):
         mock_parse_token.return_value = mock_token
 
         mock_get_authorised_datasets.return_value = [
-            "domain1/datset1/1",
-            "domain1/datset2/1",
-            "domain2/dataset3/1",
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain1", dataset="dataset1", version=1, description=""
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain1", dataset="dataset2", version=1, description=""
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                domain="domain2", dataset="dataset3", version=1, description=""
+            ),
         ]
 
         response = self.client.get(

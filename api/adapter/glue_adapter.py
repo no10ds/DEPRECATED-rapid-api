@@ -186,7 +186,9 @@ class GlueAdapter:
         }
 
         glue_types_map = {
-            DataTypes.INT: "bigint",
+            DataTypes.INT16: "bigint",
+            DataTypes.INT32: "bigint",
+            DataTypes.INT64: "bigint",
             DataTypes.FLOAT: "double",
         }
 

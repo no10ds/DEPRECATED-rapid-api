@@ -8,7 +8,9 @@ from api.adapter.athena_adapter import AthenaAdapter
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.data_service import DataService
+from api.application.services.dataset_service import DatasetService
 from api.application.services.delete_service import DeleteService
+from api.common.config.auth import Action
 from api.common.custom_exceptions import (
     UserError,
     DatasetValidationError,
@@ -55,7 +57,7 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
+        mock_store_file_to_disk.assert_called_once_with("csv", job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
             subject_id, job_id, "domain", "dataset", None, incoming_file_path
         )
@@ -65,6 +67,57 @@ class TestDataUpload(BaseClientTest):
             "details": {
                 "original_filename": "filename.csv",
                 "raw_filename": "123-456-789.csv",
+                "dataset_version": 5,
+                "status": "Data processing",
+                "job_id": "abc-123",
+            }
+        }
+
+    @patch.object(DataService, "upload_dataset")
+    @patch("api.controller.datasets.store_file_to_disk")
+    @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
+    def test_calls_data_upload_service_successfully_parquet(
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
+    ):
+        file_content = b"some,content"
+        incoming_file_path = Path("filename.parquet")
+        incoming_file_name = "filename.parquet"
+        raw_file_identifier = "123-456-789"
+        subject_id = "subject_id"
+        job_id = "abc-123"
+
+        mock_generate_uuid.return_value = job_id
+        mock_get_subject_id.return_value = subject_id
+        mock_store_file_to_disk.return_value = incoming_file_path
+        mock_upload_dataset.return_value = (
+            f"{raw_file_identifier}.parquet",
+            5,
+            "abc-123",
+        )
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets/domain/dataset",
+            files={
+                "file": (incoming_file_name, file_content, "application/octest-stream")
+            },
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        mock_store_file_to_disk.assert_called_once_with("parquet", job_id, ANY)
+        mock_upload_dataset.assert_called_once_with(
+            subject_id, job_id, "domain", "dataset", None, incoming_file_path
+        )
+
+        assert response.status_code == 202
+        assert response.json() == {
+            "details": {
+                "original_filename": "filename.parquet",
+                "raw_filename": "123-456-789.parquet",
                 "dataset_version": 5,
                 "status": "Data processing",
                 "job_id": "abc-123",
@@ -100,7 +153,7 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
+        mock_store_file_to_disk.assert_called_once_with("csv", job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
             subject_id, job_id, "domain", "dataset", 2, incoming_file_path
         )
@@ -110,6 +163,57 @@ class TestDataUpload(BaseClientTest):
             "details": {
                 "original_filename": "filename.csv",
                 "raw_filename": "123-456-789.csv",
+                "dataset_version": 2,
+                "status": "Data processing",
+                "job_id": "abc-123",
+            }
+        }
+
+    @patch.object(DataService, "upload_dataset")
+    @patch("api.controller.datasets.store_file_to_disk")
+    @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
+    def test_calls_data_upload_service_with_version_successfully_parquet(
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
+    ):
+        job_id = "abc-123"
+        file_content = b"some,content"
+        incoming_file_path = Path("filename.parquet")
+        incoming_file_name = "filename.parquet"
+        raw_file_identifier = "123-456-789"
+        subject_id = "subject_id"
+
+        mock_generate_uuid.return_value = job_id
+        mock_get_subject_id.return_value = subject_id
+        mock_store_file_to_disk.return_value = incoming_file_path
+        mock_upload_dataset.return_value = (
+            f"{raw_file_identifier}.parquet",
+            2,
+            "abc-123",
+        )
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets/domain/dataset?version=2",
+            files={
+                "file": (incoming_file_name, file_content, "application/octest-stream")
+            },
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        mock_store_file_to_disk.assert_called_once_with("parquet", job_id, ANY)
+        mock_upload_dataset.assert_called_once_with(
+            subject_id, job_id, "domain", "dataset", 2, incoming_file_path
+        )
+
+        assert response.status_code == 202
+        assert response.json() == {
+            "details": {
+                "original_filename": "filename.parquet",
+                "raw_filename": "123-456-789.parquet",
                 "dataset_version": 2,
                 "status": "Data processing",
                 "job_id": "abc-123",
@@ -130,6 +234,19 @@ class TestDataUpload(BaseClientTest):
         assert response.json() == {
             "details": ["domain -> was required to be lowercase only."]
         }
+
+    def test_calls_data_upload_service_fails_when_filetype_is_invalid(self):
+        file_content = b"some content"
+        incoming_file_name = "filename.txt"
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets/domain/dataset",
+            files={"file": (incoming_file_name, file_content, "text/plain")},
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 400
+        assert response.json() == {"details": "This file type txt, is not supported."}
 
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
@@ -286,8 +403,16 @@ class TestListDatasets(BaseClientTest):
         self.mock_s3_client = Mock()
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
 
-    @patch.object(AWSResourceAdapter, "get_datasets_metadata")
-    def test_returns_metadata_for_all_datasets(self, mock_get_datasets_metadata):
+    @patch("api.controller.datasets.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
+    def test_returns_metadata_for_all_datasets(
+        self, mock_get_authorised_datasets, mock_parse_token
+    ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
@@ -303,7 +428,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_datasets_metadata.return_value = metadata_response
+        mock_get_authorised_datasets.return_value = metadata_response
 
         expected_response = [
             {
@@ -330,16 +455,23 @@ class TestListDatasets(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        _, kwargs = mock_get_datasets_metadata.call_args
-        assert expected_query == kwargs.get("query")
+        mock_get_authorised_datasets.assert_called_once_with(
+            subject_id, Action.READ, tag_filters=expected_query
+        )
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(AWSResourceAdapter, "get_datasets_metadata")
+    @patch("api.controller.datasets.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
     def test_returns_metadata_for_datasets_with_certain_tags(
-        self, mock_get_datasets_metadata
+        self, mock_get_authorised_datasets, mock_parse_token
     ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
@@ -357,7 +489,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_datasets_metadata.return_value = metadata_response
+        mock_get_authorised_datasets.return_value = metadata_response
 
         expected_response = [
             {
@@ -389,16 +521,23 @@ class TestListDatasets(BaseClientTest):
             json={"tags": tag_filters},
         )
 
-        _, kwargs = mock_get_datasets_metadata.call_args
-        assert expected_query_object == kwargs.get("query")
+        mock_get_authorised_datasets.assert_called_once_with(
+            subject_id, Action.READ, tag_filters=expected_query_object
+        )
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(AWSResourceAdapter, "get_datasets_metadata")
+    @patch("api.controller.datasets.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
     def test_returns_metadata_for_datasets_with_certain_sensitivity(
-        self, mock_get_datasets_metadata
+        self, mock_get_authorised_datasets, mock_parse_token
     ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
         metadata_response = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
                 domain="domain1",
@@ -414,7 +553,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_datasets_metadata.return_value = metadata_response
+        mock_get_authorised_datasets.return_value = metadata_response
 
         expected_response = [
             {
@@ -441,9 +580,9 @@ class TestListDatasets(BaseClientTest):
             json={"sensitivity": "PUBLIC"},
         )
 
-        _, kwargs = mock_get_datasets_metadata.call_args
-        assert expected_query_object == kwargs.get("query")
-
+        mock_get_authorised_datasets.assert_called_once_with(
+            subject_id, Action.READ, tag_filters=expected_query_object
+        )
         assert response.status_code == 200
         assert response.json() == expected_response
 
@@ -727,7 +866,7 @@ class TestQuery(BaseClientTest):
 
         assert response.status_code == 400
         assert response.json() == {
-            "details": "Provided value for Accept header parameter [text/plain] is not supported. Supported formats: application/json, text/csv"
+            "details": "Provided value for Accept header parameter [text/plain] is not supported. Supported formats: application/json, text/csv, application/octet-stream"
         }
 
     @pytest.mark.parametrize(

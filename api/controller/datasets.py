@@ -1,8 +1,6 @@
 import os
-from pathlib import Path
 from typing import Optional
 
-import psutil
 from fastapi import APIRouter, Request
 from fastapi import UploadFile, File, Response, Security
 from fastapi import status as http_status
@@ -17,21 +15,28 @@ from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     secure_endpoint,
     get_subject_id,
+    RAPID_ACCESS_TOKEN,
 )
+from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.data_service import DataService
+from api.application.services.dataset_service import DatasetService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
+from api.common.data_handlers import store_file_to_disk
 from api.common.utilities import strtobool
 from api.common.config.auth import Action
 from api.common.config.constants import (
     BASE_API_PATH,
     LOWERCASE_ROUTE_DESCRIPTION,
     LOWERCASE_REGEX,
+    VALID_FILE_MIME_TYPES,
+    VALID_FILE_EXTENSIONS,
 )
 from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     SchemaNotFoundError,
     UserError,
+    InvalidFileUploadError,
 )
 from api.common.logger import AppLogger
 from api.domain.dataset_filters import DatasetFilters
@@ -47,6 +52,7 @@ s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
 resource_adapter = AWSResourceAdapter()
 data_service = DataService()
+dataset_service = DatasetService()
 delete_service = DeleteService()
 
 
@@ -62,7 +68,9 @@ datasets_router = APIRouter(
     dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_200_OK,
 )
-async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
+async def list_all_datasets(
+    request: Request, tag_filters: DatasetFilters = DatasetFilters()
+):
     """
     ## List datasets
 
@@ -85,7 +93,10 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
+    subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
+    return dataset_service.get_authorised_datasets(
+        subject_id, Action.READ, tag_filters=tag_filters
+    )
 
 
 if not CATALOG_DISABLED:
@@ -323,7 +334,7 @@ def upload_data(
     """
     ## Upload dataset
 
-    Given a schema has been uploaded you can upload data which matches that schema. Uploading a CSV file via this endpoint
+    Given a schema has been uploaded you can upload data which matches that schema. Uploading a CSV or Parquet file via this endpoint
     ensures that the data matches the schema and that it is consistent and sanitised. Should any errors be detected during
     upload, these are sent back in the response to facilitate you fixing the issues.
 
@@ -364,9 +375,18 @@ def upload_data(
 
     """
     try:
+        extension = file.filename.split(".")[-1].lower()
+        if (
+            file.content_type not in VALID_FILE_MIME_TYPES
+            and extension not in VALID_FILE_EXTENSIONS
+        ):
+            raise InvalidFileUploadError(
+                f"This file type {extension}, is not supported."
+            )
+
         subject_id = get_subject_id(request)
         job_id = generate_uuid()
-        incoming_file_path = store_file_to_disk(job_id, file)
+        incoming_file_path = store_file_to_disk(extension, job_id, file)
         raw_filename, version, job_id = data_service.upload_dataset(
             subject_id, job_id, domain, dataset, version, incoming_file_path
         )
@@ -385,24 +405,6 @@ def upload_data(
         raise UserError(message=error.args[0])
 
 
-def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
-    file_path = Path(f"{id}-{file.filename}")
-    chunk_size_mb = 50
-    mb_1 = 1024 * 1024
-
-    with open(file_path, "wb") as incoming_file:
-        while contents := file.file.read(mb_1 * chunk_size_mb):
-            AppLogger.info(
-                f"Writing incoming file chunk ({chunk_size_mb}MB) to disk [{file.filename}]"
-            )
-            AppLogger.info(
-                f"Available disk space: {psutil.disk_usage('/').free / (2 ** 30)}GB"
-            )
-            incoming_file.write(contents)
-
-    return file_path
-
-
 @datasets_router.post(
     "/{domain}/{dataset}/query",
     dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
@@ -418,6 +420,7 @@ def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
                 "text/csv": {
                     "example": 'col1;col2;col3\n"123","something","500"\n"456","something else","600"'
                 },
+                "application/octet-stream": {},
             }
         }
     },
@@ -479,6 +482,13 @@ async def query_dataset(
     0,"value1","value2"
     ...
     ```
+
+    ### Parquet
+
+    To get a Parquet response, the `Accept` Header has to be set to `application/octet-stream`, this can be set below. The response will be the raw Parquet
+    binary result.
+
+    We recommend using this in a programmatic sense.
 
     ### Accepted permissions
 
@@ -552,7 +562,7 @@ async def query_large_dataset(
 
 def _format_query_output(df: DataFrame, mime_type: MimeType) -> Response:
     formatted_output = FormatService.from_df_to_mimetype(df, mime_type)
-    if mime_type == MimeType.TEXT_CSV:
+    if mime_type in [MimeType.TEXT_CSV, MimeType.BINARY]:
         return PlainTextResponse(status_code=200, content=formatted_output)
     else:
         return formatted_output
