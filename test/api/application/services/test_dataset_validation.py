@@ -551,7 +551,7 @@ class TestDatasetValidation:
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type=DataTypes.INT,
+                    data_type=DataTypes.INT64,
                     allow_null=False,
                 ),
                 Column(
@@ -625,7 +625,7 @@ class TestDatasetValidation:
                 Column(
                     name="col5",
                     partition_index=4,
-                    data_type=DataTypes.INT,
+                    data_type=DataTypes.INT64,
                     allow_null=False,
                 ),
             ],
@@ -686,7 +686,7 @@ class TestDatasetValidation:
                 Column(
                     name="col5",
                     partition_index=None,
-                    data_type=DataTypes.INT,
+                    data_type=DataTypes.INT64,
                     allow_null=False,
                 ),
             ],
@@ -917,7 +917,7 @@ class TestDatasetTransformation:
                 Column(
                     name="col2",
                     partition_index=None,
-                    data_type=DataTypes.INT,
+                    data_type=DataTypes.INT64,
                     allow_null=False,
                 ),
                 Column(

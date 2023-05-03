@@ -449,8 +449,6 @@ class TestSchemaValidation:
         "data_type",
         [
             "string",
-            "int64",
-            "float64",
             "double",
             "number",
             "datetime",
