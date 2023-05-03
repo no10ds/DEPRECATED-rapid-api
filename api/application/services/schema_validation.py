@@ -163,7 +163,10 @@ def has_allow_null_false_on_partitioned_columns(schema):
 def has_only_accepted_data_types(schema: Schema):
     data_types = schema.get_data_types()
     if any(
-        (data_type not in DataTypes.accepted_data_types() for data_type in data_types)
+        (
+            data_type.lower() not in map(str.lower, DataTypes.accepted_data_types())
+            for data_type in data_types
+        )
     ):
         raise SchemaValidationError(
             "You are specifying one or more unaccepted data types"
