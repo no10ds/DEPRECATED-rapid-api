@@ -13,14 +13,14 @@ See [v6.1.0] changes
 
 ### Changed
 
-- When uploading a file into rAPId we automatically reject any file now that does not match a csv or Apache Parquet format now. Before we used to handle the file regardless and await for a exception being raised from within the api.
+- When uploading a file into rAPId we automatically reject any file now that does not match a csv or Apache Parquet format. Before we used to handle the file regardless and wait for a exception being raised from within the api.
 
 ### Fixed
 
 - When calling the list all datasets endpoint we now filter this list based on the permissions that the user has access to.
 
 
-[v6.1.0]: https://github.com/no10ds/rapid-api/comapre/v6.0.2...v6.1.0
+[v6.1.0]: https://github.com/no10ds/rapid-api/compare/v6.0.2...v6.1.0
 
 ## v6.0.2 - _2023-03-24_
 
