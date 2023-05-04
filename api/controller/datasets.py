@@ -95,7 +95,7 @@ async def list_all_datasets(
             s3_adapter, query=tag_filters
         )
     else:
-        return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
+        return resource_adapter.get_datasets_metadata(query=tag_filters)
 
 
 if not CATALOG_DISABLED:
