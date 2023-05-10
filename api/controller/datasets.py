@@ -65,7 +65,9 @@ datasets_router = APIRouter(
     dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_200_OK,
 )
-async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
+async def list_all_datasets(
+    tag_filters: DatasetFilters = DatasetFilters(), enriched: Optional[bool] = False
+):
     """
     ## List datasets
 
@@ -74,11 +76,14 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
 
     If you do not specify any filter values, you will retrieve all available datasets.
 
+    You can optionally enrich the information returned, this will include values like `Last Updated Time`, `Description` and `Tags`.
+
     ### Inputs
 
-    | Parameters    | Usage                                   | Example values                                                                                         | Definition            |
-    |---------------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
-    | query         | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
+    | Parameters    | Required| Usage                                   | Example values                                                                                         | Definition            |
+    |---------------|---------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
+    | enriched      | False   | Boolean Query parameter                 | True                                                                                                   | enriches the metadata |
+    | query         | False   | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
 
     ### Accepted permissions
 
@@ -88,7 +93,12 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
+    if enriched:
+        return resource_adapter.get_enriched_datasets_metadata(
+            s3_adapter, query=tag_filters
+        )
+    else:
+        return resource_adapter.get_datasets_metadata(query=tag_filters)
 
 
 if not CATALOG_DISABLED:

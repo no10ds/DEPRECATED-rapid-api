@@ -294,7 +294,27 @@ class TestDynamoDBAdapterPermissionsTable:
         self.service_table.assert_not_called()
 
     def test_get_all_permissions(self):
-        expected_response = ["USER_ADMIN", "READ_ALL", "WRITE_ALL", "READ_PRIVATE"]
+        expected_response = [
+            PermissionItem(
+                id="USER_ADMIN",
+                type="USER_ADMIN",
+            ),
+            PermissionItem(
+                id="READ_ALL",
+                sensitivity="ALL",
+                type="READ",
+            ),
+            PermissionItem(
+                id="WRITE_ALL",
+                sensitivity="ALL",
+                type="WRITE",
+            ),
+            PermissionItem(
+                id="READ_PRIVATE",
+                sensitivity="PRIVATE",
+                type="READ",
+            ),
+        ]
         self.permissions_table.query.return_value = self.expected_db_query_response
         actual_response = self.dynamo_adapter.get_all_permissions()
 
@@ -321,7 +341,7 @@ class TestDynamoDBAdapterPermissionsTable:
 
         self.service_table.assert_not_called()
 
-    def test_get_permissions_for_subject(self):
+    def test_get_permission_keys_for_subject(self):
         subject_id = "test-subject-id"
         self.permissions_table.query.return_value = {
             "Items": [
@@ -343,7 +363,7 @@ class TestDynamoDBAdapterPermissionsTable:
 
         expected_permissions = ["DATA_ADMIN", "READ_ALL", "USER_ADMIN", "WRITE_ALL"]
 
-        response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
+        response = self.dynamo_adapter.get_permission_keys_for_subject(subject_id)
 
         assert sorted(response) == sorted(expected_permissions)
 
@@ -365,7 +385,7 @@ class TestDynamoDBAdapterPermissionsTable:
             UserError,
             match="Subject fake-subject-id not found in database",
         ):
-            self.dynamo_adapter.get_permissions_for_subject(subject_id)
+            self.dynamo_adapter.get_permission_keys_for_subject(subject_id)
 
         self.service_table.assert_not_called()
 
@@ -383,7 +403,7 @@ class TestDynamoDBAdapterPermissionsTable:
             "Count": 1,
         }
 
-        response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
+        response = self.dynamo_adapter.get_permission_keys_for_subject(subject_id)
 
         assert response == []
         self.service_table.assert_not_called()
@@ -403,7 +423,7 @@ class TestDynamoDBAdapterPermissionsTable:
             "Count": 1,
         }
 
-        response = self.dynamo_adapter.get_permissions_for_subject(subject_id)
+        response = self.dynamo_adapter.get_permission_keys_for_subject(subject_id)
 
         assert response == []
         self.service_table.assert_not_called()
@@ -419,7 +439,7 @@ class TestDynamoDBAdapterPermissionsTable:
             AWSServiceError,
             match="Error fetching permissions, please contact your system administrator",
         ):
-            self.dynamo_adapter.get_permissions_for_subject(subject_id)
+            self.dynamo_adapter.get_permission_keys_for_subject(subject_id)
 
         self.service_table.assert_not_called()
 
@@ -433,7 +453,7 @@ class TestDynamoDBAdapterPermissionsTable:
                     "Sensitivity": "PROTECTED",
                     "Type": "WRITE",
                     "Domain": "DOMAIN",
-                    "Layer": "LAYER",
+                    "Layer": "ALL",
                 },
                 {
                     "PK": "PERMISSION",
@@ -442,7 +462,7 @@ class TestDynamoDBAdapterPermissionsTable:
                     "Sensitivity": "PROTECTED",
                     "Type": "READ",
                     "Domain": "DOMAIN",
-                    "Layer": "LAYER",
+                    "Layer": "ALL",
                 },
             ],
             "Count": 2,
@@ -454,14 +474,14 @@ class TestDynamoDBAdapterPermissionsTable:
                 type="WRITE",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
-                layer="LAYER",
+                layer="ALL",
             ),
             PermissionItem(
                 id="READ_PROTECTED_DOMAIN",
                 type="READ",
                 sensitivity="PROTECTED",
                 domain="DOMAIN",
-                layer="LAYER",
+                layer="ALL",
             ),
         ]
 
@@ -789,7 +809,6 @@ class TestDynamoDBAdapterServiceTable:
             self.dynamo_adapter.get_jobs("subject-123")
 
     def test_update_job(self):
-
         job = UploadJob(
             "subject-123",
             "abc-123",
@@ -824,7 +843,6 @@ class TestDynamoDBAdapterServiceTable:
         )
 
     def test_update_job_without_errors(self):
-
         job = UploadJob(
             "subject-123",
             "abc-123",
@@ -858,7 +876,6 @@ class TestDynamoDBAdapterServiceTable:
         )
 
     def test_update_job_raises_error_when_fails(self):
-
         job = UploadJob(
             "subject-123",
             "abc-123",

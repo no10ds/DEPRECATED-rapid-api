@@ -153,7 +153,9 @@ async def methods(request: Request):
 
     try:
         subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-        subject_permissions = permissions_service.get_subject_permissions(subject_id)
+        subject_permissions = permissions_service.get_subject_permission_keys(
+            subject_id
+        )
         allowed_actions = _determine_user_ui_actions(subject_permissions)
         if not any([action_allowed for action_allowed in allowed_actions.values()]):
             error_message = default_error_message
@@ -186,25 +188,12 @@ async def get_permissions_ui():
 async def get_datasets_ui(action: Action, request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
     datasets = upload_service.get_authorised_datasets(subject_id, action)
-
-    return _group_datasets_by_domain(datasets)
+    return [dataset.to_dict() for dataset in datasets]
 
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse("static/favicon.ico")
-
-
-def _group_datasets_by_domain(datasets: List[str]):
-    grouped_datasets = {}
-    for dataset in datasets:
-        dataset_data = dataset.split("/")
-        domain, dataset, version = dataset_data[0], dataset_data[1], dataset_data[2]
-        if domain not in grouped_datasets:
-            grouped_datasets[domain] = [{"dataset": dataset, "version": version}]
-        else:
-            grouped_datasets[domain].append({"dataset": dataset, "version": version})
-    return grouped_datasets
 
 
 def _get_subject_id(request: Request):

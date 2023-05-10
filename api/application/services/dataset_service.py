@@ -6,8 +6,8 @@ from typing import List, Set, Tuple
 from api.common.config.auth import Action, LayerPermissions, SensitivityLevel, ALL
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.adapter.s3_adapter import S3Adapter
 from api.domain.dataset_filters import DatasetFilters
+from api.domain.dataset_metadata import DatasetMetadata
 
 
 class SensitivityPermissionConverter(Enum):
@@ -30,13 +30,13 @@ class DatasetService:
         self,
         dynamodb_adapter=DynamoDBAdapter(),
         resource_adapter=AWSResourceAdapter(),
-        s3_adapter=S3Adapter(),
     ):
         self.dynamodb_adapter = dynamodb_adapter
         self.resource_adapter = resource_adapter
-        self.s3_adapter = s3_adapter
 
-    def get_authorised_datasets(self, subject_id: str, action: Action) -> List[str]:
+    def get_authorised_datasets(
+        self, subject_id: str, action: Action
+    ) -> List[DatasetMetadata]:
         """
         This function does the following
         1. Get subject permissions of the subject
@@ -45,7 +45,7 @@ class DatasetService:
         3. Filters datasets for a. Sensitivity and b. Protected domains
         4. Returns them
         """
-        permissions = self.dynamodb_adapter.get_permissions_for_subject(subject_id)
+        permissions = self.dynamodb_adapter.get_permission_keys_for_subject(subject_id)
         permissions = self.process_permissions(permissions, action)
         sensitivities, domains = self._split_permissions_into_sensitivies_and_domains(
             permissions
@@ -90,7 +90,9 @@ class DatasetService:
                 sensitivities.add(permission)
         return sensitivities, protected_domains
 
-    def _fetch_datasets(self, sensitivities: Set[Permission], domains: Set[Permission]):
+    def _fetch_datasets(
+        self, sensitivities: Set[Permission], domains: Set[Permission]
+    ) -> List[DatasetMetadata]:
         authorised_datasets = set()
         if len(sensitivities) > 0:
             self._extract_datasets_from_sensitivity_permissions(
@@ -114,7 +116,7 @@ class DatasetService:
 
     def _extract_datasets_from_protected_domain_permissons(
         self, authorised_datasets, protected_domain_permissions: Set[Permission]
-    ):
+    ) -> List[DatasetMetadata]:
         for permission in protected_domain_permissions:
             domain = permission.scope[
                 len(f"{SensitivityLevel.PROTECTED.value}_") :  # noqa: E203
@@ -125,11 +127,11 @@ class DatasetService:
                 domain=domain,
             )
             datasets_metadata_list_protected_domains = (
-                self.resource_adapter.get_datasets_metadata(self.s3_adapter, query)
+                self.resource_adapter.get_datasets_metadata(query)
             )
 
             for dataset in datasets_metadata_list_protected_domains:
-                authorised_datasets.add(dataset.get_ui_upload_path())
+                authorised_datasets.add(dataset)
 
     def _unpack_sensitivity_permissions(
         self, permissions: Set[Permission]
@@ -144,7 +146,7 @@ class DatasetService:
 
     def _extract_datasets_from_sensitivity_permissions(
         self, authorised_datasets: set, sensitivity_permissions: Set[Permission]
-    ):
+    ) -> List[DatasetMetadata]:
         datasets_metadata_list_sensitivities = []
         permissions = self._unpack_sensitivity_permissions(sensitivity_permissions)
         for permission in permissions:
@@ -152,13 +154,11 @@ class DatasetService:
                 **self.generate_layer_filter(permission),
                 sensitivity=permission.scope,
             )
-            response = self.resource_adapter.get_datasets_metadata(
-                self.s3_adapter, query
-            )
+            response = self.resource_adapter.get_datasets_metadata(query)
             datasets_metadata_list_sensitivities.extend(response)
 
         return [
-            authorised_datasets.add(datasets_metadata.get_ui_upload_path())
+            authorised_datasets.add(datasets_metadata)
             for datasets_metadata in datasets_metadata_list_sensitivities
         ]
 

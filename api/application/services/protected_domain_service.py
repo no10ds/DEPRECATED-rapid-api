@@ -62,7 +62,9 @@ class ProtectedDomainService:
             self.dynamodb_adapter.delete_permission(permission.id)
 
         for user in user_subjects_list:
-            user_permissions = self.dynamodb_adapter.get_permissions_for_subject(user)
+            user_permissions = self.dynamodb_adapter.get_permission_keys_for_subject(
+                user
+            )
             for permission in permissions_to_delete:
                 if permission.id in user_permissions:
                     user_permissions.remove(permission.id)

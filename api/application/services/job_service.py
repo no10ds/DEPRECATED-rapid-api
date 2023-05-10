@@ -18,7 +18,9 @@ class JobService:
         self.db_adapter = db_adapter
 
     def get_all_jobs(self, subject_id: str) -> list[Dict]:
-        subject_permissions = self.db_adapter.get_permissions_for_subject(subject_id)
+        subject_permissions = self.db_adapter.get_permission_keys_for_subject(
+            subject_id
+        )
         all_jobs = self.db_adapter.get_jobs(subject_id)
         return self.filter_permitted_jobs(subject_permissions, all_jobs)
 

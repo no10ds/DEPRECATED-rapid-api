@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 from typing import Optional, TYPE_CHECKING
 
 from api.common.config.aws import DATA_BUCKET, RESOURCE_PREFIX, SCHEMAS_LOCATION
@@ -15,6 +16,20 @@ class DatasetMetadata:
     domain: str
     dataset: str
     version: Optional[int] = None
+
+    def to_dict(self):
+        return {
+            "layer": self.layer,
+            "domain": self.domain,
+            "dataset": self.dataset,
+            "version": self.version,
+        }
+
+    def __hash__(self):
+        return hash(json.dumps(self.to_dict()))
+
+    def __lt__(self, other):
+        return self.__hash__() < other.__hash__()
 
     def dataset_location(self) -> str:
         return f"data/{self.layer}/{self.domain}/{self.dataset}"
