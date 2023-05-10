@@ -76,11 +76,14 @@ async def list_all_datasets(
 
     If you do not specify any filter values, you will retrieve all available datasets.
 
+    You can optionally enrich the information returned, this will include values like `Last Updated Time`, `Description` and `Tags`.
+
     ### Inputs
 
-    | Parameters    | Usage                                   | Example values                                                                                         | Definition            |
-    |---------------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
-    | query         | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
+    | Parameters    | Required| Usage                                   | Example values                                                                                         | Definition            |
+    |---------------|---------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
+    | enriched      | False   | Boolean Query parameter                 | True                                                                                                   | enriches the metadata |
+    | query         | False   | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
 
     ### Accepted permissions
 

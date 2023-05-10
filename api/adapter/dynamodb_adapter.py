@@ -154,6 +154,14 @@ class DynamoDBAdapter(DatabaseAdapter):
                 for permission in permissions["Items"]
             ]
 
+        except KeyError as error:
+            AppLogger.info(
+                f"Error retrieving the permissions, one has an empty key: {error}"
+            )
+            raise AWSServiceError(
+                "Error fetching permissions, one of them is incorrectly formatted, please contact your system administrator"
+            )
+
         except ClientError as error:
             AppLogger.info(f"Error retrieving all permissions: {error}")
             raise AWSServiceError(

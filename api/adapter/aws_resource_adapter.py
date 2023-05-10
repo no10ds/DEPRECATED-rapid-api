@@ -33,11 +33,13 @@ class AWSResourceAdapter:
         self, s3_adapter: "S3Adapter", query: DatasetFilters = DatasetFilters()
     ) -> List[EnrichedDatasetMetaData]:
         try:
+            AppLogger.info("Getting enriched datasets info")
             return [
                 self._to_enriched_dataset_metadata(resource, s3_adapter)
                 for resource in self.fetch_resources_from_crawlers(query)
             ]
         except KeyError:
+            AppLogger.info("No datasets found")
             return []
         except ClientError as error:
             self._handle_client_error(error)
@@ -59,6 +61,7 @@ class AWSResourceAdapter:
                 for resource in self.fetch_resources_from_crawlers(query)
             ]
         except KeyError:
+            AppLogger.info("No datasets found")
             return []
         except ClientError as error:
             self._handle_client_error(error)
