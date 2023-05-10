@@ -62,6 +62,7 @@ class TestGlueAdapterCrawlerMethods:
             SchemaChangePolicy={"DeleteBehavior": "DELETE_FROM_DATABASE"},
             Configuration='{"Version": 1.0, "Grouping": {"TableLevelConfiguration": 6, "TableGroupingPolicy": "CombineCompatibleSchemas"}}',
             Tags={
+                "resource_prefix": RESOURCE_PREFIX,
                 "tag1": "value1",
                 "tag2": "value2",
                 "tag3": "value3",

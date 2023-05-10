@@ -28,7 +28,6 @@ class DatasetFilters(BaseModel):
         ]
 
     def _tag_filters(self) -> List[Dict]:
-
         key_value_tags_dict_list = self._build_key_value_tags()
 
         key_only_tags_dict_list = self._build_key_only_tags()

@@ -29,20 +29,39 @@ class AWSResourceAdapter:
         description: Optional[str] = ""
         tags: Optional[Dict[str, str]] = None
 
-    def get_datasets_metadata(
+    def get_enriched_datasets_metadata(
         self, s3_adapter: "S3Adapter", query: DatasetFilters = DatasetFilters()
     ) -> List[EnrichedDatasetMetaData]:
         try:
-            AppLogger.info("Getting datasets info")
-            aws_resources = self._get_resources(
-                ["glue:crawler"], query.format_resource_query()
-            )
-            resources_prefix = self._filter_for_resource_prefix(aws_resources)
+            AppLogger.info("Getting enriched datasets info")
             return [
-                self._to_dataset_metadata(resource, s3_adapter)
-                for resource in resources_prefix
+                self._to_enriched_dataset_metadata(resource, s3_adapter)
+                for resource in self.fetch_resources_from_crawlers(query)
             ]
         except KeyError:
+            AppLogger.info("No datasets found")
+            return []
+        except ClientError as error:
+            self._handle_client_error(error)
+
+    def fetch_resources_from_crawlers(self, query: DatasetFilters = DatasetFilters()):
+        aws_resources = self._get_resources(
+            ["glue:crawler"], query.format_resource_query()
+        )
+        return self._filter_for_resource_prefix(aws_resources)
+
+    def get_datasets_metadata(
+        self, query: DatasetFilters = DatasetFilters()
+    ) -> List[DatasetMetadata]:
+        try:
+            AppLogger.info("Getting datasets info")
+
+            return [
+                self.infer_dataset_metadata_from_crawler(resource)
+                for resource in self.fetch_resources_from_crawlers(query)
+            ]
+        except KeyError:
+            AppLogger.info("No datasets found")
             return []
         except ClientError as error:
             self._handle_client_error(error)
@@ -50,7 +69,7 @@ class AWSResourceAdapter:
     def _filter_for_resource_prefix(self, aws_resources):
         return [
             resource
-            for resource in aws_resources["ResourceTagMappingList"]
+            for resource in aws_resources
             if f":crawler/{RESOURCE_PREFIX}_crawler" in resource["ResourceARN"]
         ]
 
@@ -69,19 +88,23 @@ class AWSResourceAdapter:
             )
 
     def _get_resources(self, resource_types: List[str], tag_filters: List[Dict]):
-        AppLogger.info(f"Getting AWS resources with tags {tag_filters}")
-        return self.__resource_client.get_resources(
-            ResourceTypeFilters=resource_types, TagFilters=tag_filters
+        default_tag_filters = [{"Key": "resource_prefix", "Values": [RESOURCE_PREFIX]}]
+        filters = default_tag_filters + tag_filters
+        AppLogger.info(f"Getting AWS resources with tags {filters}")
+        paginator = self.__resource_client.get_paginator("get_resources")
+        page_iterator = paginator.paginate(
+            ResourceTypeFilters=resource_types,
+            TagFilters=filters,
+        )
+        return (
+            item for page in page_iterator for item in page["ResourceTagMappingList"]
         )
 
-    def _to_dataset_metadata(
+    def _to_enriched_dataset_metadata(
         self, resource_tag_mapping: Dict, s3_adapter: "S3Adapter"
     ) -> EnrichedDatasetMetaData:
-        dataset = self._infer_dataset_metadata_from_crawler_arn(
-            resource_tag_mapping["ResourceARN"]
-        )
+        dataset = self.infer_dataset_metadata_from_crawler(resource_tag_mapping)
         tags = {tag["Key"]: tag["Value"] for tag in resource_tag_mapping["Tags"]}
-        dataset.version = self.get_version_from_tags(resource_tag_mapping)
         description = s3_adapter.get_dataset_description(dataset)
         return self.EnrichedDatasetMetaData(
             dataset.layer,
@@ -101,6 +124,7 @@ class AWSResourceAdapter:
         return int(version_tag[0]) if version_tag else FIRST_SCHEMA_VERSION_NUMBER
 
     def get_version_from_crawler_tags(self, dataset: DatasetMetadata) -> int:
+        """Fetches the latest version from the tags"""
         aws_resources = self._get_resources(["glue:crawler"], [])
 
         crawler_resource = None
@@ -108,7 +132,7 @@ class AWSResourceAdapter:
         AppLogger.info(
             f"Getting version for layer {dataset.layer} domain {dataset.domain} and dataset {dataset.dataset}"
         )
-        for resource in aws_resources["ResourceTagMappingList"]:
+        for resource in aws_resources:
             if resource["ResourceARN"].endswith(dataset.generate_crawler_name()):
                 crawler_resource = resource
 
@@ -120,3 +144,10 @@ class AWSResourceAdapter:
         return DatasetMetadata(
             table_name_elements[0], table_name_elements[1], table_name_elements[2]
         )
+
+    def infer_dataset_metadata_from_crawler(self, resource_tag_mapping):
+        dataset = self._infer_dataset_metadata_from_crawler_arn(
+            resource_tag_mapping["ResourceARN"]
+        )
+        dataset.version = self.get_version_from_tags(resource_tag_mapping)
+        return dataset

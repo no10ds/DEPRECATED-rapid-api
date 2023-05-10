@@ -18,7 +18,9 @@ class JobService:
         self.db_adapter = db_adapter
 
     def get_all_jobs(self, subject_id: str) -> list[Dict]:
-        subject_permissions = self.db_adapter.get_permissions_for_subject(subject_id)
+        subject_permissions = self.db_adapter.get_permission_keys_for_subject(
+            subject_id
+        )
         all_jobs = self.db_adapter.get_jobs(subject_id)
         return self.filter_permitted_jobs(subject_permissions, all_jobs)
 
@@ -60,11 +62,12 @@ class JobService:
     def create_upload_job(
         self,
         subject_id: str,
+        job_id: str,
         filename: str,
         raw_file_identifier: str,
         dataset: DatasetMetadata,
     ) -> UploadJob:
-        job = UploadJob(subject_id, filename, raw_file_identifier, dataset)
+        job = UploadJob(subject_id, job_id, filename, raw_file_identifier, dataset)
         self.db_adapter.store_upload_job(job)
         return job
 

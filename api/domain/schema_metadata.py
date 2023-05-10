@@ -74,7 +74,6 @@ class SchemaMetadata(BaseModel):
             data = s3_adapter.retrieve_data(path).read()
             data_json = json.loads(data)
             metadata = data_json["metadata"]
-
             if metadata:
                 return cls(
                     layer=metadata["layer"],

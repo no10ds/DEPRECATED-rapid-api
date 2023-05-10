@@ -1,5 +1,5 @@
 from copy import deepcopy
-from unittest.mock import patch, MagicMock, Mock
+from unittest.mock import Mock
 
 from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.common.config.aws import DATA_BUCKET
@@ -54,19 +54,14 @@ class TestDatasetMetadata:
             == "schemas/layer/PROTECTED/DOMAIN/dataset"
         )
 
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_get_latest_version(self, mock_get_version_from_crawler_tags: MagicMock):
-        mock_get_version_from_crawler_tags.return_value = 2
-        res = self.dataset_metadata.get_latest_version(AWSResourceAdapter())
-        assert res == 2
-
-    def test_handle_version_retrieval_when_version_not_present(self):
+    def test_set_version_when_version_not_present(self):
         dataset_metadata = DatasetMetadata("layer", "domain", "dataset")
-        dataset_metadata.get_latest_version = Mock(return_value=11)
-        dataset_metadata.handle_version_retrieval(AWSResourceAdapter())
+        aws_resource_adapter = AWSResourceAdapter()
+        aws_resource_adapter.get_version_from_crawler_tags = Mock(return_value=11)
+        dataset_metadata.set_version(aws_resource_adapter)
         assert dataset_metadata.version == 11
 
-    def test_handle_version_retrieval_when_version_exists(self):
+    def test_set_version_when_version_exists(self):
         original_version = deepcopy(self.dataset_metadata.version)
-        self.dataset_metadata.handle_version_retrieval(AWSResourceAdapter())
+        self.dataset_metadata.set_version(AWSResourceAdapter())
         assert original_version == self.dataset_metadata.version

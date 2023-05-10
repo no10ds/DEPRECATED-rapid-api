@@ -63,18 +63,23 @@ def mock_list_schemas_response(
     dataset: str = "test_dataset",
     sensitivity: str = "PUBLIC",
 ):
-    return {
-        "Contents": [
-            {"Key": "schemas/"},
-            {"Key": f"schemas/{layer}/{sensitivity}/"},
-            {
-                "Key": f"schemas/{layer}/{sensitivity}/{domain}/{dataset}/1/schema.json",
-            },
-        ],
-        "Name": "bucket-name",
-        "Prefix": "schemas",
-        "EncodingType": "url",
-    }
+    return [
+        {
+            "NextToken": "xxx",
+            "ResponseMetadata": {"key": "value"},
+            "Contents": [
+                {"Key": "schemas"},
+                {"Key": f"schemas/{layer}/"},
+                {"Key": f"schemas/{layer}/{sensitivity}/"},
+                {
+                    "Key": f"schemas/{layer}/{sensitivity}/{domain}/{dataset}/1/schema.json",
+                },
+            ],
+            "Name": "bucket-name",
+            "Prefix": "schemas",
+            "EncodingType": "url",
+        }
+    ]
 
 
 def mock_secure_dataset_endpoint():

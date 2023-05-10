@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -20,6 +21,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
+from api.common.utilities import strtobool
 from api.common.config.auth import Action
 from api.common.config.constants import (
     BASE_API_PATH,
@@ -39,7 +41,10 @@ from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.metadata_search import metadata_search_query
 from api.domain.mime_type import MimeType
 from api.domain.sql_query import SQLQuery
+from api.domain.Jobs.Job import generate_uuid
 
+
+CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
 s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
@@ -60,7 +65,9 @@ datasets_router = APIRouter(
     dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
     status_code=http_status.HTTP_200_OK,
 )
-async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
+async def list_all_datasets(
+    tag_filters: DatasetFilters = DatasetFilters(), enriched: Optional[bool] = False
+):
     """
     ## List datasets
 
@@ -69,11 +76,14 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
 
     If you do not specify any filter values, you will retrieve all available datasets.
 
+    You can optionally enrich the information returned, this will include values like `Last Updated Time`, `Description` and `Tags`.
+
     ### Inputs
 
-    | Parameters    | Usage                                   | Example values                                                                                         | Definition            |
-    |---------------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
-    | query         | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
+    | Parameters    | Required| Usage                                   | Example values                                                                                         | Definition            |
+    |---------------|---------|-----------------------------------------|------------------------------------------------------------------------------------------------------- |-----------------------|
+    | enriched      | False   | Boolean Query parameter                 | True                                                                                                   | enriches the metadata |
+    | query         | False   | JSON Request Body                       | Consult the [docs](https://github.com/no10ds/rapid-api/blob/main/docs/guides/usage/usage.md#examples-2)| the filtering query   |
 
     ### Accepted permissions
 
@@ -83,21 +93,28 @@ async def list_all_datasets(tag_filters: DatasetFilters = DatasetFilters()):
     ### Click  `Try it out` to use the endpoint
 
     """
-    return resource_adapter.get_datasets_metadata(s3_adapter, query=tag_filters)
+    if enriched:
+        return resource_adapter.get_enriched_datasets_metadata(
+            s3_adapter, query=tag_filters
+        )
+    else:
+        return resource_adapter.get_datasets_metadata(query=tag_filters)
 
 
-@datasets_router.get(
-    "/search/{term}",
-    dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
-    status_code=http_status.HTTP_200_OK,
-    include_in_schema=False,
-)
-async def search_dataset_metadata(term: str):
-    sql_query = metadata_search_query(term)
-    df = athena_adapter.query_sql(sql_query)
-    df["version"] = df["version"].fillna(value="0")
-    df["data"] = df["data"].fillna(value="")
-    return df.to_dict("records")
+if not CATALOG_DISABLED:
+
+    @datasets_router.get(
+        "/search/{term}",
+        dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
+        status_code=http_status.HTTP_200_OK,
+        include_in_schema=False,
+    )
+    async def search_dataset_metadata(term: str):
+        sql_query = metadata_search_query(term)
+        df = athena_adapter.query_sql(sql_query)
+        df["version"] = df["version"].fillna(value="0")
+        df["data"] = df["data"].fillna(value="")
+        return df.to_dict("records")
 
 
 @datasets_router.get(
@@ -136,7 +153,7 @@ async def get_dataset_info(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -191,7 +208,7 @@ async def list_raw_files(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -229,7 +246,7 @@ async def list_raw_files(
 
 @datasets_router.delete(
     "/{layer}/{domain}/{dataset}",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.DATA_ADMIN.value])],
 )
 async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Response):
     """
@@ -249,8 +266,7 @@ async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Resp
     | `dataset`  | True     | URL parameter | `train_journeys`                | dataset title                 |
 
     ### Accepted permissions
-    In order to use this endpoint you need a relevant WRITE permission that matches the dataset sensitivity level,
-    e.g. `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
+    In order to use this endpoint you need the DATA_ADMIN permission.
 
     ### Click `Try it out` to use the endpoint
 
@@ -298,7 +314,7 @@ async def delete_data_file(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -362,7 +378,7 @@ def upload_data(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -393,9 +409,11 @@ def upload_data(
     """
     try:
         subject_id = get_subject_id(request)
-        incoming_file_path = store_file_to_disk(file)
+        job_id = generate_uuid()
+        incoming_file_path = store_file_to_disk(job_id, file)
         raw_filename, version, job_id = data_service.upload_dataset(
             subject_id,
+            job_id,
             construct_dataset_metadata(layer, domain, dataset, version),
             incoming_file_path,
         )
@@ -414,8 +432,8 @@ def upload_data(
         raise UserError(message=error.args[0])
 
 
-def store_file_to_disk(file: UploadFile = File(...)) -> Path:
-    file_path = Path(file.filename)
+def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
+    file_path = Path(f"{id}-{file.filename}")
     chunk_size_mb = 50
     mb_1 = 1024 * 1024
 
@@ -478,7 +496,7 @@ async def query_dataset(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 
@@ -569,7 +587,7 @@ async def query_large_dataset(
 
     #### Layer
 
-    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at <endpoint> # TODO
+    The set of values that can be specified for layer are sepcific to the instance of rAPId. You can list them at the endpoint `/layers`.
 
     #### Domain and dataset
 

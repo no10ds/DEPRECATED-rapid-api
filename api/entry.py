@@ -23,10 +23,12 @@ from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VE
 from api.common.config.constants import BASE_API_PATH
 from api.common.logger import AppLogger, init_logger
 from api.common.custom_exceptions import UserError, AWSServiceError
+from api.common.utilities import strtobool
 from api.controller.auth import auth_router
 from api.controller.client import client_router
 from api.controller.datasets import datasets_router
 from api.controller.jobs import jobs_router
+from api.controller.layers import layers_router
 from api.controller.permissions import permissions_router
 from api.controller.protected_domain import protected_domain_router
 from api.controller.schema import schema_router
@@ -45,6 +47,7 @@ PROJECT_DESCRIPTION = os.environ.get("PROJECT_DESCRIPTION", None)
 PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
+CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
 permissions_service = PermissionsService()
 upload_service = DatasetService()
@@ -65,6 +68,7 @@ app.include_router(protected_domain_router)
 app.include_router(subjects_router)
 app.include_router(jobs_router)
 app.include_router(table_router)
+app.include_router(layers_router)
 
 
 @app.on_event("startup")
@@ -149,7 +153,9 @@ async def methods(request: Request):
 
     try:
         subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-        subject_permissions = permissions_service.get_subject_permissions(subject_id)
+        subject_permissions = permissions_service.get_subject_permission_keys(
+            subject_id
+        )
         allowed_actions = _determine_user_ui_actions(subject_permissions)
         if not any([action_allowed for action_allowed in allowed_actions.values()]):
             error_message = default_error_message
@@ -172,33 +178,22 @@ async def get_permissions_ui():
 
 
 @app.get(
-    f"{BASE_API_PATH}/datasets_ui",
+    f"{BASE_API_PATH}/datasets_ui/{{action}}",
     status_code=HTTP_200_OK,
-    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[
+        Security(secure_endpoint, scopes=[Action.WRITE.value, Action.READ.value])
+    ],
     include_in_schema=False,
 )
-async def get_datasets_ui(request: Request):
+async def get_datasets_ui(action: Action, request: Request):
     subject_id = parse_token(request.cookies.get(RAPID_ACCESS_TOKEN)).subject
-    datasets = upload_service.get_authorised_datasets(subject_id, Action.WRITE)
-
-    return _group_datasets_by_domain(datasets)
+    datasets = upload_service.get_authorised_datasets(subject_id, action)
+    return [dataset.to_dict() for dataset in datasets]
 
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     return FileResponse("static/favicon.ico")
-
-
-def _group_datasets_by_domain(datasets: List[str]):
-    grouped_datasets = {}
-    for dataset in datasets:
-        dataset_data = dataset.split("/")
-        domain, dataset, version = dataset_data[0], dataset_data[1], dataset_data[2]
-        if domain not in grouped_datasets:
-            grouped_datasets[domain] = [{"dataset": dataset, "version": version}]
-        else:
-            grouped_datasets[domain].append({"dataset": dataset, "version": version})
-    return grouped_datasets
 
 
 def _get_subject_id(request: Request):
@@ -226,6 +221,14 @@ def _determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool
         "can_create_schema": any(
             (
                 permission.startswith(Action.DATA_ADMIN.value)
+                for permission in subject_permissions
+            )
+        ),
+        "can_search_catalog": False
+        if CATALOG_DISABLED
+        else any(
+            (
+                permission.startswith(Action.READ.value)
                 for permission in subject_permissions
             )
         ),

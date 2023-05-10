@@ -48,7 +48,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_permissions_for_subject(self, subject_id: str) -> List[str]:
+    def get_permission_keys_for_subject(self, subject_id: str) -> List[str]:
         pass
 
     @abstractmethod
@@ -136,14 +136,31 @@ class DynamoDBAdapter(DatabaseAdapter):
                 "One or more of the provided permissions is invalid or duplicated"
             )
 
-    def get_all_permissions(self) -> List[str]:
+    def get_all_permissions(self) -> List[PermissionItem]:
         try:
             permissions = self.permissions_table.query(
                 KeyConditionExpression=Key("PK").eq(
                     PermissionsTableItem.PERMISSION.value
                 ),
             )
-            return [permission["SK"] for permission in permissions["Items"]]
+            return [
+                PermissionItem(
+                    id=permission["SK"],
+                    type=permission["Type"],
+                    layer=permission.get("Layer"),
+                    sensitivity=permission.get("Sensitivity"),
+                    domain=permission.get("Domain"),
+                )
+                for permission in permissions["Items"]
+            ]
+
+        except KeyError as error:
+            AppLogger.info(
+                f"Error retrieving the permissions, one has an empty key: {error}"
+            )
+            raise AWSServiceError(
+                "Error fetching permissions, one of them is incorrectly formatted, please contact your system administrator"
+            )
 
         except ClientError as error:
             AppLogger.info(f"Error retrieving all permissions: {error}")
@@ -170,7 +187,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 "Error fetching protected permissions, please contact your system administrator"
             )
 
-    def get_permissions_for_subject(self, subject_id: str) -> List[str]:
+    def get_permission_keys_for_subject(self, subject_id: str) -> List[str]:
         AppLogger.info(f"Getting permissions for: {subject_id}")
         try:
             return [

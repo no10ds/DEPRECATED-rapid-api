@@ -30,15 +30,22 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_calls_data_upload_service_successfully(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
+        job_id = "abc-123"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 2, "abc-123"
@@ -49,9 +56,10 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(ANY)
+        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
             subject_id,
+            job_id,
             DatasetMetadata("layer", "domain", "dataset", 2),
             incoming_file_path,
         )
@@ -71,8 +79,10 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_calls_data_upload_service_with_latest_version_when_none_provided(
         self,
+        mock_generate_uuid,
         mock_get_subject_id,
         mock_store_file_to_disk,
         mock_upload_dataset,
@@ -83,12 +93,14 @@ class TestDataUpload(BaseClientTest):
         incoming_file_name = "filename.csv"
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
+        job_id = "abc-123"
         mock_construct_datset_metadata.return_value = DatasetMetadata(
             "layer", "domain", "dataset", 14
         )
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 14, "abc-123"
+        mock_generate_uuid.return_value = job_id
 
         response = self.client.post(
             f"{BASE_API_PATH}/datasets/layer/domain/dataset",
@@ -96,9 +108,10 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(ANY)
+        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
             subject_id,
+            job_id,
             DatasetMetadata("layer", "domain", "dataset", 14),
             incoming_file_path,
         )
@@ -117,15 +130,22 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_calls_data_upload_service_with_version_successfully(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "abc-123"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         raw_file_identifier = "123-456-789"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.return_value = f"{raw_file_identifier}.csv", 2, "abc-123"
@@ -136,9 +156,10 @@ class TestDataUpload(BaseClientTest):
             headers={"Authorization": "Bearer test-token"},
         )
 
-        mock_store_file_to_disk.assert_called_once_with(ANY)
+        mock_store_file_to_disk.assert_called_once_with(job_id, ANY)
         mock_upload_dataset.assert_called_once_with(
             subject_id,
+            job_id,
             DatasetMetadata("layer", "domain", "dataset", 2),
             incoming_file_path,
         )
@@ -172,14 +193,21 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_calls_data_upload_service_fails_when_invalid_dataset_is_uploaded(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "job_id"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = DatasetValidationError(
@@ -194,6 +222,7 @@ class TestDataUpload(BaseClientTest):
 
         mock_upload_dataset.assert_called_once_with(
             subject_id,
+            job_id,
             DatasetMetadata("layer", "domain", "dataset", 3),
             incoming_file_path,
         )
@@ -246,14 +275,21 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_raises_error_when_crawler_is_already_running(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "job_id"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = CrawlerIsNotReadyError("Some message")
@@ -266,6 +302,7 @@ class TestDataUpload(BaseClientTest):
 
         mock_upload_dataset.assert_called_once_with(
             subject_id,
+            job_id,
             DatasetMetadata("layer", "domain", "dataset", 4),
             incoming_file_path,
         )
@@ -276,14 +313,21 @@ class TestDataUpload(BaseClientTest):
     @patch.object(DataService, "upload_dataset")
     @patch("api.controller.datasets.store_file_to_disk")
     @patch("api.controller.datasets.get_subject_id")
+    @patch("api.controller.datasets.generate_uuid")
     def test_raises_error_when_fails_to_get_crawler_state(
-        self, mock_get_subject_id, mock_store_file_to_disk, mock_upload_dataset
+        self,
+        mock_generate_uuid,
+        mock_get_subject_id,
+        mock_store_file_to_disk,
+        mock_upload_dataset,
     ):
+        job_id = "job_id"
         file_content = b"some,content"
         incoming_file_path = Path("filename.csv")
         incoming_file_name = "filename.csv"
         subject_id = "subject_id"
 
+        mock_generate_uuid.return_value = job_id
         mock_get_subject_id.return_value = subject_id
         mock_store_file_to_disk.return_value = incoming_file_path
         mock_upload_dataset.side_effect = AWSServiceError("Some message")
@@ -296,6 +340,7 @@ class TestDataUpload(BaseClientTest):
 
         mock_upload_dataset.assert_called_once_with(
             subject_id,
+            job_id,
             DatasetMetadata("layer", "domain", "dataset", 3),
             incoming_file_path,
         )
@@ -308,6 +353,64 @@ class TestListDatasets(BaseClientTest):
     def setup_method(self):
         self.mock_s3_client = Mock()
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
+
+    @patch.object(AWSResourceAdapter, "get_enriched_datasets_metadata")
+    def test_returns_enriched_metadata_for_all_datasets(
+        self, mock_get_enriched_datasets_metadata
+    ):
+        metadata_response = [
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
+                domain="domain1",
+                dataset="dataset1",
+                tags={"tag1": "value1"},
+                description="",
+                version=1,
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
+                domain="domain2",
+                dataset="dataset2",
+                tags={"tag2": "value2"},
+                version=1,
+                description="some test description",
+            ),
+        ]
+
+        mock_get_enriched_datasets_metadata.return_value = metadata_response
+
+        expected_response = [
+            {
+                "layer": "layer",
+                "domain": "domain1",
+                "dataset": "dataset1",
+                "version": 1,
+                "description": "",
+                "tags": {"tag1": "value1"},
+            },
+            {
+                "layer": "layer",
+                "domain": "domain2",
+                "dataset": "dataset2",
+                "version": 1,
+                "description": "some test description",
+                "tags": {"tag2": "value2"},
+            },
+        ]
+
+        expected_query = DatasetFilters()
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets?enriched=True",
+            headers={"Authorization": "Bearer test-token"},
+            # Not passing a JSON body here to filter by tags
+        )
+
+        _, kwargs = mock_get_enriched_datasets_metadata.call_args
+        assert expected_query == kwargs.get("query")
+
+        assert response.status_code == 200
+        assert response.json() == expected_response
 
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     def test_returns_metadata_for_all_datasets(self, mock_get_datasets_metadata):
@@ -428,6 +531,69 @@ class TestListDatasets(BaseClientTest):
         assert response.status_code == 200
         assert response.json() == expected_response
 
+    @patch.object(AWSResourceAdapter, "get_enriched_datasets_metadata")
+    def test_returns_enriched_metadata_for_datasets_with_certain_tags(
+        self, mock_get_enriched_datasets_metadata
+    ):
+        metadata_response = [
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
+                domain="domain1",
+                dataset="dataset1",
+                tags={"tag1": "value1"},
+                version=1,
+                description="",
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
+                domain="domain2",
+                dataset="dataset2",
+                tags={"tag2": "value2"},
+                version=1,
+                description="some test description",
+            ),
+        ]
+
+        mock_get_enriched_datasets_metadata.return_value = metadata_response
+
+        expected_response = [
+            {
+                "layer": "layer",
+                "domain": "domain1",
+                "dataset": "dataset1",
+                "version": 1,
+                "tags": {"tag1": "value1"},
+                "description": "",
+            },
+            {
+                "layer": "layer",
+                "domain": "domain2",
+                "dataset": "dataset2",
+                "version": 1,
+                "tags": {"tag2": "value2"},
+                "description": "some test description",
+            },
+        ]
+
+        tag_filters = {
+            "tag1": "value1",
+            "tag2": "",
+        }
+
+        expected_query_object = DatasetFilters(sensitivity=None, tags=tag_filters)
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets?enriched=True",
+            headers={"Authorization": "Bearer test-token"},
+            json={"tags": tag_filters},
+        )
+
+        _, kwargs = mock_get_enriched_datasets_metadata.call_args
+        assert expected_query_object == kwargs.get("query")
+
+        assert response.status_code == 200
+        assert response.json() == expected_response
+
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     def test_returns_metadata_for_datasets_with_certain_sensitivity(
         self, mock_get_datasets_metadata
@@ -481,6 +647,64 @@ class TestListDatasets(BaseClientTest):
         )
 
         _, kwargs = mock_get_datasets_metadata.call_args
+
+        assert expected_query_object == kwargs.get("query")
+        assert response.status_code == 200
+        assert response.json() == expected_response
+
+    @patch.object(AWSResourceAdapter, "get_enriched_datasets_metadata")
+    def test_returns_enriched_metadata_for_datasets_with_certain_sensitivity(
+        self, mock_get_enriched_datasets_metadata
+    ):
+        metadata_response = [
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
+                domain="domain1",
+                dataset="dataset1",
+                version=1,
+                tags={"sensitivity": "PUBLIC", "tag1": "value1"},
+                description="",
+            ),
+            AWSResourceAdapter.EnrichedDatasetMetaData(
+                layer="layer",
+                domain="domain2",
+                dataset="dataset2",
+                version=1,
+                tags={"sensitivity": "PUBLIC"},
+                description="some test description",
+            ),
+        ]
+
+        mock_get_enriched_datasets_metadata.return_value = metadata_response
+
+        expected_response = [
+            {
+                "layer": "layer",
+                "domain": "domain1",
+                "dataset": "dataset1",
+                "version": 1,
+                "tags": {"sensitivity": "PUBLIC", "tag1": "value1"},
+                "description": "",
+            },
+            {
+                "layer": "layer",
+                "domain": "domain2",
+                "dataset": "dataset2",
+                "tags": {"sensitivity": "PUBLIC"},
+                "version": 1,
+                "description": "some test description",
+            },
+        ]
+
+        expected_query_object = DatasetFilters(sensitivity="PUBLIC")
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/datasets?enriched=true",
+            headers={"Authorization": "Bearer test-token"},
+            json={"sensitivity": "PUBLIC"},
+        )
+
+        _, kwargs = mock_get_enriched_datasets_metadata.call_args
 
         assert expected_query_object == kwargs.get("query")
         assert response.status_code == 200

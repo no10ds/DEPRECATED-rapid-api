@@ -77,8 +77,6 @@ class BaseJourneyTest(ABC):
 
 class TestGeneralBehaviour(BaseJourneyTest):
     def test_http_request_is_redirected_to_https(self):
-        print("This is the url")
-        print(self.status_url())
         response = requests.get(self.status_url())
         assert f"https://{DOMAIN_NAME}" in response.url
 

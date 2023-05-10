@@ -218,7 +218,7 @@ class TestProtectedDomainService:
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             existing_domain_permissions
         )
-        self.dynamodb_adapter.get_permissions_for_subject.return_value = [
+        self.dynamodb_adapter.get_permission_keys_for_subject.return_value = [
             "READ_ALL_PROTECTED_OTHER",
             "WRITE_ALL_PROTECTED_OTHER",
             "DATA_ADMIN",
@@ -390,7 +390,7 @@ class TestProtectedDomainService:
             generated_permissions
         )
         self.resource_adapter.get_datasets_metadata.return_value = []
-        self.dynamodb_adapter.get_permissions_for_subject.return_value = [
+        self.dynamodb_adapter.get_permission_keys_for_subject.return_value = [
             "READ_ALL_PROTECTED_DOMAIN",
             "WRITE_ALL_PROTECTED_DOMAIN",
         ]

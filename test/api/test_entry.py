@@ -5,6 +5,7 @@ from api.application.services.dataset_service import DatasetService
 from api.common.config.auth import Action
 from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import AWSServiceError, UserError
+from api.domain.dataset_metadata import DatasetMetadata
 from api.entry import _determine_user_ui_actions
 
 from test.api.common.controller_test_utils import BaseClientTest
@@ -50,49 +51,81 @@ class TestStatus(BaseClientTest):
 class TestDatasetsUI(BaseClientTest):
     @patch("api.entry.parse_token")
     @patch.object(DatasetService, "get_authorised_datasets")
-    def test_gets_datasets_for_ui(self, mock_get_authorised_datasets, mock_parse_token):
+    def test_gets_datasets_for_ui_write(
+        self, mock_get_authorised_datasets, mock_parse_token
+    ):
         subject_id = "123abc"
         mock_token = Mock()
         mock_token.subject = subject_id
         mock_parse_token.return_value = mock_token
 
         mock_get_authorised_datasets.return_value = [
-            "domain1/datset1/1",
-            "domain1/datset2/1",
-            "domain2/dataset3/1",
+            DatasetMetadata("layer", "domain1", "datset1", 1),
+            DatasetMetadata("layer", "domain1", "datset2", 1),
+            DatasetMetadata("layer", "domain2", "dataset3", 1),
         ]
 
         response = self.client.get(
-            f"{BASE_API_PATH}/datasets_ui", cookies={"rat": "user_token"}
+            f"{BASE_API_PATH}/datasets_ui/WRITE", cookies={"rat": "user_token"}
         )
 
         mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.WRITE)
         assert response.status_code == 200
 
+    @patch("api.entry.parse_token")
+    @patch.object(DatasetService, "get_authorised_datasets")
+    def test_gets_datasets_for_ui_read(
+        self, mock_get_authorised_datasets, mock_parse_token
+    ):
+        subject_id = "123abc"
+        mock_token = Mock()
+        mock_token.subject = subject_id
+        mock_parse_token.return_value = mock_token
+
+        mock_get_authorised_datasets.return_value = [
+            DatasetMetadata("layer", "domain1", "datset1", 1),
+            DatasetMetadata("layer", "domain1", "datset2", 1),
+            DatasetMetadata("layer", "domain2", "dataset3", 1),
+        ]
+
+        response = self.client.get(
+            f"{BASE_API_PATH}/datasets_ui/READ", cookies={"rat": "user_token"}
+        )
+
+        mock_get_authorised_datasets.assert_called_once_with(subject_id, Action.READ)
+        assert response.status_code == 200
+
 
 class TestMethodsUI(BaseClientTest):
     @pytest.mark.parametrize(
-        "permissions,can_manage_users,can_upload,can_download,can_create_schema",
+        "permissions,can_manage_users,can_upload,can_download,can_create_schema,can_search_catalog",
         [
-            ([], False, False, False, False),
-            (["READ_ALL"], False, False, True, False),
-            (["WRITE_ALL"], False, True, False, False),
-            (["DATA_ADMIN"], False, False, False, True),
-            (["USER_ADMIN"], True, False, False, False),
-            (["READ_ALL", "WRITE_ALL"], False, True, True, False),
-            (["USER_ADMIN", "READ_ALL", "WRITE_ALL"], True, True, True, False),
-            (["READ_PRIVATE", "WRITE_PUBLIC"], False, True, True, False),
+            ([], False, False, False, False, False),
+            (["READ_ALL"], False, False, True, False, True),
+            (["WRITE_ALL"], False, True, False, False, False),
+            (["DATA_ADMIN"], False, False, False, True, False),
+            (["USER_ADMIN"], True, False, False, False, False),
+            (["READ_ALL", "WRITE_ALL"], False, True, True, False, True),
+            (["USER_ADMIN", "READ_ALL", "WRITE_ALL"], True, True, True, False, True),
+            (["READ_PRIVATE", "WRITE_PUBLIC"], False, True, True, False, True),
             (
                 ["READ_PROTECTED_domain1", "WRITE_PROTECTED_domain2"],
                 False,
                 True,
                 True,
                 False,
+                True,
             ),
         ],
     )
     def test_determines_user_allowed_ui_actions(
-        self, permissions, can_manage_users, can_upload, can_download, can_create_schema
+        self,
+        permissions,
+        can_manage_users,
+        can_upload,
+        can_download,
+        can_create_schema,
+        can_search_catalog,
     ):
         allowed_actions = _determine_user_ui_actions(permissions)
 
@@ -100,6 +133,7 @@ class TestMethodsUI(BaseClientTest):
         assert allowed_actions["can_upload"] is can_upload
         assert allowed_actions["can_download"] is can_download
         assert allowed_actions["can_create_schema"] is can_create_schema
+        assert allowed_actions["can_search_catalog"] is can_search_catalog
 
     @patch("api.entry.parse_token")
     @patch("api.entry.permissions_service")
@@ -110,7 +144,7 @@ class TestMethodsUI(BaseClientTest):
         mock_token.subject = "123abc"
         mock_parse_token.return_value = mock_token
 
-        mock_permissions_service.get_subject_permissions.return_value = [
+        mock_permissions_service.get_subject_permission_keys.return_value = [
             "READ_ALL",
             "WRITE_ALL",
             "USER_ADMIN",
@@ -128,6 +162,7 @@ class TestMethodsUI(BaseClientTest):
             "can_upload": True,
             "can_download": True,
             "can_create_schema": True,
+            "can_search_catalog": True,
         }
 
     @patch("api.entry.parse_token")
@@ -139,7 +174,7 @@ class TestMethodsUI(BaseClientTest):
         mock_token.subject = "123abc"
         mock_parse_token.return_value = mock_token
 
-        mock_permissions_service.get_subject_permissions.side_effect = UserError(
+        mock_permissions_service.get_subject_permission_keys.side_effect = UserError(
             "a message"
         )
 
@@ -161,8 +196,8 @@ class TestMethodsUI(BaseClientTest):
         mock_token.subject = "123abc"
         mock_parse_token.return_value = mock_token
 
-        mock_permissions_service.get_subject_permissions.side_effect = AWSServiceError(
-            "a custom message"
+        mock_permissions_service.get_subject_permission_keys.side_effect = (
+            AWSServiceError("a custom message")
         )
 
         response = self.client.get(
