@@ -14,7 +14,7 @@ class TestGetAllJobs:
     def setup(self):
         self.job_service = JobService()
 
-    @patch.object(DynamoDBAdapter, "get_jobs")
+    @patch.object(DynamoDBAdapter, "get_jobs_by_subject")
     @patch.object(S3Adapter, "get_dataset_sensitivity")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
     @patch.object(ProtectedDomainService, "list_protected_domains")
@@ -23,7 +23,7 @@ class TestGetAllJobs:
         mock_list_protected_domains,
         mock_get_permissions_for_subject,
         mock_get_dataset_sensitivity,
-        mock_get_jobs,
+        mock_get_jobs_by_subject,
     ):
         # GIVEN
         mock_get_permissions_for_subject.return_value = ["READ_ALL"]
@@ -51,17 +51,17 @@ class TestGetAllJobs:
             },
         ]
 
-        mock_get_jobs.return_value = expected
+        mock_get_jobs_by_subject.return_value = expected
 
         # WHEN
         result = self.job_service.get_all_jobs("111222333")
 
         # THEN
         assert result == expected
-        mock_get_jobs.assert_called_once()
         mock_get_permissions_for_subject.assert_called_once_with("111222333")
+        mock_get_jobs_by_subject.assert_called_once()
 
-    @patch.object(DynamoDBAdapter, "get_jobs")
+    @patch.object(DynamoDBAdapter, "get_jobs_by_subject")
     @patch.object(S3Adapter, "get_dataset_sensitivity")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
     @patch.object(ProtectedDomainService, "list_protected_domains")
@@ -70,7 +70,7 @@ class TestGetAllJobs:
         mock_list_protected_domains,
         mock_get_permissions_for_subject,
         mock_get_dataset_sensitivity,
-        mock_get_jobs,
+        mock_get_jobs_by_subject,
     ):
         # GIVEN
         mock_get_permissions_for_subject.return_value = ["WRITE_ALL"]
@@ -109,17 +109,17 @@ class TestGetAllJobs:
             }
         ]
 
-        mock_get_jobs.return_value = all_jobs
+        mock_get_jobs_by_subject.return_value = all_jobs
 
         # WHEN
         result = self.job_service.get_all_jobs("111222333")
 
         # THEN
         assert result == expected
-        mock_get_jobs.assert_called_once()
         mock_get_permissions_for_subject.assert_called_once_with("111222333")
+        mock_get_jobs_by_subject.assert_called_once()
 
-    @patch.object(DynamoDBAdapter, "get_jobs")
+    @patch.object(DynamoDBAdapter, "get_jobs_by_subject")
     @patch.object(S3Adapter, "get_dataset_sensitivity")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
     @patch.object(ProtectedDomainService, "list_protected_domains")
@@ -128,7 +128,7 @@ class TestGetAllJobs:
         mock_list_protected_domains,
         mock_get_permissions_for_subject,
         mock_get_dataset_sensitivity,
-        mock_get_jobs,
+        mock_get_jobs_by_subject,
     ):
         # GIVEN
         mock_get_permissions_for_subject.return_value = ["READ_PROTECTED_DOMAIN1"]
@@ -201,17 +201,17 @@ class TestGetAllJobs:
             },
         ]
 
-        mock_get_jobs.return_value = all_jobs
+        mock_get_jobs_by_subject.return_value = all_jobs
 
         # WHEN
         result = self.job_service.get_all_jobs("111222333")
 
         # THEN
         assert result == expected
-        mock_get_jobs.assert_called_once()
         mock_get_permissions_for_subject.assert_called_once_with("111222333")
+        mock_get_jobs_by_subject.assert_called_once()
 
-    @patch.object(DynamoDBAdapter, "get_jobs")
+    @patch.object(DynamoDBAdapter, "get_jobs_by_subject")
     @patch.object(S3Adapter, "get_dataset_sensitivity")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
     @patch.object(ProtectedDomainService, "list_protected_domains")
@@ -220,7 +220,7 @@ class TestGetAllJobs:
         mock_list_protected_domains,
         mock_get_permissions_for_subject,
         mock_get_dataset_sensitivity,
-        mock_get_jobs,
+        mock_get_jobs_by_subject,
     ):
         # GIVEN
         mock_get_permissions_for_subject.return_value = ["READ_PRIVATE"]
@@ -282,17 +282,17 @@ class TestGetAllJobs:
             },
         ]
 
-        mock_get_jobs.return_value = all_jobs
+        mock_get_jobs_by_subject.return_value = all_jobs
 
         # WHEN
         result = self.job_service.get_all_jobs("111222333")
 
         # THEN
         assert result == expected
-        mock_get_jobs.assert_called_once()
         mock_get_permissions_for_subject.assert_called_once_with("111222333")
+        mock_get_jobs_by_subject.assert_called_once()
 
-    @patch.object(DynamoDBAdapter, "get_jobs")
+    @patch.object(DynamoDBAdapter, "get_jobs_by_subject")
     @patch.object(S3Adapter, "get_dataset_sensitivity")
     @patch.object(DynamoDBAdapter, "get_permissions_for_subject")
     @patch.object(ProtectedDomainService, "list_protected_domains")
@@ -301,7 +301,7 @@ class TestGetAllJobs:
         mock_list_protected_domains,
         mock_get_permissions_for_subject,
         mock_get_dataset_sensitivity,
-        mock_get_jobs,
+        mock_get_jobs_by_subject,
     ):
         # GIVEN
         mock_get_permissions_for_subject.return_value = ["DATA_ADMIN"]
@@ -342,15 +342,15 @@ class TestGetAllJobs:
             },
         ]
 
-        mock_get_jobs.return_value = expected
+        mock_get_jobs_by_subject.return_value = expected
 
         # WHEN
         result = self.job_service.get_all_jobs("111222333")
 
         # THEN
         assert result == expected
-        mock_get_jobs.assert_called_once()
         mock_get_permissions_for_subject.assert_called_once_with("111222333")
+        mock_get_jobs_by_subject.assert_called_once()
 
 
 class TestGetJob:

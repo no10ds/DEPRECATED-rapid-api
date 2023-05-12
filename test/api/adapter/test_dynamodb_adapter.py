@@ -562,8 +562,10 @@ class TestDynamoDBAdapterServiceTable:
         self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
 
     @patch("api.domain.Jobs.UploadJob.time")
-    def test_store_async_upload_job(self, mock_time):
-        mock_time.time.return_value = 1000
+    @patch("api.domain.Jobs.Job.time")
+    def test_store_async_upload_job(self, mock_job_time, mock_upload_job_time):
+        mock_job_time.time.return_value = 1000
+        mock_upload_job_time.time.return_value = 1000
 
         self.dynamo_adapter.store_upload_job(
             UploadJob(
@@ -592,6 +594,7 @@ class TestDynamoDBAdapterServiceTable:
                 "Dataset": "dataset2",
                 "Version": 4,
                 "TTL": 605800,
+                "StartTime": 1000,
             },
         )
 
@@ -599,8 +602,10 @@ class TestDynamoDBAdapterServiceTable:
 
     @patch("api.domain.Jobs.Job.uuid")
     @patch("api.domain.Jobs.QueryJob.time")
-    def test_store_async_query_job(self, mock_time, mock_uuid):
-        mock_time.time.return_value = 2000
+    @patch("api.domain.Jobs.Job.time")
+    def test_store_async_query_job(self, mock_job_time, mock_query_job_time, mock_uuid):
+        mock_job_time.time.return_value = 2000
+        mock_query_job_time.time.return_value = 2000
         mock_uuid.uuid4.return_value = "abc-123"
         version = 5
 
@@ -622,13 +627,14 @@ class TestDynamoDBAdapterServiceTable:
                 "Version": 5,
                 "ResultsURL": None,
                 "TTL": 88400,
+                "StartTime": 2000,
             },
         )
 
         self.permissions_table.assert_not_called()
 
     @patch("api.adapter.dynamodb_adapter.time")
-    def test_get_jobs(self, mock_time):
+    def test_get_jobs_by_subject(self, mock_time):
         mock_time.time.return_value = 19821
         self.service_table.query.return_value = {
             "Items": [
@@ -672,7 +678,7 @@ class TestDynamoDBAdapterServiceTable:
             },
         ]
 
-        result = self.dynamo_adapter.get_jobs("subject-123")
+        result = self.dynamo_adapter.get_jobs_by_subject("subject-123")
 
         assert result == expected
         self.permissions_table.assert_not_called()
@@ -683,7 +689,7 @@ class TestDynamoDBAdapterServiceTable:
         )
 
     @patch("api.adapter.dynamodb_adapter.time")
-    def test_get_jobs_for_no_jobs_returned(self, mock_time):
+    def test_get_jobs_by_subject_for_no_jobs_returned(self, mock_time):
         mock_time.time.return_value = 19821
         self.service_table.query.return_value = {
             "Items": [],
@@ -692,7 +698,7 @@ class TestDynamoDBAdapterServiceTable:
         }
         expected = []
 
-        result = self.dynamo_adapter.get_jobs("subject-123")
+        result = self.dynamo_adapter.get_jobs_by_subject("subject-123")
 
         assert result == expected
         self.permissions_table.assert_not_called()
@@ -700,6 +706,22 @@ class TestDynamoDBAdapterServiceTable:
             KeyConditionExpression=Key("PK").eq("JOB") & Key("SK2").eq("subject-123"),
             FilterExpression=Attr("TTL").gt(19821),
             IndexName="JOB_SUBJECT_ID",
+        )
+
+    def test_get_job_count_by_expression(self):
+        self.service_table.query.return_value = {
+            "Count": 123,
+            "ScannedCount": 123,
+        }
+        expected = 123
+
+        result = self.dynamo_adapter.get_job_count_by_expression("expression")
+
+        assert result == expected
+        self.service_table.query.assert_called_once_with(
+            Select="COUNT",
+            KeyConditionExpression=Key("PK").eq("JOB"),
+            FilterExpression="expression",
         )
 
     def test_get_job(self):
@@ -764,7 +786,7 @@ class TestDynamoDBAdapterServiceTable:
 
         self.permissions_table.assert_not_called()
 
-    def test_raises_error_when_get_jobs_fails(self):
+    def test_raises_error_when_get_jobs_by_subject_fails(self):
         self.service_table.query.side_effect = ClientError(
             error_response={"Error": {"Code": "DatabaseConnectionError"}},
             operation_name="Scan",
@@ -773,10 +795,9 @@ class TestDynamoDBAdapterServiceTable:
         with pytest.raises(
             AWSServiceError, match="Error fetching jobs from the database"
         ):
-            self.dynamo_adapter.get_jobs("subject-123")
+            self.dynamo_adapter.get_jobs_by_subject("subject-123")
 
     def test_update_job(self):
-
         job = UploadJob(
             "subject-123",
             "abc-123",
@@ -813,7 +834,6 @@ class TestDynamoDBAdapterServiceTable:
         )
 
     def test_update_job_without_errors(self):
-
         job = UploadJob(
             "subject-123",
             "abc-123",
@@ -849,7 +869,6 @@ class TestDynamoDBAdapterServiceTable:
         )
 
     def test_update_job_raises_error_when_fails(self):
-
         job = UploadJob(
             "subject-123",
             "abc-123",

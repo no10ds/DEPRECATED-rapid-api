@@ -1,9 +1,10 @@
 import uuid
 from pathlib import Path
 from threading import Thread
-from time import sleep
+from time import sleep, time
 from typing import List, Optional, Tuple
 
+from boto3.dynamodb.conditions import Attr
 import pandas as pd
 
 from api.adapter.athena_adapter import AthenaAdapter
@@ -23,9 +24,10 @@ from api.common.custom_exceptions import (
     ConflictError,
     UserError,
     AWSServiceError,
+    CrawlerCannotBeStartedError,
+    CrawlerIsNotReadyError,
     CrawlerUpdateError,
     DatasetValidationError,
-    CrawlerIsNotReadyError,
     UnprocessableDatasetError,
     QueryExecutionError,
 )
@@ -36,20 +38,24 @@ from api.common.data_handlers import (
 )
 from api.common.logger import AppLogger
 from api.common.utilities import handle_version_retrieval, build_error_message_list
-from api.domain.Jobs.QueryJob import QueryJob, QueryStep
-from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.data_types import DataTypes
 from api.domain.enriched_schema import (
+    EnrichedColumn,
     EnrichedSchema,
     EnrichedSchemaMetadata,
-    EnrichedColumn,
 )
+from api.domain.Jobs.Job import JobStatus
+from api.domain.Jobs.QueryJob import QueryJob, QueryStep
+from api.domain.Jobs.UploadJob import UploadJob, UploadStep
 from api.domain.schema import Schema
 from api.domain.sql_query import SQLQuery
 from api.domain.storage_metadata import StorageMetaData
 
 FIRST_SCHEMA_VERSION_NUMBER = 1
 SCHEMA_VERSION_INCREMENT = 1
+
+CRAWLER_START_WAIT_INTERVAL = 10
+CRAWLER_START_WAIT_RETRIES = 120
 
 
 class DataService:
@@ -133,6 +139,8 @@ class DataService:
             self.s3_adapter.upload_raw_data(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.DATA_UPLOAD)
             self.process_chunks(schema, file_path, raw_file_identifier)
+            self.job_service.update_step(job, UploadStep.DATA_PROCESS)
+            self.process_within_glue(schema)
             self.job_service.update_step(job, UploadStep.CLEAN_UP)
             delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.NONE)
@@ -189,8 +197,6 @@ class DataService:
         if schema.has_overwrite_behaviour():
             self.remove_existing_data(schema, raw_file_identifier)
 
-        self.glue_adapter.start_crawler(schema.get_domain(), schema.get_dataset())
-        self.glue_adapter.update_catalog_table_config(schema)
         AppLogger.info(
             f"Processing chunks for {schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} completed"
         )
@@ -204,6 +210,51 @@ class DataService:
 
     def update_table_config(self, domain: str, dataset: str) -> None:
         schema = self.s3_adapter.find_schema(domain, dataset, 1)
+        self.glue_adapter.update_catalog_table_config(schema)
+
+    def first_in_queue_to_start_crawler(self):
+        """
+        Check if there are any older runs that are also waiting to start a crawler.
+        Return false if there are.
+        """
+
+        start_time_window = int(
+            time() - CRAWLER_START_WAIT_RETRIES * CRAWLER_START_WAIT_INTERVAL
+        )
+        return (
+            self.job_service.get_job_count_by_expression(
+                Attr("Status").eq(JobStatus.IN_PROGRESS.value)
+                & Attr("Step").eq(UploadStep.DATA_PROCESS.value)
+                # Filter by start time to remove any potentially hanging jobs
+                & Attr("StartTime").gt(start_time_window)
+            )
+            == 0
+        )
+
+    def wait_until_crawler_can_be_started(self) -> None:
+        """
+        Wait until the crawler can be started.
+        This depends on there being a free IP and no older jobs in the queue.
+        """
+        remaining_retries = CRAWLER_START_WAIT_RETRIES
+
+        while remaining_retries > 0:
+            if (
+                self.first_in_queue_to_start_crawler()
+                and self.glue_adapter.network_can_run_more_crawlers()
+            ):
+                return
+            else:
+                remaining_retries -= 1
+                if remaining_retries == 0:
+                    raise CrawlerCannotBeStartedError(
+                        "There were too many crawlers in the queue and no free IPs to start the crawler"
+                    )
+                sleep(CRAWLER_START_WAIT_INTERVAL)
+
+    def process_within_glue(self, schema: Schema):
+        self.wait_until_crawler_can_be_started()
+        self.glue_adapter.start_crawler(schema.get_domain(), schema.get_dataset())
         self.glue_adapter.update_catalog_table_config(schema)
 
     def remove_existing_data(self, schema: Schema, raw_file_identifier: str) -> None:

@@ -66,7 +66,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_jobs(self) -> List[Job]:
+    def get_jobs_by_subject(self) -> List[Job]:
         pass
 
     @abstractmethod
@@ -250,6 +250,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Dataset": upload_job.dataset,
             "Version": upload_job.version,
             "TTL": upload_job.expiry_time,
+            "StartTime": upload_job.start_time,
         }
         self._store_job(item_config)
 
@@ -267,10 +268,11 @@ class DynamoDBAdapter(DatabaseAdapter):
             "Version": query_job.version,
             "ResultsURL": query_job.results_url,
             "TTL": query_job.expiry_time,
+            "StartTime": query_job.start_time,
         }
         self._store_job(item_config)
 
-    def get_jobs(self, subject_id: str) -> List[Dict]:
+    def get_jobs_by_subject(self, subject_id: str) -> List[Dict]:
         try:
             return [
                 self._map_job(job)
@@ -281,6 +283,16 @@ class DynamoDBAdapter(DatabaseAdapter):
                     IndexName="JOB_SUBJECT_ID",
                 )["Items"]
             ]
+        except ClientError as error:
+            self._handle_client_error("Error fetching jobs from the database", error)
+
+    def get_job_count_by_expression(self, expression) -> int:
+        try:
+            return self.service_table.query(
+                Select="COUNT",
+                KeyConditionExpression=Key("PK").eq(ServiceTableItem.JOB.value),
+                FilterExpression=expression,
+            )["Count"]
         except ClientError as error:
             self._handle_client_error("Error fetching jobs from the database", error)
 

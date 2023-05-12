@@ -25,6 +25,7 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerUpdateError,
 )
+from api.common.aws_utilities import get_available_ip_count
 from api.common.logger import AppLogger
 from api.domain.data_types import DataTypes
 from api.domain.schema import Column, Schema
@@ -215,6 +216,21 @@ class GlueAdapter:
             "Parameters": table_definition["Table"]["Parameters"],
             "StorageDescriptor": table_definition["Table"]["StorageDescriptor"],
         }
+
+    def network_can_run_more_crawlers(
+        self,
+    ) -> bool:
+        try:
+            response = self.glue_client.get_connection(Name=self.glue_connection_name)
+            subnet_id = response["Connection"]["PhysicalConnectionRequirements"][
+                "SubnetId"
+            ]
+        except ClientError:
+            raise AWSServiceError(
+                f"Failed to get the glue connection info for {GLUE_CONNECTION_NAME}"
+            )
+
+        return get_available_ip_count(subnet_id) > 0
 
     def _get_crawler_state(self, domain: str, dataset: str) -> str:
         try:

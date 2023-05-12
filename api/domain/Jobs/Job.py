@@ -42,6 +42,7 @@ class Job:
         self.expiry_time: int = int(
             time.time() + DEFAULT_JOB_EXPIRY_DAYS * 24 * 60 * 60
         )
+        self.start_time: int = int(time.time())
 
     def set_step(self, step: JobStep) -> None:
         self.step = step

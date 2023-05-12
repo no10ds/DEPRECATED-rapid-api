@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch, MagicMock, call
 
 import pandas as pd
 import pytest
+from boto3.dynamodb.conditions import Attr
 from botocore.exceptions import ClientError
 
 from api.application.services.data_service import (
@@ -14,6 +15,7 @@ from api.common.config.auth import SensitivityLevel
 from api.common.config.constants import DATASET_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
+    CrawlerCannotBeStartedError,
     CrawlerIsNotReadyError,
     SchemaValidationError,
     ConflictError,
@@ -613,10 +615,12 @@ class TestUploadDataset:
     @patch.object(DataService, "wait_until_crawler_is_ready")
     @patch.object(DataService, "validate_incoming_data")
     @patch.object(DataService, "process_chunks")
+    @patch.object(DataService, "process_within_glue")
     @patch("api.application.services.data_service.delete_incoming_raw_file")
     def test_process_upload_calls_relevant_methods(
         self,
         mock_delete_incoming_raw_file,
+        mock_process_within_glue,
         mock_process_chunks,
         mock_validate_incoming_data,
         mock_wait_until_crawler_is_ready,
@@ -630,6 +634,7 @@ class TestUploadDataset:
             call(upload_job, UploadStep.VALIDATION),
             call(upload_job, UploadStep.RAW_DATA_UPLOAD),
             call(upload_job, UploadStep.DATA_UPLOAD),
+            call(upload_job, UploadStep.DATA_PROCESS),
             call(upload_job, UploadStep.CLEAN_UP),
             call(upload_job, UploadStep.NONE),
         ]
@@ -650,6 +655,7 @@ class TestUploadDataset:
         mock_process_chunks.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
+        mock_process_within_glue.assert_called_once_with(schema)
         mock_delete_incoming_raw_file.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
@@ -690,22 +696,6 @@ class TestUploadDataset:
             self.data_service.wait_until_crawler_is_ready(schema)
 
         assert mock_sleep.call_count == 19
-
-    @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_starts_crawler_and_updates_catalog_table_config(
-        self, mock_construct_chunked_dataframe
-    ):
-        # Given
-        schema = self.valid_schema
-
-        mock_construct_chunked_dataframe.return_value = []
-
-        # When
-        self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
-
-        # Then
-        self.glue_adapter.start_crawler.assert_called_once_with("some", "other")
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
     @patch("api.application.services.data_service.delete_incoming_raw_file")
     @patch.object(DataService, "validate_incoming_data")
@@ -1080,6 +1070,81 @@ class TestUploadDataset:
         self.s3_adapter.upload_partitioned_data.assert_called_once_with(
             "some", "other", 2, filename, partitioned_dataframe
         )
+
+    # Process within Glue --------------------------------------------
+    @pytest.mark.parametrize("count, expected", [(1, False), (0, True)])
+    @patch("api.application.services.data_service.time")
+    def test_first_in_queue_to_start_crawler(
+        self, mock_time: MagicMock, count: int, expected: bool
+    ):
+        self.job_service.get_job_count_by_expression = Mock(return_value=count)
+        mock_time.return_value = 10000
+        res = self.data_service.first_in_queue_to_start_crawler()
+        assert res == expected
+        self.job_service.get_job_count_by_expression.assert_called_once_with(
+            Attr("Status").eq("IN PROGRESS")
+            & Attr("Step").eq("DATA_PROCESS")
+            & Attr("StartTime").gt(int(10000 - 1200))
+        )
+
+    @patch("api.application.services.data_service.sleep")
+    def test_wait_until_crawler_can_be_started_success(self, mock_sleep: MagicMock):
+        self.data_service.first_in_queue_to_start_crawler = Mock(return_value=True)
+        self.glue_adapter.network_can_run_more_crawlers = Mock(return_value=True)
+
+        self.data_service.wait_until_crawler_can_be_started()
+        mock_sleep.assert_not_called()
+
+    @pytest.mark.parametrize(
+        "queued, free_ips", [(True, False), (False, True), (False, False)]
+    )
+    @patch("api.application.services.data_service.CRAWLER_START_WAIT_RETRIES", 3)
+    @patch("api.application.services.data_service.sleep")
+    def test_wait_until_crawler_can_be_started_fails(
+        self, mock_sleep: MagicMock, queued: bool, free_ips: bool
+    ):
+        self.data_service.first_in_queue_to_start_crawler = Mock(return_value=queued)
+        self.glue_adapter.network_can_run_more_crawlers = Mock(return_value=free_ips)
+
+        with pytest.raises(
+            CrawlerCannotBeStartedError,
+            match="There were too many crawlers in the queue and no free IPs to start the crawler",
+        ):
+            self.data_service.wait_until_crawler_can_be_started()
+
+        mock_sleep.assert_has_calls([call(10), call(10)])
+        assert self.data_service.first_in_queue_to_start_crawler.call_count == 3
+        assert self.data_service.first_in_queue_to_start_crawler.call_count == 3
+
+    def test_process_within_glue(self):
+        schema = Schema(
+            metadata=SchemaMetadata(
+                domain="domain1",
+                dataset="dataset1",
+                version="1",
+                sensitivity="PUBLIC",
+                owners=[Owner(name="owner", email="owner@email.com")],
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="Int64",
+                    allow_null=True,
+                )
+            ],
+        )
+        self.data_service.wait_until_crawler_can_be_started = Mock()
+        self.glue_adapter.start_crawler = Mock()
+        self.glue_adapter.update_catalog_table_config = Mock()
+
+        self.data_service.process_within_glue(schema)
+
+        self.data_service.wait_until_crawler_can_be_started.assert_called_once()
+        self.glue_adapter.start_crawler.assert_called_once_with(
+            schema.get_domain(), schema.get_dataset()
+        )
+        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
 
 
 class TestUpdateTableConfig:

@@ -18,7 +18,7 @@ class JobService:
 
     def get_all_jobs(self, subject_id: str) -> list[Dict]:
         subject_permissions = self.db_adapter.get_permissions_for_subject(subject_id)
-        all_jobs = self.db_adapter.get_jobs(subject_id)
+        all_jobs = self.db_adapter.get_jobs_by_subject(subject_id)
         return self.filter_permitted_jobs(subject_permissions, all_jobs)
 
     def filter_permitted_jobs(
@@ -53,6 +53,9 @@ class JobService:
 
     def get_job(self, job_id: str) -> Dict:
         return self.db_adapter.get_job(job_id)
+
+    def get_job_count_by_expression(self, expression) -> int:
+        return self.db_adapter.get_job_count_by_expression(expression)
 
     def create_upload_job(
         self,

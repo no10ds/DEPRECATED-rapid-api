@@ -421,3 +421,33 @@ class TestGlueAdapterTableMethods:
             self.glue_adapter.get_table_when_created("some-name")
 
         assert mock_sleep.call_count == GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT
+
+    @pytest.mark.parametrize(
+        "count, expected",
+        [
+            (2, True),
+            (10, True),
+            (0, False),
+        ],
+    )
+    @patch("api.adapter.glue_adapter.get_available_ip_count")
+    def test_network_can_run_more_crawlers_true(
+        self, mock_get_available_ip_count, count, expected
+    ):
+        subnet_id = "subnet-abc"
+
+        self.glue_boto_client.get_connection = Mock(
+            return_value={
+                "Connection": {
+                    "PhysicalConnectionRequirements": {"SubnetId": subnet_id}
+                }
+            }
+        )
+        mock_get_available_ip_count.return_value = count
+
+        res = self.glue_adapter.network_can_run_more_crawlers()
+        assert res is expected
+        mock_get_available_ip_count.assert_called_once_with(subnet_id)
+        self.glue_boto_client.get_connection.assert_called_once_with(
+            Name=self.glue_adapter.glue_connection_name
+        )

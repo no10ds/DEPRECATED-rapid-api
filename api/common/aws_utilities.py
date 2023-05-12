@@ -22,3 +22,9 @@ def get_secret(secret_name: str) -> Dict:
             secret = base64.b64decode(get_secret_value_response["SecretBinary"])
 
     return json.loads(secret)
+
+
+def get_available_ip_count(subnet_id: str) -> int:
+    ec2 = boto3.resource("ec2", region_name=AWS_REGION)
+    subnet = ec2.Subnet(subnet_id)
+    return subnet.available_ip_address_count

@@ -97,6 +97,10 @@ class CrawlerIsNotReadyError(TooManyRequestsError):
     pass
 
 
+class CrawlerCannotBeStartedError(TooManyRequestsError):
+    pass
+
+
 class TableDoesNotExistError(Exception):
     pass
 

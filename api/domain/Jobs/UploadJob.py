@@ -9,6 +9,7 @@ class UploadStep(JobStep):
     VALIDATION = "VALIDATION"
     RAW_DATA_UPLOAD = "RAW_DATA_UPLOAD"
     DATA_UPLOAD = "DATA_UPLOAD"
+    DATA_PROCESS = "DATA_PROCESS"
     CLEAN_UP = "CLEAN_UP"
     NONE = "-"
 

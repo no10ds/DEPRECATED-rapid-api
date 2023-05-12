@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v6.2.2 - _2023-05-12_
+
+See [v6.2.2] changes
+
+### Changed
+
+- When data uploads, the crawlers queue before starting. Ensuring that there are free IP addresses in the subnet for them to launch.
+
+
 ## v6.2.1 - _2023-05-10_
 
 See [v6.2.1] changes
