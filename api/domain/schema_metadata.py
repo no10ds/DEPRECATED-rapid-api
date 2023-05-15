@@ -65,52 +65,39 @@ class SchemaMetadata(BaseModel):
         )
 
     def schema_name(self) -> str:
-        return f"{self.domain}/{self.dataset}/{self.version}/schema.json"
+        return f"{self.domain}/{self.dataset.lower()}/{self.version}/schema.json"
 
     @classmethod
     def from_path(cls, path: str, s3_adapter: "S3Adapter"):
         sensitivity = parse_categorisation(path, SensitivityLevel.values(), "PUBLIC")
-        if path.endswith("schema.json"):
-            try:
-                data = s3_adapter.retrieve_data(path).read()
-                data_json = json.loads(data)
-                metadata = data_json["metadata"]
-                if metadata:
-                    return cls(
-                        layer=metadata["layer"],
-                        domain=metadata["domain"],
-                        dataset=metadata["dataset"],
-                        sensitivity=metadata["sensitivity"],
-                        description=metadata["description"],
-                        version=metadata["version"],
-                    )
-                else:
-                    raise Exception
-            except Exception:
-                split_path = path.split("/")
-                layer = split_path[-6]
-                domain = split_path[-4]
-                dataset = split_path[-3]
-                version = split_path[-2]
+        try:
+            data = s3_adapter.retrieve_data(path).read()
+            data_json = json.loads(data)
+            metadata = data_json["metadata"]
+            if metadata:
                 return cls(
-                    layer=layer,
-                    domain=domain,
-                    dataset=dataset,
-                    sensitivity=sensitivity,
-                    description="",
-                    version=version,
+                    layer=metadata["layer"],
+                    domain=metadata["domain"],
+                    dataset=metadata["dataset"],
+                    sensitivity=metadata["sensitivity"],
+                    description=metadata["description"],
+                    version=metadata["version"],
                 )
-
-        else:
+            else:
+                raise Exception
+        except Exception:
             split_path = path.split("/")
-            layer = split_path[-3]
-            domain, dataset = split_path[-1].replace(".json", "").split("-")
+            layer = split_path[-6]
+            domain = split_path[-4]
+            dataset = split_path[-3]
+            version = split_path[-2]
             return cls(
                 layer=layer,
                 domain=domain,
                 dataset=dataset,
                 sensitivity=sensitivity,
                 description="",
+                version=version,
             )
 
     def get_custom_tags(self) -> Dict[str, str]:
@@ -152,7 +139,7 @@ class SchemaMetadatas:
                 filter(
                     lambda data: data.layer == dataset.layer
                     and data.domain == dataset.domain
-                    and data.dataset == dataset.dataset
+                    and data.dataset.lower() == dataset.dataset.lower()
                     and data.version == dataset.version,
                     self.metadatas,
                 )

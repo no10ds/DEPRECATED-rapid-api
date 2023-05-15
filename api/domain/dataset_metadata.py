@@ -16,6 +16,10 @@ class DatasetMetadata:
     domain: str
     dataset: str
     version: Optional[int] = None
+    description: Optional[str] = ""
+
+    def __post_init__(self):
+        self.dataset = self.dataset.lower()
 
     def to_dict(self):
         return {

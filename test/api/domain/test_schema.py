@@ -99,16 +99,6 @@ class TestSchemaMetadata:
         assert result.get_version() == 2
         assert result.get_sensitivity() == "PRIVATE"
 
-    def test_creates_metadata_from_s3_key_for_older_files(self):
-        key = "schemas/raw/PRIVATE/test_domain-test_dataset.json"
-        result = SchemaMetadata.from_path(key, self.s3_adapter)
-
-        assert result.get_layer() == "raw"
-        assert result.get_domain() == "test_domain"
-        assert result.get_dataset() == "test_dataset"
-        assert result.get_version() is None
-        assert result.get_sensitivity() == "PRIVATE"
-
     def test_throws_error_if_sensitivity_is_not_found(self):
         key = "schemas/HYPERSECRET/test_domain/test_dataset/2/schema.json"
 
@@ -119,32 +109,32 @@ class TestSchemaMetadata:
         schema_metadata = SchemaMetadata(
             layer="raw",
             domain="DOMAIN",
-            dataset="DATASET",
+            dataset="dataset",
             sensitivity="sensitivity",
             version=4,
             owners=[Owner(name="owner", email="owner@email.com")],
         )
         assert (
             schema_metadata.schema_path()
-            == "schemas/raw/sensitivity/DOMAIN/DATASET/4/schema.json"
+            == "schemas/raw/sensitivity/DOMAIN/dataset/4/schema.json"
         )
 
     def test_schema_name(self):
         schema_metadata = SchemaMetadata(
             layer="raw",
             domain="DOMAIN",
-            dataset="DATASET",
+            dataset="dataset",
             sensitivity="sensitivity",
             version=3,
             owners=[Owner(name="owner", email="owner@email.com")],
         )
-        assert schema_metadata.schema_name() == "DOMAIN/DATASET/3/schema.json"
+        assert schema_metadata.schema_name() == "DOMAIN/dataset/3/schema.json"
 
     def test_schema_version(self):
         schema_metadata = SchemaMetadata(
             layer="raw",
             domain="DOMAIN",
-            dataset="DATASET",
+            dataset="dataset",
             sensitivity="sensitivity",
             version=3,
             owners=[Owner(name="owner", email="owner@email.com")],
@@ -155,7 +145,7 @@ class TestSchemaMetadata:
         schema_metadata = SchemaMetadata(
             layer="raw",
             domain="DOMAIN",
-            dataset="DATASET",
+            dataset="dataset",
             sensitivity="sensitivity",
             owners=[Owner(name="owner", email="owner@email.com")],
         )

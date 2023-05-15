@@ -255,10 +255,6 @@ class TestAWSResourceAdapterClientMethods:
                     ],
                 },
             ]
-        )
-        self.s3_adapter.get_dataset_description = Mock(
-            side_effect=["description1", "description2"]
-        )
 
         expected = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
