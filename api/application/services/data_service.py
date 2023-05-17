@@ -241,7 +241,7 @@ class DataService:
         while remaining_retries > 0:
             if (
                 self.first_in_queue_to_start_crawler()
-                and self.glue_adapter.network_can_run_more_crawlers()
+                and self.glue_adapter.can_network_run_more_crawlers()
             ):
                 return
             else:

@@ -1090,7 +1090,7 @@ class TestUploadDataset:
     @patch("api.application.services.data_service.sleep")
     def test_wait_until_crawler_can_be_started_success(self, mock_sleep: MagicMock):
         self.data_service.first_in_queue_to_start_crawler = Mock(return_value=True)
-        self.glue_adapter.network_can_run_more_crawlers = Mock(return_value=True)
+        self.glue_adapter.can_network_run_more_crawlers = Mock(return_value=True)
 
         self.data_service.wait_until_crawler_can_be_started()
         mock_sleep.assert_not_called()
@@ -1104,7 +1104,7 @@ class TestUploadDataset:
         self, mock_sleep: MagicMock, queued: bool, free_ips: bool
     ):
         self.data_service.first_in_queue_to_start_crawler = Mock(return_value=queued)
-        self.glue_adapter.network_can_run_more_crawlers = Mock(return_value=free_ips)
+        self.glue_adapter.can_network_run_more_crawlers = Mock(return_value=free_ips)
 
         with pytest.raises(
             CrawlerCannotBeStartedError,

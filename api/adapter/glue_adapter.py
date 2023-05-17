@@ -217,7 +217,7 @@ class GlueAdapter:
             "StorageDescriptor": table_definition["Table"]["StorageDescriptor"],
         }
 
-    def network_can_run_more_crawlers(
+    def can_network_run_more_crawlers(
         self,
     ) -> bool:
         try:

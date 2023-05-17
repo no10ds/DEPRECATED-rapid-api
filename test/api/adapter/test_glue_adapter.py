@@ -431,7 +431,7 @@ class TestGlueAdapterTableMethods:
         ],
     )
     @patch("api.adapter.glue_adapter.get_available_ip_count")
-    def test_network_can_run_more_crawlers_true(
+    def test_can_network_run_more_crawlers_true(
         self, mock_get_available_ip_count, count, expected
     ):
         subnet_id = "subnet-abc"
@@ -445,7 +445,7 @@ class TestGlueAdapterTableMethods:
         )
         mock_get_available_ip_count.return_value = count
 
-        res = self.glue_adapter.network_can_run_more_crawlers()
+        res = self.glue_adapter.can_network_run_more_crawlers()
         assert res is expected
         mock_get_available_ip_count.assert_called_once_with(subnet_id)
         self.glue_boto_client.get_connection.assert_called_once_with(
