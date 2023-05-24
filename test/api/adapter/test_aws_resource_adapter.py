@@ -255,6 +255,7 @@ class TestAWSResourceAdapterClientMethods:
                     ],
                 },
             ]
+        )
 
         expected = [
             AWSResourceAdapter.EnrichedDatasetMetaData(
@@ -285,6 +286,9 @@ class TestAWSResourceAdapterClientMethods:
                 },
             ),
         ]
+        self.s3_adapter.get_dataset_description = Mock(
+            side_effect=["description1", "description2"]
+        )
 
         res = self.resource_adapter.get_enriched_datasets_metadata(
             self.s3_adapter, "filters"

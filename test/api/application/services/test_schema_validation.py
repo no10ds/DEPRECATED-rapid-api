@@ -7,7 +7,7 @@ from api.application.services.schema_validation import (
     validate_schema_for_upload,
     schema_has_valid_tag_set,
 )
-from api.common.config.auth import SensitivityLevel
+from api.common.config.auth import Sensitivity
 from api.common.config.aws import MAX_CUSTOM_TAG_COUNT
 from api.common.custom_exceptions import SchemaValidationError
 from api.domain.schema import Schema, Column
@@ -609,7 +609,7 @@ class TestSchemaValidation:
 
     @pytest.mark.parametrize(
         "provided_sensitivity",
-        SensitivityLevel.values(),
+        list(Sensitivity),
     )
     def test_is_valid_when_provided_sensitivity_is_supported(
         self, provided_sensitivity: str
@@ -679,7 +679,7 @@ class TestSchemaValidation:
 
     @pytest.mark.parametrize(
         "provided_update_behaviour",
-        UpdateBehaviour.values(),
+        list(UpdateBehaviour),
     )
     def test_is_valid_when_provided_update_behaviour_is_supported(
         self, provided_update_behaviour: str

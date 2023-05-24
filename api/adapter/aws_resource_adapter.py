@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional
 
 import boto3
@@ -24,7 +23,6 @@ class AWSResourceAdapter:
     ):
         self.__resource_client = resource_client
 
-    @dataclass
     class EnrichedDatasetMetaData(DatasetMetadata):
         description: Optional[str] = ""
         tags: Optional[Dict[str, str]] = None
@@ -107,12 +105,12 @@ class AWSResourceAdapter:
         tags = {tag["Key"]: tag["Value"] for tag in resource_tag_mapping["Tags"]}
         description = s3_adapter.get_dataset_description(dataset)
         return self.EnrichedDatasetMetaData(
-            dataset.layer,
-            dataset.domain,
-            dataset.dataset,
-            dataset.version,
-            description,
-            tags,
+            layer=dataset.layer,
+            domain=dataset.domain,
+            dataset=dataset.dataset,
+            version=dataset.version,
+            description=description,
+            tags=tags,
         )
 
     def get_version_from_tags(self, resource_tag_mapping):

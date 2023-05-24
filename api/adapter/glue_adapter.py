@@ -5,6 +5,7 @@ from typing import Dict, List
 
 import boto3
 from botocore.exceptions import ClientError
+from pydantic import ValidationError
 
 from api.common.config.aws import (
     AWS_ACCOUNT,
@@ -20,12 +21,14 @@ from api.common.custom_exceptions import (
     AWSServiceError,
     CrawlerAlreadyExistsError,
     CrawlerCreationError,
+    CrawlerIncorrectlyTaggedError,
     CrawlerIsNotReadyError,
     CrawlerStartFailsError,
     CrawlerUpdateError,
     TableDoesNotExistError,
 )
 from api.common.logger import AppLogger
+from api.domain.schema_metadata import Tags
 from api.domain.data_types import DataTypes
 from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Column, Schema
@@ -87,23 +90,34 @@ class GlueAdapter:
         except ClientError:
             raise AWSServiceError("Failed to delete crawler")
 
+    def get_crawler_arn(self, dataset: DatasetMetadata) -> str:
+        return f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/{dataset.generate_crawler_name()}"
+
     def set_crawler_version_tag(self, dataset: DatasetMetadata) -> None:
         try:
-            glue_crawler_arn = (
-                "arn:aws:glue:{region}:{account_id}:crawler/{glue_crawler}".format(
-                    region=AWS_REGION,
-                    account_id=AWS_ACCOUNT,
-                    glue_crawler=dataset.generate_crawler_name(),
-                )
-            )
             self.glue_client.tag_resource(
-                ResourceArn=glue_crawler_arn,
+                ResourceArn=self.get_crawler_arn(dataset),
                 TagsToAdd={"no_of_versions": str(dataset.version)},
             )
 
         except ClientError:
             raise CrawlerUpdateError(
                 f"Failed to update crawler version tag for layer = {dataset.layer} domain = {dataset.domain} dataset = {dataset.dataset} version = {dataset.version}"
+            )
+
+    def get_crawler_tags(self, dataset: DatasetMetadata) -> Tags:
+        try:
+            response = self.glue_client.get_tags(
+                ResourceArn=self.get_crawler_arn(dataset)
+            )
+            return Tags(response["Tags"])
+        except ClientError:
+            raise AWSServiceError(
+                f"Failed to get crawler tags resource_prefix={RESOURCE_PREFIX}, layer = {dataset.layer}, domain = {dataset.domain} and dataset = {dataset.dataset}"
+            )
+        except ValidationError as e:
+            raise CrawlerIncorrectlyTaggedError(
+                f"Failed the retrieve tags from the crawler {dataset.generate_crawler_name()}. Validation error: {e}"
             )
 
     def check_crawler_is_ready(self, dataset: DatasetMetadata) -> None:

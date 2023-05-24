@@ -97,7 +97,7 @@ def get_first_mb_of_file(file: UploadFile, chunk_size_mb: int = 50) -> bytes:
 @schema_router.post(
     "",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def upload_schema(schema: Schema):
     """
@@ -148,7 +148,7 @@ async def upload_schema(schema: Schema):
 @schema_router.put(
     "",
     status_code=http_status.HTTP_200_OK,
-    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def update_schema(schema: Schema):
     """

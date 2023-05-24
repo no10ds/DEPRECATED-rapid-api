@@ -6,7 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from api.adapter.s3_adapter import S3Adapter
-from api.common.config.auth import SensitivityLevel
+from api.common.config.auth import Sensitivity
 from api.common.config.aws import SCHEMAS_LOCATION, OUTPUT_QUERY_BUCKET
 from api.common.custom_exceptions import (
     UserError,
@@ -557,7 +557,7 @@ class TestS3Deletion:
             )
 
     def test_delete_previous_dataset_files(self):
-        self.persistence_adapter._list_files_from_path = Mock(
+        self.persistence_adapter.list_files_from_path = Mock(
             return_value=[
                 "data/layer/domain/dataset/1/abc-def.parquet",
                 "data/layer/domain/dataset/1/123-456.parquet",
@@ -574,13 +574,13 @@ class TestS3Deletion:
             call("data/layer/domain/dataset/1/789-123.parquet"),
         ]
 
-        self.persistence_adapter._list_files_from_path.assert_called_once_with(
+        self.persistence_adapter.list_files_from_path.assert_called_once_with(
             "data/layer/domain/dataset/1"
         )
         self.persistence_adapter._delete_data.assert_has_calls(expected_calls)
 
     def test_delete_previous_dataset_files_when_none_exist(self):
-        self.persistence_adapter._list_files_from_path = Mock(
+        self.persistence_adapter.list_files_from_path = Mock(
             return_value=[
                 "data/layer/domain/dataset/1/123-456.parquet",
             ]
@@ -591,7 +591,7 @@ class TestS3Deletion:
             DatasetMetadata("layer", "domain", "dataset", 1), "123-456"
         )
 
-        self.persistence_adapter._list_files_from_path.assert_called_once_with(
+        self.persistence_adapter.list_files_from_path.assert_called_once_with(
             "data/layer/domain/dataset/1"
         )
         self.persistence_adapter._delete_data.assert_not_called()
@@ -607,36 +607,30 @@ class TestDatasetMetadataRetrieval:
             s3_client=self.mock_s3_client, s3_bucket="data-bucket"
         )
 
-    @pytest.mark.parametrize(
-        "layer, domain, dataset, sensitivity, expected",
-        [
-            ("layer", "test_domain", "test_dataset", "PUBLIC", SensitivityLevel.PUBLIC),
-            ("layer", "sample", "other", "PRIVATE", SensitivityLevel.PRIVATE),
-            ("layer", "hi", "there", "PROTECTED", SensitivityLevel.PROTECTED),
-        ],
-    )
     def test_retrieves_dataset_sensitivity(
         self,
-        layer: str,
-        domain: str,
-        dataset: str,
-        sensitivity: str,
-        expected: SensitivityLevel,
     ):
-        self.mock_s3_client.get_paginator.return_value.paginate.return_value = (
-            mock_list_schemas_response(layer, domain, dataset, sensitivity)
+        dataset = DatasetMetadata(
+            layer="raw",
+            domain="test_domain",
+            dataset="test_dataset",
+            version=1,
         )
 
-        result = self.persistence_adapter.get_dataset_sensitivity(
-            layer, domain, dataset
+        schema = SchemaMetadata(
+            **dataset.dict(),
+            sensitivity="PUBLIC",
+            description="some test description",
         )
 
-        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
-        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
-            Bucket="data-bucket", Prefix=SCHEMAS_LOCATION
-        )
+        self.persistence_adapter.retrieve_schema_metadata = Mock(return_value=schema)
 
-        assert result == expected
+        result = self.persistence_adapter.get_dataset_sensitivity(dataset)
+
+        assert result == Sensitivity.PUBLIC
+        self.persistence_adapter.retrieve_schema_metadata.assert_called_once_with(
+            dataset
+        )
 
     def test_returns_none_if_not_schemas_exist(self):
         layer, domain, dataset = "layer", "test_domain", "test_dataset"
@@ -652,24 +646,6 @@ class TestDatasetMetadataRetrieval:
         )
 
         assert result is None
-
-    @pytest.mark.parametrize(
-        "layer, domain, dataset",
-        [
-            (None, None, None),
-            ("layer", "domain", None),
-            ("layer", None, "dataset"),
-            (None, "domain", "dataset"),
-        ],
-    )
-    def test_returns_none_when_any_of_the_args_is_none(
-        self, layer: str, domain: str, dataset: str
-    ):
-        result = self.persistence_adapter.get_dataset_sensitivity(
-            layer, domain, dataset
-        )
-
-        assert result is SensitivityLevel.PUBLIC
 
 
 class TestS3FileList:
@@ -930,11 +906,40 @@ class TestS3AdapterFunctions:
     def setup_method(self):
         self.mock_s3_client = Mock()
         self.persistence_adapter = S3Adapter(
-            s3_client=self.mock_s3_client, s3_bucket="my-bucker"
+            s3_client=self.mock_s3_client, s3_bucket="my-bucket"
         )
 
-    @patch("api.adapter.s3_adapter.S3Adapter._list_all_schemas")
-    def test_retrieve_schema_metadata(self, mock_s3_adapter_list_all_schemas):
+    @patch("api.adapter.s3_adapter.S3Adapter.list_all_schemas")
+    def test_retrieve_schema_metadata(self, mock_s3_adapterlist_all_schemas):
+        mock_s3_adapterlist_all_schemas.return_value = SchemaMetadatas(
+            metadatas=[
+                SchemaMetadata(
+                    layer="raw",
+                    domain="test_domain",
+                    dataset="test_dataset",
+                    sensitivity="PUBLIC",
+                    description="some test description",
+                    version=1,
+                )
+            ]
+        )
+        metadata = self.persistence_adapter.retrieve_schema_metadata(
+            DatasetMetadata("raw", "test_domain", "test_dataset", 1)
+        )
+
+        assert metadata.domain == "test_domain"
+
+    @patch("api.adapter.s3_adapter.S3Adapter.list_all_schemas")
+    def test_list_all_schemas(self, mock_s3_adapter_list_all_schemas):
+        self.persistence_adapter.list_files_from_path = Mock(
+            return_value=[
+                "schemas",
+                "schemas/layer/",
+                "schemas/layer/PUBLIC/",
+                "schemas/layer/PUBLIC/domain/dataset/1/schema.json",
+            ]
+        )
+
         mock_s3_adapter_list_all_schemas.return_value = SchemaMetadatas(
             metadatas=[
                 SchemaMetadata(
@@ -952,3 +957,30 @@ class TestS3AdapterFunctions:
         )
 
         assert metadata.domain == "test_domain"
+
+    def test_list_files_from_path_success(self):
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = (
+            mock_list_schemas_response("layer", "domain", "dataset", "PUBLIC")
+        )
+        res = self.persistence_adapter.list_files_from_path("path")
+
+        assert res == [
+            "schemas",
+            "schemas/layer/",
+            "schemas/layer/PUBLIC/",
+            "schemas/layer/PUBLIC/domain/dataset/1/schema.json",
+        ]
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
+            Bucket="my-bucket", Prefix="path"
+        )
+
+    def test_list_files_from_path_empty(self):
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
+            {"Contents": []}
+        ]
+        res = self.persistence_adapter.list_files_from_path("path")
+
+        assert res == []
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
+            Bucket="my-bucket", Prefix="path"
+        )

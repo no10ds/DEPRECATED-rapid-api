@@ -8,7 +8,7 @@ from api.common.custom_exceptions import (
     CrawlerStartFailsError,
     UserError,
 )
-from api.common.config.auth import SensitivityLevel
+from api.common.config.auth import Sensitivity
 from api.domain.dataset_metadata import DatasetMetadata
 
 
@@ -124,9 +124,7 @@ class TestDeleteService:
             {"key": "ccc"},
         ]
         tables = ["table_a", "table_b"]
-        self.s3_adapter.get_dataset_sensitivity.return_value = (
-            SensitivityLevel.from_string("PUBLIC")
-        )
+        self.s3_adapter.get_dataset_sensitivity.return_value = Sensitivity("PUBLIC")
         self.s3_adapter.list_dataset_files.return_value = dataset_files
         self.glue_adapter.get_tables_for_dataset.return_value = tables
         dataset_metadata = DatasetMetadata("layer", "domain", "dataset")
@@ -136,7 +134,7 @@ class TestDeleteService:
             "layer", "domain", "dataset"
         )
         self.s3_adapter.list_dataset_files.assert_called_once_with(
-            dataset_metadata, SensitivityLevel.PUBLIC
+            dataset_metadata, Sensitivity.PUBLIC
         )
         self.s3_adapter.delete_dataset_files_using_key.assert_called_once_with(
             dataset_files, "layer/domain/dataset"

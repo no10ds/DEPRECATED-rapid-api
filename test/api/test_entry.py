@@ -1,7 +1,9 @@
 from unittest.mock import patch, Mock
 
 import pytest
-from api.application.services.dataset_service import DatasetService
+from api.application.services.authorisation.dataset_access_evaluator import (
+    DatasetAccessEvaluator,
+)
 from api.common.config.auth import Action
 from api.common.config.constants import BASE_API_PATH
 from api.common.custom_exceptions import AWSServiceError, UserError
@@ -50,7 +52,7 @@ class TestStatus(BaseClientTest):
 
 class TestDatasetsUI(BaseClientTest):
     @patch("api.entry.parse_token")
-    @patch.object(DatasetService, "get_authorised_datasets")
+    @patch.object(DatasetAccessEvaluator, "get_authorised_datasets")
     def test_gets_datasets_for_ui_write(
         self, mock_get_authorised_datasets, mock_parse_token
     ):
@@ -73,7 +75,7 @@ class TestDatasetsUI(BaseClientTest):
         assert response.status_code == 200
 
     @patch("api.entry.parse_token")
-    @patch.object(DatasetService, "get_authorised_datasets")
+    @patch.object(DatasetAccessEvaluator, "get_authorised_datasets")
     def test_gets_datasets_for_ui_read(
         self, mock_get_authorised_datasets, mock_parse_token
     ):

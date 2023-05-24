@@ -1,6 +1,7 @@
-from dataclasses import dataclass
 import json
 from typing import Optional, TYPE_CHECKING
+
+from pydantic import BaseModel
 
 from api.common.config.aws import DATA_BUCKET, RESOURCE_PREFIX, SCHEMAS_LOCATION
 from api.common.config.layers import Layer
@@ -10,16 +11,27 @@ if TYPE_CHECKING:
     from api.adapter.aws_resource_adapter import AWSResourceAdapter
 
 
-@dataclass
-class DatasetMetadata:
+class DatasetMetadata(BaseModel):
     layer: Layer
     domain: str
     dataset: str
     version: Optional[int] = None
-    description: Optional[str] = ""
 
-    def __post_init__(self):
-        self.dataset = self.dataset.lower()
+    def __init__(
+        self,
+        layer: Layer,
+        domain: str,
+        dataset: str,
+        version: Optional[int] = None,
+        **kwargs,
+    ) -> None:
+        super(DatasetMetadata, self).__init__(
+            layer=layer,
+            domain=domain,
+            dataset=dataset.lower(),
+            version=version,
+            **kwargs,
+        )
 
     def to_dict(self):
         return {
@@ -33,7 +45,7 @@ class DatasetMetadata:
         return hash(json.dumps(self.to_dict()))
 
     def __lt__(self, other):
-        return self.__hash__() < other.__hash__()
+        return self.dataset_location() < other.dataset_location()
 
     def dataset_location(self) -> str:
         return f"data/{self.layer}/{self.domain}/{self.dataset}"
