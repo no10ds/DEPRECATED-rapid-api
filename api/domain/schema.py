@@ -53,7 +53,7 @@ class Schema(BaseModel):
         return self.metadata.get_update_behaviour()
 
     def has_overwrite_behaviour(self) -> bool:
-        return self.get_update_behaviour() == UpdateBehaviour.OVERWRITE.value
+        return self.get_update_behaviour() == UpdateBehaviour.OVERWRITE
 
     def get_column_names(self) -> List[str]:
         return [column.name for column in self.columns]

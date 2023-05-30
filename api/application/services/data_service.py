@@ -19,7 +19,7 @@ from api.application.services.job_service import JobService
 from api.application.services.partitioning_service import generate_partitioned_data
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_validation import validate_schema_for_upload
-from api.common.config.auth import SensitivityLevel
+from api.common.config.auth import Sensitivity
 from api.common.config.constants import (
     CONTENT_ENCODING,
     DATASET_QUERY_LIMIT,
@@ -286,7 +286,7 @@ class DataService:
             raise error
 
     def check_for_protected_domain(self, schema: Schema) -> str:
-        if SensitivityLevel.PROTECTED.value == schema.get_sensitivity():
+        if Sensitivity.PROTECTED == schema.get_sensitivity():
             if (
                 schema.get_domain()
                 not in self.protected_domain_service.list_protected_domains()

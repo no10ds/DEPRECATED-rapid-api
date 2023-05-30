@@ -7,7 +7,7 @@ import pandas as pd
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
-from api.common.config.auth import SensitivityLevel
+from api.common.config.auth import Sensitivity
 from api.common.config.aws import (
     AWS_REGION,
     DATA_BUCKET,
@@ -18,7 +18,6 @@ from api.common.config.constants import (
     CONTENT_ENCODING,
     QUERY_RESULTS_LINK_EXPIRY_SECONDS,
 )
-from api.common.config.layers import Layer
 from api.common.custom_exceptions import AWSServiceError, SchemaNotFoundError, UserError
 from api.common.logger import AppLogger
 from api.domain.dataset_metadata import DatasetMetadata
@@ -80,16 +79,9 @@ class S3Adapter:
     def delete_schema(self, schema_metadata: SchemaMetadata):
         self._delete_data(schema_metadata.schema_path())
 
-    def get_dataset_sensitivity(
-        self, layer: Optional[Layer], domain: Optional[str], dataset: Optional[str]
-    ) -> SensitivityLevel:
-        if any(not arg for arg in [layer, domain, dataset]):
-            return SensitivityLevel.from_string("PUBLIC")
-        # all datasets have the same sensitivity - take the first version
-        schema_metadata = self.retrieve_schema_metadata(
-            DatasetMetadata(layer, domain, dataset, version=1)
-        )
-        return SensitivityLevel.from_string(schema_metadata.get_sensitivity())
+    def get_dataset_sensitivity(self, dataset: DatasetMetadata) -> Sensitivity:
+        schema_metadata = self.retrieve_schema_metadata(dataset)
+        return Sensitivity(schema_metadata.get_sensitivity())
 
     def get_dataset_description(self, dataset: DatasetMetadata) -> str:
         schema = self.retrieve_schema_metadata(dataset)
@@ -129,19 +121,18 @@ class S3Adapter:
         )
 
     def list_raw_files(self, dataset: DatasetMetadata) -> List[str]:
-        object_list = self._list_files_from_path(dataset.raw_data_location())
+        object_list = self.list_files_from_path(dataset.raw_data_location())
         return self._map_object_list_to_filename(object_list)
 
     def list_dataset_files(
-        self, dataset: DatasetMetadata, sensitivity: SensitivityLevel
+        self, dataset: DatasetMetadata, sensitivity: Sensitivity
     ) -> List[Dict]:
-
         return [
-            *self._list_files_from_path(
+            *self.list_files_from_path(
                 dataset.construct_raw_dataset_uploads_location()
             ),
-            *self._list_files_from_path(dataset.dataset_location()),
-            *self._list_files_from_path(
+            *self.list_files_from_path(dataset.dataset_location()),
+            *self.list_files_from_path(
                 dataset.construct_schema_dataset_location(sensitivity)
             ),
         ]
@@ -149,11 +140,10 @@ class S3Adapter:
     def delete_dataset_files(
         self, dataset: DatasetMetadata, raw_data_filename: str
     ) -> None:
-
         """
         Deletes the raw file and the corresponding data file
         """
-        files = self._list_files_from_path(dataset.file_location())
+        files = self.list_files_from_path(dataset.file_location())
         raw_file_identifier = self._clean_filename(raw_data_filename)
 
         files_to_delete = [
@@ -167,7 +157,7 @@ class S3Adapter:
     def delete_previous_dataset_files(
         self, dataset: DatasetMetadata, raw_file_identifier: str
     ):
-        files = self._list_files_from_path(dataset.file_location())
+        files = self.list_files_from_path(dataset.file_location())
         files_to_delete = [
             file
             for file in files
@@ -207,7 +197,7 @@ class S3Adapter:
             raise AWSServiceError("Unable to generate download URL")
 
     def retrieve_schema_metadata(self, dataset: DatasetMetadata) -> SchemaMetadata:
-        schemas = self._list_all_schemas()
+        schemas = self.list_all_schemas()
         return schemas.find(dataset)
 
     def _clean_filename(self, file_key: str) -> str:
@@ -236,7 +226,7 @@ class S3Adapter:
                 f"The item [{filename}] could not be deleted. Please contact your administrator."
             )
 
-    def _list_files_from_path(self, file_path: str) -> List[Dict]:
+    def list_files_from_path(self, file_path: str) -> List[Dict]:
         try:
             paginator = self.__s3_client.get_paginator("list_objects")
             page_iterator = paginator.paginate(
@@ -281,10 +271,9 @@ class S3Adapter:
     def _delete_data(self, object_full_path: str):
         self.__s3_client.delete_object(Bucket=self.__s3_bucket, Key=object_full_path)
 
-    def _list_all_schemas(self) -> SchemaMetadatas:
-        items = self._list_files_from_path(SCHEMAS_LOCATION)
+    def list_all_schemas(self) -> SchemaMetadatas:
+        items = self.list_files_from_path(SCHEMAS_LOCATION)
         if len(items) > 0:
-            print("THE ITEM IS ")
             return SchemaMetadatas(
                 [
                     SchemaMetadata.from_path(item, self)

@@ -20,7 +20,7 @@ class PermissionsService:
         permission_keys = self.get_subject_permission_keys(subject_id)
         all_permissions = self.dynamodb_adapter.get_all_permissions()
         return [
-            permission.to_dict()
+            permission
             for permission in all_permissions
             if permission.id in permission_keys
         ]
@@ -35,21 +35,20 @@ class PermissionsService:
         result = {}
 
         for permission in permissions:
-            # Protected Permission
-            if permission.domain:
-                result.setdefault(permission.type, {}).setdefault(
-                    permission.layer, {}
-                ).setdefault(permission.sensitivity, {})[
-                    permission.domain
-                ] = permission.id
-
-            # Global Data Permission
-            elif permission.sensitivity:
-                result.setdefault(permission.type, {}).setdefault(permission.layer, {})[
-                    permission.sensitivity
-                ] = permission.id
-            # Admin permission
-            else:
+            if permission.is_protected_permission():
+                # fmt: off
+                result \
+                .setdefault(permission.type, {}) \
+                .setdefault(permission.layer, {}) \
+                .setdefault(permission.sensitivity, {})[permission.domain] = permission.id # noqa: E122, E261
+                # fmt: on
+            elif permission.is_global_data_permission():
+                # fmt: off
+                result \
+                .setdefault(permission.type, {}) \
+                .setdefault(permission.layer, {})[permission.sensitivity] = permission.id  # noqa: E122, E261
+                # fmt: on
+            elif permission.is_admin_permission():
                 result[permission.type] = permission.id
 
         return result

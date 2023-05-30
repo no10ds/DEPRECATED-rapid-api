@@ -1,7 +1,7 @@
 import re
 from typing import List, Union, Any, Optional
 
-from api.common.config.auth import SensitivityLevel
+from api.common.config.auth import Sensitivity
 from api.common.config.aws import INFERRED_UNNAMED_COLUMN_PREFIX, MAX_CUSTOM_TAG_COUNT
 from api.common.config.constants import (
     TAG_VALUES_REGEX,
@@ -177,9 +177,9 @@ def has_valid_date_column_definition(schema: Schema):
 
 
 def has_valid_sensitivity_level(schema: Schema):
-    if schema.get_sensitivity() not in SensitivityLevel.values():
+    if schema.get_sensitivity() not in list(Sensitivity):
         raise SchemaValidationError(
-            f"You must specify a valid sensitivity level. Accepted values: {SensitivityLevel.values()}"
+            f"You must specify a valid sensitivity level. Accepted values: {Sensitivity._member_names_}"
         )
 
 
@@ -198,9 +198,9 @@ def _owner_email_is_changed(owner: Owner):
 
 
 def has_valid_update_behaviour(schema: Schema):
-    if schema.get_update_behaviour() not in UpdateBehaviour.values():
+    if schema.get_update_behaviour() not in list(UpdateBehaviour):
         raise SchemaValidationError(
-            f"You must specify a valid update behaviour. Accepted values: {UpdateBehaviour.values()}"
+            f"You must specify a valid update behaviour. Accepted values: {UpdateBehaviour._member_names_}"
         )
 
 

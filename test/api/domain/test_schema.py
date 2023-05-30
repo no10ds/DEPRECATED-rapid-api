@@ -16,7 +16,7 @@ class TestSchema:
                 layer="raw",
                 domain="test_domain",
                 dataset="test_dataset",
-                sensitivity="test_sensitivity",
+                sensitivity="PUBLIC",
                 owners=[Owner(name="owner", email="owner@email.com")],
             ),
             columns=[
@@ -110,13 +110,13 @@ class TestSchemaMetadata:
             layer="raw",
             domain="DOMAIN",
             dataset="dataset",
-            sensitivity="sensitivity",
+            sensitivity="PUBLIC",
             version=4,
             owners=[Owner(name="owner", email="owner@email.com")],
         )
         assert (
             schema_metadata.schema_path()
-            == "schemas/raw/sensitivity/DOMAIN/dataset/4/schema.json"
+            == "schemas/raw/PUBLIC/DOMAIN/dataset/4/schema.json"
         )
 
     def test_schema_name(self):
@@ -124,7 +124,7 @@ class TestSchemaMetadata:
             layer="raw",
             domain="DOMAIN",
             dataset="dataset",
-            sensitivity="sensitivity",
+            sensitivity="PUBLIC",
             version=3,
             owners=[Owner(name="owner", email="owner@email.com")],
         )
@@ -135,7 +135,7 @@ class TestSchemaMetadata:
             layer="raw",
             domain="DOMAIN",
             dataset="dataset",
-            sensitivity="sensitivity",
+            sensitivity="PUBLIC",
             version=3,
             owners=[Owner(name="owner", email="owner@email.com")],
         )
@@ -146,7 +146,7 @@ class TestSchemaMetadata:
             layer="raw",
             domain="DOMAIN",
             dataset="dataset",
-            sensitivity="sensitivity",
+            sensitivity="PUBLIC",
             owners=[Owner(name="owner", email="owner@email.com")],
         )
         assert schema_metadata.get_version() is None
@@ -203,7 +203,7 @@ class TestSchemaMetadatas:
             layer="raw",
             domain="domain2",
             dataset="dataset2",
-            sensitivity="sensitivity",
+            sensitivity="PUBLIC",
             version=1,
             owners=[Owner(name="owner", email="owner@email.com")],
         )
@@ -213,7 +213,7 @@ class TestSchemaMetadatas:
                     layer="raw",
                     domain="domain1",
                     dataset="dataset1",
-                    sensitivity="sensitivity",
+                    sensitivity="PUBLIC",
                     owners=[Owner(name="owner", email="owner@email.com")],
                 ),
                 desired_metadata,
@@ -234,7 +234,7 @@ class TestSchemaMetadatas:
                     layer="raw",
                     domain="domain1",
                     dataset="dataset1",
-                    sensitivity="sensitivity",
+                    sensitivity="PRIVATE",
                     version="1",
                     owners=[Owner(name="owner", email="owner@email.com")],
                 ),
@@ -243,7 +243,7 @@ class TestSchemaMetadatas:
                         layer="raw",
                         domain="domain2",
                         dataset="dataset2",
-                        sensitivity="sensitivity",
+                        sensitivity="PRIVATE",
                         version="1",
                         owners=[Owner(name="owner", email="owner@email.com")],
                     )

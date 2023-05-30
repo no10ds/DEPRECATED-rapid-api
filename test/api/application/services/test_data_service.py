@@ -12,7 +12,7 @@ from api.application.services.data_service import (
     DataService,
     construct_chunked_dataframe,
 )
-from api.common.config.auth import SensitivityLevel
+from api.common.config.auth import Sensitivity
 from api.common.config.constants import CONTENT_ENCODING, DATASET_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
@@ -324,9 +324,9 @@ class TestUpdateSchema:
         self, mock_get_version_from_crawler_tags
     ):
         original_schema = self.valid_schema.copy(deep=True)
-        original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        original_schema.metadata.sensitivity = Sensitivity.PROTECTED
         new_schema = self.valid_updated_schema.copy(deep=True)
-        new_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        new_schema.metadata.sensitivity = Sensitivity.PROTECTED
 
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema
@@ -420,7 +420,7 @@ class TestUpdateSchema:
     ):
         original_schema = self.valid_schema
         new_schema = self.valid_updated_schema.copy(deep=True)
-        new_schema.metadata.sensitivity = SensitivityLevel.PRIVATE.value
+        new_schema.metadata.sensitivity = Sensitivity.PRIVATE
         new_schema.metadata.key_value_tags = {"new_key": "new_val"}
         new_schema.metadata.key_only_tags = ["new_k_tag"]
         new_schema.metadata.update_behaviour = "OVERWRITE"
@@ -448,12 +448,12 @@ class TestUpdateSchema:
         self, mock_get_version_from_crawler_tags
     ):
         original_schema = self.valid_schema.copy(deep=True)
-        original_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        original_schema.metadata.sensitivity = Sensitivity.PROTECTED
         new_schema = self.valid_updated_schema.copy(deep=True)
-        new_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        new_schema.metadata.sensitivity = Sensitivity.PROTECTED
         expected_schema = self.valid_updated_schema.copy(deep=True)
         expected_schema.metadata.version = 2
-        expected_schema.metadata.sensitivity = SensitivityLevel.PROTECTED.value
+        expected_schema.metadata.sensitivity = Sensitivity.PROTECTED
 
         self.glue_adapter.check_crawler_is_ready.return_value = None
         self.s3_adapter.find_schema.return_value = original_schema

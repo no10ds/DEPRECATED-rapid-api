@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 from api.common.config.auth import (
     PermissionsTableItem,
     SubjectType,
-    SensitivityLevel,
+    Sensitivity,
     ServiceTableItem,
 )
 from api.common.config.aws import (
@@ -86,12 +86,12 @@ class DynamoDBAdapter(DatabaseAdapter):
     def store_subject_permissions(
         self, subject_type: SubjectType, subject_id: str, permissions: List[str]
     ) -> None:
-        subject_type = subject_type.value
+        subject_type = subject_type
         try:
             AppLogger.info(f"Storing permissions for {subject_type}: {subject_id}")
             self.permissions_table.put_item(
                 Item={
-                    "PK": PermissionsTableItem.SUBJECT.value,
+                    "PK": PermissionsTableItem.SUBJECT,
                     "SK": subject_id,
                     "Id": subject_id,
                     "Type": subject_type,
@@ -112,7 +112,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 for permission in permissions:
                     batch.put_item(
                         Item={
-                            "PK": PermissionsTableItem.PERMISSION.value,
+                            "PK": PermissionsTableItem.PERMISSION,
                             "SK": permission.id,
                             "Id": permission.id,
                             "Type": permission.type,
@@ -139,9 +139,7 @@ class DynamoDBAdapter(DatabaseAdapter):
     def get_all_permissions(self) -> List[PermissionItem]:
         try:
             permissions = self.permissions_table.query(
-                KeyConditionExpression=Key("PK").eq(
-                    PermissionsTableItem.PERMISSION.value
-                ),
+                KeyConditionExpression=Key("PK").eq(PermissionsTableItem.PERMISSION),
             )
             return [
                 PermissionItem(
@@ -171,12 +169,8 @@ class DynamoDBAdapter(DatabaseAdapter):
     def get_all_protected_permissions(self) -> List[PermissionItem]:
         try:
             list_of_items = self.permissions_table.query(
-                KeyConditionExpression=Key("PK").eq(
-                    PermissionsTableItem.PERMISSION.value
-                ),
-                FilterExpression=Attr("Sensitivity").eq(
-                    SensitivityLevel.PROTECTED.value
-                ),
+                KeyConditionExpression=Key("PK").eq(PermissionsTableItem.PERMISSION),
+                FilterExpression=Attr("Sensitivity").eq(Sensitivity.PROTECTED),
             )["Items"]
             return [
                 self._generate_protected_permission_item(item) for item in list_of_items
@@ -193,9 +187,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             return [
                 permission
                 for permission in self.permissions_table.query(
-                    KeyConditionExpression=Key("PK").eq(
-                        PermissionsTableItem.SUBJECT.value
-                    ),
+                    KeyConditionExpression=Key("PK").eq(PermissionsTableItem.SUBJECT),
                     FilterExpression=Attr("Id").eq(subject_id),
                 )["Items"][0]["Permissions"]
                 if permission is not None and permission != ""
@@ -218,7 +210,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             unique_permissions = set(subject_permissions.permissions)
             self.permissions_table.update_item(
                 Key={
-                    "PK": PermissionsTableItem.SUBJECT.value,
+                    "PK": PermissionsTableItem.SUBJECT,
                     "SK": subject_permissions.subject_id,
                 },
                 ConditionExpression="SK = :sid",
@@ -258,9 +250,9 @@ class DynamoDBAdapter(DatabaseAdapter):
             "PK": "JOB",
             "SK": upload_job.job_id,
             "SK2": upload_job.subject_id,
-            "Type": upload_job.job_type.value,
-            "Status": upload_job.status.value,
-            "Step": upload_job.step.value,
+            "Type": upload_job.job_type,
+            "Status": upload_job.status,
+            "Step": upload_job.step,
             "Errors": upload_job.errors if upload_job.errors else None,
             "Filename": upload_job.filename,
             "RawFileIdentifier": upload_job.raw_file_identifier,
@@ -277,9 +269,9 @@ class DynamoDBAdapter(DatabaseAdapter):
             "PK": "JOB",
             "SK": query_job.job_id,
             "SK2": query_job.subject_id,
-            "Type": query_job.job_type.value,
-            "Status": query_job.status.value,
-            "Step": query_job.step.value,
+            "Type": query_job.job_type,
+            "Status": query_job.status,
+            "Step": query_job.step,
             "Errors": query_job.errors if query_job.errors else None,
             "Layer": query_job.layer,
             "Domain": query_job.domain,
@@ -295,7 +287,7 @@ class DynamoDBAdapter(DatabaseAdapter):
             return [
                 self._map_job(job)
                 for job in self.service_table.query(
-                    KeyConditionExpression=Key("PK").eq(ServiceTableItem.JOB.value)
+                    KeyConditionExpression=Key("PK").eq(ServiceTableItem.JOB)
                     & Key("SK2").eq(subject_id),
                     FilterExpression=Attr("TTL").gt(int(time.time())),
                     IndexName="JOB_SUBJECT_ID",
@@ -331,8 +323,8 @@ class DynamoDBAdapter(DatabaseAdapter):
                     "#C": "Errors",
                 },
                 ExpressionAttributeValues={
-                    ":a": job.step.value,
-                    ":b": job.status.value,
+                    ":a": job.step,
+                    ":b": job.status,
                     ":c": job.errors if job.errors else None,
                     ":jid": job.job_id,
                 },
@@ -356,8 +348,8 @@ class DynamoDBAdapter(DatabaseAdapter):
                     "#D": "ResultsURL",
                 },
                 ExpressionAttributeValues={
-                    ":a": job.step.value,
-                    ":b": job.status.value,
+                    ":a": job.step,
+                    ":b": job.status,
                     ":c": job.errors if job.errors else None,
                     ":d": job.results_url if job.results_url else None,
                     ":jid": job.job_id,
@@ -384,9 +376,7 @@ class DynamoDBAdapter(DatabaseAdapter):
     def _find_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:
             return self.permissions_table.query(
-                KeyConditionExpression=Key("PK").eq(
-                    PermissionsTableItem.PERMISSION.value
-                ),
+                KeyConditionExpression=Key("PK").eq(PermissionsTableItem.PERMISSION),
                 FilterExpression=reduce(
                     Or, ([Attr("Id").eq(value) for value in permissions])
                 ),

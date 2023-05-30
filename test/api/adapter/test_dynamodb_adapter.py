@@ -104,7 +104,7 @@ class TestDynamoDBAdapterPermissionsTable:
 
         with pytest.raises(
             AWSServiceError,
-            match=f"Error storing the {subject_type.value}: {subject_id}",
+            match=f"Error storing the {subject_type}: {subject_id}",
         ):
             self.dynamo_adapter.store_subject_permissions(
                 subject_type, subject_id, permissions

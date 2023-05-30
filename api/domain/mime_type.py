@@ -1,9 +1,9 @@
-from enum import Enum
+from strenum import StrEnum
 
 from api.common.custom_exceptions import UserError
 
 
-class MimeType(Enum):
+class MimeType(StrEnum):
     APPLICATION_JSON = "application/json"
     TEXT_CSV = "text/csv"
 
@@ -14,7 +14,7 @@ class MimeType(Enum):
                 mime_type = "application/json"
             return MimeType(mime_type)
         except ValueError:
-            allowed_mime_types = ", ".join([str(item.value) for item in list(MimeType)])
+            allowed_mime_types = ", ".join([str(item) for item in list(MimeType)])
             raise UserError(
                 f"Provided value for Accept header parameter [{mime_type}] is not supported. Supported formats: {allowed_mime_types}"
             )

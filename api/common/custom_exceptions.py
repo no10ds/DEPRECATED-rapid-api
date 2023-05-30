@@ -93,6 +93,10 @@ class CrawlerIsNotReadyError(TooManyRequestsError):
     pass
 
 
+class CrawlerIncorrectlyTaggedError(AWSServiceError):
+    pass
+
+
 class TableDoesNotExistError(Exception):
     pass
 

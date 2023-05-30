@@ -5,7 +5,7 @@ from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.schema_validation import valid_domain_name
-from api.common.config.auth import SensitivityLevel, Action, LayerPermissions
+from api.common.config.auth import Sensitivity, Action, LayerPermissions
 from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
 from api.common.logger import AppLogger
 from api.domain.permission_item import PermissionItem
@@ -91,7 +91,7 @@ class ProtectedDomainService:
             raise UserError(f"The protected domain, [{domain}] does not exist.")
 
     def _verify_protected_domain_is_empty(self, domain):
-        query = DatasetFilters(sensitivity=SensitivityLevel.PROTECTED.value)
+        query = DatasetFilters(sensitivity=Sensitivity.PROTECTED)
         datasets_metadata = self.resource_adapter.get_datasets_metadata(
             s3_adapter=self.s3_adapter, query=query
         )
@@ -104,13 +104,13 @@ class ProtectedDomainService:
 
     def generate_protected_permission_items(self, domain) -> List[PermissionItem]:
         permissions = []
-        for action in [Action.READ, Action.WRITE]:
+        for action in Action.data_actions():
             for layer in LayerPermissions:
                 permissions.append(
                     PermissionItem(
-                        id=f"{action.value}_{layer}_{SensitivityLevel.PROTECTED.value}_{domain}",
-                        type=action.value,
-                        sensitivity=SensitivityLevel.PROTECTED.value,
+                        id=f"{action}_{layer}_{Sensitivity.PROTECTED}_{domain}",
+                        type=action,
+                        sensitivity=Sensitivity.PROTECTED,
                         domain=domain,
                         layer=layer,
                     )

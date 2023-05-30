@@ -21,7 +21,7 @@ protected_domain_router = APIRouter(
 @protected_domain_router.post(
     "/{domain}",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 def create_protected_domain(domain: str):
     """
@@ -57,7 +57,7 @@ def create_protected_domain(domain: str):
 
 @protected_domain_router.get(
     "",
-    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 def list_protected_domains():
     """
@@ -86,7 +86,7 @@ def list_protected_domains():
 
 @protected_domain_router.delete(
     "/{domain}",
-    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 def delete_protected_domain(domain: str, response: Response):
     """

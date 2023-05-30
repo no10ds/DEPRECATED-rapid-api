@@ -77,7 +77,7 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_level():
 
 def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
     query = DatasetFilters(
-        sensitivity="PRIVATE",
+        sensitivity=["PUBLIC", "PRIVATE"],
         key_value_tags={"tag1": None, "tag2": "value2"},
         key_only_tags=["tag3"],
         domain="domain",
@@ -88,7 +88,7 @@ def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
         {"Key": "tag1", "Values": []},
         {"Key": "tag2", "Values": ["value2"]},
         {"Key": "tag3", "Values": []},
-        {"Key": "sensitivity", "Values": ["PRIVATE"]},
+        {"Key": "sensitivity", "Values": ["PUBLIC", "PRIVATE"]},
         {"Key": "layer", "Values": ["raw"]},
         {"Key": "domain", "Values": ["domain"]},
     ]

@@ -62,7 +62,7 @@ datasets_router = APIRouter(
 
 @datasets_router.post(
     "",
-    dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.READ])],
     status_code=http_status.HTTP_200_OK,
 )
 async def list_all_datasets(
@@ -105,7 +105,7 @@ if not CATALOG_DISABLED:
 
     @datasets_router.get(
         "/search/{term}",
-        dependencies=[Security(secure_endpoint, scopes=[Action.READ.value])],
+        dependencies=[Security(secure_endpoint, scopes=[Action.READ])],
         status_code=http_status.HTTP_200_OK,
         include_in_schema=False,
     )
@@ -119,7 +119,7 @@ if not CATALOG_DISABLED:
 
 @datasets_router.get(
     "/{layer}/{domain}/{dataset}/info",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
 )
 async def get_dataset_info(
     layer: Layer,
@@ -179,7 +179,7 @@ async def get_dataset_info(
 
 @datasets_router.get(
     "/{layer}/{domain}/{dataset}/{version}/files",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
 )
 async def list_raw_files(
     layer: Layer,
@@ -246,7 +246,7 @@ async def list_raw_files(
 
 @datasets_router.delete(
     "/{layer}/{domain}/{dataset}",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.DATA_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Response):
     """
@@ -278,7 +278,7 @@ async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Resp
 
 @datasets_router.delete(
     "/{layer}/{domain}/{dataset}/{version}/{filename}",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE])],
 )
 async def delete_data_file(
     layer: Layer,
@@ -346,7 +346,7 @@ async def delete_data_file(
 @datasets_router.post(
     "/{layer}/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE])],
 )
 def upload_data(
     layer: Layer,
@@ -452,7 +452,7 @@ def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
 
 @datasets_router.post(
     "/{layer}/{domain}/{dataset}/query",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
     responses={
         200: {
             "content": {
@@ -552,7 +552,7 @@ async def query_dataset(
 
 @datasets_router.post(
     "/{layer}/{domain}/{dataset}/query/large",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ.value])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
     status_code=http_status.HTTP_202_ACCEPTED,
 )
 async def query_large_dataset(

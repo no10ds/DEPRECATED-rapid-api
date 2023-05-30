@@ -17,7 +17,9 @@ from api.application.services.authorisation.authorisation_service import (
 )
 from api.application.services.authorisation.token_utils import parse_token
 from api.application.services.permissions_service import PermissionsService
-from api.application.services.dataset_service import DatasetService
+from api.application.services.authorisation.dataset_access_evaluator import (
+    DatasetAccessEvaluator,
+)
 from api.common.config.auth import IDENTITY_PROVIDER_BASE_URL, Action
 from api.common.config.docs import custom_openapi_docs_generator, COMMIT_SHA, VERSION
 from api.common.config.constants import BASE_API_PATH
@@ -50,7 +52,7 @@ PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
 permissions_service = PermissionsService()
-upload_service = DatasetService()
+upload_service = DatasetAccessEvaluator()
 
 app = FastAPI(
     openapi_url=f"{BASE_API_PATH}/openapi.json", docs_url=f"{BASE_API_PATH}/docs"
@@ -170,7 +172,7 @@ async def methods(request: Request):
 @app.get(
     f"{BASE_API_PATH}/permissions_ui",
     status_code=HTTP_200_OK,
-    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN.value])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.USER_ADMIN])],
     include_in_schema=False,
 )
 async def get_permissions_ui():
@@ -180,9 +182,7 @@ async def get_permissions_ui():
 @app.get(
     f"{BASE_API_PATH}/datasets_ui/{{action}}",
     status_code=HTTP_200_OK,
-    dependencies=[
-        Security(secure_endpoint, scopes=[Action.WRITE.value, Action.READ.value])
-    ],
+    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE, Action.READ])],
     include_in_schema=False,
 )
 async def get_datasets_ui(action: Action, request: Request):
@@ -205,32 +205,23 @@ def _get_subject_id(request: Request):
 
 def _determine_user_ui_actions(subject_permissions: List[str]) -> Dict[str, bool]:
     return {
-        "can_manage_users": Action.USER_ADMIN.value in subject_permissions,
+        "can_manage_users": Action.USER_ADMIN in subject_permissions,
         "can_upload": any(
-            (
-                permission.startswith(Action.WRITE.value)
-                for permission in subject_permissions
-            )
+            (permission.startswith(Action.WRITE) for permission in subject_permissions)
         ),
         "can_download": any(
-            (
-                permission.startswith(Action.READ.value)
-                for permission in subject_permissions
-            )
+            (permission.startswith(Action.READ) for permission in subject_permissions)
         ),
         "can_create_schema": any(
             (
-                permission.startswith(Action.DATA_ADMIN.value)
+                permission.startswith(Action.DATA_ADMIN)
                 for permission in subject_permissions
             )
         ),
         "can_search_catalog": False
         if CATALOG_DISABLED
         else any(
-            (
-                permission.startswith(Action.READ.value)
-                for permission in subject_permissions
-            )
+            (permission.startswith(Action.READ) for permission in subject_permissions)
         ),
     }
 
