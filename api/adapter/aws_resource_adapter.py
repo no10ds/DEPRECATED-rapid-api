@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List
 
 import boto3
 from botocore.exceptions import ClientError
@@ -9,6 +9,7 @@ from api.common.custom_exceptions import AWSServiceError, UserError
 from api.common.logger import AppLogger
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
+from api.domain.schema_metadata import SchemaMetadata
 
 if TYPE_CHECKING:
     from api.adapter.s3_adapter import S3Adapter
@@ -23,18 +24,14 @@ class AWSResourceAdapter:
     ):
         self.__resource_client = resource_client
 
-    class EnrichedDatasetMetaData(DatasetMetadata):
-        description: Optional[str] = ""
-        tags: Optional[Dict[str, str]] = None
-
-    def get_enriched_datasets_metadata(
+    def get_schemas_metadata(
         self, s3_adapter: "S3Adapter", query: DatasetFilters = DatasetFilters()
-    ) -> List[EnrichedDatasetMetaData]:
+    ) -> List[SchemaMetadata]:
         try:
             AppLogger.info("Getting enriched datasets info")
             return [
-                self._to_enriched_dataset_metadata(resource, s3_adapter)
-                for resource in self.fetch_resources_from_crawlers(query)
+                s3_adapter.fetch_schema(dataset)
+                for dataset in self.get_datasets_metadata(query)
             ]
         except KeyError:
             AppLogger.info("No datasets found")
@@ -53,7 +50,6 @@ class AWSResourceAdapter:
     ) -> List[DatasetMetadata]:
         try:
             AppLogger.info("Getting datasets info")
-
             return [
                 self.infer_dataset_metadata_from_crawler(resource)
                 for resource in self.fetch_resources_from_crawlers(query)
@@ -96,21 +92,6 @@ class AWSResourceAdapter:
         )
         return (
             item for page in page_iterator for item in page["ResourceTagMappingList"]
-        )
-
-    def _to_enriched_dataset_metadata(
-        self, resource_tag_mapping: Dict, s3_adapter: "S3Adapter"
-    ) -> EnrichedDatasetMetaData:
-        dataset = self.infer_dataset_metadata_from_crawler(resource_tag_mapping)
-        tags = {tag["Key"]: tag["Value"] for tag in resource_tag_mapping["Tags"]}
-        description = s3_adapter.get_dataset_description(dataset)
-        return self.EnrichedDatasetMetaData(
-            layer=dataset.layer,
-            domain=dataset.domain,
-            dataset=dataset.dataset,
-            version=dataset.version,
-            description=description,
-            tags=tags,
         )
 
     def get_version_from_tags(self, resource_tag_mapping):

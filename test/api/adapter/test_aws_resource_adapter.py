@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from botocore.exceptions import ClientError
@@ -9,8 +9,10 @@ from api.common.config.aws import AWS_REGION, RESOURCE_PREFIX
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
+from api.domain.schema_metadata import SchemaMetadata
 
 
+@pytest.mark.focus
 class TestAWSResourceAdapterClientMethods:
     resource_boto_client = None
     aws_return_value = None
@@ -232,37 +234,23 @@ class TestAWSResourceAdapterClientMethods:
             ],
         )
 
-    def test_get_enriched_datasets_metadata(self):
-        self.resource_adapter.fetch_resources_from_crawlers = Mock(
-            return_value=[
-                {
-                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/layer/domain1/dataset1",
-                    "Tags": [
-                        {"Key": "sensitivity", "Value": "PUBLIC"},
-                        {"Key": "no_of_versions", "Value": "1"},
-                        {"Key": "layer", "Value": "layer"},
-                        {"Key": "domain", "Value": "domain1"},
-                    ],
-                },
-                {
-                    "ResourceARN": f"arn:aws:glue:{AWS_REGION}:123:crawler/{RESOURCE_PREFIX}_crawler/layer/domain2/dataset2",
-                    "Tags": [
-                        {"Key": "tag1", "Value": ""},
-                        {"Key": "sensitivity", "Value": "PUBLIC"},
-                        {"Key": "no_of_versions", "Value": "2"},
-                        {"Key": "layer", "Value": "layer"},
-                        {"Key": "domain", "Value": "domain2"},
-                    ],
-                },
-            ]
+    def test_get_schemas_metadata(self):
+        mock_dataset_metadatas = [
+            DatasetMetadata("layer", "domain1", "dataset1", 1),
+            DatasetMetadata("layer", "domain2", "dataset2", 2),
+        ]
+
+        self.resource_adapter.get_datasets_metadata = Mock(
+            return_value=mock_dataset_metadatas
         )
 
         expected = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain1",
                 dataset="dataset1",
                 version=1,
+                sensitivity="PUBLIC",
                 description="description1",
                 tags={
                     "sensitivity": "PUBLIC",
@@ -271,11 +259,12 @@ class TestAWSResourceAdapterClientMethods:
                     "domain": "domain1",
                 },
             ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain2",
                 dataset="dataset2",
                 version=2,
+                sensitivity="PUBLIC",
                 description="description2",
                 tags={
                     "tag1": "",
@@ -286,20 +275,17 @@ class TestAWSResourceAdapterClientMethods:
                 },
             ),
         ]
-        self.s3_adapter.get_dataset_description = Mock(
-            side_effect=["description1", "description2"]
-        )
+        self.s3_adapter.fetch_schema = Mock(side_effect=[expected[0], expected[1]])
 
-        res = self.resource_adapter.get_enriched_datasets_metadata(
-            self.s3_adapter, "filters"
-        )
+        res = self.resource_adapter.get_schemas_metadata(self.s3_adapter, "filters")
 
         assert expected == res
-        self.resource_adapter.fetch_resources_from_crawlers.assert_called_once_with(
-            "filters"
+        self.resource_adapter.get_datasets_metadata.assert_called_once_with("filters")
+        self.s3_adapter.fetch_schema.assert_has_calls(
+            [call(dataset) for dataset in mock_dataset_metadatas]
         )
 
-    def test_get_enriched_datasets_metadata_returns_invalid_parameter_exception(
+    def test_get_schemas_metadata_returns_invalid_parameter_exception(
         self,
     ):
         query = DatasetFilters(
@@ -317,7 +303,7 @@ class TestAWSResourceAdapterClientMethods:
         )
 
         with pytest.raises(UserError, match="Wrong parameters sent to list datasets"):
-            self.resource_adapter.get_enriched_datasets_metadata(self.s3_adapter, query)
+            self.resource_adapter.get_schemas_metadata(self.s3_adapter, query)
 
     @pytest.mark.parametrize(
         "error_code",
@@ -328,9 +314,7 @@ class TestAWSResourceAdapterClientMethods:
             ("SomethingElse",),
         ],
     )
-    def test_get_enriched_datasets_metadata_returns_another_exception(
-        self, error_code: str
-    ):
+    def test_get_schemas_metadata_returns_another_exception(self, error_code: str):
         query = DatasetFilters(
             tags={
                 "tag1": "value1",
@@ -349,7 +333,7 @@ class TestAWSResourceAdapterClientMethods:
             AWSServiceError,
             match="Internal server error, please contact system administrator",
         ):
-            self.resource_adapter.get_enriched_datasets_metadata(self.s3_adapter, query)
+            self.resource_adapter.get_schemas_metadata(self.s3_adapter, query)
 
     def test_get_datasets_metadata(self):
         self.resource_adapter.fetch_resources_from_crawlers = Mock(

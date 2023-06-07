@@ -1,28 +1,26 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Type, Union
 
 import boto3
 import pandas as pd
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
-from api.common.config.auth import Sensitivity
 from api.common.config.aws import (
     AWS_REGION,
     DATA_BUCKET,
     OUTPUT_QUERY_BUCKET,
-    SCHEMAS_LOCATION,
 )
 from api.common.config.constants import (
     CONTENT_ENCODING,
     QUERY_RESULTS_LINK_EXPIRY_SECONDS,
 )
-from api.common.custom_exceptions import AWSServiceError, SchemaNotFoundError, UserError
+from api.common.custom_exceptions import AWSServiceError, UserError
 from api.common.logger import AppLogger
 from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Schema
-from api.domain.schema_metadata import SchemaMetadata, SchemaMetadatas
+from api.domain.schema_metadata import SchemaMetadata
 
 
 class S3Adapter:
@@ -49,13 +47,11 @@ class S3Adapter:
         response: Dict = self.__s3_client.get_object(Bucket=self.__s3_bucket, Key=key)
         return response.get("Body")
 
-    def find_schema(self, dataset: DatasetMetadata) -> Optional[Schema]:
+    def fetch_schema(self, dataset: DatasetMetadata) -> Schema:
         try:
-            schema_metadata = self.retrieve_schema_metadata(dataset)
-            dataset = self.retrieve_data(schema_metadata.schema_path())
-            return Schema.parse_raw(dataset.read())
-        except SchemaNotFoundError:
-            return None
+            data = self.retrieve_data(dataset.schema_path()).read()
+            return Schema.parse_raw(data)
+
         except ClientError as error:
             if error.response["Error"]["Code"] == "NoSuchKey":
                 return None
@@ -68,7 +64,6 @@ class S3Adapter:
                 raise UserError(f"The file [{filename}] does not exist")
 
     def save_schema(self, schema: Schema) -> str:
-        schema.metadata.domain = schema.metadata.domain.lower()
         schema_metadata = schema.metadata
         self.store_data(
             object_full_path=schema_metadata.schema_path(),
@@ -79,17 +74,9 @@ class S3Adapter:
     def delete_schema(self, schema_metadata: SchemaMetadata):
         self._delete_data(schema_metadata.schema_path())
 
-    def get_dataset_sensitivity(self, dataset: DatasetMetadata) -> Sensitivity:
-        schema_metadata = self.retrieve_schema_metadata(dataset)
-        return Sensitivity(schema_metadata.get_sensitivity())
-
-    def get_dataset_description(self, dataset: DatasetMetadata) -> str:
-        schema = self.retrieve_schema_metadata(dataset)
-        return schema.get_description()
-
     def upload_partitioned_data(
         self,
-        dataset: DatasetMetadata,
+        dataset: Type[DatasetMetadata],
         filename: str,
         partitioned_data: List[Tuple[str, pd.DataFrame]],
     ):
@@ -103,38 +90,29 @@ class S3Adapter:
     def upload_raw_data(
         self, schema_metadata: SchemaMetadata, file_path: Path, raw_file_identifier: str
     ):
-        domain = schema_metadata.get_domain()
-        dataset = schema_metadata.get_dataset()
-        version = schema_metadata.get_version()
-        layer = schema_metadata.get_layer()
-        dataset_metadata = schema_metadata.get_dataset_metadata()
         AppLogger.info(
-            f"Raw data upload for {dataset_metadata.raw_data_location()} started"
+            f"Raw data upload for {schema_metadata.raw_data_location()} started"
         )
         filename = f"{raw_file_identifier}.csv"
-        raw_data_path = schema_metadata.get_dataset_metadata().raw_data_path(filename)
+        raw_data_path = schema_metadata.raw_data_path(filename)
         self.__s3_client.upload_file(
             Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path
         )
         AppLogger.info(
-            f"Raw data upload for {layer}/{domain}/{dataset}/{version} completed"
+            f"Raw data upload for {schema_metadata.get_ui_upload_path()} completed"
         )
 
     def list_raw_files(self, dataset: DatasetMetadata) -> List[str]:
         object_list = self.list_files_from_path(dataset.raw_data_location())
         return self._map_object_list_to_filename(object_list)
 
-    def list_dataset_files(
-        self, dataset: DatasetMetadata, sensitivity: Sensitivity
-    ) -> List[Dict]:
+    def list_dataset_files(self, dataset: DatasetMetadata) -> List[Dict]:
         return [
             *self.list_files_from_path(
                 dataset.construct_raw_dataset_uploads_location()
             ),
             *self.list_files_from_path(dataset.dataset_location()),
-            *self.list_files_from_path(
-                dataset.construct_schema_dataset_location(sensitivity)
-            ),
+            *self.list_files_from_path(dataset.schema_location()),
         ]
 
     def delete_dataset_files(
@@ -155,7 +133,7 @@ class S3Adapter:
         self._delete_objects(files_to_delete, raw_data_filename)
 
     def delete_previous_dataset_files(
-        self, dataset: DatasetMetadata, raw_file_identifier: str
+        self, dataset: Type[DatasetMetadata], raw_file_identifier: str
     ):
         files = self.list_files_from_path(dataset.file_location())
         files_to_delete = [
@@ -195,10 +173,6 @@ class S3Adapter:
                 f"Unable to generate pre-signed URL for execution ID {query_execution_id}, {error}"
             )
             raise AWSServiceError("Unable to generate download URL")
-
-    def retrieve_schema_metadata(self, dataset: DatasetMetadata) -> SchemaMetadata:
-        schemas = self.list_all_schemas()
-        return schemas.find(dataset)
 
     def _clean_filename(self, file_key: str) -> str:
         return file_key.rsplit("/", 1)[-1].split(".")[0]
@@ -270,15 +244,3 @@ class S3Adapter:
 
     def _delete_data(self, object_full_path: str):
         self.__s3_client.delete_object(Bucket=self.__s3_bucket, Key=object_full_path)
-
-    def list_all_schemas(self) -> SchemaMetadatas:
-        items = self.list_files_from_path(SCHEMAS_LOCATION)
-        if len(items) > 0:
-            return SchemaMetadatas(
-                [
-                    SchemaMetadata.from_path(item, self)
-                    for item in items
-                    if item.endswith(".json")
-                ]
-            )
-        return SchemaMetadatas.empty()

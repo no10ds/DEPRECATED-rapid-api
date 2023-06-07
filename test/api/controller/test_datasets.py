@@ -354,47 +354,55 @@ class TestListDatasets(BaseClientTest):
         self.mock_s3_client = Mock()
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
 
-    @patch.object(AWSResourceAdapter, "get_enriched_datasets_metadata")
-    def test_returns_enriched_metadata_for_all_datasets(
-        self, mock_get_enriched_datasets_metadata
-    ):
+    @patch.object(AWSResourceAdapter, "get_schemas_metadata")
+    def test_returns_schema_metadata_for_all_datasets(self, mock_get_schemas_metadata):
         metadata_response = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain1",
                 dataset="dataset1",
-                tags={"tag1": "value1"},
+                key_value_tags={"tag1": "value1"},
                 description="",
                 version=1,
+                sensitivity="PUBLIC",
             ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain2",
                 dataset="dataset2",
-                tags={"tag2": "value2"},
+                key_value_tags={"tag2": "value2"},
                 version=1,
                 description="some test description",
+                sensitivity="PUBLIC",
             ),
         ]
 
-        mock_get_enriched_datasets_metadata.return_value = metadata_response
+        mock_get_schemas_metadata.return_value = metadata_response
 
         expected_response = [
             {
                 "layer": "layer",
                 "domain": "domain1",
                 "dataset": "dataset1",
+                "sensitivity": "PUBLIC",
                 "version": 1,
                 "description": "",
-                "tags": {"tag1": "value1"},
+                "key_value_tags": {"tag1": "value1"},
+                "key_only_tags": [],
+                "owners": None,
+                "update_behaviour": "APPEND",
             },
             {
                 "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset2",
+                "sensitivity": "PUBLIC",
                 "version": 1,
                 "description": "some test description",
-                "tags": {"tag2": "value2"},
+                "key_value_tags": {"tag2": "value2"},
+                "key_only_tags": [],
+                "update_behaviour": "APPEND",
+                "owners": None,
             },
         ]
 
@@ -406,7 +414,7 @@ class TestListDatasets(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        _, kwargs = mock_get_enriched_datasets_metadata.call_args
+        _, kwargs = mock_get_schemas_metadata.call_args
         assert expected_query == kwargs.get("query")
 
         assert response.status_code == 200
@@ -415,21 +423,17 @@ class TestListDatasets(BaseClientTest):
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     def test_returns_metadata_for_all_datasets(self, mock_get_datasets_metadata):
         metadata_response = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            DatasetMetadata(
                 layer="layer",
                 domain="domain1",
                 dataset="dataset1",
-                tags={"tag1": "value1"},
-                description="",
                 version=1,
             ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            DatasetMetadata(
                 layer="layer",
                 domain="domain2",
                 dataset="dataset2",
-                tags={"tag2": "value2"},
                 version=1,
-                description="some test description",
             ),
         ]
 
@@ -441,16 +445,12 @@ class TestListDatasets(BaseClientTest):
                 "domain": "domain1",
                 "dataset": "dataset1",
                 "version": 1,
-                "description": "",
-                "tags": {"tag1": "value1"},
             },
             {
                 "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset2",
                 "version": 1,
-                "description": "some test description",
-                "tags": {"tag2": "value2"},
             },
         ]
 
@@ -473,21 +473,17 @@ class TestListDatasets(BaseClientTest):
         self, mock_get_datasets_metadata
     ):
         metadata_response = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            DatasetMetadata(
                 layer="layer",
                 domain="domain1",
                 dataset="dataset1",
-                tags={"tag1": "value1"},
                 version=1,
-                description="",
             ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            DatasetMetadata(
                 layer="layer",
                 domain="domain2",
                 dataset="dataset2",
-                tags={"tag2": "value2"},
                 version=1,
-                description="some test description",
             ),
         ]
 
@@ -499,16 +495,12 @@ class TestListDatasets(BaseClientTest):
                 "domain": "domain1",
                 "dataset": "dataset1",
                 "version": 1,
-                "tags": {"tag1": "value1"},
-                "description": "",
             },
             {
                 "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset2",
                 "version": 1,
-                "tags": {"tag2": "value2"},
-                "description": "some test description",
             },
         ]
 
@@ -531,30 +523,32 @@ class TestListDatasets(BaseClientTest):
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(AWSResourceAdapter, "get_enriched_datasets_metadata")
-    def test_returns_enriched_metadata_for_datasets_with_certain_tags(
-        self, mock_get_enriched_datasets_metadata
+    @patch.object(AWSResourceAdapter, "get_schemas_metadata")
+    def test_returns_schema_metadata_for_datasets_with_certain_tags(
+        self, mock_get_schemas_metadata
     ):
         metadata_response = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain1",
                 dataset="dataset1",
-                tags={"tag1": "value1"},
+                sensitivity="PUBLIC",
+                key_value_tags={"tag1": "value1"},
                 version=1,
                 description="",
             ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain2",
                 dataset="dataset2",
-                tags={"tag2": "value2"},
+                sensitivity="PUBLIC",
+                key_value_tags={"tag2": "value2"},
                 version=1,
                 description="some test description",
             ),
         ]
 
-        mock_get_enriched_datasets_metadata.return_value = metadata_response
+        mock_get_schemas_metadata.return_value = metadata_response
 
         expected_response = [
             {
@@ -562,16 +556,24 @@ class TestListDatasets(BaseClientTest):
                 "domain": "domain1",
                 "dataset": "dataset1",
                 "version": 1,
-                "tags": {"tag1": "value1"},
+                "sensitivity": "PUBLIC",
+                "key_value_tags": {"tag1": "value1"},
+                "key_only_tags": [],
                 "description": "",
+                "owners": None,
+                "update_behaviour": "APPEND",
             },
             {
                 "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset2",
                 "version": 1,
-                "tags": {"tag2": "value2"},
+                "sensitivity": "PUBLIC",
+                "key_value_tags": {"tag2": "value2"},
+                "key_only_tags": [],
                 "description": "some test description",
+                "owners": None,
+                "update_behaviour": "APPEND",
             },
         ]
 
@@ -588,32 +590,29 @@ class TestListDatasets(BaseClientTest):
             json={"tags": tag_filters},
         )
 
-        _, kwargs = mock_get_enriched_datasets_metadata.call_args
+        _, kwargs = mock_get_schemas_metadata.call_args
         assert expected_query_object == kwargs.get("query")
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
+    @pytest.mark.focus
     @patch.object(AWSResourceAdapter, "get_datasets_metadata")
     def test_returns_metadata_for_datasets_with_certain_sensitivity(
         self, mock_get_datasets_metadata
     ):
         metadata_response = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            DatasetMetadata(
                 layer="layer",
                 domain="domain1",
                 dataset="dataset1",
                 version=1,
-                tags={"sensitivity": "PUBLIC", "tag1": "value1"},
-                description="",
             ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            DatasetMetadata(
                 layer="layer",
                 domain="domain2",
                 dataset="dataset2",
                 version=1,
-                tags={"sensitivity": "PUBLIC"},
-                description="some test description",
             ),
         ]
 
@@ -625,16 +624,12 @@ class TestListDatasets(BaseClientTest):
                 "domain": "domain1",
                 "dataset": "dataset1",
                 "version": 1,
-                "tags": {"sensitivity": "PUBLIC", "tag1": "value1"},
-                "description": "",
             },
             {
                 "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset2",
-                "tags": {"sensitivity": "PUBLIC"},
                 "version": 1,
-                "description": "some test description",
             },
         ]
 
@@ -646,31 +641,36 @@ class TestListDatasets(BaseClientTest):
             json={"sensitivity": "PUBLIC"},
         )
 
+        print("these are the call args")
+        print(mock_get_datasets_metadata.call_args)
+
         _, kwargs = mock_get_datasets_metadata.call_args
 
         assert expected_query_object == kwargs.get("query")
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(AWSResourceAdapter, "get_enriched_datasets_metadata")
+    @patch.object(AWSResourceAdapter, "get_schemas_metadata")
     def test_returns_enriched_metadata_for_datasets_with_certain_sensitivity(
         self, mock_get_enriched_datasets_metadata
     ):
         metadata_response = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain1",
                 dataset="dataset1",
                 version=1,
-                tags={"sensitivity": "PUBLIC", "tag1": "value1"},
+                sensitivity="PUBLIC",
+                key_value_tags={"sensitivity": "PUBLIC", "tag1": "value1"},
                 description="",
             ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
+            SchemaMetadata(
                 layer="layer",
                 domain="domain2",
                 dataset="dataset2",
                 version=1,
-                tags={"sensitivity": "PUBLIC"},
+                sensitivity="PUBLIC",
+                key_value_tags={"sensitivity": "PUBLIC"},
                 description="some test description",
             ),
         ]
@@ -683,16 +683,24 @@ class TestListDatasets(BaseClientTest):
                 "domain": "domain1",
                 "dataset": "dataset1",
                 "version": 1,
-                "tags": {"sensitivity": "PUBLIC", "tag1": "value1"},
+                "sensitivity": "PUBLIC",
+                "key_value_tags": {"sensitivity": "PUBLIC", "tag1": "value1"},
+                "key_only_tags": [],
                 "description": "",
+                "owners": None,
+                "update_behaviour": "APPEND",
             },
             {
                 "layer": "layer",
                 "domain": "domain2",
                 "dataset": "dataset2",
-                "tags": {"sensitivity": "PUBLIC"},
+                "key_value_tags": {"sensitivity": "PUBLIC"},
+                "key_only_tags": [],
+                "sensitivity": "PUBLIC",
                 "version": 1,
                 "description": "some test description",
+                "owners": None,
+                "update_behaviour": "APPEND",
             },
         ]
 

@@ -10,48 +10,39 @@ class TestDatasetMetadata:
     def setup_method(self):
         self.dataset_metadata = DatasetMetadata(
             "layer",
-            "DOMAIN",
+            "domain",
             "DATASET",
             3,
         )
 
     def test_file_location(self):
-        assert self.dataset_metadata.file_location() == "data/layer/DOMAIN/dataset/3"
+        assert self.dataset_metadata.file_location() == "data/layer/domain/dataset/3"
 
     def test_dataset_location(self):
-        assert self.dataset_metadata.dataset_location() == "data/layer/DOMAIN/dataset"
+        assert self.dataset_metadata.dataset_location() == "data/layer/domain/dataset"
 
     def test_raw_data_location(self):
         assert (
             self.dataset_metadata.raw_data_path("filename.csv")
-            == "raw_data/layer/DOMAIN/dataset/3/filename.csv"
+            == "raw_data/layer/domain/dataset/3/filename.csv"
         )
 
     def test_glue_table_prefix(self):
-        assert self.dataset_metadata.glue_table_prefix() == "layer_DOMAIN_dataset_"
+        assert self.dataset_metadata.glue_table_prefix() == "layer_domain_dataset_"
 
     def test_glue_table_name(self):
-        assert self.dataset_metadata.glue_table_name() == "layer_DOMAIN_dataset_3"
+        assert self.dataset_metadata.glue_table_name() == "layer_domain_dataset_3"
 
     def test_s3_path(self):
         assert (
             self.dataset_metadata.s3_path()
-            == f"s3://{DATA_BUCKET}/data/layer/DOMAIN/dataset/"
+            == f"s3://{DATA_BUCKET}/data/layer/domain/dataset/"
         )
-
-    def test_construct_dataset_location(self):
-        assert self.dataset_metadata.dataset_location() == "data/layer/DOMAIN/dataset"
 
     def test_construct_raw_dataset_uploads_location(self):
         assert (
             self.dataset_metadata.construct_raw_dataset_uploads_location()
-            == "raw_data/layer/DOMAIN/dataset"
-        )
-
-    def test_construct_schema_dataset_location(self):
-        assert (
-            self.dataset_metadata.construct_schema_dataset_location("PROTECTED")
-            == "schemas/layer/PROTECTED/DOMAIN/dataset"
+            == "raw_data/layer/domain/dataset"
         )
 
     def test_set_version_when_version_not_present(self):
@@ -65,3 +56,23 @@ class TestDatasetMetadata:
         original_version = deepcopy(self.dataset_metadata.version)
         self.dataset_metadata.set_version(AWSResourceAdapter())
         assert original_version == self.dataset_metadata.version
+
+    def test_schema_path(self):
+        dataset = DatasetMetadata(
+            layer="raw",
+            domain="domain",
+            dataset="dataset",
+            sensitivity="PUBLIC",
+            version=4,
+        )
+        assert dataset.schema_path() == "schemas/raw/domain/dataset/4/schema.json"
+
+    def test_schema_name(self):
+        dataset = DatasetMetadata(
+            layer="raw",
+            domain="domain",
+            dataset="dataset",
+            sensitivity="PUBLIC",
+            version=3,
+        )
+        assert dataset.schema_name() == "raw/domain/dataset/3/schema.json"

@@ -1,7 +1,7 @@
 import json
 import threading
 from time import sleep
-from typing import Dict, List
+from typing import Dict, List, Type
 
 import boto3
 from botocore.exceptions import ClientError
@@ -47,7 +47,7 @@ class GlueAdapter:
         self.glue_crawler_role = glue_crawler_role
         self.glue_connection_name = glue_connection_name
 
-    def create_crawler(self, dataset: DatasetMetadata, tags: Dict[str, str]):
+    def create_crawler(self, dataset: Type[DatasetMetadata], tags: Dict[str, str]):
         try:
             default_tags = {"resource_prefix": RESOURCE_PREFIX}
             self.glue_client.create_crawler(
@@ -78,7 +78,7 @@ class GlueAdapter:
         except ClientError as error:
             self._handle_crawler_create_error(error)
 
-    def start_crawler(self, dataset: DatasetMetadata):
+    def start_crawler(self, dataset: Type[DatasetMetadata]):
         try:
             self.glue_client.start_crawler(Name=dataset.generate_crawler_name())
         except ClientError:
@@ -93,7 +93,7 @@ class GlueAdapter:
     def get_crawler_arn(self, dataset: DatasetMetadata) -> str:
         return f"arn:aws:glue:{AWS_REGION}:{AWS_ACCOUNT}:crawler/{dataset.generate_crawler_name()}"
 
-    def set_crawler_version_tag(self, dataset: DatasetMetadata) -> None:
+    def set_crawler_version_tag(self, dataset: Type[DatasetMetadata]) -> None:
         try:
             self.glue_client.tag_resource(
                 ResourceArn=self.get_crawler_arn(dataset),
@@ -120,7 +120,7 @@ class GlueAdapter:
                 f"Failed the retrieve tags from the crawler {dataset.generate_crawler_name()}. Validation error: {e}"
             )
 
-    def check_crawler_is_ready(self, dataset: DatasetMetadata) -> None:
+    def check_crawler_is_ready(self, dataset: Type[DatasetMetadata]) -> None:
         if self._get_crawler_state(dataset) != "READY":
             raise CrawlerIsNotReadyError(
                 f"Crawler is currently processing for resource_prefix={RESOURCE_PREFIX}, layer={dataset.layer}, domain={dataset.domain} and dataset={dataset.dataset}"
@@ -132,7 +132,7 @@ class GlueAdapter:
         ).start()
 
     def update_partition_column_data_types(self, schema: Schema) -> None:
-        table_name = schema.get_dataset_metadata().glue_table_name()
+        table_name = schema.metadata.glue_table_name()
         table_definition = self.get_table_when_created(table_name)
         updated_definition = self.update_glue_table_partition_column_types(
             table_definition, schema.get_partition_columns()

@@ -1,12 +1,9 @@
 from unittest.mock import Mock
 
-import pytest
 
 from api.adapter.s3_adapter import S3Adapter
-from api.common.custom_exceptions import SchemaNotFoundError
-from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Schema, Column
-from api.domain.schema_metadata import Owner, SchemaMetadata, SchemaMetadatas
+from api.domain.schema_metadata import Owner, SchemaMetadata
 
 
 class TestSchema:
@@ -89,51 +86,10 @@ class TestSchemaMetadata:
         self.mock_s3_client = Mock()
         self.s3_adapter = S3Adapter(s3_client=self.mock_s3_client, s3_bucket="dataset")
 
-    def test_creates_metadata_from_s3_key(self):
-        key = "schemas/raw/PRIVATE/test_domain/test_dataset/2/schema.json"
-        result = SchemaMetadata.from_path(key, self.s3_adapter)
-
-        assert result.get_layer() == "raw"
-        assert result.get_domain() == "test_domain"
-        assert result.get_dataset() == "test_dataset"
-        assert result.get_version() == 2
-        assert result.get_sensitivity() == "PRIVATE"
-
-    def test_throws_error_if_sensitivity_is_not_found(self):
-        key = "schemas/HYPERSECRET/test_domain/test_dataset/2/schema.json"
-
-        with pytest.raises(ValueError):
-            SchemaMetadata.from_path(key, self.s3_adapter)
-
-    def test_schema_path(self):
-        schema_metadata = SchemaMetadata(
-            layer="raw",
-            domain="DOMAIN",
-            dataset="dataset",
-            sensitivity="PUBLIC",
-            version=4,
-            owners=[Owner(name="owner", email="owner@email.com")],
-        )
-        assert (
-            schema_metadata.schema_path()
-            == "schemas/raw/PUBLIC/DOMAIN/dataset/4/schema.json"
-        )
-
-    def test_schema_name(self):
-        schema_metadata = SchemaMetadata(
-            layer="raw",
-            domain="DOMAIN",
-            dataset="dataset",
-            sensitivity="PUBLIC",
-            version=3,
-            owners=[Owner(name="owner", email="owner@email.com")],
-        )
-        assert schema_metadata.schema_name() == "DOMAIN/dataset/3/schema.json"
-
     def test_schema_version(self):
         schema_metadata = SchemaMetadata(
             layer="raw",
-            domain="DOMAIN",
+            domain="domain",
             dataset="dataset",
             sensitivity="PUBLIC",
             version=3,
@@ -144,7 +100,7 @@ class TestSchemaMetadata:
     def test_schema_for_default_version(self):
         schema_metadata = SchemaMetadata(
             layer="raw",
-            domain="DOMAIN",
+            domain="domain",
             dataset="dataset",
             sensitivity="PUBLIC",
             owners=[Owner(name="owner", email="owner@email.com")],
@@ -195,68 +151,3 @@ class TestSchemaMetadata:
             "domain": "domain",
             "layer": "raw",
         }
-
-
-class TestSchemaMetadatas:
-    def test_find_by_domain_and_dataset_and_version(self):
-        desired_metadata = SchemaMetadata(
-            layer="raw",
-            domain="domain2",
-            dataset="dataset2",
-            sensitivity="PUBLIC",
-            version=1,
-            owners=[Owner(name="owner", email="owner@email.com")],
-        )
-        data = SchemaMetadatas(
-            [
-                SchemaMetadata(
-                    layer="raw",
-                    domain="domain1",
-                    dataset="dataset1",
-                    sensitivity="PUBLIC",
-                    owners=[Owner(name="owner", email="owner@email.com")],
-                ),
-                desired_metadata,
-            ]
-        )
-        result = data.find(
-            DatasetMetadata(
-                layer="raw", domain="domain2", dataset="dataset2", version=1
-            )
-        )
-
-        assert result is desired_metadata
-
-    def test_raises_error_if_cannot_find_schema_metadata(self):
-        data = SchemaMetadatas(
-            [
-                SchemaMetadata(
-                    layer="raw",
-                    domain="domain1",
-                    dataset="dataset1",
-                    sensitivity="PRIVATE",
-                    version="1",
-                    owners=[Owner(name="owner", email="owner@email.com")],
-                ),
-                (
-                    SchemaMetadata(
-                        layer="raw",
-                        domain="domain2",
-                        dataset="dataset2",
-                        sensitivity="PRIVATE",
-                        version="1",
-                        owners=[Owner(name="owner", email="owner@email.com")],
-                    )
-                ),
-            ]
-        )
-
-        with pytest.raises(
-            SchemaNotFoundError,
-            match="Schema not found for layer=raw, domain=domain3, dataset=dataset3 and version=1",
-        ):
-            data.find(
-                DatasetMetadata(
-                    layer="raw", domain="domain3", dataset="dataset3", version=1
-                )
-            )
