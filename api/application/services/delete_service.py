@@ -29,13 +29,7 @@ class DeleteService:
         # 2. Remove keys
         # 3. Delete Glue Tables
         # 4. Delete crawler
-        sensitivity = self.persistence_adapter.get_dataset_sensitivity(
-            dataset.layer, dataset.domain, dataset.dataset
-        )
-        dataset_files = self.persistence_adapter.list_dataset_files(
-            dataset, sensitivity
-        )
-        # 4. Delete crawler
+        dataset_files = self.persistence_adapter.list_dataset_files(dataset)
         self.persistence_adapter.delete_dataset_files_using_key(
             dataset_files, f"{dataset.layer}/{dataset.domain}/{dataset.dataset}"
         )

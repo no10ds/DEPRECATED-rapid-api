@@ -1,3 +1,4 @@
+import pytest
 from typing import Tuple, Dict
 from unittest.mock import patch
 
@@ -95,6 +96,7 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {"details": "Error message"}
 
+    @pytest.mark.focus
     @patch.object(DeleteService, "delete_schema")
     @patch.object(DataService, "upload_schema")
     def test_schema_deletion_returns_500_if_crawler_creation_fails(

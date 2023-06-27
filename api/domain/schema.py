@@ -3,7 +3,6 @@ from typing import List, Dict, Optional, Set
 from pydantic.main import BaseModel
 
 from api.domain.data_types import DataTypes
-from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema_metadata import Owner, SchemaMetadata, UpdateBehaviour
 
 
@@ -36,9 +35,6 @@ class Schema(BaseModel):
 
     def get_version(self) -> int:
         return self.metadata.get_version()
-
-    def get_dataset_metadata(self) -> DatasetMetadata:
-        return self.metadata.get_dataset_metadata()
 
     def get_custom_tags(self) -> Dict[str, str]:
         return self.metadata.get_custom_tags()

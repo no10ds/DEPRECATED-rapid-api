@@ -16,6 +16,7 @@ from copy import deepcopy
 import json
 import os
 from typing import List
+import re
 
 import boto3
 import dotenv
@@ -291,7 +292,9 @@ def fetch_all_crawlers(resource_client):
 def migrate_files(layer: str, s3_client):
     print("- Migrating the files")
     # Schemas
-    move_files_by_prefix(s3_client, "data/schemas", f"schemas/{layer}")
+    move_files_by_prefix(
+        s3_client, "data/schemas", f"schemas/{layer}", "data/schemas/.*/"
+    )
     add_layer_to_schemas(s3_client, layer, f"schemas/{layer}")
 
     # Data
@@ -316,7 +319,9 @@ def add_layer_to_schemas(s3_client, layer: str, path: str):
         )
 
 
-def move_files_by_prefix(s3_client, src_prefix: str, dest_prefix: str):
+def move_files_by_prefix(
+    s3_client, src_prefix: str, dest_prefix: str, prefix_to_replace: str = None
+):
     print(f"-- Moving files from the prefix [{src_prefix}] to [{dest_prefix}]")
     paginator = s3_client.get_paginator("list_objects_v2")
     page_iterator = paginator.paginate(Bucket=DATA_BUCKET, Prefix=src_prefix)
@@ -327,11 +332,14 @@ def move_files_by_prefix(s3_client, src_prefix: str, dest_prefix: str):
         print(f"-- There were no files in the prefix [{src_prefix}] to migrate")
         return None
 
+    if not prefix_to_replace:
+        src_prefix = prefix_to_replace
+
     for file in files:
         src_key = file["Key"]
         # Don't move files if they are already in the destination - can happen if the script is run twice
         if not src_key.startswith(dest_prefix):
-            dest_key = src_key.replace(src_prefix, dest_prefix)
+            dest_key = re.sub(prefix_to_replace, dest_prefix, src_key)
             copy_source = {"Bucket": DATA_BUCKET, "Key": src_key}
             s3_client.copy_object(
                 Bucket=DATA_BUCKET,

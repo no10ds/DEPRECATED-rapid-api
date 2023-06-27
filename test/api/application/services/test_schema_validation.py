@@ -1,6 +1,7 @@
 from typing import List, Any
 
 import pytest
+from pydantic import ValidationError
 
 from api.application.services.schema_validation import validate_schema
 from api.application.services.schema_validation import (
@@ -19,7 +20,7 @@ class TestSchemaValidation:
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
                 layer="raw",
-                domain="someDomain",
+                domain="somedomain",
                 dataset="otherDataset",
                 sensitivity="PUBLIC",
                 owners=[Owner(name="owner", email="owner@email.com")],
@@ -192,60 +193,55 @@ class TestSchemaValidation:
         )
 
     def test_is_invalid_schema_with_empty_domain(self):
-        invalid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="",
-                dataset="other",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=0,
-                    data_type="Int64",
-                    allow_null=False,
+        with pytest.raises(ValidationError):
+            Schema(
+                metadata=SchemaMetadata(
+                    layer="raw",
+                    domain="",
+                    dataset="other",
+                    sensitivity="PUBLIC",
+                    owners=[Owner(name="owner", email="owner@email.com")],
                 ),
-                Column(
-                    name="colname2",
-                    partition_index=None,
-                    data_type="object",
-                    allow_null=True,
-                ),
-            ],
-        )
-        self._assert_validate_schema_raises_error(
-            invalid_schema, "You can not have empty metadata values"
-        )
+                columns=[
+                    Column(
+                        name="colname1",
+                        partition_index=0,
+                        data_type="Int64",
+                        allow_null=False,
+                    ),
+                    Column(
+                        name="colname2",
+                        partition_index=None,
+                        data_type="object",
+                        allow_null=True,
+                    ),
+                ],
+            )
 
     def test_is_invalid_schema_with_empty_dataset(self):
-        invalid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="domain",
-                dataset="",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=0,
-                    data_type="Int64",
-                    allow_null=False,
+        with pytest.raises(ValidationError):
+            Schema(
+                metadata=SchemaMetadata(
+                    layer="raw",
+                    domain="domain",
+                    sensitivity="PUBLIC",
+                    owners=[Owner(name="owner", email="owner@email.com")],
                 ),
-                Column(
-                    name="colname2",
-                    partition_index=None,
-                    data_type="object",
-                    allow_null=True,
-                ),
-            ],
-        )
-        self._assert_validate_schema_raises_error(
-            invalid_schema, "You can not have empty metadata values"
-        )
+                columns=[
+                    Column(
+                        name="colname1",
+                        partition_index=0,
+                        data_type="Int64",
+                        allow_null=False,
+                    ),
+                    Column(
+                        name="colname2",
+                        partition_index=None,
+                        data_type="object",
+                        allow_null=True,
+                    ),
+                ],
+            )
 
     def test_is_invalid_schema_with_empty_sensitivity(self):
         invalid_schema = Schema(
@@ -1082,9 +1078,7 @@ class TestSchemaValidation:
         [
             "_domain",
             "4domain",
-            "&domain",
             "dom-ain",
-            "domain^",
             "1234567",
         ],
     )

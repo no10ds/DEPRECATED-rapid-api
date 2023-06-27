@@ -4,9 +4,9 @@ import pytest
 
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
 
 
 class TestProtectedDomainService:
@@ -294,9 +294,7 @@ class TestProtectedDomainService:
         )
 
         self.resource_adapter.get_datasets_metadata.return_value = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
-                layer="layer", domain="other", dataset="dataset"
-            )
+            DatasetMetadata(layer="layer", domain="other", dataset="dataset")
         ]
 
         with pytest.raises(
@@ -443,12 +441,8 @@ class TestProtectedDomainService:
             ),
         ]
         exisiting_datasets = [
-            AWSResourceAdapter.EnrichedDatasetMetaData(
-                layer="layer", domain="domain", dataset="dataset"
-            ),
-            AWSResourceAdapter.EnrichedDatasetMetaData(
-                layer="layer", domain="domain", dataset="dataset_two"
-            ),
+            DatasetMetadata(layer="layer", domain="domain", dataset="dataset"),
+            DatasetMetadata(layer="layer", domain="domain", dataset="dataset_two"),
         ]
 
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (

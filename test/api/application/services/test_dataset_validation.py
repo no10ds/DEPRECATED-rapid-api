@@ -27,14 +27,16 @@ from api.domain.schema_metadata import Owner, SchemaMetadata
 
 class TestDatasetValidation:
     def setup_method(self):
+        self.schema_metadata = SchemaMetadata(
+            layer="raw",
+            domain="test_domain",
+            dataset="test_dataset",
+            sensitivity="PUBLIC",
+            owners=[Owner(name="owner", email="owner@email.com")],
+        )
+
         self.valid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="colname1",
@@ -59,13 +61,7 @@ class TestDatasetValidation:
 
     def test_fully_valid_dataset(self):
         full_valid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="colname1",
@@ -137,13 +133,7 @@ class TestDatasetValidation:
 
     def test_invalid_when_partition_column_with_illegal_characters(self):
         valid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="colname1",
@@ -169,13 +159,7 @@ class TestDatasetValidation:
 
     def test_valid_when_date_partition_column_with_illegal_slash_character(self):
         valid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="colname1",
@@ -220,13 +204,7 @@ class TestDatasetValidation:
 
     def test_retains_specified_schema_data_types_when_null_values_present(self):
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -276,13 +254,7 @@ class TestDatasetValidation:
     )
     def test_checks_for_unacceptable_null_values(self, dataframe: pd.DataFrame):
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -314,13 +286,7 @@ class TestDatasetValidation:
         )
 
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -358,13 +324,7 @@ class TestDatasetValidation:
         )
 
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -403,13 +363,7 @@ class TestDatasetValidation:
         )
 
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -469,13 +423,7 @@ class TestDatasetValidation:
         ]
 
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="test_sensitivity",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=columns,
         )
 
@@ -492,13 +440,7 @@ class TestDatasetValidation:
             {"col1": ["a", "b", None], "col2": ["d", "e", None], "col3": [1, 5, None]}
         )
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -540,13 +482,7 @@ class TestDatasetValidation:
             }
         )
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -603,13 +539,7 @@ class TestDatasetValidation:
             }
         )
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -665,13 +595,7 @@ class TestDatasetValidation:
             }
         )
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",
@@ -720,6 +644,15 @@ class TestDatasetValidation:
 
 
 class TestDatasetTransformation:
+    def setup_method(self):
+        self.schema_metadata = SchemaMetadata(
+            layer="raw",
+            domain="test_domain",
+            dataset="test_dataset",
+            sensitivity="PUBLIC",
+            owners=[Owner(name="owner", email="owner@email.com")],
+        )
+
     @pytest.mark.parametrize(
         "date_format,date_column_data,expected_date_column_data",
         [
@@ -759,13 +692,7 @@ class TestDatasetTransformation:
         data = pd.DataFrame({"date": date_column_data, "value": [1, 5, 4, 8]})
 
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="date",
@@ -792,13 +719,7 @@ class TestDatasetTransformation:
             }
         )
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="date1",
@@ -837,13 +758,7 @@ class TestDatasetTransformation:
             }
         )
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="date1",
@@ -918,13 +833,7 @@ class TestDatasetTransformation:
         )
 
         schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
+            metadata=self.schema_metadata,
             columns=[
                 Column(
                     name="col1",

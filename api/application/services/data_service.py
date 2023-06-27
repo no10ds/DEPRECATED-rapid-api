@@ -3,7 +3,7 @@ import uuid
 from pathlib import Path
 from threading import Thread
 from time import sleep
-from typing import List, Tuple
+from typing import List, Tuple, Type
 
 import pandas as pd
 from pandas.io.parsers import TextFileReader
@@ -99,7 +99,7 @@ class DataService:
         dataset: DatasetMetadata,
         file_path: Path,
     ) -> Tuple[str, int, str]:
-        schema = self._get_schema(dataset)
+        schema = self.get_schema(dataset)
         if not schema:
             raise SchemaNotFoundError(
                 f"Could not find schema related to the {dataset.string_representation()}"
@@ -123,7 +123,7 @@ class DataService:
     ) -> None:
         try:
             self.job_service.update_step(job, UploadStep.INITIALISATION)
-            self.wait_until_crawler_is_ready(schema.get_dataset_metadata())
+            self.wait_until_crawler_is_ready(schema.metadata)
             self.job_service.update_step(job, UploadStep.VALIDATION)
             self.validate_incoming_data(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.RAW_DATA_UPLOAD)
@@ -144,7 +144,7 @@ class DataService:
             self.job_service.fail(job, build_error_message_list(error))
             raise error
 
-    def wait_until_crawler_is_ready(self, dataset: DatasetMetadata) -> None:
+    def wait_until_crawler_is_ready(self, dataset: Type[DatasetMetadata]) -> None:
         remaining_retries = 20
         while remaining_retries > 0:
             try:
@@ -184,7 +184,7 @@ class DataService:
         if schema.has_overwrite_behaviour():
             self.remove_existing_data(schema, raw_file_identifier)
 
-        self.glue_adapter.start_crawler(schema.get_dataset_metadata())
+        self.glue_adapter.start_crawler(schema.metadata)
         self.glue_adapter.update_catalog_table_config(schema)
         AppLogger.info(
             f"Processing chunks for {schema.get_layer()}/{schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} completed"
@@ -216,7 +216,7 @@ class DataService:
         )
         try:
             self.s3_adapter.delete_previous_dataset_files(
-                schema.get_dataset_metadata(),
+                schema.metadata,
                 raw_file_identifier,
             )
         except IndexError:
@@ -234,19 +234,20 @@ class DataService:
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = FIRST_SCHEMA_VERSION_NUMBER
         schema.metadata.domain = schema.metadata.domain.lower()
-        dataset = schema.get_dataset_metadata()
-        if self._get_schema(dataset) is not None:
-            AppLogger.warning(
-                f"Schema already exists for {dataset.string_representation()}"
-            )
-            raise ConflictError("Schema already exists")
+        dataset = schema.metadata
+        try:
+            if self.get_schema(dataset) is not None:
+                AppLogger.warning(
+                    f"Schema already exists for {dataset.string_representation()}"
+                )
+                raise ConflictError("Schema already exists")
+        except SchemaNotFoundError:
+            pass
 
         self.check_for_protected_domain(schema)
         validate_schema_for_upload(schema)
         schema_name = self.s3_adapter.save_schema(schema)
-        self.glue_adapter.create_crawler(
-            schema.get_dataset_metadata(), schema.get_tags()
-        )
+        self.glue_adapter.create_crawler(schema.metadata, schema.get_tags())
         return schema_name
 
     def update_schema(self, schema: Schema) -> str:
@@ -257,12 +258,7 @@ class DataService:
                 schema.get_dataset(),
                 FIRST_SCHEMA_VERSION_NUMBER,
             )
-            original_schema = self._get_schema(dataset_metadata)
-            if original_schema is None:
-                AppLogger.warning(
-                    f"Could not find schema for {dataset_metadata.string_representation()}"
-                )
-                raise SchemaNotFoundError("Previous version of schema not found")
+            original_schema = self.get_schema(dataset_metadata)
 
             new_schema_description = schema.metadata.description
             new_version = (
@@ -275,11 +271,11 @@ class DataService:
             schema.metadata.version = new_version
             schema.metadata.description = new_schema_description
             self.check_for_protected_domain(schema)
-            self.glue_adapter.check_crawler_is_ready(schema.get_dataset_metadata())
+            self.glue_adapter.check_crawler_is_ready(schema.metadata)
             validate_schema_for_upload(schema)
 
             schema_name = self.s3_adapter.save_schema(schema)
-            self.glue_adapter.set_crawler_version_tag(schema.get_dataset_metadata())
+            self.glue_adapter.set_crawler_version_tag(schema.metadata)
             return schema_name
         except CrawlerUpdateError as error:
             self.delete_service.delete_schema(schema.metadata)
@@ -297,11 +293,7 @@ class DataService:
         return schema.get_domain()
 
     def get_dataset_info(self, dataset: DatasetMetadata) -> EnrichedSchema:
-        schema = self._get_schema(dataset)
-        if not schema:
-            raise SchemaNotFoundError(
-                f"Could not find schema related to the {dataset.string_representation()}"
-            )
+        schema = self.get_schema(dataset)
         statistics_dataframe = self.athena_adapter.query(
             dataset, self._build_query(schema)
         )
@@ -318,7 +310,7 @@ class DataService:
     ):
         partitioned_data = generate_partitioned_data(schema, validated_dataframe)
         self.s3_adapter.upload_partitioned_data(
-            schema.get_dataset_metadata(),
+            schema.metadata,
             filename,
             partitioned_data,
         )
@@ -377,11 +369,16 @@ class DataService:
             raise error
 
     def update_table_config(self, dataset: DatasetMetadata) -> None:
-        schema = self.s3_adapter.find_schema(dataset)
+        schema = self.s3_adapter.fetch_schema(dataset)
         self.glue_adapter.update_catalog_table_config(schema)
 
-    def _get_schema(self, dataset: DatasetMetadata) -> Schema:
-        return self.s3_adapter.find_schema(dataset)
+    def get_schema(self, dataset: Type[DatasetMetadata]) -> Schema:
+        schema = self.s3_adapter.fetch_schema(dataset)
+        if not schema:
+            raise SchemaNotFoundError(
+                f"Could not find the schema for dataset {dataset.string_representation()}"
+            )
+        return schema
 
     def _build_query(self, schema: Schema) -> SQLQuery:
         date_columns = schema.get_columns_by_type(DataTypes.DATE)
