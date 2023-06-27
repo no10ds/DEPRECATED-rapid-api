@@ -25,7 +25,8 @@ class DatasetMetadata(BaseModel):
         **kwargs,
     ) -> None:
         """
-        Override the default BaseModel init so that the class can be instantiated without keyword arguments
+        Override the default BaseModel init so that the class can be instantiated without keyword arguments.
+        This is for our ease of use, given how widely used the class is.
         """
         expected_inputs = {
             "layer": layer,
@@ -33,7 +34,9 @@ class DatasetMetadata(BaseModel):
             "dataset": dataset,
             "version": version,
         }
-        # Only include arguments if they're not None, so that Pydantic returns its standard field missing error
+        # Only include arguments if they're not None.
+        # This code ensures that Pydantic returns a descriptive error: `ValidationError: field <field> missing`.
+        # Without this, we get the less intuitive error: `ValidationError: None passed for field <field>`.
         kwargs |= {key: value for key, value in expected_inputs.items() if value}
         super(DatasetMetadata, self).__init__(
             **kwargs,
