@@ -57,10 +57,12 @@ class TestDynamoDBAdapterPermissionsTable:
 
         self.permissions_table = Mock()
         self.service_table = Mock()
+        self.schema_table = Mock()
 
         self.dynamo_data_source.Table.side_effect = [
             self.permissions_table,
             self.service_table,
+            self.schema_table,
         ]
 
         self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
@@ -583,10 +585,12 @@ class TestDynamoDBAdapterServiceTable:
 
         self.permissions_table = Mock()
         self.service_table = Mock()
+        self.schema_table = Mock()
 
         self.dynamo_data_source.Table.side_effect = [
             self.permissions_table,
             self.service_table,
+            self.schema_table,
         ]
 
         self.test_service_table_name = "TEST SERVICE TABLE"
@@ -613,7 +617,7 @@ class TestDynamoDBAdapterServiceTable:
                 "SK2": "subject-123",
                 "Type": "UPLOAD",
                 "Status": "IN PROGRESS",
-                "Step": "INITIALISATION",
+                "Step": "VALIDATION",
                 "Errors": None,
                 "Filename": "filename.csv",
                 "RawFileIdentifier": "111-222-333",

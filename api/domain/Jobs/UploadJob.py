@@ -7,10 +7,10 @@ from api.domain.Jobs.Job import Job, JobType, JobStep
 
 
 class UploadStep(JobStep):
-    INITIALISATION = "INITIALISATION"
     VALIDATION = "VALIDATION"
     RAW_DATA_UPLOAD = "RAW_DATA_UPLOAD"
     DATA_UPLOAD = "DATA_UPLOAD"
+    LOAD_PARTITIONS = "LOAD_PARTITIONS"
     CLEAN_UP = "CLEAN_UP"
     NONE = "-"
 
@@ -24,7 +24,7 @@ class UploadJob(Job):
         raw_file_identifier: str,
         dataset: DatasetMetadata,
     ):
-        super().__init__(JobType.UPLOAD, UploadStep.INITIALISATION, subject_id, job_id)
+        super().__init__(JobType.UPLOAD, UploadStep.VALIDATION, subject_id, job_id)
         self.filename: str = filename
         self.raw_file_identifier: str = raw_file_identifier
         self.layer: Layer = dataset.layer

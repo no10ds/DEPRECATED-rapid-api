@@ -54,12 +54,13 @@ class Schema(BaseModel):
     def get_column_names(self) -> List[str]:
         return [column.name for column in self.columns]
 
-    def get_column_dtypes_to_cast(self) -> Dict[str, str]:
-        return {
-            column.name: column.data_type
-            for column in self.columns
-            if column.data_type in DataTypes.data_types_to_cast()
-        }
+    # TODO: Is this necessary in athena? Might it do it for us?
+    # def get_column_dtypes_to_cast(self) -> Dict[str, str]:
+    #     return {
+    #         column.name: column.data_type
+    #         for column in self.columns
+    #         if column.data_type in DataTypes.data_types_to_cast()
+    #     }
 
     def get_partitions(self) -> List[str]:
         sorted_cols = self.get_partition_columns()
@@ -78,8 +79,34 @@ class Schema(BaseModel):
     def get_column_names_by_type(self, d_type: str) -> List[str]:
         return [column.name for column in self.columns if column.data_type == d_type]
 
+    def get_non_partition_columns_for_glue(self) -> List[dict]:
+        return [
+            self.convert_column_to_glue_format(col)
+            for col in self.columns
+            if col.partition_index is None
+        ]
+
+    def get_partition_columns_for_glue(self) -> List[dict]:
+        return [
+            self.convert_column_to_glue_format(col)
+            for col in self.get_partition_columns()
+        ]
+
+    def convert_column_to_glue_format(self, column: List[Column]):
+        return {"Name": column.name, "Type": column.data_type}
+
     def get_partition_columns(self) -> List[Column]:
         return sorted(
             [column for column in self.columns if column.partition_index is not None],
             key=lambda x: x.partition_index,
         )
+
+    def get_non_partition_column_types(self) -> dict:
+        return {
+            col.name: col.data_type
+            for col in self.columns
+            if col.partition_index is None
+        }
+
+    def get_partition_column_types(self) -> dict:
+        return {col.name: col.data_type for col in self.get_partition_columns()}

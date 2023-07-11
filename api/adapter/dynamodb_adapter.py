@@ -1,7 +1,7 @@
 import time
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Type
 
 import boto3
 from boto3.dynamodb.conditions import Key, Attr, Or
@@ -17,13 +17,18 @@ from api.common.config.aws import (
     AWS_REGION,
     DYNAMO_PERMISSIONS_TABLE_NAME,
     SERVICE_TABLE_NAME,
+    SCHEMA_TABLE_NAME,
 )
 from api.common.custom_exceptions import UserError, AWSServiceError
 from api.common.logger import AppLogger
+from api.domain.dataset_filters import DatasetFilters
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.Jobs.Job import Job
 from api.domain.Jobs.QueryJob import QueryJob
 from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.permission_item import PermissionItem
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import SchemaMetadata
 from api.domain.subject_permissions import SubjectPermissions
 
 
@@ -34,6 +39,7 @@ class DatabaseAdapter(ABC):
     ) -> None:
         pass
 
+    @abstractmethod
     def store_protected_permissions(
         self, permissions: List[PermissionItem], domain: str
     ) -> None:
@@ -77,11 +83,38 @@ class DatabaseAdapter(ABC):
     def update_job(self, job: Job) -> None:
         pass
 
+    @abstractmethod
+    def store_schema(self, schema: Schema) -> None:
+        pass
+
+    @abstractmethod
+    def get_schema_metadata(self, dataset: Type[DatasetMetadata]) -> SchemaMetadata:
+        pass
+
+    @abstractmethod
+    def get_latest_schema_metadatas(
+        self, dataset: Type[DatasetMetadata]
+    ) -> List[SchemaMetadata]:
+        pass
+
+    @abstractmethod
+    def get_schema(self, dataset: Type[DatasetMetadata]) -> Dict:
+        pass
+
+    @abstractmethod
+    def delete_schemas(self, metadata: Type[DatasetMetadata]) -> None:
+        pass
+
+    @abstractmethod
+    def deprecate_schema(self, metadata: Type[DatasetMetadata]) -> None:
+        pass
+
 
 class DynamoDBAdapter(DatabaseAdapter):
     def __init__(self, data_source=boto3.resource("dynamodb", region_name=AWS_REGION)):
         self.permissions_table = data_source.Table(DYNAMO_PERMISSIONS_TABLE_NAME)
         self.service_table = data_source.Table(SERVICE_TABLE_NAME)
+        self.schema_table = data_source.Table(SCHEMA_TABLE_NAME)
 
     def store_subject_permissions(
         self, subject_type: SubjectType, subject_id: str, permissions: List[str]
@@ -124,6 +157,35 @@ class DynamoDBAdapter(DatabaseAdapter):
         except ClientError as error:
             self._handle_client_error(
                 f"Error storing the protected domain permission for {domain}", error
+            )
+
+    def store_schema(self, schema: Schema) -> None:
+        try:
+            AppLogger.info(
+                f"Storing schema for {schema.metadata.string_representation()}"
+            )
+            self.schema_table.put_item(
+                Item={
+                    "PK": schema.metadata.dataset_identifier(with_version=False),
+                    "SK": schema.metadata.get_version(),
+                    "Layer": schema.get_layer(),
+                    "Domain": schema.get_domain(),
+                    "Dataset": schema.get_dataset(),
+                    "Version": schema.get_version(),
+                    "Sensitivity": schema.get_sensitivity(),
+                    "Description": schema.get_description(),
+                    "UpdateBehaviour": schema.get_update_behaviour(),
+                    "KeyValueTags": schema.metadata.key_value_tags,
+                    "KeyOnlyTags": schema.metadata.key_only_tags,
+                    "Owners": [dict(owner) for owner in schema.get_owners()],
+                    "IsLatestVersion": schema.metadata.get_is_latest_version(),
+                    "Columns": [dict(col) for col in schema.columns],
+                }
+            )
+        except ClientError as error:
+            self._handle_client_error(
+                f"Error storing schema for {schema.metadata.string_representation()}",
+                error,
             )
 
     def validate_permissions(self, subject_permissions: List[str]) -> None:
@@ -245,6 +307,12 @@ class DynamoDBAdapter(DatabaseAdapter):
             Key={"PK": "PERMISSION", "SK": permission_id}
         )
 
+    def delete_schemas(self, metadata: Type[DatasetMetadata]) -> None:
+        for i in range(metadata.version):
+            self.schema_table.delete_item(
+                Key={"PK": metadata.dataset_identifier(with_version=False), "SK": i + 1}
+            )
+
     def store_upload_job(self, upload_job: UploadJob) -> None:
         item_config = {
             "PK": "JOB",
@@ -307,6 +375,141 @@ class DynamoDBAdapter(DatabaseAdapter):
             raise UserError(f"Could not find job with id {job_id}")
         except ClientError as error:
             self._handle_client_error("Error fetching job from the database", error)
+
+    def get_schema(self, dataset: Type[DatasetMetadata]) -> Dict:
+        try:
+            schema = self.schema_table.query(
+                KeyConditionExpression=Key("PK").eq(
+                    dataset.dataset_identifier(with_version=False)
+                )
+                & Key("SK").eq(dataset.get_version())
+            )["Items"][0]
+            # TODO: Simplify this function with snake to pascal case converter
+            return Schema(
+                metadata=SchemaMetadata(
+                    layer=schema["Layer"],
+                    domain=schema["Domain"],
+                    dataset=schema["Dataset"],
+                    version=schema["Version"],
+                    sensitivity=schema["Sensitivity"],
+                    description=schema["Description"],
+                    update_behaviour=schema["UpdateBehaviour"],
+                    owners=schema["Owners"],
+                    is_latest_version=schema["IsLatestVersion"],
+                    key_value_tags=schema["KeyValueTags"],
+                    key_only_tags=schema["KeyOnlyTags"],
+                ),
+                columns=[Column.parse_obj(col) for col in schema["Columns"]],
+            )
+        except IndexError:
+            return None
+        except ClientError as error:
+            self._handle_client_error("Error fetching job from the database", error)
+
+    def get_schema_metadata(self, dataset: Type[DatasetMetadata]) -> SchemaMetadata:
+        try:
+            schema = self.schema_table.query(
+                KeyConditionExpression=Key("PK").eq(
+                    dataset.dataset_identifier(with_version=False)
+                )
+                & Key("PK").eq(dataset.get_version())
+            )["Items"][0]
+            return SchemaMetadata(
+                layer=schema["Layer"],
+                domain=schema["Domain"],
+                dataset=schema["Dataset"],
+                version=schema["Version"],
+                sensitivity=schema["Sensitivity"],
+                description=schema["Description"],
+                update_behaviour=schema["UpdateBehaviour"],
+                owners=schema["Owners"],
+                is_latest_version=schema["IsLatestVersion"],
+                key_value_tags=schema["KeyValueTags"],
+                key_only_tags=schema["KeyOnlyTags"],
+            )
+        except IndexError:
+            return None
+        except ClientError as error:
+            self._handle_client_error("Error fetching job from the database", error)
+
+    def get_latest_schema_metadatas(
+        self, query: DatasetFilters
+    ) -> List[SchemaMetadata]:
+        try:
+            query_arguments = query.format_resource_query()
+            if query_arguments:
+                filter_expression = Attr("IsLatestVersion").eq(True) & query_arguments
+            else:
+                filter_expression = Attr("IsLatestVersion").eq(True)
+
+            schemas = self.schema_table.scan(
+                FilterExpression=filter_expression,
+            )["Items"]
+            return [
+                SchemaMetadata(
+                    layer=schema["Layer"],
+                    domain=schema["Domain"],
+                    dataset=schema["Dataset"],
+                    version=schema["Version"],
+                    sensitivity=schema["Sensitivity"],
+                    description=schema["Description"],
+                    update_behaviour=schema["UpdateBehaviour"],
+                    owners=schema["Owners"],
+                    is_latest_version=schema["IsLatestVersion"],
+                    key_value_tags=schema["KeyValueTags"],
+                    key_only_tags=schema["KeyOnlyTags"],
+                )
+                for schema in schemas
+            ]
+        except IndexError:
+            return None
+        except ClientError as error:
+            self._handle_client_error("Error fetching job from the database", error)
+
+    def get_latest_schema(self, dataset: Type[DatasetMetadata]) -> SchemaMetadata:
+        try:
+            schema = self.schema_table.query(
+                KeyConditionExpression=Key("PK").eq(
+                    dataset.dataset_identifier(with_version=False)
+                ),
+                FilterExpression=Attr("IsLatestVersion").eq(True),
+            )["Items"][0]
+            return SchemaMetadata(
+                layer=schema["Layer"],
+                domain=schema["Domain"],
+                dataset=schema["Dataset"],
+                version=schema["Version"],
+                sensitivity=schema["Sensitivity"],
+                description=schema["Description"],
+                update_behaviour=schema["UpdateBehaviour"],
+                owners=schema["Owners"],
+                is_latest_version=schema["IsLatestVersion"],
+                key_value_tags=schema["KeyValueTags"],
+                key_only_tags=schema["KeyOnlyTags"],
+            )
+
+        except IndexError:
+            return None
+        except ClientError as error:
+            self._handle_client_error("Error fetching job from the database", error)
+
+    def deprecate_schema(self, dataset: Type[DatasetMetadata]) -> None:
+        try:
+            self.schema_table.update_item(
+                Key={
+                    "PK": dataset.dataset_identifier(with_version=False),
+                    "SK": dataset.get_version(),
+                },
+                UpdateExpression="set #A = :a",
+                ExpressionAttributeNames={
+                    "#A": "IsLatestVersion",
+                },
+                ExpressionAttributeValues={
+                    ":a": False,
+                },
+            )
+        except ClientError as error:
+            self._handle_client_error("There was an error updating job status", error)
 
     def update_job(self, job: Job) -> None:
         try:

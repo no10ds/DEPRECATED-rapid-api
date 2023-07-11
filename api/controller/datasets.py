@@ -11,8 +11,6 @@ from pandas import DataFrame
 from starlette.responses import PlainTextResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.adapter.s3_adapter import S3Adapter
 from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     secure_endpoint,
@@ -21,6 +19,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
+from api.application.services.schema_service import SchemaService
 from api.common.utilities import strtobool
 from api.common.config.auth import Action
 from api.common.config.constants import (
@@ -30,7 +29,6 @@ from api.common.config.constants import (
 )
 from api.common.config.layers import Layer
 from api.common.custom_exceptions import (
-    CrawlerStartFailsError,
     SchemaNotFoundError,
     UserError,
 )
@@ -46,11 +44,10 @@ from api.domain.Jobs.Job import generate_uuid
 
 CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
-s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
-resource_adapter = AWSResourceAdapter()
 data_service = DataService()
 delete_service = DeleteService()
+schema_service = SchemaService()
 
 
 datasets_router = APIRouter(
@@ -62,7 +59,7 @@ datasets_router = APIRouter(
 
 @datasets_router.post(
     "",
-    dependencies=[Security(secure_endpoint, scopes=[Action.READ])],
+    # dependencies=[Security(secure_endpoint, scopes=[Action.READ])],
     status_code=http_status.HTTP_200_OK,
 )
 async def list_all_datasets(
@@ -93,10 +90,7 @@ async def list_all_datasets(
     ### Click  `Try it out` to use the endpoint
 
     """
-    if enriched:
-        return resource_adapter.get_schemas_metadata(s3_adapter, query=tag_filters)
-    else:
-        return resource_adapter.get_datasets_metadata(query=tag_filters)
+    return data_service.list_datasets(query=tag_filters, enriched=enriched)
 
 
 if not CATALOG_DISABLED:
@@ -244,7 +238,7 @@ async def list_raw_files(
 
 @datasets_router.delete(
     "/{layer}/{domain}/{dataset}",
-    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
+    # dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Response):
     """
@@ -330,21 +324,22 @@ async def delete_data_file(
     ### Click  `Try it out` to use the endpoint
 
     """
-    try:
-        delete_service.delete_dataset_file(
-            DatasetMetadata(layer, domain, dataset, version), filename
-        )
-        return Response(status_code=http_status.HTTP_204_NO_CONTENT)
-    except CrawlerStartFailsError as error:
-        AppLogger.warning("Failed to start crawler: %s", error.args[0])
-        response.status_code = http_status.HTTP_202_ACCEPTED
-        return {"details": f"{filename} has been deleted."}
+    # try:
+    delete_service.delete_dataset_file(
+        DatasetMetadata(layer, domain, dataset, version), filename
+    )
+    return Response(status_code=http_status.HTTP_204_NO_CONTENT)
+    # TODO: Fix this
+    # except CrawlerStartFailsError as error:
+    #     AppLogger.warning("Failed to start crawler: %s", error.args[0])
+    #     response.status_code = http_status.HTTP_202_ACCEPTED
+    #     return {"details": f"{filename} has been deleted."}
 
 
 @datasets_router.post(
     "/{layer}/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE])],
+    # dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE])],
 )
 def upload_data(
     layer: Layer,
@@ -450,7 +445,7 @@ def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
 
 @datasets_router.post(
     "/{layer}/{domain}/{dataset}/query",
-    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
+    # dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
     responses={
         200: {
             "content": {

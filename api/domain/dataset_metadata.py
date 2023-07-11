@@ -2,12 +2,12 @@ import json
 from typing import Optional, TYPE_CHECKING
 
 from pydantic import BaseModel
-from api.common.config.aws import DATA_BUCKET, RESOURCE_PREFIX, SCHEMAS_LOCATION
+from api.common.config.aws import DATA_BUCKET
 from api.common.config.layers import Layer
 from api.common.logger import AppLogger
 
 if TYPE_CHECKING:
-    from api.adapter.aws_resource_adapter import AWSResourceAdapter
+    from api.application.services.schema_service import SchemaService
 
 
 class DatasetMetadata(BaseModel):
@@ -68,15 +68,15 @@ class DatasetMetadata(BaseModel):
     def get_version(self) -> int:
         return self.version
 
-    def dataset_identifier(self) -> str:
+    def dataset_identifier(self, with_version: bool = True) -> str:
         """Dataset unqiue path, lower the case of dataset to make the paths that it uses case insensitive."""
-        return f"{self.layer}/{self.domain}/{self.dataset.lower()}"
+        if with_version:
+            return f"{self.layer}/{self.domain}/{self.dataset.lower()}/{self.version}"
+        else:
+            return f"{self.layer}/{self.domain}/{self.dataset.lower()}"
 
-    def dataset_location(self) -> str:
-        return f"data/{self.dataset_identifier()}"
-
-    def file_location(self) -> str:
-        return f"{self.dataset_location()}/{self.version}"
+    def dataset_location(self, with_version: bool = True) -> str:
+        return f"data/{self.dataset_identifier(with_version=with_version)}"
 
     def raw_data_location(self) -> str:
         return f"{self.construct_raw_dataset_uploads_location()}/{self.version}"
@@ -94,13 +94,13 @@ class DatasetMetadata(BaseModel):
         return f"{self.glue_table_prefix()}{self.version}"
 
     def s3_path(self) -> str:
-        return f"s3://{DATA_BUCKET}/{self.dataset_location()}/"
+        return f"s3://{DATA_BUCKET}/{self.dataset_location(with_version=False)}/"
+
+    def s3_file_location(self) -> str:
+        return f"s3://{DATA_BUCKET}/{self.dataset_location()}"
 
     def construct_raw_dataset_uploads_location(self):
-        return f"raw_data/{self.dataset_identifier()}"
-
-    def generate_crawler_name(self) -> str:
-        return f"{RESOURCE_PREFIX}_crawler/{self.dataset_identifier()}"
+        return f"raw_data/{self.dataset_identifier(with_version=False)}"
 
     def string_representation(self) -> str:
         if self.version:
@@ -108,18 +108,9 @@ class DatasetMetadata(BaseModel):
         else:
             return f"layer [{self.layer}], domain [{self.domain}] and dataset [{self.dataset}]"
 
-    def set_version(self, aws_resource_adapter: "AWSResourceAdapter"):
+    def set_version(self, schema_service: "SchemaService"):
         if not self.version:
             AppLogger.info(
                 "No version provided by the user. Retrieving the latest version from the crawler."
             )
-            self.version = aws_resource_adapter.get_version_from_crawler_tags(self)
-
-    def schema_path(self) -> str:
-        return f"{SCHEMAS_LOCATION}/{self.schema_name()}"
-
-    def schema_name(self) -> str:
-        return f"{self.dataset_identifier()}/{self.version}/schema.json"
-
-    def schema_location(self) -> str:
-        return f"{SCHEMAS_LOCATION}/{self.dataset_identifier()}"
+            self.version = schema_service.get_latest_schema_version(self)

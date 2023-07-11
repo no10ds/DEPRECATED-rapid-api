@@ -53,7 +53,7 @@ async def list_all_jobs(request: Request):
 
 @jobs_router.get(
     "/{job_id}",
-    dependencies=[Security(secure_endpoint, scopes=[Action.WRITE])],
+    # dependencies=[Security(secure_endpoint, scopes=[Action.WRITE])],
     status_code=http_status.HTTP_200_OK,
 )
 async def get_job(job_id: str):

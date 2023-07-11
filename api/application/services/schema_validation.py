@@ -1,6 +1,9 @@
 import re
 from typing import List, Union, Any, Optional
 
+from awswrangler._data_types import athena2pyarrow
+from awswrangler.exceptions import UnsupportedType
+
 from api.common.config.auth import Sensitivity
 from api.common.config.aws import INFERRED_UNNAMED_COLUMN_PREFIX, MAX_CUSTOM_TAG_COUNT
 from api.common.config.constants import (
@@ -162,11 +165,12 @@ def has_allow_null_false_on_partitioned_columns(schema):
 
 def has_only_accepted_data_types(schema: Schema):
     data_types = schema.get_data_types()
-    if any(
-        (data_type not in DataTypes.accepted_data_types() for data_type in data_types)
-    ):
+    try:
+        for data_type in data_types:
+            athena2pyarrow(data_type)
+    except UnsupportedType:
         raise SchemaValidationError(
-            "You are specifying one or more unaccepted data types"
+            "You are specifying one or more unaccepted data types",
         )
 
 

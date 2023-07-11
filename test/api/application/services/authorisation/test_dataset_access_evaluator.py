@@ -14,14 +14,17 @@ from api.domain.permission_item import PermissionItem
 from api.domain.schema_metadata import Tags
 
 
+# TODO: Do need to fix this, lots of references to tags which won't be used.
+
+
 class TestDatasetAccessEvaluator:
     def setup_method(self):
         self.glue_adapter = Mock()
-        self.resource_adapter = Mock()
+        self.schema_service = Mock()
         self.permission_service = Mock()
         self.evaluator = DatasetAccessEvaluator(
             glue_adapter=self.glue_adapter,
-            resource_adapter=self.resource_adapter,
+            schema_service=self.schema_service,
             permission_service=self.permission_service,
         )
 
@@ -75,14 +78,12 @@ class TestDatasetAccessEvaluator:
         ],
     )
     def test_extract_datasets_from_permission(self, permission, expected_filters):
-        self.resource_adapter.get_datasets_metadata = Mock()
-        self.resource_adapter.get_datasets_metadata.return_value = "dataset"
+        self.schema_service.get_schemas = Mock()
+        self.schema_service.get_schemas.return_value = "dataset"
 
         res = self.evaluator.extract_datasets_from_permission(permission)
 
-        self.resource_adapter.get_datasets_metadata.assert_called_once_with(
-            expected_filters
-        )
+        self.schema_service.get_schemas.assert_called_once_with(expected_filters)
         assert res == "dataset"
 
     def test_fetch_datasets(self):

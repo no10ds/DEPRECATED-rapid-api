@@ -20,13 +20,13 @@ class TestSchema:
                 Column(
                     name="colname1",
                     partition_index=1,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
@@ -48,16 +48,9 @@ class TestSchema:
     def test_gets_column_names_by_data_type(self):
         expected_column_names = ["colname1"]
 
-        actual_column_names = self.schema.get_column_names_by_type("Int64")
+        actual_column_names = self.schema.get_column_names_by_type("integer")
 
         assert actual_column_names == expected_column_names
-
-    def test_gets_numeric_column_dtypes(self):
-        expected_columns_dtypes = {"colname1": "Int64", "colname3": "boolean"}
-
-        actual_columns_dtypes = self.schema.get_column_dtypes_to_cast()
-
-        assert actual_columns_dtypes == expected_columns_dtypes
 
     def test_gets_partitions(self):
         expected_columns = ["colname2", "colname1"]
@@ -74,7 +67,7 @@ class TestSchema:
         assert actual_partitions_numbers == expected_partitions_numbers
 
     def test_get_data_types(self):
-        expected_data_types = {"Int64", "object", "boolean"}
+        expected_data_types = {"integer", "string", "boolean"}
 
         actual_data_types = self.schema.get_data_types()
 

@@ -20,7 +20,7 @@ def test_initialise_upload_job(mock_time):
     assert job.job_id == "abc-123"
     assert job.job_type == JobType.UPLOAD
     assert job.status == JobStatus.IN_PROGRESS
-    assert job.step == UploadStep.INITIALISATION
+    assert job.step == UploadStep.VALIDATION
     assert job.errors == set()
     assert job.filename == "some-filename.csv"
     assert job.raw_file_identifier == "111-222-333"

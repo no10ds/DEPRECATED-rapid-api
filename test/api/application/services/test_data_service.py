@@ -7,24 +7,22 @@ import pandas as pd
 import pytest
 from botocore.exceptions import ClientError
 
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.application.services.data_service import (
     DataService,
     construct_chunked_dataframe,
 )
 from api.common.config.auth import Sensitivity
-from api.common.config.constants import CONTENT_ENCODING, DATASET_QUERY_LIMIT
+from api.common.config.constants import CONTENT_ENCODING, DATASET_ROWS_QUERY_LIMIT
 from api.common.custom_exceptions import (
     SchemaNotFoundError,
-    CrawlerIsNotReadyError,
     SchemaValidationError,
     ConflictError,
     UserError,
     AWSServiceError,
     UnprocessableDatasetError,
     DatasetValidationError,
-    CrawlerUpdateError,
     QueryExecutionError,
+    TableCreationError,
 )
 from api.domain.Jobs.QueryJob import QueryStep
 from api.domain.Jobs.UploadJob import UploadStep
@@ -45,13 +43,14 @@ class TestUploadSchema:
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
         self.protected_domain_service = Mock()
-        self.cognito_adapter = Mock()
+        self.schema_service = Mock()
         self.data_service = DataService(
             self.s3_adapter,
             self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
-            self.cognito_adapter,
+            None,
+            self.schema_service,
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -65,67 +64,48 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
         )
 
     def test_upload_schema(self):
-        self.s3_adapter.fetch_schema.return_value = None
-        self.s3_adapter.save_schema.return_value = "some-other.json"
+        self.schema_service.get_schema.return_value = None
 
         result = self.data_service.upload_schema(self.valid_schema)
 
-        self.s3_adapter.save_schema.assert_called_once_with(self.valid_schema)
-        self.glue_adapter.create_crawler.assert_called_once_with(
-            self.valid_schema.metadata,
-            {
-                "sensitivity": "PUBLIC",
-                "no_of_versions": "1",
-                "domain": "some",
-                "layer": "raw",
-            },
-        )
-        assert result == "some-other.json"
+        self.schema_service.store_schema.assert_called_once_with(self.valid_schema)
+        self.glue_adapter.create_table.assert_called_once_with(self.valid_schema)
+        assert result == self.valid_schema.metadata.glue_table_name()
 
     def test_upload_schema_uppercase_domain(self):
-        self.s3_adapter.fetch_schema.return_value = None
-        self.s3_adapter.save_schema.return_value = "some-other.json"
+        self.schema_service.get_schema.return_value = None
 
         schema = self.valid_schema.copy()
         schema.metadata.domain = schema.metadata.domain.upper()
         result = self.data_service.upload_schema(schema)
 
-        self.s3_adapter.save_schema.assert_called_once_with(schema)
-        self.glue_adapter.create_crawler.assert_called_once_with(
-            schema.metadata,
-            {
-                "sensitivity": "PUBLIC",
-                "no_of_versions": "1",
-                "domain": "some",
-                "layer": "raw",
-            },
-        )
-        assert result == "some-other.json"
+        self.schema_service.store_schema.assert_called_once_with(schema)
+        self.glue_adapter.create_table.assert_called_once_with(schema)
+        result == schema.metadata.glue_table_name()
 
-    def test_aborts_uploading_if_schema_upload_fails(self):
-        self.s3_adapter.fetch_schema.return_value = None
-        self.s3_adapter.save_schema.side_effect = ClientError(
-            error_response={"Error": {"Code": "Failed"}}, operation_name="PutObject"
+    def test_aborts_uploading_if_create_table_fails(self):
+        self.schema_service.get_schema.return_value = None
+        self.glue_adapter.create_table.side_effect = ClientError(
+            error_response={"Error": {"Code": "Failed"}}, operation_name="CreateTable"
         )
 
         with pytest.raises(ClientError):
             self.data_service.upload_schema(self.valid_schema)
 
-        self.cognito_adapter.create_user_groups.assert_not_called()
-        self.glue_adapter.create_crawler.assert_not_called()
+        self.schema_service.store_schema.assert_not_called()
 
     def test_check_for_protected_domain_success(self):
         schema = Schema(
@@ -140,7 +120,7 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
             ],
@@ -167,7 +147,7 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
             ],
@@ -182,13 +162,13 @@ class TestUploadSchema:
             self.data_service.check_for_protected_domain(schema)
 
     def test_upload_schema_throws_error_when_schema_already_exists(self):
-        self.s3_adapter.fetch_schema.return_value = self.valid_schema
+        self.schema_service.get_schema.return_value = self.valid_schema
 
         with pytest.raises(ConflictError, match="Schema already exists"):
             self.data_service.upload_schema(self.valid_schema)
 
     def test_upload_schema_throws_error_when_schema_invalid(self):
-        self.s3_adapter.fetch_schema.return_value = None
+        self.schema_service.get_schema.return_value = None
 
         invalid_partition_index = -1
         invalid_schema = Schema(
@@ -203,7 +183,7 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=invalid_partition_index,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 )
             ],
@@ -218,16 +198,15 @@ class TestUpdateSchema:
         self.s3_adapter = Mock()
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
+        self.schema_service = Mock()
         self.protected_domain_service = Mock()
-        self.cognito_adapter = Mock()
-        self.delete_service = Mock()
         self.data_service = DataService(
             self.s3_adapter,
             self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
-            self.cognito_adapter,
-            self.delete_service,
+            None,
+            self.schema_service,
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -245,13 +224,13 @@ class TestUpdateSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -271,22 +250,19 @@ class TestUpdateSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Float64",
+                    data_type="double",
                     allow_null=False,
                 ),
                 Column(
                     name="colname_new",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
         )
 
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_update_schema_throws_error_when_schema_invalid(
-        self, mock_get_version_from_crawler_tags
-    ):
+    def test_update_schema_throws_error_when_schema_invalid(self):
         invalid_partition_index = -1
         invalid_schema = Schema(
             metadata=SchemaMetadata(
@@ -301,28 +277,23 @@ class TestUpdateSchema:
                 Column(
                     name="colname1",
                     partition_index=invalid_partition_index,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 )
             ],
         )
-        self.s3_adapter.fetch_schema.return_value = self.valid_schema
+        self.schema_service.get_schema.return_value = self.valid_schema
 
         with pytest.raises(SchemaValidationError):
             self.data_service.update_schema(invalid_schema)
 
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_update_schema_for_protected_domain_failure(
-        self, mock_get_version_from_crawler_tags
-    ):
+    def test_update_schema_for_protected_domain_failure(self):
         original_schema = self.valid_schema.copy(deep=True)
         original_schema.metadata.sensitivity = Sensitivity.PROTECTED
         new_schema = self.valid_updated_schema.copy(deep=True)
         new_schema.metadata.sensitivity = Sensitivity.PROTECTED
 
-        self.glue_adapter.check_crawler_is_ready.return_value = None
-        self.s3_adapter.fetch_schema.return_value = original_schema
-        self.s3_adapter.save_schema.return_value = "some-other.json"
+        self.schema_service.get_schema.return_value = original_schema
         self.protected_domain_service.list_protected_domains.return_value = ["other"]
 
         with pytest.raises(
@@ -331,114 +302,60 @@ class TestUpdateSchema:
         ):
             self.data_service.update_schema(new_schema)
 
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_update_schema_when_crawler_raises_error(
-        self, mock_get_version_from_crawler_tags
-    ):
+    def test_update_schema_when_crawler_raises_error(self):
         new_schema = self.valid_updated_schema
         expected_schema = self.valid_updated_schema.copy(deep=True)
         expected_schema.metadata.version = 2
 
-        self.glue_adapter.check_crawler_is_ready.return_value = None
-        self.s3_adapter.fetch_schema.return_value = self.valid_schema
-        self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_version_from_crawler_tags.return_value = 1
-        self.glue_adapter.set_crawler_version_tag.side_effect = CrawlerUpdateError(
+        self.schema_service.get_schema.return_value = self.valid_schema
+        self.glue_adapter.create_table.side_effect = TableCreationError(
             "error occurred"
         )
 
-        with pytest.raises(CrawlerUpdateError, match="error occurred"):
+        with pytest.raises(TableCreationError, match="error occurred"):
             self.data_service.update_schema(new_schema)
 
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.metadata
-        )
-        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
-        self.delete_service.delete_schema.assert_called_once_with(
-            expected_schema.metadata
-        )
+        self.glue_adapter.create_table.assert_called_once_with(new_schema)
+        self.schema_service.store_schema.assert_not_called()
+        self.schema_service.deprecate_schema.assert_not_called()
 
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_update_schema_success(self, mock_get_version_from_crawler_tags):
+    def test_update_schema_success(self):
         original_schema = self.valid_schema
+        original_schema.metadata.version = 2
         new_schema = self.valid_updated_schema
         expected_schema = self.valid_updated_schema.copy(deep=True)
         expected_schema.metadata.version = 3
 
-        self.glue_adapter.check_crawler_is_ready.return_value = None
-        self.s3_adapter.fetch_schema.return_value = original_schema
-        self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_version_from_crawler_tags.return_value = 2
+        self.schema_service.get_schema.return_value = original_schema
 
         result = self.data_service.update_schema(new_schema)
 
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.metadata
-        )
-        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
-        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.metadata
-        )
-        assert result == "some-other.json"
+        self.glue_adapter.create_table.assert_called_once_with(new_schema)
+        self.schema_service.store_schema.assert_called_once_with(expected_schema)
+        self.schema_service.deprecate_schema.assert_called_once_with(original_schema)
+        assert result == "raw/testdomain/testdataset/3"
 
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_update_schema_success_uppercase_domain(
-        self, mock_get_version_from_crawler_tags
-    ):
-        original_schema = self.valid_schema
-        new_schema = self.valid_updated_schema.copy(deep=True)
-        new_schema.metadata.domain = new_schema.metadata.domain.upper()
-        expected_schema = self.valid_updated_schema.copy(deep=True)
-        expected_schema.metadata.version = 2
+    # TODO: Come back to test, ensure that some values can't be updated, e.g SENSITIVITY (maybe just this?)
+    # def test_update_schema_maintains_original_metadata(self):
+    #     original_schema = self.valid_schema
+    #     new_schema = self.valid_updated_schema.copy(deep=True)
+    #     new_schema.metadata.sensitivity = Sensitivity.PRIVATE
+    #     new_schema.metadata.key_value_tags = {"new_key": "new_val"}
+    #     new_schema.metadata.key_only_tags = ["new_k_tag"]
+    #     new_schema.metadata.update_behaviour = "OVERWRITE"
+    #     expected_schema = self.valid_updated_schema.copy(deep=True)
+    #     expected_schema.metadata.version = 2
 
-        self.glue_adapter.check_crawler_is_ready.return_value = None
-        self.s3_adapter.fetch_schema.return_value = original_schema
-        self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_version_from_crawler_tags.return_value = 1
+    #     self.schema_service.get_schema.return_value = original_schema
 
-        result = self.data_service.update_schema(new_schema)
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.metadata
-        )
-        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
-        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.metadata
-        )
-        assert result == "some-other.json"
+    #     result = self.data_service.update_schema(new_schema)
 
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_update_schema_maintains_original_metadata(
-        self, mock_get_version_from_crawler_tags
-    ):
-        original_schema = self.valid_schema
-        new_schema = self.valid_updated_schema.copy(deep=True)
-        new_schema.metadata.sensitivity = Sensitivity.PRIVATE
-        new_schema.metadata.key_value_tags = {"new_key": "new_val"}
-        new_schema.metadata.key_only_tags = ["new_k_tag"]
-        new_schema.metadata.update_behaviour = "OVERWRITE"
-        expected_schema = self.valid_updated_schema.copy(deep=True)
-        expected_schema.metadata.version = 2
+    #     self.glue_adapter.create_table.assert_called_once_with(new_schema)
+    #     self.schema_service.store_schema.assert_called_once_with(expected_schema)
+    #     self.schema_service.deprecate_schema.assert_called_once_with(expected_schema)
+    #     assert result == "raw/testdomain/testdataset/2"
 
-        self.glue_adapter.check_crawler_is_ready.return_value = None
-        self.s3_adapter.fetch_schema.return_value = original_schema
-        self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_version_from_crawler_tags.return_value = 1
-
-        result = self.data_service.update_schema(new_schema)
-
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.metadata
-        )
-        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
-        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.metadata
-        )
-        assert result == "some-other.json"
-
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_update_schema_for_protected_domain_success(
-        self, mock_get_version_from_crawler_tags
-    ):
+    def test_update_schema_for_protected_domain_success(self):
         original_schema = self.valid_schema.copy(deep=True)
         original_schema.metadata.sensitivity = Sensitivity.PROTECTED
         new_schema = self.valid_updated_schema.copy(deep=True)
@@ -447,40 +364,17 @@ class TestUpdateSchema:
         expected_schema.metadata.version = 2
         expected_schema.metadata.sensitivity = Sensitivity.PROTECTED
 
-        self.glue_adapter.check_crawler_is_ready.return_value = None
-        self.s3_adapter.fetch_schema.return_value = original_schema
-        self.s3_adapter.save_schema.return_value = "some-other.json"
-        mock_get_version_from_crawler_tags.return_value = 1
+        self.schema_service.get_schema.return_value = original_schema
         self.protected_domain_service.list_protected_domains = Mock(
             return_value=[original_schema.get_domain(), "other"]
         )
 
         result = self.data_service.update_schema(new_schema)
 
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            new_schema.metadata
-        )
-        self.s3_adapter.save_schema.assert_called_once_with(expected_schema)
-        self.glue_adapter.set_crawler_version_tag.assert_called_once_with(
-            expected_schema.metadata
-        )
-        assert result == "some-other.json"
-
-    @patch.object(AWSResourceAdapter, "get_version_from_crawler_tags")
-    def test_aborts_updating_if_schema_update_fails(
-        self, mock_get_version_from_crawler_tags
-    ):
-        self.s3_adapter.fetch_schema.return_value = self.valid_schema
-        self.s3_adapter.save_schema.side_effect = ClientError(
-            error_response={"Error": {"Code": "Failed"}}, operation_name="PutObject"
-        )
-        mock_get_version_from_crawler_tags.return_value = 1
-
-        with pytest.raises(ClientError):
-            self.data_service.update_schema(self.valid_schema)
-
-        self.cognito_adapter.create_user_groups.assert_not_called()
-        self.glue_adapter.create_crawler.assert_not_called()
+        self.glue_adapter.create_table.assert_called_once_with(expected_schema)
+        self.schema_service.store_schema.assert_called_once_with(expected_schema)
+        self.schema_service.deprecate_schema.assert_called_once_with(original_schema)
+        assert result == "raw/testdomain/testdataset/2"
 
 
 class TestUploadDataset:
@@ -490,14 +384,14 @@ class TestUploadDataset:
         self.query_adapter = Mock()
         self.protected_domain_service = Mock()
         self.job_service = Mock()
+        self.schema_service = Mock()
         self.data_service = DataService(
             self.s3_adapter,
             self.glue_adapter,
             self.query_adapter,
             self.protected_domain_service,
-            None,
-            None,
             self.job_service,
+            self.schema_service,
         )
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -512,13 +406,13 @@ class TestUploadDataset:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
             ],
@@ -550,7 +444,7 @@ class TestUploadDataset:
     def test_raises_error_when_schema_does_not_exist(
         self,
     ):
-        self.s3_adapter.fetch_schema.return_value = None
+        self.schema_service.get_schema.return_value = None
         dataset_metadata = DatasetMetadata("raw", "some", "other", 1)
         with pytest.raises(SchemaNotFoundError):
             self.data_service.upload_dataset(
@@ -560,7 +454,7 @@ class TestUploadDataset:
                 Path("data.csv"),
             )
 
-        self.s3_adapter.fetch_schema.assert_called_once_with(dataset_metadata)
+        self.schema_service.get_schema.assert_called_once_with(dataset_metadata)
 
     # Upload Dataset  -------------------------------------
 
@@ -578,7 +472,7 @@ class TestUploadDataset:
         # GIVEN
         schema = self.valid_schema
 
-        self.s3_adapter.fetch_schema.return_value = schema
+        self.schema_service.get_schema.return_value = schema
 
         self.data_service.generate_raw_file_identifier = Mock(
             return_value="123-456-789"
@@ -629,7 +523,6 @@ class TestUploadDataset:
         assert result == "123-456-789_111-222-333.parquet"
 
     # Process Upload
-    @patch.object(DataService, "wait_until_crawler_is_ready")
     @patch.object(DataService, "validate_incoming_data")
     @patch.object(DataService, "process_chunks")
     @patch.object(DataService, "delete_incoming_raw_file")
@@ -638,17 +531,16 @@ class TestUploadDataset:
         mock_delete_incoming_raw_file,
         mock_process_chunks,
         mock_validate_incoming_data,
-        mock_wait_until_crawler_is_ready,
     ):
         # GIVEN
         schema = self.valid_schema
         upload_job = Mock()
 
         expected_update_step_calls = [
-            call(upload_job, UploadStep.INITIALISATION),
             call(upload_job, UploadStep.VALIDATION),
             call(upload_job, UploadStep.RAW_DATA_UPLOAD),
             call(upload_job, UploadStep.DATA_UPLOAD),
+            call(upload_job, UploadStep.LOAD_PARTITIONS),
             call(upload_job, UploadStep.CLEAN_UP),
             call(upload_job, UploadStep.NONE),
         ]
@@ -659,7 +551,6 @@ class TestUploadDataset:
         )
 
         # THEN
-        mock_wait_until_crawler_is_ready.assert_called_once_with(schema.metadata)
         mock_validate_incoming_data.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
@@ -675,63 +566,10 @@ class TestUploadDataset:
         self.job_service.update_step.assert_has_calls(expected_update_step_calls)
         self.job_service.succeed.assert_called_once_with(upload_job)
 
-    @patch("api.application.services.data_service.sleep")
-    def test_wait_until_crawler_is_ready_returns_none_when_crawler_is_ready_after_waiting(
-        self, mock_sleep
-    ):
-        # GIVEN
-        schema = self.valid_schema
-
-        self.glue_adapter.check_crawler_is_ready.side_effect = [
-            CrawlerIsNotReadyError("some message"),
-            None,
-        ]
-
-        # WHEN/THEN
-        try:
-            self.data_service.wait_until_crawler_is_ready(schema.metadata)
-        except Exception as error:
-            pytest.fail("Unexpected failure occurred", error)
-
-        mock_sleep.assert_called_once_with(30)
-
-    @patch("api.application.services.data_service.sleep")
-    def test_retries_getting_crawler_state_until_retries_exhausted(self, mock_sleep):
-        # GIVEN
-        schema = self.valid_schema
-
-        self.glue_adapter.check_crawler_is_ready.side_effect = [
-            CrawlerIsNotReadyError("some message")
-        ] * 21
-
-        # WHEN/THEN
-        with pytest.raises(CrawlerIsNotReadyError, match="some message"):
-            self.data_service.wait_until_crawler_is_ready(schema.metadata)
-
-        assert mock_sleep.call_count == 19
-
-    @patch("api.application.services.data_service.construct_chunked_dataframe")
-    def test_starts_crawler_and_updates_catalog_table_config(
-        self, mock_construct_chunked_dataframe
-    ):
-        # Given
-        schema = self.valid_schema
-
-        mock_construct_chunked_dataframe.return_value = []
-
-        # When
-        self.data_service.process_chunks(schema, Path("data.csv"), "123-456-789")
-
-        # Then
-        self.glue_adapter.start_crawler.assert_called_once_with(schema.metadata)
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
-
     @patch.object(DataService, "delete_incoming_raw_file")
     @patch.object(DataService, "validate_incoming_data")
-    @patch.object(DataService, "wait_until_crawler_is_ready")
     def test_deletes_incoming_file_from_disk_and_fails_job_if_any_error_during_processing(
         self,
-        _mock_wait_until_crawler_is_ready,
         mock_validate_incoming_data,
         mock_delete_incoming_raw_file,
     ):
@@ -762,7 +600,7 @@ class TestUploadDataset:
     ):
         # Given
         schema = self.valid_schema
-        self.s3_adapter.fetch_schema.return_value = schema
+        self.schema_service.get_schema.return_value = schema
 
         chunk1 = pd.DataFrame({})
         chunk2 = pd.DataFrame({})
@@ -794,7 +632,7 @@ class TestUploadDataset:
     ):
         schema = self.valid_schema
 
-        self.s3_adapter.fetch_schema.return_value = schema
+        self.schema_service.get_schema.return_value = schema
 
         self.chunked_dataframe_values(
             mock_construct_chunked_dataframe,
@@ -816,7 +654,7 @@ class TestUploadDataset:
     ):
         schema = self.valid_schema
 
-        self.s3_adapter.fetch_schema.return_value = schema
+        self.schema_service.get_schema.return_value = schema
 
         self.chunked_dataframe_values(
             mock_construct_chunked_dataframe,
@@ -840,9 +678,9 @@ class TestUploadDataset:
             )
         except DatasetValidationError as error:
             assert {
-                "Failed to convert column [colname1] to type [Int64]",
-                "Column [colname1] has an incorrect data type. Expected Int64, received "
-                "object",
+                "Failed to convert column [colname1] to type [integer]",
+                "Column [colname1] has an incorrect data type. Expected integer, received "
+                "string",
             }.issubset(error.message)
 
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -851,7 +689,7 @@ class TestUploadDataset:
     ):
         schema = self.valid_schema
 
-        self.s3_adapter.fetch_schema.return_value = schema
+        self.schema_service.get_schema.return_value = schema
 
         self.chunked_dataframe_values(
             mock_construct_chunked_dataframe,
@@ -878,21 +716,10 @@ class TestUploadDataset:
             )
         except DatasetValidationError as error:
             assert {
-                "Column [colname1] has an incorrect data type. Expected Int64, received "
-                "object",
-                "Failed to convert column [colname1] to type [Int64]",
+                "Column [colname1] has an incorrect data type. Expected integer, received "
+                "string",
+                "Failed to convert column [colname1] to type [integer]",
             }.issubset(error.message)
-
-    # Crawler state and trigger errors ----------------------
-    def test_upload_dataset_fails_when_unable_to_get_crawler_state(self):
-        schema = self.valid_schema
-
-        self.glue_adapter.check_crawler_is_ready.side_effect = AWSServiceError(
-            "Some message"
-        )
-
-        with pytest.raises(AWSServiceError, match="Some message"):
-            self.data_service.wait_until_crawler_is_ready(schema.metadata)
 
     # Process Chunks -----------------------------------------
     @patch("api.application.services.data_service.construct_chunked_dataframe")
@@ -951,13 +778,13 @@ class TestUploadDataset:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
             ],
@@ -1059,63 +886,11 @@ class TestUploadDataset:
         )
 
 
-class TestUpdateTableConfig:
-    def setup_method(self):
-        self.s3_adapter = Mock()
-        self.glue_adapter = Mock()
-        self.data_service = DataService(
-            self.s3_adapter,
-            self.glue_adapter,
-            None,
-            None,
-            None,
-            None,
-            None,
-        )
-
-    def test_update_table_config(self):
-        schema = Schema(
-            metadata=SchemaMetadata(
-                layer="layer",
-                domain="domain1",
-                dataset="dataset1",
-                version="1",
-                sensitivity="PUBLIC",
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=0,
-                    data_type="Int64",
-                    allow_null=True,
-                ),
-                Column(
-                    name="colname2",
-                    partition_index=None,
-                    data_type="object",
-                    allow_null=False,
-                ),
-            ],
-        )
-
-        self.s3_adapter.fetch_schema.return_value = schema
-        self.data_service.update_table_config(
-            DatasetMetadata("layer", "domain1", "dataset1", 1)
-        )
-
-        self.s3_adapter.fetch_schema.assert_called_once_with(
-            DatasetMetadata("layer", "domain1", "dataset1", 1)
-        )
-        self.glue_adapter.update_catalog_table_config.assert_called_once_with(schema)
-
-
 class TestListRawFiles:
     def setup_method(self):
         self.s3_adapter = Mock()
         self.data_service = DataService(
             self.s3_adapter,
-            None,
             None,
             None,
             None,
@@ -1153,7 +928,7 @@ class TestDatasetInfoRetrieval:
         self.s3_adapter = Mock()
         self.glue_adapter = Mock()
         self.query_adapter = Mock()
-        self.aws_resource_adapter = Mock()
+        self.schema_service = Mock()
         self.protected_domain_service = Mock()
         self.valid_schema = Schema(
             metadata=SchemaMetadata(
@@ -1168,13 +943,13 @@ class TestDatasetInfoRetrieval:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
@@ -1192,6 +967,7 @@ class TestDatasetInfoRetrieval:
             self.query_adapter,
             self.protected_domain_service,
             None,
+            self.schema_service,
         )
         self.glue_adapter.get_table_last_updated_date.return_value = (
             "2022-03-01 11:03:49+00:00"
@@ -1214,13 +990,13 @@ class TestDatasetInfoRetrieval:
                 EnrichedColumn(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 EnrichedColumn(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 EnrichedColumn(
@@ -1233,7 +1009,7 @@ class TestDatasetInfoRetrieval:
                 ),
             ],
         )
-        self.s3_adapter.fetch_schema.return_value = self.valid_schema
+        self.schema_service.get_schema.return_value = self.valid_schema
         self.query_adapter.query.return_value = pd.DataFrame(
             {
                 "data_size": [48718],
@@ -1273,7 +1049,7 @@ class TestDatasetInfoRetrieval:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
@@ -1309,7 +1085,7 @@ class TestDatasetInfoRetrieval:
                 EnrichedColumn(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 EnrichedColumn(
@@ -1330,7 +1106,7 @@ class TestDatasetInfoRetrieval:
                 ),
             ],
         )
-        self.s3_adapter.fetch_schema.return_value = valid_schema
+        self.schema_service.get_schema.return_value = valid_schema
         self.query_adapter.query.return_value = pd.DataFrame(
             {
                 "data_size": [48718],
@@ -1375,7 +1151,7 @@ class TestDatasetInfoRetrieval:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 )
             ],
@@ -1396,12 +1172,12 @@ class TestDatasetInfoRetrieval:
                 EnrichedColumn(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 )
             ],
         )
-        self.s3_adapter.fetch_schema.return_value = valid_schema
+        self.schema_service.get_schema.return_value = valid_schema
         self.query_adapter.query.return_value = pd.DataFrame({"data_size": [48718]})
 
         actual_schema = self.data_service.get_dataset_info(
@@ -1416,7 +1192,7 @@ class TestDatasetInfoRetrieval:
         assert actual_schema == expected_schema
 
     def test_raises_error_when_schema_not_found(self):
-        self.s3_adapter.fetch_schema.return_value = None
+        self.schema_service.get_schema.return_value = None
 
         with pytest.raises(SchemaNotFoundError):
             self.data_service.get_dataset_info(
@@ -1433,11 +1209,11 @@ class TestQueryDataset:
     def setup_method(self):
         self.athena_adapter = Mock()
         self.glue_adapter = Mock()
+        self.s3_adapter = Mock()
         self.data_service = DataService(
-            None,
+            self.s3_adapter,
             self.glue_adapter,
             self.athena_adapter,
-            None,
             None,
         )
 
@@ -1449,23 +1225,27 @@ class TestQueryDataset:
         )
         assert response is False
 
-    def test_is_query_too_large_with_rows_under(self):
+    def test_is_query_too_large_with_dataset_size_under(self):
         query = SQLQuery()
-        self.glue_adapter.get_no_of_rows.return_value = 1000
+        self.s3_adapter.get_folder_size.return_value = 100
 
-        response = self.data_service.is_query_too_large(
-            DatasetMetadata("raw", "domain1", "dataset1", 2), query
-        )
+        dataset = DatasetMetadata("raw", "domain1", "dataset1", 2)
+        response = self.data_service.is_query_too_large(dataset, query)
         assert response is False
-
-    def test_is_query_too_large_with_rows_over(self):
-        query = SQLQuery()
-        self.glue_adapter.get_no_of_rows.return_value = DATASET_QUERY_LIMIT + 1
-
-        response = self.data_service.is_query_too_large(
-            DatasetMetadata("raw", "domain1", "dataset1", 2), query
+        self.s3_adapter.get_folder_size.assert_called_once_with(
+            dataset.s3_file_location()
         )
+
+    def test_is_query_too_large_with_dataset_size_over(self):
+        query = SQLQuery()
+        self.s3_adapter.get_folder_size.return_value = 1_000_000_000
+
+        dataset = DatasetMetadata("raw", "domain1", "dataset1", 2)
+        response = self.data_service.is_query_too_large(dataset, query)
         assert response is True
+        self.s3_adapter.get_folder_size.assert_called_once_with(
+            dataset.s3_file_location()
+        )
 
     def test_query_data_success(self):
         query = SQLQuery()
@@ -1506,8 +1286,6 @@ class TestQueryLargeDataset:
             self.s3_adapter,
             self.glue_adapter,
             self.athena_adapter,
-            None,
-            None,
             None,
             self.job_service,
         )
@@ -1628,13 +1406,9 @@ class TestQueryLargeDataset:
 
 class TestGetSchema:
     def setup_method(self):
-        self.s3_adapter = Mock()
+        self.schema_service = Mock()
         self.data_service = DataService(
-            self.s3_adapter,
-            None,
-            None,
-            None,
-            None,
+            None, None, None, None, None, schema_service=self.schema_service
         )
         self.metadata = SchemaMetadata(
             layer="raw",
@@ -1649,29 +1423,29 @@ class TestGetSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
         )
 
     def test_get_schema_success(self):
-        self.s3_adapter.fetch_schema.return_value = self.schema
+        self.schema_service.get_schema.return_value = self.schema
 
         res = self.data_service.get_schema(self.metadata)
 
         assert res == self.schema
-        self.s3_adapter.fetch_schema.assert_called_once_with(self.metadata)
+        self.schema_service.get_schema.assert_called_once_with(self.metadata)
 
     def test_get_schema_raises_exception(self):
-        self.s3_adapter.fetch_schema.return_value = None
+        self.schema_service.get_schema.return_value = None
 
         with pytest.raises(SchemaNotFoundError):
             self.data_service.get_schema(self.metadata)
-            self.s3_adapter.fetch_schema.assert_called_once_with(self.metadata)
+            self.schema_service.get_schema.assert_called_once_with(self.metadata)

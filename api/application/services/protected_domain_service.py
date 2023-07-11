@@ -1,8 +1,8 @@
 from typing import List, Set
 
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
+from api.application.services.schema_service import SchemaService
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.schema_validation import valid_domain_name
 from api.common.config.auth import Sensitivity, Action, LayerPermissions
@@ -18,12 +18,12 @@ class ProtectedDomainService:
         self,
         cognito_adapter=CognitoAdapter(),
         dynamodb_adapter=DynamoDBAdapter(),
-        resource_adapter=AWSResourceAdapter(),
+        schema_service=SchemaService(),
         s3_adapter=S3Adapter(),
     ):
         self.cognito_adapter = cognito_adapter
         self.dynamodb_adapter = dynamodb_adapter
-        self.resource_adapter = resource_adapter
+        self.schema_service = schema_service
         self.s3_adapter = s3_adapter
 
     def create_protected_domain_permission(self, domain: str) -> None:
@@ -92,7 +92,7 @@ class ProtectedDomainService:
 
     def _verify_protected_domain_is_empty(self, domain):
         query = DatasetFilters(sensitivity=Sensitivity.PROTECTED)
-        datasets_metadata = self.resource_adapter.get_datasets_metadata(
+        datasets_metadata = self.schema_service.get_schemas(
             s3_adapter=self.s3_adapter, query=query
         )
         datasets = [data.dataset for data in datasets_metadata if data.domain == domain]

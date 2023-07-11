@@ -34,6 +34,7 @@ class SchemaMetadata(DatasetMetadata):
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
     update_behaviour: str = UpdateBehaviour.APPEND
+    is_latest_version: bool = True
 
     def get_sensitivity(self) -> str:
         return self.sensitivity
@@ -58,6 +59,9 @@ class SchemaMetadata(DatasetMetadata):
 
     def get_update_behaviour(self) -> str:
         return self.update_behaviour
+
+    def get_is_latest_version(self) -> bool:
+        return self.is_latest_version
 
     def remove_duplicates(self):
         updated_key_only_list = []

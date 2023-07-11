@@ -3,9 +3,9 @@ from typing import List
 
 from api.common.custom_exceptions import AuthorisationError
 from api.common.config.auth import Action, Sensitivity, ALL, Layer
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.application.services.permissions_service import PermissionsService
+from api.application.services.schema_service import SchemaService
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.schema_metadata import Tags
 from api.domain.dataset_metadata import DatasetMetadata
@@ -29,11 +29,11 @@ class DatasetAccessEvaluator:
     def __init__(
         self,
         glue_adapter=GlueAdapter(),
-        resource_adapter=AWSResourceAdapter(),
+        schema_service=SchemaService(),
         permission_service=PermissionsService(),
     ):
         self.glue_adapter = glue_adapter
-        self.resource_adapter = resource_adapter
+        self.schema_service = schema_service
         self.permission_serivice = permission_service
 
     def get_authorised_datasets(
@@ -115,4 +115,4 @@ class DatasetAccessEvaluator:
             layer=LayerPermissionConverter[permission.layer].value,
             domain=permission.domain,
         )
-        return self.resource_adapter.get_datasets_metadata(query)
+        return self.schema_service.get_schemas(query)

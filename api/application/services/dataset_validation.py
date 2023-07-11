@@ -11,6 +11,8 @@ from api.common.value_transformers import clean_column_name
 from api.domain.data_types import DataTypes
 from api.domain.schema import Schema
 from api.domain.validation_context import ValidationContext
+from awswrangler.catalog import extract_athena_types
+from pyarrow.lib import ArrowInvalid, ArrowTypeError
 
 
 def build_validated_dataframe(schema: Schema, dataframe: pd.DataFrame) -> pd.DataFrame:
@@ -23,7 +25,8 @@ def transform_and_validate(schema: Schema, data: pd.DataFrame) -> pd.DataFrame:
         .pipe(remove_empty_rows)
         .pipe(clean_column_headers)
         .pipe(dataset_has_correct_columns, schema)
-        .pipe(set_data_types, schema)
+        # Not sure this does anything?
+        # .pipe(set_data_types, schema)
         .pipe(convert_dates_to_ymd, schema)
         .pipe(dataset_has_acceptable_null_values, schema)
         .pipe(dataset_has_correct_data_types, schema)
@@ -36,18 +39,18 @@ def transform_and_validate(schema: Schema, data: pd.DataFrame) -> pd.DataFrame:
     return validation_context.get_dataframe()
 
 
-def set_data_types(df: pd.DataFrame, schema: Schema) -> Tuple[pd.DataFrame, list[str]]:
-    error_list = []
-    columns_to_cast = schema.get_column_dtypes_to_cast()
-    if columns_to_cast:
-        for column, column_type in columns_to_cast.items():
-            try:
-                df = df.astype({column: column_type})
-            except (TypeError, ValueError):
-                error_list.append(
-                    f"Failed to convert column [{column}] to type [{column_type}]"
-                )
-    return df, error_list
+# def set_data_types(df: pd.DataFrame, schema: Schema) -> Tuple[pd.DataFrame, list[str]]:
+#     error_list = []
+#     columns_to_cast = schema.get_column_dtypes_to_cast()
+#     if columns_to_cast:
+#         for column, column_type in columns_to_cast.items():
+#             try:
+#                 df = df.astype({column: column_type})
+#             except (TypeError, ValueError):
+#                 error_list.append(
+#                     f"Failed to convert column [{column}] to type [{column_type}]"
+#                 )
+#     return df, error_list
 
 
 def dataset_has_correct_columns(
@@ -85,17 +88,30 @@ def dataset_has_correct_data_types(
     data_frame: pd.DataFrame, schema: Schema
 ) -> Tuple[pd.DataFrame, list[str]]:
     error_list = []
-    for column in schema.columns:
-        actual_type = data_frame[column.name].dtype
-        expected_type = column.data_type
+    try:
+        column_types, _ = extract_athena_types(
+            data_frame,
+        )
+        for column in schema.columns:
+            actual_type = column_types[column.name]
+            expected_type = column.data_type
 
-        types_match = actual_type == expected_type
+            types_match = actual_type == expected_type
 
-        if not types_match and not is_valid_custom_dtype(actual_type, expected_type):
-            error_list.append(
-                f"Column [{column.name}] has an incorrect data type. Expected {expected_type}, received {actual_type}"
-                # noqa: E501
-            )
+            if not types_match and not is_valid_custom_dtype(
+                actual_type, expected_type
+            ):
+                error_list.append(
+                    f"Column [{column.name}] has an incorrect data type. Expected {expected_type}, received {actual_type}"
+                    # noqa: E501
+                )
+
+    # TODO: I feel like we should be coercing these types. E.g put it into a string if it's being difficult,
+    except (ArrowInvalid, ArrowTypeError) as e:
+        error_list.append(
+            f"The data could not be processed, this can often happen if the types of the columns are mixed. The processing error was: {e}"
+        )
+        return data_frame, error_list
 
     return data_frame, error_list
 
@@ -166,6 +182,7 @@ def format_timestamp_as_ymd(timestamp: Timestamp) -> str:
     return f"{timestamp.year}-{str(timestamp.month).zfill(2)}-{str(timestamp.day).zfill(2)}"
 
 
+# TODO: Not sure what the value of this is (if any?)
 def is_valid_custom_dtype(actual_type: str, expected_type: str) -> bool:
     is_custom_dtype = expected_type in DataTypes.custom_data_types()
     return is_custom_dtype and actual_type == DataTypes.OBJECT

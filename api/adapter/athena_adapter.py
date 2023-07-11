@@ -31,7 +31,6 @@ class AthenaAdapter:
         self.__s3_output = s3_output
         self.__athena_read_sql_query = athena_read_sql_query
         self.__athena_client = athena_client
-        self.__default_end_date = "9999-12-01"
 
     def query(
         self,
@@ -60,9 +59,15 @@ class AthenaAdapter:
         :return: QueryExecutionId from Athena
         """
         table_name = dataset.glue_table_name()
+        return self.query_sql_async(query.to_sql(table_name))
+
+    def query_sql_async(self, query_string: str) -> Dict[str, str]:
+        """
+        :return: QueryExecutionId from Athena
+        """
         try:
             return self.__athena_client.start_query_execution(
-                QueryString=query.to_sql(table_name),
+                QueryString=query_string,
                 WorkGroup=self.__workgroup,
                 QueryExecutionContext={"Database": self.__database},
                 ResultConfiguration={"OutputLocation": self.__s3_output},

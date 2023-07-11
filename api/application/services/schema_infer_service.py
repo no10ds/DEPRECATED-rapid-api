@@ -1,6 +1,7 @@
 from io import StringIO
 from typing import List, Union, Any
 
+import awswrangler as wr
 import pandas as pd
 
 from api.application.services.schema_validation import validate_schema
@@ -8,7 +9,7 @@ from api.common.config.constants import CONTENT_ENCODING
 from api.common.config.layers import Layer
 from api.common.custom_exceptions import UserError
 from api.common.value_transformers import clean_column_name
-from api.domain.data_types import DataTypes
+
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 
@@ -23,6 +24,8 @@ class SchemaInferService:
         file_content: Union[bytes, str],
     ) -> dict[str, Any]:
         dataframe = self._construct_dataframe(file_content)
+        columns = self._infer_column_types(dataframe)
+
         schema = Schema(
             metadata=SchemaMetadata(
                 layer=layer,
@@ -31,17 +34,10 @@ class SchemaInferService:
                 sensitivity=sensitivity,
                 owners=[Owner(name="change_me", email="change_me@email.com")],
             ),
-            columns=self._infer_columns(dataframe),
+            columns=columns,
         )
         validate_schema(schema)
         return schema.dict(exclude={"metadata": {"version"}})
-
-    def transform_to_nullable_data_type(self, data_type_name: str) -> str:
-        if data_type_name.capitalize() in DataTypes.numeric_data_types():
-            data_type_name = data_type_name.capitalize()
-        if data_type_name in "boolean":
-            data_type_name = "boolean"
-        return data_type_name
 
     def _construct_dataframe(self, file_content: Union[bytes, str]) -> pd.DataFrame:
         parsed_contents = StringIO(str(file_content, CONTENT_ENCODING))
@@ -55,21 +51,20 @@ class SchemaInferService:
     def _clean_error(self, error_message: str) -> str:
         return error_message.replace("\n", "")
 
-    def _infer_columns(self, dataframe: pd.DataFrame) -> List[Column]:
-        columns = []
-        for data_column in dataframe.columns:
-            columns.append(
-                self._infer_column(data_column, dataframe[data_column].dtype)
-            )
-        return columns
-
-    def _infer_column(self, name: str, data_type) -> Column:
-        data_type_name = data_type.name
-        data_type_name = self.transform_to_nullable_data_type(data_type_name)
-        return Column(
-            name=clean_column_name(name),
-            partition_index=None,
-            data_type=data_type_name,
-            allow_null=True,
-            format=None,
+    def _infer_column_types(self, dataframe: pd.DataFrame) -> List[Column]:
+        column_types, _ = wr.catalog.extract_athena_types(
+            dataframe,
         )
+        return self._infer_columns(column_types)
+
+    def _infer_columns(self, columns: dict) -> Column:
+        return [
+            Column(
+                name=clean_column_name(name),
+                partition_index=None,
+                data_type=_type,
+                allow_null=True,
+                format=None,
+            )
+            for name, _type in columns.items()
+        ]

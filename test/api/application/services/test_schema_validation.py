@@ -29,13 +29,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="int",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
@@ -87,7 +87,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 )
             ],
@@ -110,7 +110,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 )
             ],
@@ -133,7 +133,7 @@ class TestSchemaValidation:
                 Column(
                     name="",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 )
             ],
@@ -155,7 +155,7 @@ class TestSchemaValidation:
                 Column(
                     name="unnamed_1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 )
             ],
@@ -177,13 +177,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -206,13 +206,13 @@ class TestSchemaValidation:
                     Column(
                         name="colname1",
                         partition_index=0,
-                        data_type="Int64",
+                        data_type="integer",
                         allow_null=False,
                     ),
                     Column(
                         name="colname2",
                         partition_index=None,
-                        data_type="object",
+                        data_type="string",
                         allow_null=True,
                     ),
                 ],
@@ -231,13 +231,13 @@ class TestSchemaValidation:
                     Column(
                         name="colname1",
                         partition_index=0,
-                        data_type="Int64",
+                        data_type="integer",
                         allow_null=False,
                     ),
                     Column(
                         name="colname2",
                         partition_index=None,
-                        data_type="object",
+                        data_type="string",
                         allow_null=True,
                     ),
                 ],
@@ -256,7 +256,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 )
             ],
@@ -293,7 +293,7 @@ class TestSchemaValidation:
                 Column(
                     name=col_name,
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 )
             ],
@@ -315,13 +315,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
             ],
@@ -343,13 +343,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=-1,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
             ],
@@ -373,19 +373,19 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=2,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="colname3",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -408,13 +408,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=1,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
             ],
@@ -436,19 +436,19 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=1,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
                     name="colname3",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -460,13 +460,12 @@ class TestSchemaValidation:
     @pytest.mark.parametrize(
         "data_type",
         [
-            "string",
+            "object",
             "int64",
-            "float64",
-            "double",
+            "int32",
+            "int64",
             "number",
             "datetime",
-            "timestamp",
             "something",
             "else",
         ],
@@ -622,7 +621,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -662,7 +661,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -693,7 +692,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -733,7 +732,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -761,7 +760,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -792,7 +791,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -848,7 +847,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -894,7 +893,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -929,7 +928,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -956,7 +955,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -973,6 +972,7 @@ class TestSchemaValidation:
             "key_only_tags": ["tag4"],
             "owners": [{"name": "owner", "email": "owner@email.com"}],
             "update_behaviour": "APPEND",
+            "is_latest_version": True,
         }
 
         schema_has_valid_tag_set(valid_schema)
@@ -1014,13 +1014,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
@@ -1052,13 +1052,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
@@ -1095,13 +1095,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
@@ -1140,13 +1140,13 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
