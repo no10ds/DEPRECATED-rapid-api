@@ -1,9 +1,6 @@
 import re
 from typing import List, Union, Any, Optional
 
-from awswrangler._data_types import athena2pyarrow
-from awswrangler.exceptions import UnsupportedType
-
 from api.common.config.auth import Sensitivity
 from api.common.config.aws import INFERRED_UNNAMED_COLUMN_PREFIX, MAX_CUSTOM_TAG_COUNT
 from api.common.config.constants import (
@@ -13,7 +10,7 @@ from api.common.config.constants import (
     COLUMN_NAME_REGEX,
 )
 from api.common.custom_exceptions import SchemaValidationError
-from api.domain.data_types import DataTypes
+from api.domain.data_types import AthenaDataType, is_date_type
 from api.domain.schema import Schema
 from api.domain.schema_metadata import UpdateBehaviour, Owner
 
@@ -167,8 +164,8 @@ def has_only_accepted_data_types(schema: Schema):
     data_types = schema.get_data_types()
     try:
         for data_type in data_types:
-            athena2pyarrow(data_type)
-    except UnsupportedType:
+            AthenaDataType(data_type)
+    except ValueError:
         raise SchemaValidationError(
             "You are specifying one or more unaccepted data types",
         )
@@ -176,7 +173,7 @@ def has_only_accepted_data_types(schema: Schema):
 
 def has_valid_date_column_definition(schema: Schema):
     for column in schema.columns:
-        if column.data_type == DataTypes.DATE and __has_value_for(column.format):
+        if is_date_type(column.data_type) and __has_value_for(column.format):
             __has_valid_date_format(column.format)
 
 
@@ -226,9 +223,11 @@ def __has_valid_date_format(date_format: str):
     accepted_date_format_codes = ["Y", "m", "d"]
 
     matches_accepted_format = re.match(accepted_format, date_format)
+    print(matches_accepted_format)
     duplicate_format_codes = any(
         date_format.count(letter) > 1 for letter in accepted_date_format_codes
     )
+    print(duplicate_format_codes)
 
     if duplicate_format_codes or not matches_accepted_format:
         raise SchemaValidationError(

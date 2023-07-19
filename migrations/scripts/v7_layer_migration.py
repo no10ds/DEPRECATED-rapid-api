@@ -13,26 +13,23 @@ The resources that get changed are the:
 
 Please ensure that none of the crawlers are running when you start this script.
 """
-import sys
-
-
 import argparse
 from copy import deepcopy
 import json
 import os
 from typing import List
 import re
+from pprint import pprint
 
-sys.path.append("")
 import boto3
 import dotenv
 
 dotenv.load_dotenv()
 
-from api.domain.schema import Schema
-from pprint import pprint
-from api.application.services.schema_service import SchemaService
-from api.adapter.athena_adapter import AthenaAdapter
+
+from api.domain.schema import Schema  # noqa: E402
+from api.application.services.schema_service import SchemaService  # noqa: E402
+from api.adapter.athena_adapter import AthenaAdapter  # noqa: E402
 
 
 AWS_REGION = os.environ["AWS_REGION"]
@@ -257,7 +254,7 @@ def migrate_crawlers(glue_client, resource_client):
     """
     Steps:
     1. Fetch all of the crawlers
-    3. Delete the crawlers
+    2. Delete the crawlers
     """
     print("- Starting to migrate the crawlers")
     crawlers = fetch_all_crawlers(resource_client)
@@ -334,6 +331,7 @@ def migrate_schemas(layer, schema_service: SchemaService, glue_client):
 
             s3_client.delete_object(Bucket=DATA_BUCKET, Key=file["Key"])
 
+        # TODO: Return this as an error list
         except glue_client.exceptions.EntityNotFoundException:
             print("-------------")
             print("-------------")

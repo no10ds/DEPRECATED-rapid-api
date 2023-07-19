@@ -1,4 +1,4 @@
-from unittest.mock import Mock, patch, ANY
+from unittest.mock import Mock, patch
 
 import pytest
 from botocore.exceptions import ClientError
@@ -7,17 +7,9 @@ from api.adapter.glue_adapter import GlueAdapter
 from api.common.config.aws import (
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     GLUE_CATALOGUE_DB_NAME,
-    DATA_BUCKET,
-    AWS_REGION,
-    AWS_ACCOUNT,
 )
-from api.common.config.aws import RESOURCE_PREFIX
-from api.common.custom_exceptions import (
-    AWSServiceError,
-)
+from api.common.custom_exceptions import AWSServiceError
 from api.domain.dataset_metadata import DatasetMetadata
-from api.domain.schema import Column, Schema
-from api.domain.schema_metadata import SchemaMetadata
 
 
 class TestGlueAdapterTableMethods:
@@ -28,8 +20,6 @@ class TestGlueAdapterTableMethods:
         self.glue_adapter = GlueAdapter(
             self.glue_boto_client,
             "GLUE_CATALOGUE_DB_NAME",
-            "GLUE_CRAWLER_ROLE",
-            "GLUE_CONNECTION_DB_NAME",
         )
 
     def test_gets_table_when_created(self):
@@ -39,24 +29,6 @@ class TestGlueAdapterTableMethods:
         result = self.glue_adapter.get_table_when_created("some-name")
 
         assert result == table_config
-
-    def test_gets_table_last_updated_date(self):
-        table_config = {
-            "Table": {
-                "Name": "test_e2e",
-                "DatabaseName": "rapid_catalogue_db",
-                "Owner": "owner",
-                "CreateTime": "2022-03-01 11:03:49+00:00",
-                "UpdateTime": "2022-03-03 11:03:49+00:00",
-                "LastAccessTime": "2022-03-02 11:03:49+00:00",
-                "Retention": 0,
-            }
-        }
-        self.glue_boto_client.get_table.return_value = table_config
-
-        result = self.glue_adapter.get_table_last_updated_date("table_name")
-
-        assert result == "2022-03-03 11:03:49+00:00"
 
     def test_get_no_of_rows_in_table(self):
         table_properties = {

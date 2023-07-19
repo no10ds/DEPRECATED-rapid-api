@@ -2,109 +2,91 @@ import pytest
 
 from api.common.custom_exceptions import UserError
 from api.domain.dataset_filters import DatasetFilters
-
-# TODO: Come back to this
-
-
-# def test_returns_empty_tag_filter_list_when_query_is_empty():
-#     query = DatasetFilters()
-#     assert query.format_resource_query() == []
+from boto3.dynamodb.conditions import Attr
 
 
-# def test_returns_tag_filter_list_when_querying_for_tags_with_values():
-#     query = DatasetFilters(
-#         key_value_tags={"tag1": "value1", "tag2": "value2"},
-#         key_only_tags=["tag3", "tag4"],
-#     )
-
-#     expected_tag_filters = [
-#         {"Key": "tag1", "Values": ["value1"]},
-#         {"Key": "tag2", "Values": ["value2"]},
-#         {"Key": "tag3", "Values": []},
-#         {"Key": "tag4", "Values": []},
-#     ]
-
-#     assert query.format_resource_query() == expected_tag_filters
+def test_returns_empty_tag_filter_list_when_query_is_empty():
+    query = DatasetFilters()
+    query.format_resource_query() is None
 
 
-# def test_returns_tag_filter_list_when_querying_for_tags_without_values():
-#     query = DatasetFilters(key_value_tags={"tag1": "", "tag2": None})
-
-#     expected_tag_filters = [
-#         {"Key": "tag1", "Values": []},
-#         {"Key": "tag2", "Values": []},
-#     ]
-
-#     assert query.format_resource_query() == expected_tag_filters
+def test_build_key_only_tags():
+    filters = DatasetFilters(key_only_tags=["Key1", "Key2"])
+    expected = Attr("KeyOnlyTags").contains("Key1") & Attr("KeyOnlyTags").contains(
+        "Key2"
+    )
+    res = filters.build_key_only_tags()
+    assert res == expected
 
 
-# def test_returns_tag_filter_list_when_querying_for_tags_with_and_without_values():
-#     query = DatasetFilters(key_value_tags={"tag1": None, "tag2": "value2"})
-
-#     expected_tag_filters = [
-#         {"Key": "tag1", "Values": []},
-#         {"Key": "tag2", "Values": ["value2"]},
-#     ]
-
-#     assert query.format_resource_query() == expected_tag_filters
+def test_build_key_value_tags():
+    filters = DatasetFilters(key_value_tags={"Tag1": "Value1", "Tag2": "Value2"})
+    expected = Attr("KeyValueTags.Tag1").eq("Value1") & Attr("KeyValueTags.Tag2").eq(
+        "Value2"
+    )
+    res = filters.build_key_value_tags()
+    assert res == expected
 
 
-# def test_returns_layer_filter_when_querying_with_layer():
-#     query = DatasetFilters(
-#         layer="raw",
-#     )
-#     expected_tag_filters = [
-#         {"Key": "layer", "Values": ["raw"]},
-#     ]
-#     assert query.format_resource_query() == expected_tag_filters
+def test_build_generic_filter_with_single_value():
+    expected = Attr("Name").eq("value")
+
+    res = DatasetFilters.build_generic_filter("Name", "value")
+    assert res == expected
 
 
-# def test_returns_domain_filter_when_querying_with_domain():
-#     query = DatasetFilters(
-#         domain="test",
-#     )
-#     expected_tag_filters = [
-#         {"Key": "domain", "Values": ["test"]},
-#     ]
-#     assert query.format_resource_query() == expected_tag_filters
+def test_build_generic_filter_with_list_of_values():
+    expected = Attr("Name").is_in(["value1", "value2"])
+
+    res = DatasetFilters.build_generic_filter("Name", ["value1", "value2"])
+    assert res == expected
 
 
-# def test_returns_tag_filter_list_when_querying_for_sensitivity_level():
-#     query = DatasetFilters(sensitivity="PUBLIC")
+def test_format_resource_query_with_all_values():
+    filters = DatasetFilters(
+        key_value_tags={"tag2": "value2"},
+        key_only_tags=["tag3"],
+        sensitivity=["PUBLIC", "PRIVATE"],
+        domain="domain",
+        layer="raw",
+    )
 
-#     expected_tag_filters = [{"Key": "sensitivity", "Values": ["PUBLIC"]}]
+    expected = (
+        Attr("KeyValueTags.tag2").eq("value2")
+        & Attr("KeyOnlyTags").contains("tag3")
+        & Attr("Sensitivity").is_in(["PUBLIC", "PRIVATE"])
+        & Attr("Layer").eq("raw")
+        & Attr("Domain").eq("domain")
+    )
 
-#     assert query.format_resource_query() == expected_tag_filters
-
-
-# def test_returns_tag_filter_list_when_querying_for_sensitivity_and_tags():
-#     query = DatasetFilters(
-#         sensitivity=["PUBLIC", "PRIVATE"],
-#         key_value_tags={"tag1": None, "tag2": "value2"},
-#         key_only_tags=["tag3"],
-#         domain="domain",
-#         layer="raw",
-#     )
-
-#     expected_tag_filters = [
-#         {"Key": "tag1", "Values": []},
-#         {"Key": "tag2", "Values": ["value2"]},
-#         {"Key": "tag3", "Values": []},
-#         {"Key": "sensitivity", "Values": ["PUBLIC", "PRIVATE"]},
-#         {"Key": "layer", "Values": ["raw"]},
-#         {"Key": "domain", "Values": ["domain"]},
-#     ]
-
-#     assert query.format_resource_query() == expected_tag_filters
+    res = filters.format_resource_query()
+    assert res == expected
 
 
-# def test_returns_tag_filter_list_when_querying_for_sensitivity_specifically_and_by_tag():
-#     query = DatasetFilters(
-#         sensitivity="PRIVATE", key_value_tags={"sensitivity": "PRIVATE"}
-#     )
+def test_format_resource_query_with_some_values():
+    filters = DatasetFilters(
+        key_value_tags={"tag2": "value2"},
+        sensitivity="PUBLIC",
+        layer=["raw", "layer"],
+    )
 
-#     with pytest.raises(
-#         UserError,
-#         match="You cannot specify sensitivity both at the root level and in the tags",
-#     ):
-#         query.format_resource_query()
+    expected = (
+        Attr("KeyValueTags.tag2").eq("value2")
+        & Attr("Sensitivity").eq("PUBLIC")
+        & Attr("Layer").is_in(["raw", "layer"])
+    )
+
+    res = filters.format_resource_query()
+    assert res == expected
+
+
+def test_returns_tag_filter_list_when_querying_for_sensitivity_and_by_tag():
+    query = DatasetFilters(
+        sensitivity="PRIVATE", key_value_tags={"Sensitivity": "PRIVATE"}
+    )
+
+    with pytest.raises(
+        UserError,
+        match="You cannot specify Sensitivity both at the root level and in the tags",
+    ):
+        query.format_resource_query()

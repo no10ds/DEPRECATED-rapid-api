@@ -87,3 +87,7 @@ class TableCreationError(AWSServiceError):
 
 class TableDoesNotExistError(Exception):
     pass
+
+
+class UnsupportedTypeError(Exception):
+    pass

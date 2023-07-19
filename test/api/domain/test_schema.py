@@ -45,13 +45,6 @@ class TestSchema:
 
         assert actual_column_names == expected_column_names
 
-    def test_gets_column_names_by_data_type(self):
-        expected_column_names = ["colname1"]
-
-        actual_column_names = self.schema.get_column_names_by_type("integer")
-
-        assert actual_column_names == expected_column_names
-
     def test_gets_partitions(self):
         expected_columns = ["colname2", "colname1"]
 

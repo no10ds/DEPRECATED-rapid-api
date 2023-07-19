@@ -13,10 +13,8 @@ from api.common.custom_exceptions import (
     AWSServiceError,
 )
 from api.domain.dataset_metadata import DatasetMetadata
-from api.domain.schema import Schema, Column
-from api.domain.schema_metadata import Owner, SchemaMetadata
+from api.domain.schema_metadata import SchemaMetadata
 from test.test_utils import (
-    mock_schema_response,
     mock_list_schemas_response,
 )
 
@@ -447,34 +445,6 @@ class TestS3Deletion:
             "data/layer/domain/dataset/1"
         )
         self.persistence_adapter._delete_data.assert_not_called()
-
-
-class TestDatasetMetadataRetrieval:
-    mock_s3_client = None
-    persistence_adapter = None
-
-    def setup_method(self):
-        self.mock_s3_client = Mock()
-        self.persistence_adapter = S3Adapter(
-            s3_client=self.mock_s3_client, s3_bucket="data-bucket"
-        )
-
-    # TODO: Add this back
-    # def test_returns_none_if_not_schemas_exist(self):
-    #     layer, domain, dataset = "layer", "test_domain", "test_dataset"
-    #     self.mock_s3_client.get_object.side_effect = ClientError(
-    #         {"Error": {"Code": "NoSuchKey"}}, "get_object"
-    #     )
-
-    #     result = self.persistence_adapter.fetch_schema(
-    #         DatasetMetadata(layer, domain, dataset, 1)
-    #     )
-
-    #     self.mock_s3_client.get_object.assert_called_once_with(
-    #         Bucket="data-bucket",
-    #         Key=f"{SCHEMAS_LOCATION}/layer/test_domain/test_dataset/1/schema.json",
-    #     )
-    #     assert result is None
 
 
 class TestS3FileList:

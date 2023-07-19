@@ -11,19 +11,16 @@ from api.common.custom_exceptions import AuthorisationError
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.permission_item import PermissionItem
-from api.domain.schema_metadata import Tags
+from api.domain.schema_metadata import SchemaMetadata
+from api.domain.schema import Schema
 
 
-# TODO: Do need to fix this, lots of references to tags which won't be used.
-
-
+@pytest.mark.focus
 class TestDatasetAccessEvaluator:
     def setup_method(self):
-        self.glue_adapter = Mock()
         self.schema_service = Mock()
         self.permission_service = Mock()
         self.evaluator = DatasetAccessEvaluator(
-            glue_adapter=self.glue_adapter,
             schema_service=self.schema_service,
             permission_service=self.permission_service,
         )
@@ -142,15 +139,15 @@ class TestDatasetAccessEvaluator:
         assert res == expected
 
     @pytest.mark.parametrize(
-        "tags, permission, expected",
+        "metadata, permission, expected",
         [
             # 0. Success: All criteria overlap directly
             (
-                Tags(
-                    sensitivity="PUBLIC",
-                    no_of_versions=0,
+                SchemaMetadata(
                     layer="raw",
                     domain="test",
+                    dataset="dataset",
+                    sensitivity="PUBLIC",
                 ),
                 PermissionItem(
                     id="READ_RAW_PUBLIC", type="READ", layer="RAW", sensitivity="PUBLIC"
@@ -159,11 +156,11 @@ class TestDatasetAccessEvaluator:
             ),
             # 1. Success: All criteria overlap directly with protected domain
             (
-                Tags(
-                    sensitivity="PROTECTED",
-                    no_of_versions=0,
+                SchemaMetadata(
                     layer="raw",
                     domain="test",
+                    dataset="dataset",
+                    sensitivity="PROTECTED",
                 ),
                 PermissionItem(
                     id="WRITE_RAW_PROTECTED_TEST",
@@ -176,8 +173,11 @@ class TestDatasetAccessEvaluator:
             ),
             # 2. Success: All criteria inherit overlaps
             (
-                Tags(
-                    sensitivity="PUBLIC", no_of_versions=0, layer="raw", domain="test"
+                SchemaMetadata(
+                    layer="raw",
+                    domain="test",
+                    dataset="dataset",
+                    sensitivity="PUBLIC",
                 ),
                 PermissionItem(
                     id="WRITE_ALL_PRIVATE",
@@ -189,11 +189,11 @@ class TestDatasetAccessEvaluator:
             ),
             # 3. Failure: Sensitivity does not overlap
             (
-                Tags(
-                    sensitivity="PRIVATE",
-                    no_of_versions=0,
+                SchemaMetadata(
                     layer="raw",
                     domain="test",
+                    dataset="dataset",
+                    sensitivity="PRIVATE",
                 ),
                 PermissionItem(
                     id="READ_RAW_PUBLIC", type="READ", layer="RAW", sensitivity="PUBLIC"
@@ -202,11 +202,11 @@ class TestDatasetAccessEvaluator:
             ),
             # 4. Failure: Layer does not overlap
             (
-                Tags(
-                    sensitivity="PRIVATE",
-                    no_of_versions=0,
+                SchemaMetadata(
                     layer="raw",
                     domain="test",
+                    dataset="dataset",
+                    sensitivity="PRIVATE",
                 ),
                 PermissionItem(
                     id="READ_LAYER_PRIVATE",
@@ -218,11 +218,11 @@ class TestDatasetAccessEvaluator:
             ),
             # 5. Failure: Is protected and domain does not overlap
             (
-                Tags(
-                    sensitivity="PROTECTED",
-                    no_of_versions=0,
+                SchemaMetadata(
                     layer="raw",
                     domain="test_fail",
+                    dataset="dataset",
+                    sensitivity="PROTECTED",
                 ),
                 PermissionItem(
                     id="READ_ANY_PROTECTED_TEST",
@@ -235,10 +235,12 @@ class TestDatasetAccessEvaluator:
             ),
         ],
     )
-    def test_tags_overlap_with_permission(
-        self, tags: Tags, permission: PermissionItem, expected: bool
+    def test_schema_metadata_overlaps_with_permission(
+        self, metadata: SchemaMetadata, permission: PermissionItem, expected: bool
     ):
-        res = self.evaluator.tags_overlap_with_permission(tags, permission)
+        res = self.evaluator.schema_metadata_overlaps_with_permission(
+            metadata, permission
+        )
         assert res == expected
 
     @pytest.mark.parametrize(
@@ -287,17 +289,20 @@ class TestDatasetAccessEvaluator:
                 id="WRITE_ALL_PRIVATE", layer="ALL", type="WRITE", sensitivity="PRIVATE"
             ),
         ]
-        tags = Tags(
-            sensitivity="PRIVATE",
-            no_of_versions=0,
-            layer="raw",
-            domain="test_fail",
+        schema = Schema(
+            metadata=SchemaMetadata(
+                layer="raw",
+                domain="test_fail",
+                sensitivity="PRIVATE",
+                dataset="dataset",
+            ),
+            columns=[],
         )
 
         self.permission_service.get_subject_permissions = Mock(
             return_value=read_permissions + write_permissions
         )
-        self.glue_adapter.get_crawler_tags = Mock(return_value=tags)
+        self.schema_service.get_schema = Mock(return_value=schema)
 
         res = self.evaluator.can_access_dataset(
             dataset, subject_id, [Action.WRITE, Action.READ]
@@ -306,7 +311,7 @@ class TestDatasetAccessEvaluator:
         self.permission_service.get_subject_permissions.assert_called_once_with(
             subject_id
         )
-        self.glue_adapter.get_crawler_tags.assert_called_once_with(dataset)
+        self.schema_service.get_schema.assert_called_once_with(dataset)
         assert res is True
 
     def test_can_access_dataset_failure(self):
@@ -325,17 +330,20 @@ class TestDatasetAccessEvaluator:
                 id="WRITE_ALL_PRIVATE", layer="ALL", type="WRITE", sensitivity="PRIVATE"
             ),
         ]
-        tags = Tags(
-            sensitivity="PRIVATE",
-            no_of_versions=0,
-            layer="raw",
-            domain="test_fail",
+        schema = Schema(
+            metadata=SchemaMetadata(
+                layer="raw",
+                domain="test_fail",
+                dataset="dataset",
+                sensitivity="PRIVATE",
+            ),
+            columns=[],
         )
 
         self.permission_service.get_subject_permissions = Mock(
             return_value=read_permissions + write_permissions
         )
-        self.glue_adapter.get_crawler_tags = Mock(return_value=tags)
+        self.schema_service.get_schema = Mock(return_value=schema)
 
         with pytest.raises(
             AuthorisationError,
@@ -346,4 +354,4 @@ class TestDatasetAccessEvaluator:
             self.permission_service.get_subject_permissions.assert_called_once_with(
                 subject_id
             )
-            self.glue_adapter.get_crawler_tags.assert_called_once_with(dataset)
+            self.schema_service.get_schema.assert_called_once_with(dataset)

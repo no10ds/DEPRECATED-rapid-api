@@ -41,13 +41,18 @@ class TestListProtectedDomains(BaseClientTest):
 class TestDeleteProtectedDomains(BaseClientTest):
     @patch.object(ProtectedDomainService, "delete_protected_domain_permission")
     @patch.object(SubjectService, "list_subjects")
+    @patch("api.controller.protected_domain.schema_service")
     def test_returns_202_when_protected_domain_is_deleted(
-        self, mock_list_subjects, mock_delete_protected_domain_permission
+        self,
+        mock_schema_service,
+        mock_list_subjects,
+        mock_delete_protected_domain_permission,
     ):
         mock_list_subjects.return_value = [
             {"subject_id": "xxx-yyy-zzz", "type": "USER"},
             {"subject_id": "aaa-bbb-ccc", "type": "CLIENT"},
         ]
+        mock_schema_service.get_schemas.return_value = []
 
         response = self.client.delete(
             f"{BASE_API_PATH}/protected_domains/mydomain",
@@ -55,7 +60,7 @@ class TestDeleteProtectedDomains(BaseClientTest):
         )
 
         mock_delete_protected_domain_permission.assert_called_once_with(
-            "mydomain", ["xxx-yyy-zzz", "aaa-bbb-ccc"]
+            "mydomain", ["xxx-yyy-zzz", "aaa-bbb-ccc"], mock_schema_service
         )
 
         assert response.status_code == 202

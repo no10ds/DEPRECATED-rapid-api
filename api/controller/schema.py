@@ -3,11 +3,9 @@ from fastapi import UploadFile, File, Security
 from fastapi import status as http_status
 from fastapi import Path as FastApiPath
 
-from api.adapter.cognito_adapter import CognitoAdapter
 from api.application.services.authorisation.authorisation_service import secure_endpoint
-from api.application.services.data_service import DataService
-from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
+from api.application.services.schema_service import SchemaService
 from api.common.config.auth import Action, Sensitivity
 from api.common.config.constants import (
     BASE_API_PATH,
@@ -23,10 +21,8 @@ from api.common.custom_exceptions import (
 from api.common.logger import AppLogger
 from api.domain.schema import Schema
 
-data_service = DataService()
 schema_infer_service = SchemaInferService()
-delete_service = DeleteService()
-cognito_adapter = CognitoAdapter()
+schema_service = SchemaService()
 
 schema_router = APIRouter(
     prefix=f"{BASE_API_PATH}/schema",
@@ -97,7 +93,7 @@ def get_first_mb_of_file(file: UploadFile, chunk_size_mb: int = 50) -> bytes:
 @schema_router.post(
     "",
     status_code=http_status.HTTP_201_CREATED,
-    # dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def upload_schema(schema: Schema):
     """
@@ -137,21 +133,18 @@ async def upload_schema(schema: Schema):
 
     ### Click  `Try it out` to use the endpoint
     """
-    # try:
-    schema_file_name = data_service.upload_schema(schema)
-    return {"details": schema_file_name}
-
-
-# TODO: Replace these with equivalents
-# except (CrawlerCreationError, CrawlerAlreadyExistsError) as error:
-#     _delete_uploaded_schema(schema)
-#     raise error
+    try:
+        schema_file_name = schema_service.upload_schema(schema)
+        return {"details": schema_file_name}
+    except (TableCreationError, TableAlreadyExistsError) as error:
+        _delete_uploaded_schema(schema)
+        raise error
 
 
 @schema_router.put(
     "",
     status_code=http_status.HTTP_200_OK,
-    # dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def update_schema(schema: Schema):
     """
@@ -185,12 +178,12 @@ async def update_schema(schema: Schema):
 
     ### Click  `Try it out` to use the endpoint
     """
-    schema_file_name = data_service.update_schema(schema)
+    schema_file_name = schema_service.update_schema(schema)
     return {"details": schema_file_name}
 
 
 def _delete_uploaded_schema(schema: Schema):
-    delete_service.delete_schema(schema.metadata)
+    schema_service.delete_schemas(schema.metadata)
 
 
 def _log_and_raise_error(log_message: str, error_message: str):

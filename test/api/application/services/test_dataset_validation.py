@@ -10,7 +10,6 @@ from api.application.services.dataset_validation import (
     remove_empty_rows,
     clean_column_headers,
     dataset_has_correct_columns,
-    # set_data_types,
     dataset_has_acceptable_null_values,
     dataset_has_correct_data_types,
     dataset_has_no_illegal_characters_in_partition_columns,
@@ -20,7 +19,6 @@ from api.common.custom_exceptions import (
     UserError,
     UnprocessableDatasetError,
 )
-from api.domain.data_types import DataTypes
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 
@@ -202,43 +200,6 @@ class TestDatasetValidation:
         ):
             build_validated_dataframe(self.valid_schema, dataframe)
 
-    # TODO: Not sure what this is testing
-    # def test_retains_specified_schema_data_types_when_null_values_present(self):
-    #     schema = Schema(
-    #         metadata=self.schema_metadata,
-    #         columns=[
-    #             Column(
-    #                 name="col1",
-    #                 partition_index=None,
-    #                 data_type="bigint",
-    #                 allow_null=True,
-    #             ),
-    #             Column(
-    #                 name="col2",
-    #                 partition_index=None,
-    #                 data_type="double",
-    #                 allow_null=True,
-    #             ),
-    #             Column(
-    #                 name="col3",
-    #                 partition_index=None,
-    #                 data_type="string",
-    #                 allow_null=True,
-    #             ),
-    #         ],
-    #     )
-
-    #     dataframe = pd.DataFrame(
-    #         {"col1": [45, pd.NA], "col2": [pd.NA, 23.1], "col3": ["hello", pd.NA]}
-    #     )
-
-    #     validated_dataset = build_validated_dataframe(schema, dataframe)
-
-    #     actual_dtypes = list(validated_dataset.dtypes)
-    #     expected_dtypes = ["bigint", "double", "string"]
-
-    #     assert actual_dtypes == expected_dtypes
-
     @pytest.mark.parametrize(
         "dataframe",
         [
@@ -387,7 +348,7 @@ class TestDatasetValidation:
                 ),
             ],
         )
-
+        print("This test is starting")
         try:
             build_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
@@ -512,7 +473,7 @@ class TestDatasetValidation:
                 Column(
                     name="col5",
                     partition_index=None,
-                    data_type="datetime",
+                    data_type="date",
                     allow_null=False,
                 ),
             ],
@@ -545,31 +506,31 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=0,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
                     name="col2",
                     partition_index=1,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col3",
                     partition_index=2,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col4",
                     partition_index=3,
-                    data_type=DataTypes.DATE,
+                    data_type="date",
                     allow_null=False,
                 ),
                 Column(
                     name="col5",
                     partition_index=4,
-                    data_type=DataTypes.INT,
+                    data_type="integer",
                     allow_null=False,
                 ),
             ],
@@ -601,31 +562,31 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=0,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
                     name="col2",
                     partition_index=1,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col4",
                     partition_index=None,
-                    data_type=DataTypes.DATE,
+                    data_type="date",
                     allow_null=False,
                 ),
                 Column(
                     name="col5",
                     partition_index=None,
-                    data_type=DataTypes.INT,
+                    data_type="integer",
                     allow_null=False,
                 ),
             ],
@@ -634,7 +595,6 @@ class TestDatasetValidation:
         try:
             build_validated_dataframe(schema, df)
         except DatasetValidationError as error:
-            # "Failed to convert column [col5] to type [integer]",
             assert error.message == [
                 "Column [col4] does not match specified date format in at least one row",
                 "Column [col3] does not allow null values",
@@ -822,53 +782,3 @@ class TestDatasetTransformation:
         transformed_df, _ = clean_column_headers(data)
 
         assert transformed_df.columns[0] == expected_column_name
-
-    # TODO: Fix this test when the function is reviewed
-    # def test_raises_error_list_when_set_data_type_fails(self):
-    #     df = pd.DataFrame(
-    #         {
-    #             "col1": ["a", "b", "c"],
-    #             "col2": ["A", "B", "A"],
-    #             "col3": [1.0, 2.5, "Z"],
-    #             "col4": [False, False, "C"],
-    #         }
-    #     )
-
-    #     schema = Schema(
-    #         metadata=self.schema_metadata,
-    #         columns=[
-    #             Column(
-    #                 name="col1",
-    #                 partition_index=None,
-    #                 data_type=DataTypes.STRING,
-    #                 allow_null=False,
-    #             ),
-    #             Column(
-    #                 name="col2",
-    #                 partition_index=None,
-    #                 data_type=DataTypes.INT,
-    #                 allow_null=False,
-    #             ),
-    #             Column(
-    #                 name="col3",
-    #                 partition_index=None,
-    #                 data_type=DataTypes.DOUBLE,
-    #                 allow_null=False,
-    #             ),
-    #             Column(
-    #                 name="col4",
-    #                 partition_index=None,
-    #                 data_type=DataTypes.BOOLEAN,
-    #                 allow_null=False,
-    #             ),
-    #         ],
-    #     )
-
-    #     try:
-    #         set_data_types(df, schema)
-    #     except DatasetValidationError as error:
-    #         assert error.message == [
-    #             "Failed to convert [col2] to [integer]",
-    #             "Failed to convert [col3] to [double]",
-    #             "Failed to convert [col4] to [boolean]",
-    #         ]

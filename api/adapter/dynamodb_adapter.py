@@ -27,8 +27,7 @@ from api.domain.Jobs.Job import Job
 from api.domain.Jobs.QueryJob import QueryJob
 from api.domain.Jobs.UploadJob import UploadJob
 from api.domain.permission_item import PermissionItem
-from api.domain.schema import Schema, Column
-from api.domain.schema_metadata import SchemaMetadata
+from api.domain.schema import Schema
 from api.domain.subject_permissions import SubjectPermissions
 
 
@@ -88,13 +87,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_schema_metadata(self, dataset: Type[DatasetMetadata]) -> SchemaMetadata:
-        pass
-
-    @abstractmethod
-    def get_latest_schema_metadatas(
-        self, dataset: Type[DatasetMetadata]
-    ) -> List[SchemaMetadata]:
+    def get_latest_schema_metadatas(self, dataset: Type[DatasetMetadata]) -> List[dict]:
         pass
 
     @abstractmethod
@@ -376,65 +369,20 @@ class DynamoDBAdapter(DatabaseAdapter):
         except ClientError as error:
             self._handle_client_error("Error fetching job from the database", error)
 
-    def get_schema(self, dataset: Type[DatasetMetadata]) -> Dict:
+    def get_schema(self, dataset: Type[DatasetMetadata]) -> dict:
         try:
-            schema = self.schema_table.query(
+            return self.schema_table.query(
                 KeyConditionExpression=Key("PK").eq(
                     dataset.dataset_identifier(with_version=False)
                 )
                 & Key("SK").eq(dataset.get_version())
             )["Items"][0]
-            # TODO: Simplify this function with snake to pascal case converter
-            return Schema(
-                metadata=SchemaMetadata(
-                    layer=schema["Layer"],
-                    domain=schema["Domain"],
-                    dataset=schema["Dataset"],
-                    version=schema["Version"],
-                    sensitivity=schema["Sensitivity"],
-                    description=schema["Description"],
-                    update_behaviour=schema["UpdateBehaviour"],
-                    owners=schema["Owners"],
-                    is_latest_version=schema["IsLatestVersion"],
-                    key_value_tags=schema["KeyValueTags"],
-                    key_only_tags=schema["KeyOnlyTags"],
-                ),
-                columns=[Column.parse_obj(col) for col in schema["Columns"]],
-            )
         except IndexError:
             return None
         except ClientError as error:
-            self._handle_client_error("Error fetching job from the database", error)
+            self._handle_client_error("Error fetching schema from the database", error)
 
-    def get_schema_metadata(self, dataset: Type[DatasetMetadata]) -> SchemaMetadata:
-        try:
-            schema = self.schema_table.query(
-                KeyConditionExpression=Key("PK").eq(
-                    dataset.dataset_identifier(with_version=False)
-                )
-                & Key("PK").eq(dataset.get_version())
-            )["Items"][0]
-            return SchemaMetadata(
-                layer=schema["Layer"],
-                domain=schema["Domain"],
-                dataset=schema["Dataset"],
-                version=schema["Version"],
-                sensitivity=schema["Sensitivity"],
-                description=schema["Description"],
-                update_behaviour=schema["UpdateBehaviour"],
-                owners=schema["Owners"],
-                is_latest_version=schema["IsLatestVersion"],
-                key_value_tags=schema["KeyValueTags"],
-                key_only_tags=schema["KeyOnlyTags"],
-            )
-        except IndexError:
-            return None
-        except ClientError as error:
-            self._handle_client_error("Error fetching job from the database", error)
-
-    def get_latest_schema_metadatas(
-        self, query: DatasetFilters
-    ) -> List[SchemaMetadata]:
+    def get_latest_schema_metadatas(self, query: DatasetFilters) -> List[dict]:
         try:
             query_arguments = query.format_resource_query()
             if query_arguments:
@@ -442,56 +390,30 @@ class DynamoDBAdapter(DatabaseAdapter):
             else:
                 filter_expression = Attr("IsLatestVersion").eq(True)
 
-            schemas = self.schema_table.scan(
+            return self.schema_table.scan(
                 FilterExpression=filter_expression,
             )["Items"]
-            return [
-                SchemaMetadata(
-                    layer=schema["Layer"],
-                    domain=schema["Domain"],
-                    dataset=schema["Dataset"],
-                    version=schema["Version"],
-                    sensitivity=schema["Sensitivity"],
-                    description=schema["Description"],
-                    update_behaviour=schema["UpdateBehaviour"],
-                    owners=schema["Owners"],
-                    is_latest_version=schema["IsLatestVersion"],
-                    key_value_tags=schema["KeyValueTags"],
-                    key_only_tags=schema["KeyOnlyTags"],
-                )
-                for schema in schemas
-            ]
-        except IndexError:
+        except KeyError:
             return None
         except ClientError as error:
-            self._handle_client_error("Error fetching job from the database", error)
+            self._handle_client_error(
+                "Error fetching the latest schemas from the database", error
+            )
 
-    def get_latest_schema(self, dataset: Type[DatasetMetadata]) -> SchemaMetadata:
+    def get_latest_schema(self, dataset: Type[DatasetMetadata]) -> dict:
         try:
-            schema = self.schema_table.query(
+            return self.schema_table.query(
                 KeyConditionExpression=Key("PK").eq(
                     dataset.dataset_identifier(with_version=False)
                 ),
                 FilterExpression=Attr("IsLatestVersion").eq(True),
             )["Items"][0]
-            return SchemaMetadata(
-                layer=schema["Layer"],
-                domain=schema["Domain"],
-                dataset=schema["Dataset"],
-                version=schema["Version"],
-                sensitivity=schema["Sensitivity"],
-                description=schema["Description"],
-                update_behaviour=schema["UpdateBehaviour"],
-                owners=schema["Owners"],
-                is_latest_version=schema["IsLatestVersion"],
-                key_value_tags=schema["KeyValueTags"],
-                key_only_tags=schema["KeyOnlyTags"],
-            )
-
         except IndexError:
             return None
         except ClientError as error:
-            self._handle_client_error("Error fetching job from the database", error)
+            self._handle_client_error(
+                "Error fetching latest schema from the database", error
+            )
 
     def deprecate_schema(self, dataset: Type[DatasetMetadata]) -> None:
         try:
@@ -509,7 +431,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 },
             )
         except ClientError as error:
-            self._handle_client_error("There was an error updating job status", error)
+            self._handle_client_error("There was an deprecating the schema", error)
 
     def update_job(self, job: Job) -> None:
         try:

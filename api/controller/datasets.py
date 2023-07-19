@@ -277,7 +277,6 @@ async def delete_data_file(
     dataset: str,
     version: int,
     filename: str,
-    response: Response,
     domain: str = FastApiPath(
         default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
     ),
@@ -324,16 +323,10 @@ async def delete_data_file(
     ### Click  `Try it out` to use the endpoint
 
     """
-    # try:
     delete_service.delete_dataset_file(
         DatasetMetadata(layer, domain, dataset, version), filename
     )
-    return Response(status_code=http_status.HTTP_204_NO_CONTENT)
-    # TODO: Fix this
-    # except CrawlerStartFailsError as error:
-    #     AppLogger.warning("Failed to start crawler: %s", error.args[0])
-    #     response.status_code = http_status.HTTP_202_ACCEPTED
-    #     return {"details": f"{filename} has been deleted."}
+    return {"details": f"{filename} has been deleted."}
 
 
 @datasets_router.post(

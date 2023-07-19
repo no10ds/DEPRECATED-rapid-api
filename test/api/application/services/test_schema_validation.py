@@ -29,7 +29,7 @@ class TestSchemaValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="int",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(

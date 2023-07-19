@@ -1,5 +1,5 @@
 from pathlib import Path
-from unittest.mock import patch, ANY, Mock
+from unittest.mock import patch, ANY
 
 import pandas as pd
 import pytest
@@ -13,7 +13,6 @@ from api.common.custom_exceptions import (
     UserError,
     DatasetValidationError,
     SchemaNotFoundError,
-    AWSServiceError,
 )
 from api.common.config.constants import BASE_API_PATH
 from api.domain.dataset_filters import DatasetFilters
@@ -271,7 +270,6 @@ class TestDataUpload(BaseClientTest):
         assert response.status_code == 400
 
 
-@pytest.mark.focus
 class TestListDatasets(BaseClientTest):
     @patch.object(S3Adapter, "get_last_updated_time")
     @patch.object(SchemaService, "get_schemas")
@@ -1118,7 +1116,7 @@ class TestListFilesFromDataset(BaseClientTest):
 
 class TestDeleteFiles(BaseClientTest):
     @patch.object(DeleteService, "delete_dataset_file")
-    def test_returns_204_when_file_is_deleted(self, mock_delete_dataset_file):
+    def test_returns_200_when_file_is_deleted(self, mock_delete_dataset_file):
         response = self.client.delete(
             f"{BASE_API_PATH}/datasets/raw/mydomain/mydataset/3/2022-01-01T00:00:00-file.csv",
             headers={"Authorization": "Bearer test-token"},
@@ -1129,7 +1127,7 @@ class TestDeleteFiles(BaseClientTest):
             "2022-01-01T00:00:00-file.csv",
         )
 
-        assert response.status_code == 204
+        assert response.status_code == 200
 
     @patch.object(DeleteService, "delete_dataset_file")
     def test_returns_400_when_file_name_does_not_exist(self, mock_delete_dataset_file):

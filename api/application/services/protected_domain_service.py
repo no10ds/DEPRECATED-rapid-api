@@ -1,9 +1,7 @@
-from typing import List, Set
+from typing import List, Set, TYPE_CHECKING
 
-from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.application.services.schema_service import SchemaService
-from api.adapter.s3_adapter import S3Adapter
+
 from api.application.services.schema_validation import valid_domain_name
 from api.common.config.auth import Sensitivity, Action, LayerPermissions
 from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
@@ -12,19 +10,16 @@ from api.domain.permission_item import PermissionItem
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.subject_permissions import SubjectPermissions
 
+if TYPE_CHECKING:
+    from api.application.services.schema_service import SchemaService
+
 
 class ProtectedDomainService:
     def __init__(
         self,
-        cognito_adapter=CognitoAdapter(),
         dynamodb_adapter=DynamoDBAdapter(),
-        schema_service=SchemaService(),
-        s3_adapter=S3Adapter(),
     ):
-        self.cognito_adapter = cognito_adapter
         self.dynamodb_adapter = dynamodb_adapter
-        self.schema_service = schema_service
-        self.s3_adapter = s3_adapter
 
     def create_protected_domain_permission(self, domain: str) -> None:
         AppLogger.info(f"Creating protected domain permission {domain}")
@@ -45,7 +40,10 @@ class ProtectedDomainService:
         return self._list_protected_permission_domains()
 
     def delete_protected_domain_permission(
-        self, domain: str, user_subjects_list: List[str | None]
+        self,
+        domain: str,
+        user_subjects_list: List[str | None],
+        schema_service: "SchemaService",
     ) -> None:
         AppLogger.info(f"Deleting protected domain permission {domain}")
         domain = domain.lower().strip()
@@ -54,7 +52,7 @@ class ProtectedDomainService:
         self._verify_protected_domain_does_exist(domain)
 
         # Ensure the domain is currently empty of any datasets
-        self._verify_protected_domain_is_empty(domain)
+        self._verify_protected_domain_is_empty(domain, schema_service)
 
         # Delete the read and write protected permissions from the table
         permissions_to_delete = self.generate_protected_permission_items(domain.upper())
@@ -90,16 +88,15 @@ class ProtectedDomainService:
             AppLogger.info(f"The protected domain, [{domain}] does not exist")
             raise UserError(f"The protected domain, [{domain}] does not exist.")
 
-    def _verify_protected_domain_is_empty(self, domain):
-        query = DatasetFilters(sensitivity=Sensitivity.PROTECTED)
-        datasets_metadata = self.schema_service.get_schemas(
-            s3_adapter=self.s3_adapter, query=query
-        )
-        datasets = [data.dataset for data in datasets_metadata if data.domain == domain]
+    def _verify_protected_domain_is_empty(
+        self, domain: str, schema_service: "SchemaService"
+    ):
+        query = DatasetFilters(sensitivity=Sensitivity.PROTECTED, domain=domain)
+        datasets = schema_service.get_schemas(query=query)
         if datasets:
             # Prompt to the user that datasets still exist and tell them to delete them
             raise DomainNotEmptyError(
-                f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {datasets}."
+                f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {[dataset.dataset for dataset in datasets]}."
             )
 
     def generate_protected_permission_items(self, domain) -> List[PermissionItem]:

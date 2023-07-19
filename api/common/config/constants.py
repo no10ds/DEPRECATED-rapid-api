@@ -1,6 +1,5 @@
 BASE_API_PATH = "/api"
 BASE_REGEX = "^[a-zA-Z0-9_-]"
-# TODO: Is this still the case? Didn't we move to parquet files????
 FILENAME_WITH_TIMESTAMP_REGEX = r"[a-zA-Z0-9:_\-]+.csv$"
 
 CONTENT_ENCODING = "utf-8"

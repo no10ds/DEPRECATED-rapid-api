@@ -2,7 +2,6 @@ from typing import List, Dict, Optional, Set
 
 from pydantic.main import BaseModel
 
-from api.domain.data_types import DataTypes
 from api.domain.schema_metadata import Owner, SchemaMetadata, UpdateBehaviour
 
 
@@ -53,14 +52,6 @@ class Schema(BaseModel):
 
     def get_column_names(self) -> List[str]:
         return [column.name for column in self.columns]
-
-    # TODO: Is this necessary in athena? Might it do it for us?
-    # def get_column_dtypes_to_cast(self) -> Dict[str, str]:
-    #     return {
-    #         column.name: column.data_type
-    #         for column in self.columns
-    #         if column.data_type in DataTypes.data_types_to_cast()
-    #     }
 
     def get_partitions(self) -> List[str]:
         sorted_cols = self.get_partition_columns()

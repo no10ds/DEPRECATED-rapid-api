@@ -1,7 +1,7 @@
 from functools import reduce
-from typing import Optional, Dict, List, Union
+from typing import Callable, Optional, Dict, List, Union
 
-from boto3.dynamodb.conditions import Attr
+from boto3.dynamodb.conditions import Attr, And, ConditionBase, Contains, Equals, In
 from pydantic.main import BaseModel
 
 
@@ -16,7 +16,7 @@ class DatasetFilters(BaseModel):
     key_value_tags: Optional[Dict[str, Optional[str]]] = dict()
     key_only_tags: Optional[List[str]] = list()
 
-    def combine_conditions(func):
+    def combine_conditions(func: Callable[..., List[ConditionBase]]) -> And:
         def inner(*args, **kwargs):
             conditions = func(*args, **kwargs)
             conditions = [condition for condition in conditions if condition]
@@ -45,20 +45,21 @@ class DatasetFilters(BaseModel):
         ]
 
     @combine_conditions
-    def build_key_only_tags(self):
+    def build_key_only_tags(self) -> List[Contains]:
         return [Attr("KeyOnlyTags").contains(key) for key in self.key_only_tags]
 
     @combine_conditions
-    def build_key_value_tags(self):
+    def build_key_value_tags(self) -> List[Equals]:
         return [
             Attr(f"KeyValueTags.{key}").eq(value)
             for key, value in self.key_value_tags.items()
             if value is not None and value != ""
         ]
 
+    @staticmethod
     def build_generic_filter(
-        self, name: str, value: Union[List[str], str]
-    ) -> List[Dict]:
+        name: str, value: Union[List[str], str]
+    ) -> Union[Equals, In]:
         if value:
             if isinstance(value, list):
                 return Attr(name).is_in(value)

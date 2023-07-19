@@ -2,7 +2,7 @@ import os
 import uuid
 from pathlib import Path
 from threading import Thread
-from typing import List, Tuple, Type
+from typing import List, Tuple
 
 import pandas as pd
 from pandas.io.parsers import TextFileReader
@@ -13,29 +13,22 @@ from api.adapter.s3_adapter import S3Adapter
 from api.application.services.dataset_validation import build_validated_dataframe
 from api.application.services.job_service import JobService
 from api.application.services.partitioning_service import generate_partitioned_data
-from api.application.services.protected_domain_service import ProtectedDomainService
 from api.application.services.schema_service import SchemaService
-from api.application.services.schema_validation import validate_schema_for_upload
-from api.common.config.auth import Sensitivity
 from api.common.config.constants import (
     CONTENT_ENCODING,
     DATASET_ROWS_QUERY_LIMIT,
     DATASET_SIZE_QUERY_LIMIT,
-    FIRST_SCHEMA_VERSION_NUMBER,
-    SCHEMA_VERSION_INCREMENT,
 )
 from api.common.custom_exceptions import (
     AWSServiceError,
-    ConflictError,
     DatasetValidationError,
     QueryExecutionError,
-    SchemaNotFoundError,
     UnprocessableDatasetError,
     UserError,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import build_error_message_list
-from api.domain.data_types import DataTypes
+from api.domain.data_types import DateType
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.enriched_schema import (
@@ -59,14 +52,12 @@ class DataService:
         s3_adapter=S3Adapter(),
         glue_adapter=GlueAdapter(),
         athena_adapter=AthenaAdapter(),
-        protected_domain_service=ProtectedDomainService(),
         job_service=JobService(),
         schema_service=SchemaService(),
     ):
         self.s3_adapter = s3_adapter
         self.glue_adapter = glue_adapter
         self.athena_adapter = athena_adapter
-        self.protected_domain_service = protected_domain_service
         self.job_service = job_service
         self.schema_service = schema_service
 
@@ -205,56 +196,6 @@ class DataService:
                 f"Overriding existing data failed for layer [{schema.get_layer()}], domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]. Raw file identifier: {raw_file_identifier}"
             )
 
-    def upload_schema(self, schema: Schema) -> str:
-        schema.metadata.version = FIRST_SCHEMA_VERSION_NUMBER
-        dataset = schema.metadata
-        try:
-            if self.schema_service.get_schema(dataset) is not None:
-                AppLogger.warning(
-                    f"Schema already exists for {dataset.string_representation()}"
-                )
-                raise ConflictError("Schema already exists")
-        except SchemaNotFoundError:
-            pass
-        self.check_for_protected_domain(schema)
-        validate_schema_for_upload(schema)
-        self.glue_adapter.create_table(schema)
-        self.schema_service.store_schema(schema)
-        return schema.metadata.glue_table_name()
-
-    def update_schema(self, schema: Schema) -> str:
-        original_schema = self.schema_service.get_schema(schema.metadata, latest=True)
-        print("This is the original schema")
-        print(original_schema)
-
-        schema.metadata.version = (
-            original_schema.get_version() + SCHEMA_VERSION_INCREMENT
-        )
-        print("this is the new schema version")
-        print(schema.metadata.version)
-
-        self.check_for_protected_domain(schema)
-        validate_schema_for_upload(schema)
-
-        # TODO: Should perhaps delete table and undeprecate schema if this fails
-        # Upload schema
-        self.glue_adapter.create_table(schema)
-        self.schema_service.deprecate_schema(original_schema)
-        self.schema_service.store_schema(schema)
-
-        return schema.metadata.dataset_identifier()
-
-    def check_for_protected_domain(self, schema: Schema) -> str:
-        if Sensitivity.PROTECTED == schema.get_sensitivity():
-            if (
-                schema.get_domain()
-                not in self.protected_domain_service.list_protected_domains()
-            ):
-                raise UserError(
-                    f"The protected domain '{schema.get_domain()}' does not exist."
-                )
-        return schema.get_domain()
-
     def list_datasets(self, query: DatasetFilters, enriched: bool = False):
         metadatas = self.schema_service.get_schemas(query=query)
         if enriched:
@@ -352,7 +293,7 @@ class DataService:
             raise error
 
     def _build_query(self, schema: Schema) -> SQLQuery:
-        date_columns = schema.get_columns_by_type(DataTypes.DATE)
+        date_columns = schema.get_columns_by_type(DateType.DATE)
         date_range_queries = [
             *[f"max({column.name}) as max_{column.name}" for column in date_columns],
             *[f"min({column.name}) as min_{column.name}" for column in date_columns],
@@ -378,10 +319,10 @@ class DataService:
         self, schema: Schema, statistics_dataframe: pd.DataFrame
     ) -> List[EnrichedColumn]:
         enriched_columns = []
-        date_column_names = schema.get_column_names_by_type("date")
+        date_columns = schema.get_columns_by_type(DateType.DATE)
         for column in schema.columns:
             statistics = None
-            if column.name in date_column_names:
+            if column in date_columns:
                 statistics = {
                     "max": statistics_dataframe.at[0, f"max_{column.name}"],
                     "min": statistics_dataframe.at[0, f"min_{column.name}"],

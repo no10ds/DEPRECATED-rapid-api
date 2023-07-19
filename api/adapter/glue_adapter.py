@@ -1,23 +1,14 @@
-import json
-import threading
 from time import sleep
-from typing import Dict, List, Type
-import os
+from typing import Dict, List
 
-import awswrangler as wr
 import boto3
 from botocore.exceptions import ClientError
-from pydantic import ValidationError
 
 from api.common.config.aws import (
-    AWS_ACCOUNT,
     AWS_REGION,
     GLUE_CATALOGUE_DB_NAME,
-    GLUE_CONNECTION_NAME,
-    GLUE_CRAWLER_ROLE,
     GLUE_TABLE_PRESENCE_CHECK_INTERVAL,
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
-    RESOURCE_PREFIX,
 )
 from api.common.custom_exceptions import (
     AWSServiceError,
@@ -35,13 +26,9 @@ class GlueAdapter:
         self,
         glue_client=boto3.client("glue", region_name=AWS_REGION),
         glue_catalogue_db_name=GLUE_CATALOGUE_DB_NAME,
-        glue_crawler_role=GLUE_CRAWLER_ROLE,
-        glue_connection_name=GLUE_CONNECTION_NAME,
     ):
         self.glue_client = glue_client
         self.glue_catalogue_db_name = glue_catalogue_db_name
-        self.glue_crawler_role = glue_crawler_role
-        self.glue_connection_name = glue_connection_name
 
     def create_table(self, schema: Schema):
         try:
@@ -107,6 +94,7 @@ class GlueAdapter:
             f"[{table_name}] was not created after {GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT * GLUE_TABLE_PRESENCE_CHECK_INTERVAL}s"
         )  # noqa: E501
 
+    # TODO: Pretty sure this is useless now
     def get_no_of_rows(self, table_name) -> int:
         table = self._get_table(table_name)
         return int(table["Table"]["StorageDescriptor"]["Parameters"]["recordCount"])

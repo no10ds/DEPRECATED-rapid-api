@@ -1,10 +1,8 @@
-import pytest
 from typing import Tuple, Dict
 from unittest.mock import patch
 
-from api.application.services.data_service import DataService
-from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
+from api.application.services.schema_service import SchemaService
 from api.common.custom_exceptions import (
     SchemaValidationError,
     ConflictError,
@@ -18,7 +16,7 @@ from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestSchemaUpload(BaseClientTest):
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_calls_services_successfully(
         self,
         mock_upload_schema,
@@ -67,7 +65,7 @@ class TestSchemaUpload(BaseClientTest):
             ]
         }
 
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_returns_409_when_schema_already_exists(self, mock_upload_schema):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = ConflictError("Error message")
@@ -80,7 +78,7 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 409
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_returns_400_when_invalid_schema(self, mock_upload_schema):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = SchemaValidationError("Error message")
@@ -93,7 +91,7 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_returns_500_if_protected_domain_does_not_exist(
         self,
         mock_upload_schema,
@@ -168,7 +166,7 @@ class TestSchemaUpload(BaseClientTest):
 
 
 class TestSchemaUpdate(BaseClientTest):
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_calls_services_successfully(
         self,
         mock_update_schema,
@@ -217,7 +215,7 @@ class TestSchemaUpdate(BaseClientTest):
             ]
         }
 
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_returns_404_when_schema_does_not_exist(self, mock_update_schema):
         request_body, expected_schema = self._generate_schema()
         mock_update_schema.side_effect = SchemaNotFoundError("Error message")
@@ -230,7 +228,7 @@ class TestSchemaUpdate(BaseClientTest):
         assert response.status_code == 404
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_returns_400_when_invalid_schema(self, mock_update_schema):
         request_body, expected_schema = self._generate_schema()
         mock_update_schema.side_effect = SchemaValidationError("Error message")
@@ -243,7 +241,7 @@ class TestSchemaUpdate(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_returns_500_if_protected_domain_does_not_exist(
         self,
         mock_update_schema,

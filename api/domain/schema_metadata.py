@@ -1,9 +1,7 @@
 from typing import Dict, List, Optional
-from pydantic import BaseModel, EmailStr, Extra
+from pydantic import BaseModel, EmailStr
 from strenum import StrEnum
 
-from api.common.config.auth import Sensitivity
-from api.common.config.layers import Layer
 from api.domain.dataset_metadata import DatasetMetadata
 
 
@@ -15,16 +13,6 @@ class Owner(BaseModel):
 class UpdateBehaviour(StrEnum):
     APPEND = "APPEND"
     OVERWRITE = "OVERWRITE"
-
-
-class Tags(BaseModel):
-    sensitivity: Sensitivity
-    no_of_versions: int
-    layer: Layer
-    domain: str
-
-    class Config:
-        extra = Extra.allow
 
 
 class SchemaMetadata(DatasetMetadata):
