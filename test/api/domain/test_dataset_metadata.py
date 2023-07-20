@@ -24,10 +24,16 @@ class TestDatasetMetadata:
             == "data/layer/domain/dataset"
         )
 
-    def test_raw_data_location(self):
+    def test_raw_data_path(self):
         assert (
             self.dataset_metadata.raw_data_path("filename.csv")
             == "raw_data/layer/domain/dataset/3/filename.csv"
+        )
+
+    def test_raw_data_location(self):
+        assert (
+            self.dataset_metadata.raw_data_location()
+            == "raw_data/layer/domain/dataset/3"
         )
 
     def test_glue_table_prefix(self):
@@ -40,6 +46,12 @@ class TestDatasetMetadata:
         assert (
             self.dataset_metadata.s3_path()
             == f"s3://{DATA_BUCKET}/data/layer/domain/dataset/"
+        )
+
+    def test_s3_file_location(self):
+        assert (
+            self.dataset_metadata.s3_file_location()
+            == f"s3://{DATA_BUCKET}/data/layer/domain/dataset/3"
         )
 
     def test_construct_raw_dataset_uploads_location(self):

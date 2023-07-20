@@ -20,10 +20,7 @@ The first step is to create a dataset by uploading a schema that describes the m
 tags, partition columns, data types, auto-generated version, etc..
 
 Then the data (currently only `.csv` files are supported) can be uploaded to the dataset. During the upload process, the
-service checks if the data matches the previously uploaded dataset schema definition and transforms it into `.parquet`.
-
-During upload, a data 'crawler' is started which looks at the persisted data and infers some metadata about it. Once the
-crawler has finished running (usually around 4-5 minutes) the data can be queried.
+service checks if the data matches the previously uploaded dataset schema definition and transforms it into `.parquet`. The data can then be queried.
 
 The application can be used by both human and programmatic clients (see more below)
 
@@ -683,7 +680,7 @@ e.g.: `WRITE_ALL`, `WRITE_PUBLIC`, `WRITE_PUBLIC`, `WRITE_PROTECTED_{DOMAIN}`
 
 ## Query dataset
 
-Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run.
+Data can be queried provided data has been uploaded at some point in the past.
 
 ### General structure
 
@@ -849,8 +846,7 @@ than 5000kg.
 
 ## Query Large dataset
 
-Large datasets (> 100,000 rows) can be queried asynchronously, provided data has been uploaded at some point in the past
-and the 'crawler' has completed its run.
+Large datasets (> 100,000 rows) can be queried asynchronously, provided data has been uploaded at some point in the past.
 
 When using this endpoint, a Job ID is returned. This can be used to track the progress of the query and subsequently
 retrieve the results from a URL.

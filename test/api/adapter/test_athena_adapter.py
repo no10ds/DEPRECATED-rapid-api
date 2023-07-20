@@ -114,6 +114,27 @@ class TestQuery:
                 DatasetMetadata("layer", "my", "table", 1), SQLQuery()
             )
 
+    def test_returns_async_query_result_dataframe(self):
+        query_result_df = pd.DataFrame(
+            {"column1": [1, 2], "column2": ["item1", "item2"]}
+        )
+
+        self.mock_athena_read_sql_query.return_value = query_result_df
+
+        result = self.athena_adapter.query(
+            DatasetMetadata("layer", "my", "table", 1), SQLQuery()
+        )
+
+        self.mock_athena_read_sql_query.assert_called_once_with(
+            sql="SELECT * FROM layer_my_table_1",
+            database="my_database",
+            ctas_approach=False,
+            workgroup="rapid_athena_workgroup",
+            s3_output="out",
+        )
+
+        assert result.equals(query_result_df)
+
 
 class TestLargeQuery:
     def setup_method(self):

@@ -15,7 +15,6 @@ from api.domain.schema_metadata import SchemaMetadata
 from api.domain.schema import Schema
 
 
-@pytest.mark.focus
 class TestDatasetAccessEvaluator:
     def setup_method(self):
         self.schema_service = Mock()

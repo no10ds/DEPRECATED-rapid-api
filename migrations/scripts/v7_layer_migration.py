@@ -53,11 +53,15 @@ def main(
     schema_service,
     athena_adapter,
 ):
-    # migrate_files(layer, s3_client)
-    migrate_schemas(layer, schema_service, glue_client)
+    migrate_files(layer, s3_client)
+    schema_errors = migrate_schemas(layer, schema_service, glue_client)
     migrate_tables(layer, glue_client, athena_adapter)
     migrate_crawlers(glue_client, resource_client)
     migrate_permissions(layer, all_layers, dynamodb_client)
+
+    if schema_errors:
+        print("- These were the schema errors that need to be addressed manually")
+        pprint(schema_errors)
 
 
 def migrate_permissions(layer, all_layers, dynamodb_client):
@@ -293,6 +297,8 @@ def fetch_all_crawlers(resource_client):
 def migrate_schemas(layer, schema_service: SchemaService, glue_client):
     print("- Migrating the schemas")
 
+    errors = []
+
     paginator = s3_client.get_paginator("list_objects_v2")
     page_iterator = paginator.paginate(
         Bucket=DATA_BUCKET, Prefix=f"data/{layer}/schemas"
@@ -309,8 +315,6 @@ def migrate_schemas(layer, schema_service: SchemaService, glue_client):
         old_table_name = f"{schema.metadata.domain}_{schema.metadata.dataset}_{schema.metadata.version}"
         try:
             old_table = glue_client.get_table(DatabaseName=GLUE_DB, Name=old_table_name)
-            print("This is the old table")
-            pprint(old_table)
             glue_column_types = {
                 col["Name"]: col["Type"]
                 for col in old_table["Table"]["StorageDescriptor"]["Columns"]
@@ -331,17 +335,14 @@ def migrate_schemas(layer, schema_service: SchemaService, glue_client):
 
             s3_client.delete_object(Bucket=DATA_BUCKET, Key=file["Key"])
 
-        # TODO: Return this as an error list
         except glue_client.exceptions.EntityNotFoundException:
-            print("-------------")
-            print("-------------")
-            print("--- ERROR ---")
-            print("-------------")
-            print("-------------")
-            print(
-                f"--- Schema [{file['Key']}] could not be migrated because there is no corresponding table. Please delete the file manually and recreate it"
+            errors.append(
+                f"-- Schema [{file['Key']}] could not be migrated because there is no corresponding table. Please delete the file manually and recreate it"
             )
-        # Delete old schema
+
+    print("- Finished migrating the schemas")
+
+    return errors
 
 
 def migrate_files(layer: str, s3_client):

@@ -1,6 +1,7 @@
 from typing import Tuple, Dict
 from unittest.mock import patch
 
+from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
 from api.application.services.schema_service import SchemaService
 from api.common.custom_exceptions import (
@@ -8,6 +9,7 @@ from api.common.custom_exceptions import (
     ConflictError,
     UserError,
     SchemaNotFoundError,
+    AWSServiceError,
 )
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -164,6 +166,30 @@ class TestSchemaUpload(BaseClientTest):
         )
         return request_body, expected_schema
 
+    @patch.object(SchemaService, "upload_schema")
+    @patch.object(SchemaService, "delete_schema")
+    @patch.object(DeleteService, "delete_table")
+    def test_returns_cleans_up_if_upload_fails(
+        self,
+        mock_delete_table,
+        mock_delete_schema,
+        mock_upload_schema,
+    ):
+        request_body, schema = self._generate_schema()
+
+        mock_upload_schema.side_effect = AWSServiceError("Upload error")
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {"details": "Upload error"}
+        mock_delete_table.assert_called_once_with(schema.metadata)
+        mock_delete_schema.assert_called_once_with(schema.metadata)
+
 
 class TestSchemaUpdate(BaseClientTest):
     @patch.object(SchemaService, "update_schema")
@@ -312,6 +338,30 @@ class TestSchemaUpdate(BaseClientTest):
             ],
         )
         return request_body, expected_schema
+
+    @patch.object(SchemaService, "update_schema")
+    @patch.object(SchemaService, "delete_schema")
+    @patch.object(DeleteService, "delete_table")
+    def test_returns_cleans_up_if_upload_fails(
+        self,
+        mock_delete_table,
+        mock_delete_schema,
+        mock_update_schema,
+    ):
+        request_body, schema = self._generate_schema()
+
+        mock_update_schema.side_effect = AWSServiceError("Upload error")
+
+        response = self.client.put(
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {"details": "Upload error"}
+        mock_delete_table.assert_called_once_with(schema.metadata)
+        mock_delete_schema.assert_called_once_with(schema.metadata)
 
 
 class TestSchemaGeneration(BaseClientTest):

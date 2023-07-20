@@ -198,27 +198,27 @@ class DataService:
 
     def list_datasets(self, query: DatasetFilters, enriched: bool = False):
         metadatas = self.schema_service.get_schemas(query=query)
-        if enriched:
-            return [
-                dict(metadata)
-                | {
-                    "last_updated_date": self.s3_adapter.get_last_updated_time(
-                        metadata.s3_file_location()
-                    )
-                }
-                for metadata in metadatas
-            ]
-        else:
-            return [dict(metadata) for metadata in metadatas]
+        if metadatas:
+            if enriched:
+                return [
+                    dict(metadata)
+                    | {
+                        "last_updated_date": self.s3_adapter.get_last_updated_time(
+                            metadata.s3_file_location()
+                        )
+                    }
+                    for metadata in metadatas
+                ]
+            else:
+                return [dict(metadata) for metadata in metadatas]
+        return []
 
     def get_dataset_info(self, dataset: DatasetMetadata) -> EnrichedSchema:
         schema = self.schema_service.get_schema(dataset)
         statistics_dataframe = self.athena_adapter.query(
             dataset, self._build_query(schema)
         )
-        last_updated = self.glue_adapter.get_table_last_updated_date(
-            dataset.glue_table_name()
-        )
+        last_updated = self.s3_adapter.get_last_updated_time(dataset.s3_file_location())
         return EnrichedSchema(
             metadata=self._enrich_metadata(schema, statistics_dataframe, last_updated),
             columns=self._enrich_columns(schema, statistics_dataframe),
@@ -293,7 +293,7 @@ class DataService:
             raise error
 
     def _build_query(self, schema: Schema) -> SQLQuery:
-        date_columns = schema.get_columns_by_type(DateType.DATE)
+        date_columns = schema.get_columns_by_type(DateType)
         date_range_queries = [
             *[f"max({column.name}) as max_{column.name}" for column in date_columns],
             *[f"min({column.name}) as min_{column.name}" for column in date_columns],
@@ -319,7 +319,7 @@ class DataService:
         self, schema: Schema, statistics_dataframe: pd.DataFrame
     ) -> List[EnrichedColumn]:
         enriched_columns = []
-        date_columns = schema.get_columns_by_type(DateType.DATE)
+        date_columns = schema.get_columns_by_type(DateType)
         for column in schema.columns:
             statistics = None
             if column in date_columns:

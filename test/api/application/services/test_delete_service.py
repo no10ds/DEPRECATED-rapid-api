@@ -68,6 +68,14 @@ class TestDeleteService:
                 DatasetMetadata("layer", "domain", "dataset", 1), filename
             )
 
+    def test_delete_table(self):
+        dataset = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.delete_service.delete_table(dataset)
+
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset.glue_table_name()]
+        )
+
     def test_delete_dataset(self):
         dataset_files = [
             {"key": "aaa"},

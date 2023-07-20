@@ -11,7 +11,8 @@ from api.common.value_transformers import clean_column_name
 from api.domain.data_types import (
     extract_athena_types,
     AthenaDataType,
-    PandasDataType,
+    StringType,
+    DateType,
 )
 from api.domain.schema import Schema
 from api.domain.validation_context import ValidationContext
@@ -82,10 +83,12 @@ def dataset_has_correct_data_types(
         expected_type = column.data_type
 
         types_match = isinstance(
-            AthenaDataType(actual_type).value, type(AthenaDataType(expected_type).value)
+            AthenaDataType(expected_type).value, type(actual_type.value)
         )
 
-        if not types_match and not is_valid_custom_dtype(actual_type, expected_type):
+        if not types_match and not is_valid_custom_dtype(
+            actual_type.value, expected_type
+        ):
             error_list.append(
                 f"Column [{column.name}] has an incorrect data type. Expected {expected_type}, received {AthenaDataType(actual_type).value}"
                 # noqa: E501
@@ -100,8 +103,7 @@ def dataset_has_no_illegal_characters_in_partition_columns(
     error_list = []
     for column in schema.get_partition_columns():
         series = data_frame[column.name]
-        # TODO: Not sure this is the way to select for date columns
-        if not column.data_type == PandasDataType.DATE and series.dtype == object:
+        if not column.is_of_data_type(DateType) and series.dtype == object:
             any_illegal_characters = any(
                 [value is True for value in series.str.contains("/")]
             )
@@ -117,8 +119,7 @@ def convert_dates_to_ymd(
     df: pd.DataFrame, schema: Schema
 ) -> Tuple[pd.DataFrame, list[str]]:
     error_list = []
-    # TODO: Not sure this is the way to select for date columns
-    for column in schema.get_columns_by_type(PandasDataType.DATE):
+    for column in schema.get_columns_by_type(DateType):
         df[column.name], error = convert_date_column_to_ymd(
             column.name, df[column.name], column.format
         )
@@ -162,10 +163,6 @@ def format_timestamp_as_ymd(timestamp: Timestamp) -> str:
     return f"{timestamp.year}-{str(timestamp.month).zfill(2)}-{str(timestamp.day).zfill(2)}"
 
 
-# TODO: Double check this logic
 def is_valid_custom_dtype(actual_type: str, expected_type: str) -> bool:
-    is_custom_dtype = expected_type in [AthenaDataType.DATE, PandasDataType.DATE]
-    return is_custom_dtype and actual_type in [
-        AthenaDataType.STRING,
-        PandasDataType.OBJECT,
-    ]
+    is_custom_dtype = expected_type in list(DateType)
+    return is_custom_dtype and actual_type in list(StringType)

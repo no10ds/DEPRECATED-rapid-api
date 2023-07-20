@@ -28,6 +28,9 @@ class DeleteService:
         self.s3_adapter.find_raw_file(dataset, filename)
         self.s3_adapter.delete_dataset_files(dataset, filename)
 
+    def delete_table(self, dataset: DatasetMetadata):
+        self.glue_adapter.delete_tables([dataset.glue_table_name()])
+
     def delete_dataset(self, dataset: DatasetMetadata):
         # Given a domain and a dataset, delete all rAPId contents for this domain & dataset
         # 1. Generate a list of file keys from S3 to delete, raw_data & data

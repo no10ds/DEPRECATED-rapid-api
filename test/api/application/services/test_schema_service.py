@@ -430,6 +430,14 @@ class TestGetSchema:
             "query"
         )
 
+    def test_get_schemas_empty(self):
+        self.dynamodb_adapter.get_latest_schema_metadatas.return_value = []
+        res = self.schema_service.get_schemas("query")
+        assert res == []
+        self.dynamodb_adapter.get_latest_schema_metadatas.assert_called_once_with(
+            "query"
+        )
+
     def test_get_latest_schema_version(self):
         self.dynamodb_adapter.get_latest_schema.return_value = self.schema_dict
         res = self.schema_service.get_latest_schema_version(self.metadata)

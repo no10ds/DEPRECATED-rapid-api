@@ -8,8 +8,14 @@ from api.common.config.aws import (
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     GLUE_CATALOGUE_DB_NAME,
 )
-from api.common.custom_exceptions import AWSServiceError
+from api.common.custom_exceptions import (
+    AWSServiceError,
+    TableAlreadyExistsError,
+    TableCreationError,
+)
 from api.domain.dataset_metadata import DatasetMetadata
+from api.domain.schema import Schema, Column
+from api.domain.schema_metadata import SchemaMetadata
 
 
 class TestGlueAdapterTableMethods:
@@ -21,6 +27,85 @@ class TestGlueAdapterTableMethods:
             self.glue_boto_client,
             "GLUE_CATALOGUE_DB_NAME",
         )
+        self.valid_schema = Schema(
+            metadata=SchemaMetadata(
+                layer="layer",
+                domain="domain",
+                dataset="dataset",
+                version=1,
+                description="description",
+                sensitivity="PUBLIC",
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="integer",
+                    allow_null=True,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="string",
+                    allow_null=False,
+                ),
+            ],
+        )
+
+    def test_create_table(self):
+        self.glue_adapter.create_table(self.valid_schema)
+        self.glue_boto_client.create_table.assert_called_once_with(
+            DatabaseName="GLUE_CATALOGUE_DB_NAME",
+            TableInput={
+                "Name": "layer_domain_dataset_1",
+                "Owner": "hadoop",
+                "StorageDescriptor": {
+                    "Columns": [{"Name": "colname2", "Type": "string"}],
+                    "Location": "s3://the-bucket/data/layer/domain/dataset/1",
+                    "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+                    "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+                    "Compressed": False,
+                    "SerdeInfo": {
+                        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+                        "Parameters": {"serialization.format": "1"},
+                    },
+                    "NumberOfBuckets": -1,
+                    "StoredAsSubDirectories": False,
+                },
+                "PartitionKeys": [
+                    {"Name": "colname1", "Type": "integer"},
+                ],
+                "TableType": "EXTERNAL_TABLE",
+                "Parameters": {
+                    "classification": "parquet",
+                    "typeOfData": "file",
+                    "compressionType": "none",
+                    "EXTERNAL": "TRUE",
+                },
+            },
+            PartitionIndexes=[
+                {
+                    "Keys": ["colname1"],
+                    "IndexName": "rapid-creation-partition",
+                }
+            ],
+        )
+
+    def test_create_table_already_exists_error(self):
+        self.glue_boto_client.create_table.side_effect = ClientError(
+            error_response={"Error": {"Code": "AlreadyExistsException"}},
+            operation_name="CreateTable",
+        )
+        with pytest.raises(TableAlreadyExistsError):
+            self.glue_adapter.create_table(self.valid_schema)
+
+    def test_create_table_creation_error(self):
+        self.glue_boto_client.create_table.side_effect = ClientError(
+            error_response={"Error": {"Code": "OtherError"}},
+            operation_name="CreateTable",
+        )
+        with pytest.raises(TableCreationError):
+            self.glue_adapter.create_table(self.valid_schema)
 
     def test_gets_table_when_created(self):
         table_config = {}
@@ -29,31 +114,6 @@ class TestGlueAdapterTableMethods:
         result = self.glue_adapter.get_table_when_created("some-name")
 
         assert result == table_config
-
-    def test_get_no_of_rows_in_table(self):
-        table_properties = {
-            "Table": {
-                "Name": "qa_carsales_25_1",
-                "DatabaseName": "rapid_catalogue_db",
-                "Owner": "owner",
-                "StorageDescriptor": {
-                    "Parameters": {
-                        "averageRecordSize": "17",
-                        "classification": "parquet",
-                        "compressionType": "none",
-                        "objectCount": "5",
-                        "recordCount": "990300",
-                        "sizeKey": "4762462",
-                        "typeOfData": "file",
-                    },
-                },
-            }
-        }
-        self.glue_boto_client.get_table.return_value = table_properties
-
-        result = self.glue_adapter.get_no_of_rows("qa_carsales_25_1")
-
-        assert result == 990300
 
     def test_get_tables_for_dataset(self):
         paginate = self.glue_boto_client.get_paginator.return_value.paginate

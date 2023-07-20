@@ -94,11 +94,6 @@ class GlueAdapter:
             f"[{table_name}] was not created after {GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT * GLUE_TABLE_PRESENCE_CHECK_INTERVAL}s"
         )  # noqa: E501
 
-    # TODO: Pretty sure this is useless now
-    def get_no_of_rows(self, table_name) -> int:
-        table = self._get_table(table_name)
-        return int(table["Table"]["StorageDescriptor"]["Parameters"]["recordCount"])
-
     def get_tables_for_dataset(self, dataset: DatasetMetadata) -> List[str]:
         tables = [
             item["Name"] for item in self._search_tables(dataset.glue_table_prefix())

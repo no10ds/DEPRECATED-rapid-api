@@ -75,7 +75,7 @@ class S3Adapter:
             Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path
         )
         AppLogger.info(
-            f"Raw data upload for {schema_metadata.get_ui_upload_path()} completed"
+            f"Raw data upload for {schema_metadata.glue_table_name()} completed"
         )
 
     def list_raw_files(self, dataset: DatasetMetadata) -> List[str]:

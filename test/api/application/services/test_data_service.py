@@ -34,13 +34,12 @@ from api.domain.sql_query import SQLQuery
 class TestUploadDataset:
     def setup_method(self):
         self.s3_adapter = Mock()
-        self.glue_adapter = Mock()
         self.athena_adapter = Mock()
         self.job_service = Mock()
         self.schema_service = Mock()
         self.data_service = DataService(
             self.s3_adapter,
-            self.glue_adapter,
+            None,
             self.athena_adapter,
             self.job_service,
             self.schema_service,
@@ -162,8 +161,10 @@ class TestUploadDataset:
     @patch.object(DataService, "validate_incoming_data")
     @patch.object(DataService, "process_chunks")
     @patch.object(DataService, "delete_incoming_raw_file")
+    @patch.object(DataService, "load_partitions")
     def test_process_upload_calls_relevant_methods(
         self,
+        mock_load_partitions,
         mock_delete_incoming_raw_file,
         mock_process_chunks,
         mock_validate_incoming_data,
@@ -199,6 +200,8 @@ class TestUploadDataset:
         mock_delete_incoming_raw_file.assert_called_once_with(
             schema, Path("data.csv"), "123-456-789"
         )
+        mock_load_partitions.assert_called_once_with(schema)
+
         self.job_service.update_step.assert_has_calls(expected_update_step_calls)
         self.job_service.succeed.assert_called_once_with(upload_job)
 
@@ -521,6 +524,17 @@ class TestUploadDataset:
             schema.metadata, filename, partitioned_dataframe
         )
 
+    def test_load_partitions(self):
+        self.athena_adapter.query_sql_async.return_value = "query_id"
+
+        self.data_service.load_partitions(self.valid_schema)
+        self.athena_adapter.query_sql_async.assert_called_once_with(
+            "MSCK REPAIR TABLE `raw_some_other_2`;"
+        )
+        self.athena_adapter.wait_for_query_to_complete.assert_called_once_with(
+            "query_id"
+        )
+
 
 class TestListRawFiles:
     def setup_method(self):
@@ -562,7 +576,6 @@ class TestListRawFiles:
 class TestDatasetInfoRetrieval:
     def setup_method(self):
         self.s3_adapter = Mock()
-        self.glue_adapter = Mock()
         self.athena_adapter = Mock()
         self.job_service = Mock()
         self.schema_service = Mock()
@@ -599,14 +612,12 @@ class TestDatasetInfoRetrieval:
         )
         self.data_service = DataService(
             self.s3_adapter,
-            self.glue_adapter,
+            None,
             self.athena_adapter,
             self.job_service,
             self.schema_service,
         )
-        self.glue_adapter.get_table_last_updated_date.return_value = (
-            "2022-03-01 11:03:49+00:00"
-        )
+        self.s3_adapter.get_last_updated_time.return_value = "2022-03-01 11:03:49+00:00"
 
     def test_get_schema_information(self):
         expected_schema = EnrichedSchema(
@@ -666,8 +677,8 @@ class TestDatasetInfoRetrieval:
             ),
         )
         assert actual_schema == expected_schema
-        self.glue_adapter.get_table_last_updated_date.assert_called_once_with(
-            dataset_metadata.glue_table_name()
+        self.s3_adapter.get_last_updated_time.assert_called_once_with(
+            dataset_metadata.s3_file_location()
         )
 
     def test_get_schema_information_for_multiple_dates(self):
@@ -835,12 +846,11 @@ class TestDatasetInfoRetrieval:
 class TestQueryDataset:
     def setup_method(self):
         self.s3_adapter = Mock()
-        self.glue_adapter = Mock()
         self.athena_adapter = Mock()
         self.job_service = Mock()
         self.data_service = DataService(
             self.s3_adapter,
-            self.glue_adapter,
+            None,
             self.athena_adapter,
             None,
             self.job_service,
@@ -908,12 +918,11 @@ class TestQueryDataset:
 class TestQueryLargeDataset:
     def setup_method(self):
         self.s3_adapter = Mock()
-        self.glue_adapter = Mock()
         self.athena_adapter = Mock()
         self.job_service = Mock()
         self.data_service = DataService(
             self.s3_adapter,
-            self.glue_adapter,
+            None,
             self.athena_adapter,
             self.job_service,
             self.job_service,
@@ -1031,3 +1040,137 @@ class TestQueryLargeDataset:
         self.job_service.update_step.assert_has_calls(expected_job_calls)
         self.job_service.set_results_url.assert_not_called()
         self.job_service.fail.assert_called_once_with(query_job, ["the error message"])
+
+
+class TestListDatasets:
+    def setup_method(self):
+        self.s3_adapter = Mock()
+        self.schema_service = Mock()
+        self.data_service = DataService(
+            self.s3_adapter,
+            None,
+            None,
+            None,
+            self.schema_service,
+        )
+
+    def test_list_datasets_not_enriched_success(self):
+        mock_schemas = [
+            SchemaMetadata(
+                layer="raw",
+                domain="domain1",
+                dataset="dataset1",
+                version=2,
+                sensitivity="PUBLIC",
+            ),
+            SchemaMetadata(
+                layer="raw",
+                domain="domain12",
+                dataset="dataset_c",
+                version=4,
+                sensitivity="PRIVATE",
+            ),
+        ]
+        expected = [
+            {
+                "dataset": "dataset1",
+                "description": "",
+                "domain": "domain1",
+                "is_latest_version": True,
+                "key_only_tags": [],
+                "key_value_tags": {},
+                "layer": "raw",
+                "owners": None,
+                "sensitivity": "PUBLIC",
+                "update_behaviour": "APPEND",
+                "version": 2,
+            },
+            {
+                "dataset": "dataset_c",
+                "description": "",
+                "domain": "domain12",
+                "is_latest_version": True,
+                "key_only_tags": [],
+                "key_value_tags": {},
+                "layer": "raw",
+                "owners": None,
+                "sensitivity": "PRIVATE",
+                "update_behaviour": "APPEND",
+                "version": 4,
+            },
+        ]
+
+        self.schema_service.get_schemas.return_value = mock_schemas
+
+        response = self.data_service.list_datasets("query")
+        assert response == expected
+
+    def test_list_datasets_not_enriched_empty(self):
+        mock_schemas = []
+
+        self.schema_service.get_schemas.return_value = mock_schemas
+
+        response = self.data_service.list_datasets("query")
+        assert response == []
+
+    def test_list_datasets_enriched_success(self):
+        mock_schemas = [
+            SchemaMetadata(
+                layer="raw",
+                domain="domain1",
+                dataset="dataset1",
+                version=2,
+                sensitivity="PUBLIC",
+            ),
+            SchemaMetadata(
+                layer="raw",
+                domain="domain12",
+                dataset="dataset_c",
+                version=4,
+                sensitivity="PRIVATE",
+            ),
+        ]
+        expected = [
+            {
+                "dataset": "dataset1",
+                "description": "",
+                "domain": "domain1",
+                "is_latest_version": True,
+                "key_only_tags": [],
+                "key_value_tags": {},
+                "layer": "raw",
+                "owners": None,
+                "sensitivity": "PUBLIC",
+                "update_behaviour": "APPEND",
+                "version": 2,
+                "last_updated_date": "date1",
+            },
+            {
+                "dataset": "dataset_c",
+                "description": "",
+                "domain": "domain12",
+                "is_latest_version": True,
+                "key_only_tags": [],
+                "key_value_tags": {},
+                "layer": "raw",
+                "owners": None,
+                "sensitivity": "PRIVATE",
+                "update_behaviour": "APPEND",
+                "version": 4,
+                "last_updated_date": "date2",
+            },
+        ]
+
+        self.s3_adapter.get_last_updated_time.side_effect = ["date1", "date2"]
+        self.schema_service.get_schemas.return_value = mock_schemas
+
+        response = self.data_service.list_datasets("query", enriched=True)
+        assert response == expected
+
+    def test_list_datasets_enriched_empty(self):
+        mock_schemas = []
+
+        self.schema_service.get_schemas.return_value = mock_schemas
+
+        response = self.data_service.list_datasets("query", enriched=True)
+        assert response == []

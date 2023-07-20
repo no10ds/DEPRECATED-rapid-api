@@ -1178,3 +1178,29 @@ class TestDynamoDBAdapterSchemaTable:
             self.dynamo_adapter.deprecate_schema(
                 DatasetMetadata("raw", "domain", "dataset", 1)
             )
+
+    def test_delete_schema(self):
+        self.dynamo_adapter.delete_schema(
+            DatasetMetadata("raw", "domain", "dataset", 1)
+        )
+
+        self.schema_table.delete_item.assert_called_once_with(
+            Key={
+                "PK": "raw/domain/dataset",
+                "SK": 1,
+            },
+        )
+
+    def test_delete_schema_client_error(self):
+        self.schema_table.delete_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "FailedToDelete"}},
+            operation_name="DeleteItem",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error deleting the schema ",
+        ):
+            self.dynamo_adapter.delete_schema(
+                DatasetMetadata("raw", "domain", "dataset", 1)
+            )

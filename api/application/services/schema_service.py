@@ -70,7 +70,9 @@ class SchemaService:
         self, query: DatasetFilters = DatasetFilters()
     ) -> List[SchemaMetadata]:
         schemas = self.dynamodb_adapter.get_latest_schema_metadatas(query)
-        return [self._parse_schema(schema) for schema in schemas]
+        if schemas:
+            return [self._parse_schema(schema) for schema in schemas]
+        return []
 
     def get_latest_schema_version(self, dataset: Type[DatasetMetadata]) -> int:
         schema = self.dynamodb_adapter.get_latest_schema(dataset)
@@ -79,9 +81,14 @@ class SchemaService:
 
         return self._parse_schema(schema).get_version()
 
+    def delete_schema(self, dataset: Type[DatasetMetadata]) -> int:
+        return self.dynamodb_adapter.delete_schema(dataset)
+
     def delete_schemas(self, dataset: Type[DatasetMetadata]) -> int:
         dataset.version = self.get_latest_schema_version(dataset)
-        return self.dynamodb_adapter.delete_schemas(dataset)
+        for i in range(dataset.version):
+            dataset.version = i
+            self.dynamodb_adapter.delete_schema(dataset)
 
     def upload_schema(self, schema: Schema) -> str:
         schema.metadata.version = FIRST_SCHEMA_VERSION_NUMBER
@@ -111,12 +118,11 @@ class SchemaService:
         self.check_for_protected_domain(schema)
         validate_schema_for_upload(schema)
 
-        # TODO: Should perhaps delete table and undeprecate schema if this fails
         # Upload schema
         self.glue_adapter.create_table(schema)
-        self.dynamodb_adapter.deprecate_schema(original_schema)
-        self.dynamodb_adapter.store_schema(schema)
 
+        self.dynamodb_adapter.store_schema(schema)
+        self.dynamodb_adapter.deprecate_schema(original_schema)
         return schema.metadata.dataset_identifier()
 
     def check_for_protected_domain(self, schema: Schema) -> str:

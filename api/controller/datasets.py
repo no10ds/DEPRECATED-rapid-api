@@ -59,7 +59,7 @@ datasets_router = APIRouter(
 
 @datasets_router.post(
     "",
-    # dependencies=[Security(secure_endpoint, scopes=[Action.READ])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.READ])],
     status_code=http_status.HTTP_200_OK,
 )
 async def list_all_datasets(
@@ -238,13 +238,13 @@ async def list_raw_files(
 
 @datasets_router.delete(
     "/{layer}/{domain}/{dataset}",
-    # dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
+    dependencies=[Security(secure_endpoint, scopes=[Action.DATA_ADMIN])],
 )
 async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Response):
     """
     ## Delete Dataset
 
-    Use this endpoint to delete all the contents linked to a layer/domain/dataset. It deletes the crawler, raw data, uploaded data
+    Use this endpoint to delete all the contents linked to a layer/domain/dataset. It deletes the table, raw data, uploaded data
     and all schemas.
 
     When all valid items in the domain/dataset have been deleted, a success message will be displayed.
@@ -332,7 +332,7 @@ async def delete_data_file(
 @datasets_router.post(
     "/{layer}/{domain}/{dataset}",
     status_code=http_status.HTTP_201_CREATED,
-    # dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.WRITE])],
 )
 def upload_data(
     layer: Layer,
@@ -438,7 +438,7 @@ def store_file_to_disk(id: str, file: UploadFile = File(...)) -> Path:
 
 @datasets_router.post(
     "/{layer}/{domain}/{dataset}/query",
-    # dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
+    dependencies=[Security(secure_dataset_endpoint, scopes=[Action.READ])],
     responses={
         200: {
             "content": {
@@ -468,7 +468,7 @@ async def query_dataset(
     """
     ## Query dataset
 
-    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run. Large datasets are not supported by this endpoint.
+    Data can be queried provided data has been uploaded at some point in the past. Large datasets are not supported by this endpoint.
 
     ### Inputs
 
@@ -554,7 +554,7 @@ async def query_large_dataset(
     """
     ## Query large dataset
 
-    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run.
+    Data can be queried provided data has been uploaded at some point in the past.
 
     This endpoint allows querying datasets larger than 100,000 rows.
 

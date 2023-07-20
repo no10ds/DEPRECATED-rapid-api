@@ -4,6 +4,7 @@ from fastapi import status as http_status
 from fastapi import Path as FastApiPath
 
 from api.application.services.authorisation.authorisation_service import secure_endpoint
+from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
 from api.application.services.schema_service import SchemaService
 from api.common.config.auth import Action, Sensitivity
@@ -15,12 +16,11 @@ from api.common.config.constants import (
 from api.common.config.layers import Layer
 from api.common.custom_exceptions import (
     AWSServiceError,
-    TableAlreadyExistsError,
-    TableCreationError,
 )
 from api.common.logger import AppLogger
 from api.domain.schema import Schema
 
+delete_service = DeleteService()
 schema_infer_service = SchemaInferService()
 schema_service = SchemaService()
 
@@ -136,9 +136,8 @@ async def upload_schema(schema: Schema):
     try:
         schema_file_name = schema_service.upload_schema(schema)
         return {"details": schema_file_name}
-    except (TableCreationError, TableAlreadyExistsError) as error:
-        _delete_uploaded_schema(schema)
-        raise error
+    except AWSServiceError as error:
+        handle_schema_upload_failure(schema, error)
 
 
 @schema_router.put(
@@ -178,12 +177,33 @@ async def update_schema(schema: Schema):
 
     ### Click  `Try it out` to use the endpoint
     """
-    schema_file_name = schema_service.update_schema(schema)
-    return {"details": schema_file_name}
+    try:
+        schema_file_name = schema_service.update_schema(schema)
+        return {"details": schema_file_name}
+    except AWSServiceError as error:
+        handle_schema_upload_failure(schema, error)
+
+
+def handle_schema_upload_failure(schema: Schema, error):
+    _delete_table(schema)
+    _delete_uploaded_schema(schema)
+    _log_and_raise_error("Failed to upload schema", error.message)
 
 
 def _delete_uploaded_schema(schema: Schema):
-    schema_service.delete_schemas(schema.metadata)
+    try:
+        schema_service.delete_schema(schema.metadata)
+    except AWSServiceError as error:
+        AppLogger.error(f"Failed to delete uploaded schema: {error.message}")
+
+
+def _delete_table(schema: Schema):
+    try:
+        delete_service.delete_table(schema.metadata)
+    except AWSServiceError as error:
+        AppLogger.error(
+            f"Failed to delete table for failed schema upload: {error.message}"
+        )
 
 
 def _log_and_raise_error(log_message: str, error_message: str):

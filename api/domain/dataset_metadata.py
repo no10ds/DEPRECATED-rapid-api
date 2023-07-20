@@ -87,9 +87,6 @@ class DatasetMetadata(BaseModel):
     def glue_table_prefix(self):
         return f"{self.layer}_{self.domain}_{self.dataset.lower()}_"
 
-    def get_ui_upload_path(self):
-        return f"{self.dataset_identifier()}/{self.version}"
-
     def glue_table_name(self) -> str:
         return f"{self.glue_table_prefix()}{self.version}"
 
@@ -111,6 +108,6 @@ class DatasetMetadata(BaseModel):
     def set_version(self, schema_service: "SchemaService"):
         if not self.version:
             AppLogger.info(
-                "No version provided by the user. Retrieving the latest version from the crawler."
+                "No version provided by the user. Retrieving the latest version from the schema"
             )
             self.version = schema_service.get_latest_schema_version(self)

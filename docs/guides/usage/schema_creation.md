@@ -68,13 +68,11 @@ Column heading names should follow a strict format. The [requirements](https://d
 
 
 ### Accepted data types 🐼
-<!-- TODO: Edit this https://docs.aws.amazon.com/athena/latest/ug/data-types.html -->
-The data accepted data types for a rAPId instance can be found in [DataTypes.py](/api/domain/data_types.py), they are string values with the name of a
-pandas' data type.
+The data accepted data types for a rAPId instance can be found detailed [here](https://docs.aws.amazon.com/athena/latest/ug/data-types.html). The only Athena types that are currently unsupported are array, map and struct types.
 
-- `integer` - Use it to define integer values, the string *must* start with a capital letter, this allows the [int columns to be nullable for pandas' dataframes](https://pandas.pydata.org/pandas-docs/stable/user_guide/integer_na.html).
-- `double` - Use it to define float values, the string *must* start with a capital letter.
-- `object` - Use it to define string.
+- `integer` - Use it to define integer values.
+- `double` - Use it to define float values.
+- `string` - Use it to define string.
 - `date` - Use it to define date objects, then in the format key specify the desired [date-format](#date-formats-).
 - `boolean` - Use it to define boolean values (see Booleans section below).
 

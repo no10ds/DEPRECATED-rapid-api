@@ -95,7 +95,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def delete_schemas(self, metadata: Type[DatasetMetadata]) -> None:
+    def delete_schema(self, metadata: Type[DatasetMetadata]) -> None:
         pass
 
     @abstractmethod
@@ -300,10 +300,17 @@ class DynamoDBAdapter(DatabaseAdapter):
             Key={"PK": "PERMISSION", "SK": permission_id}
         )
 
-    def delete_schemas(self, metadata: Type[DatasetMetadata]) -> None:
-        for i in range(metadata.version):
+    def delete_schema(self, metadata: Type[DatasetMetadata]) -> None:
+        try:
             self.schema_table.delete_item(
-                Key={"PK": metadata.dataset_identifier(with_version=False), "SK": i + 1}
+                Key={
+                    "PK": metadata.dataset_identifier(with_version=False),
+                    "SK": metadata.get_version(),
+                }
+            )
+        except ClientError as error:
+            self._handle_client_error(
+                f"Error deleting the schema {metadata.string_representation()}", error
             )
 
     def store_upload_job(self, upload_job: UploadJob) -> None:

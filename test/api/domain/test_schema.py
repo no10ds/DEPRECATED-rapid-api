@@ -1,9 +1,10 @@
 from unittest.mock import Mock
-
+import pytest
 
 from api.adapter.s3_adapter import S3Adapter
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
+from api.domain.data_types import BooleanType, NumericType, StringType
 
 
 class TestSchema:
@@ -65,6 +66,60 @@ class TestSchema:
         actual_data_types = self.schema.get_data_types()
 
         assert actual_data_types == expected_data_types
+
+    def test_get_partition_columns(self):
+        res = self.schema.get_partition_columns()
+        expected = [
+            Column(
+                name="colname2",
+                partition_index=0,
+                data_type="string",
+                allow_null=False,
+                format=None,
+            ),
+            Column(
+                name="colname1",
+                partition_index=1,
+                data_type="integer",
+                allow_null=True,
+                format=None,
+            ),
+        ]
+        assert res == expected
+
+    def test_get_partition_columns_for_glue(self):
+        res = self.schema.get_partition_columns_for_glue()
+        expected = [
+            {
+                "Name": "colname2",
+                "Type": "string",
+            },
+            {"Name": "colname1", "Type": "integer"},
+        ]
+
+        assert res == expected
+
+    def test_get_non_partition_columns_for_glue(self):
+        res = self.schema.get_non_partition_columns_for_glue()
+        expected = [
+            {
+                "Name": "colname3",
+                "Type": "boolean",
+            },
+        ]
+        assert res == expected
+
+    @pytest.mark.parametrize(
+        "type, expected",
+        [
+            (BooleanType, ["colname3"]),
+            (NumericType, ["colname1"]),
+            (StringType, ["colname2"]),
+        ],
+    )
+    def test_get_column_names_by_type(self, type, expected):
+        res = self.schema.get_column_names_by_type(type)
+        assert res == expected
 
 
 class TestSchemaMetadata:
