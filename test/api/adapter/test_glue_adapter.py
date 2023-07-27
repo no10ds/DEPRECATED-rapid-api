@@ -5,6 +5,7 @@ from botocore.exceptions import ClientError
 
 from api.adapter.glue_adapter import GlueAdapter
 from api.common.config.aws import (
+    DATA_BUCKET,
     GLUE_TABLE_PRESENCE_CHECK_RETRY_COUNT,
     GLUE_CATALOGUE_DB_NAME,
 )
@@ -61,7 +62,7 @@ class TestGlueAdapterTableMethods:
                 "Owner": "hadoop",
                 "StorageDescriptor": {
                     "Columns": [{"Name": "colname2", "Type": "string"}],
-                    "Location": "s3://the-bucket/data/layer/domain/dataset/1",
+                    "Location": f"s3://{DATA_BUCKET}/data/layer/domain/dataset/1",
                     "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
                     "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
                     "Compressed": False,
