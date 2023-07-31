@@ -21,7 +21,6 @@ from api.domain.schema import Column, Schema
 from api.domain.schema_metadata import SchemaMetadata, Owner
 
 
-@pytest.mark.focus
 class TestDynamoDBAdapterGeneric:
     def setup_method(self):
         self.dynamo_data_source = Mock()
