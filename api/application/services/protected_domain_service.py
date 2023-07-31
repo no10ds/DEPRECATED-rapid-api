@@ -1,17 +1,15 @@
-from typing import List, Set, TYPE_CHECKING
+from typing import List, Set
 
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
 
 from api.application.services.schema_validation import valid_domain_name
 from api.common.config.auth import Sensitivity, Action, LayerPermissions
-from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
+from api.common.custom_exceptions import ConflictError, UserError
 from api.common.logger import AppLogger
-from api.domain.permission_item import PermissionItem
 from api.domain.dataset_filters import DatasetFilters
+from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
-
-if TYPE_CHECKING:
-    from api.application.services.schema_service import SchemaService
+from api.common.custom_exceptions import DomainNotEmptyError
 
 
 class ProtectedDomainService:
@@ -43,7 +41,6 @@ class ProtectedDomainService:
         self,
         domain: str,
         user_subjects_list: List[str | None],
-        schema_service: "SchemaService",
     ) -> None:
         AppLogger.info(f"Deleting protected domain permission {domain}")
         domain = domain.lower().strip()
@@ -52,7 +49,7 @@ class ProtectedDomainService:
         self._verify_protected_domain_does_exist(domain)
 
         # Ensure the domain is currently empty of any datasets
-        self._verify_protected_domain_is_empty(domain, schema_service)
+        self._verify_protected_domain_is_empty(domain)
 
         # Delete the read and write protected permissions from the table
         permissions_to_delete = self.generate_protected_permission_items(domain.upper())
@@ -88,15 +85,13 @@ class ProtectedDomainService:
             AppLogger.info(f"The protected domain, [{domain}] does not exist")
             raise UserError(f"The protected domain, [{domain}] does not exist.")
 
-    def _verify_protected_domain_is_empty(
-        self, domain: str, schema_service: "SchemaService"
-    ):
+    def _verify_protected_domain_is_empty(self, domain: str):
         query = DatasetFilters(sensitivity=Sensitivity.PROTECTED, domain=domain)
-        datasets = schema_service.get_schemas(query=query)
+        datasets = self.dynamodb_adapter.get_latest_schemas(query=query)
         if datasets:
             # Prompt to the user that datasets still exist and tell them to delete them
             raise DomainNotEmptyError(
-                f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {[dataset.dataset for dataset in datasets]}."
+                f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {[dataset.get('Dataset') for dataset in datasets]}."
             )
 
     def generate_protected_permission_items(self, domain) -> List[PermissionItem]:

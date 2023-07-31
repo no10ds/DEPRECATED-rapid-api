@@ -223,7 +223,6 @@ def __has_valid_date_format(date_format: str):
     accepted_date_format_codes = ["Y", "m", "d"]
 
     matches_accepted_format = re.match(accepted_format, date_format)
-    print(matches_accepted_format)
     duplicate_format_codes = any(
         date_format.count(letter) > 1 for letter in accepted_date_format_codes
     )

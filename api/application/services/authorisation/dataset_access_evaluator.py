@@ -115,4 +115,4 @@ class DatasetAccessEvaluator:
             layer=LayerPermissionConverter[permission.layer].value,
             domain=permission.domain,
         )
-        return self.schema_service.get_schemas(query)
+        return self.schema_service.get_schema_metadatas(query)

@@ -272,9 +272,9 @@ class TestDataUpload(BaseClientTest):
 
 class TestListDatasets(BaseClientTest):
     @patch.object(S3Adapter, "get_last_updated_time")
-    @patch.object(SchemaService, "get_schemas")
+    @patch.object(SchemaService, "get_schema_metadatas")
     def test_returns_enriched_schema_metadata_for_all_datasets(
-        self, mock_get_schemas, mock_get_last_updated_time
+        self, mock_get_schema_metadatas, mock_get_last_updated_time
     ):
         metadata_response = [
             SchemaMetadata(
@@ -297,7 +297,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_schemas.return_value = metadata_response
+        mock_get_schema_metadatas.return_value = metadata_response
         mock_get_last_updated_time.side_effect = ["1234", "23456"]
         expected_response = [
             {
@@ -338,14 +338,14 @@ class TestListDatasets(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        _, kwargs = mock_get_schemas.call_args
+        _, kwargs = mock_get_schema_metadatas.call_args
         assert expected_query == kwargs.get("query")
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(SchemaService, "get_schemas")
-    def test_returns_schema_metadata_for_all_datasets(self, mock_get_schemas):
+    @patch.object(SchemaService, "get_schema_metadatas")
+    def test_returns_schema_metadata_for_all_datasets(self, mock_get_schema_metadatas):
         metadata_response = [
             SchemaMetadata(
                 layer="layer",
@@ -367,7 +367,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_schemas.return_value = metadata_response
+        mock_get_schema_metadatas.return_value = metadata_response
 
         expected_response = [
             {
@@ -406,14 +406,16 @@ class TestListDatasets(BaseClientTest):
             # Not passing a JSON body here to filter by tags
         )
 
-        _, kwargs = mock_get_schemas.call_args
+        _, kwargs = mock_get_schema_metadatas.call_args
         assert expected_query == kwargs.get("query")
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
-    @patch.object(SchemaService, "get_schemas")
-    def test_returns_metadata_for_datasets_with_certain_tags(self, mock_get_schemas):
+    @patch.object(SchemaService, "get_schema_metadatas")
+    def test_returns_metadata_for_datasets_with_certain_tags(
+        self, mock_get_schema_metadatas
+    ):
         metadata_response = [
             SchemaMetadata(
                 layer="layer",
@@ -435,7 +437,7 @@ class TestListDatasets(BaseClientTest):
             ),
         ]
 
-        mock_get_schemas.return_value = metadata_response
+        mock_get_schema_metadatas.return_value = metadata_response
 
         expected_response = [
             {
@@ -479,14 +481,14 @@ class TestListDatasets(BaseClientTest):
             json={"tags": tag_filters},
         )
 
-        _, kwargs = mock_get_schemas.call_args
+        _, kwargs = mock_get_schema_metadatas.call_args
         assert expected_query_object == kwargs.get("query")
 
         assert response.status_code == 200
         assert response.json() == expected_response
 
     @patch.object(S3Adapter, "get_last_updated_time")
-    @patch.object(SchemaService, "get_schemas")
+    @patch.object(SchemaService, "get_schema_metadatas")
     def test_returns_enriched_metadata_for_datasets_with_certain_sensitivity(
         self, mock_get_enriched_datasets_metadata, mock_get_last_updated_time
     ):

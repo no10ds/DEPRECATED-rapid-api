@@ -48,30 +48,35 @@ class SchemaService:
 
         return self._parse_schema(schema_dict)
 
-    def _parse_schema(self, schema: dict):
+    def _parse_schema(self, schema: dict, only_metadata: bool = False):
+        metadata = SchemaMetadata(
+            layer=schema["Layer"],
+            domain=schema["Domain"],
+            dataset=schema["Dataset"],
+            version=schema["Version"],
+            sensitivity=schema["Sensitivity"],
+            description=schema["Description"],
+            update_behaviour=schema["UpdateBehaviour"],
+            owners=schema["Owners"],
+            is_latest_version=schema["IsLatestVersion"],
+            key_value_tags=schema["KeyValueTags"],
+            key_only_tags=schema["KeyOnlyTags"],
+        )
+        if only_metadata:
+            return metadata
         return Schema(
-            metadata=SchemaMetadata(
-                layer=schema["Layer"],
-                domain=schema["Domain"],
-                dataset=schema["Dataset"],
-                version=schema["Version"],
-                sensitivity=schema["Sensitivity"],
-                description=schema["Description"],
-                update_behaviour=schema["UpdateBehaviour"],
-                owners=schema["Owners"],
-                is_latest_version=schema["IsLatestVersion"],
-                key_value_tags=schema["KeyValueTags"],
-                key_only_tags=schema["KeyOnlyTags"],
-            ),
+            metadata=metadata,
             columns=[Column.parse_obj(col) for col in schema["Columns"]],
         )
 
-    def get_schemas(
+    def get_schema_metadatas(
         self, query: DatasetFilters = DatasetFilters()
     ) -> List[SchemaMetadata]:
-        schemas = self.dynamodb_adapter.get_latest_schema_metadatas(query)
+        schemas = self.dynamodb_adapter.get_latest_schemas(query)
         if schemas:
-            return [self._parse_schema(schema) for schema in schemas]
+            return [
+                self._parse_schema(schema, only_metadata=True) for schema in schemas
+            ]
         return []
 
     def get_latest_schema_version(self, dataset: Type[DatasetMetadata]) -> int:

@@ -32,14 +32,14 @@ class TestSchemaInfer:
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="bigint",
+                    data_type="integer",
                     allow_null=True,
                     format=None,
                 ),
                 Column(
                     name="col_name_3",
                     partition_index=None,
-                    data_type="bigint",
+                    data_type="integer",
                     allow_null=True,
                     format=None,
                 ),

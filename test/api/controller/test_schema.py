@@ -167,12 +167,10 @@ class TestSchemaUpload(BaseClientTest):
         return request_body, expected_schema
 
     @patch.object(SchemaService, "upload_schema")
-    @patch.object(SchemaService, "delete_schema")
-    @patch.object(DeleteService, "delete_table")
+    @patch.object(DeleteService, "delete_schema_upload")
     def test_returns_cleans_up_if_upload_fails(
         self,
-        mock_delete_table,
-        mock_delete_schema,
+        mock_delete_schema_upload,
         mock_upload_schema,
     ):
         request_body, schema = self._generate_schema()
@@ -187,8 +185,7 @@ class TestSchemaUpload(BaseClientTest):
 
         assert response.status_code == 500
         assert response.json() == {"details": "Upload error"}
-        mock_delete_table.assert_called_once_with(schema.metadata)
-        mock_delete_schema.assert_called_once_with(schema.metadata)
+        mock_delete_schema_upload.assert_called_once_with(schema.metadata)
 
 
 class TestSchemaUpdate(BaseClientTest):
@@ -340,12 +337,10 @@ class TestSchemaUpdate(BaseClientTest):
         return request_body, expected_schema
 
     @patch.object(SchemaService, "update_schema")
-    @patch.object(SchemaService, "delete_schema")
-    @patch.object(DeleteService, "delete_table")
+    @patch.object(DeleteService, "delete_schema_upload")
     def test_returns_cleans_up_if_upload_fails(
         self,
-        mock_delete_table,
-        mock_delete_schema,
+        mock_delete_schema_upload,
         mock_update_schema,
     ):
         request_body, schema = self._generate_schema()
@@ -360,8 +355,7 @@ class TestSchemaUpdate(BaseClientTest):
 
         assert response.status_code == 500
         assert response.json() == {"details": "Upload error"}
-        mock_delete_table.assert_called_once_with(schema.metadata)
-        mock_delete_schema.assert_called_once_with(schema.metadata)
+        mock_delete_schema_upload.assert_called_once_with(schema.metadata)
 
 
 class TestSchemaGeneration(BaseClientTest):

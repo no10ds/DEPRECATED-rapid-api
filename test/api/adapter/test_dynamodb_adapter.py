@@ -21,6 +21,34 @@ from api.domain.schema import Column, Schema
 from api.domain.schema_metadata import SchemaMetadata, Owner
 
 
+@pytest.mark.focus
+class TestDynamoDBAdapterGeneric:
+    def setup_method(self):
+        self.dynamo_data_source = Mock()
+
+        self.dynamo_data_source.Table.side_effect = [
+            Mock(),
+            Mock(),
+            Mock(),
+        ]
+
+        self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
+
+    def test_collect_all_items(self):
+        mock_call = Mock()
+        mock_call.side_effect = [
+            {"Items": ["item1", "item2"], "LastEvaluatedKey": "last_evaluated_key"},
+            {"Items": ["item3", "item4"]},
+        ]
+
+        actual_items = self.dynamo_adapter.collect_all_items(mock_call, key="arg")
+
+        assert actual_items == ["item1", "item2", "item3", "item4"]
+        mock_call.assert_has_calls(
+            [call(key="arg"), call(ExclusiveStartKey="last_evaluated_key", key="arg")]
+        )
+
+
 class TestDynamoDBAdapterPermissionsTable:
     expected_db_query_response = {
         "Items": [
@@ -1076,9 +1104,9 @@ class TestDynamoDBAdapterSchemaTable:
                 DatasetMetadata("raw", "domain", "dataset", 1)
             )
 
-    def test_get_latest_schema_metadatas_with_no_args(self):
+    def test_get_latest_schemas_with_no_args(self):
         self.schema_table.scan.return_value = {"Items": ["schema", "schema_2"]}
-        res = self.dynamo_adapter.get_latest_schema_metadatas(DatasetFilters())
+        res = self.dynamo_adapter.get_latest_schemas(DatasetFilters())
 
         self.schema_table.scan.assert_called_once_with(
             FilterExpression=Attr("IsLatestVersion").eq(True)
@@ -1089,7 +1117,7 @@ class TestDynamoDBAdapterSchemaTable:
         "result, expected",
         [({"Items": ["schema", "schema_2"]}, ["schema", "schema_2"]), ({}, None)],
     )
-    def test_get_latest_schema_metadatas_with_args(self, result, expected):
+    def test_get_latest_schemas_with_args(self, result, expected):
         self.schema_table.scan.return_value = result
 
         mock_query = Attr("KeyOnlyTags").eq("2") & Attr("foo").is_in(["bar"])
@@ -1097,7 +1125,7 @@ class TestDynamoDBAdapterSchemaTable:
         dataset_filters = Mock()
         dataset_filters.format_resource_query = Mock(return_value=mock_query)
 
-        res = self.dynamo_adapter.get_latest_schema_metadatas(dataset_filters)
+        res = self.dynamo_adapter.get_latest_schemas(dataset_filters)
 
         self.schema_table.scan.assert_called_once_with(
             FilterExpression=Attr("IsLatestVersion").eq(True) & mock_query
@@ -1105,7 +1133,7 @@ class TestDynamoDBAdapterSchemaTable:
         dataset_filters.format_resource_query.assert_called_once()
         assert res == expected
 
-    def test_get_latest_schema_metadatas_client_error(self):
+    def test_get_latest_schemas_client_error(self):
         self.schema_table.scan.side_effect = ClientError(
             error_response={"Error": {"Code": "KeyDoesNotExist"}},
             operation_name="Query",
@@ -1115,7 +1143,7 @@ class TestDynamoDBAdapterSchemaTable:
             AWSServiceError,
             match="Error fetching the latest schemas from the database",
         ):
-            self.dynamo_adapter.get_latest_schema_metadatas(DatasetFilters())
+            self.dynamo_adapter.get_latest_schemas(DatasetFilters())
 
     @pytest.mark.parametrize("result, expected", [(["schema1"], "schema1"), ([], None)])
     def test_get_latest_schema(self, result, expected):

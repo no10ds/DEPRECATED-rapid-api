@@ -74,7 +74,7 @@ def migrate_permissions(layer, all_layers, dynamodb_client):
 def migrate_subject_permissions(layer, dynamodb_client):
     print("-- Migrating the permissions of the subjects")
 
-    PERMISSIONS_TO_CHANGE = [
+    PERMISSIONS_TO_REPLACE = [
         "READ_PUBLIC",
         "READ_PROTECTED",
         "READ_PRIVATE",
@@ -101,7 +101,7 @@ def migrate_subject_permissions(layer, dynamodb_client):
         permissions = item["Permissions"]["SS"]
         to_replace = False
         for idx, permission in enumerate(permissions):
-            for permission_to_change in PERMISSIONS_TO_CHANGE:
+            for permission_to_change in PERMISSIONS_TO_REPLACE:
                 # Amend the permission to include the layer
                 if permission.startswith(permission_to_change):
                     to_replace = True
@@ -109,6 +109,7 @@ def migrate_subject_permissions(layer, dynamodb_client):
                         permission_to_change,
                         permission_to_change.replace("_", f"_{layer.upper()}_"),
                     )
+
         if to_replace:
             print(f"--- Adding layer to the permissions for subject {item['SK']['S']}")
             dynamodb_client.update_item(

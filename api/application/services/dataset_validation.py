@@ -82,13 +82,9 @@ def dataset_has_correct_data_types(
         actual_type = column_types[column.name]
         expected_type = column.data_type
 
-        types_match = isinstance(
-            AthenaDataType(expected_type).value, type(actual_type.value)
-        )
+        types_match = isinstance(AthenaDataType(expected_type).value, type(actual_type))
 
-        if not types_match and not is_valid_custom_dtype(
-            actual_type.value, expected_type
-        ):
+        if not types_match and not is_valid_custom_dtype(actual_type, expected_type):
             error_list.append(
                 f"Column [{column.name}] has an incorrect data type. Expected {expected_type}, received {AthenaDataType(actual_type).value}"
                 # noqa: E501

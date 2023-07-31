@@ -17,6 +17,8 @@ class DatasetFilters(BaseModel):
     key_only_tags: Optional[List[str]] = list()
 
     def combine_conditions(func: Callable[..., List[ConditionBase]]) -> And:
+        """Combines a list of conditions into a single And condition"""
+
         def inner(*args, **kwargs):
             conditions = func(*args, **kwargs)
             conditions = [condition for condition in conditions if condition]

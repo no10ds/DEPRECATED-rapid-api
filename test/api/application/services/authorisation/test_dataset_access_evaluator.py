@@ -74,12 +74,14 @@ class TestDatasetAccessEvaluator:
         ],
     )
     def test_extract_datasets_from_permission(self, permission, expected_filters):
-        self.schema_service.get_schemas = Mock()
-        self.schema_service.get_schemas.return_value = "dataset"
+        self.schema_service.get_schema_metadatas = Mock()
+        self.schema_service.get_schema_metadatas.return_value = "dataset"
 
         res = self.evaluator.extract_datasets_from_permission(permission)
 
-        self.schema_service.get_schemas.assert_called_once_with(expected_filters)
+        self.schema_service.get_schema_metadatas.assert_called_once_with(
+            expected_filters
+        )
         assert res == "dataset"
 
     def test_fetch_datasets(self):

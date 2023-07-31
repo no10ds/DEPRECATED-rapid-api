@@ -1,25 +1,25 @@
 import time
 from abc import ABC, abstractmethod
 from functools import reduce
-from typing import List, Dict, Any, Type
+from typing import Any, Callable, Dict, List, Optional, Type
 
 import boto3
-from boto3.dynamodb.conditions import Key, Attr, Or
+from boto3.dynamodb.conditions import Attr, Key, Or
 from botocore.exceptions import ClientError
 
 from api.common.config.auth import (
     PermissionsTableItem,
-    SubjectType,
     Sensitivity,
     ServiceTableItem,
+    SubjectType,
 )
 from api.common.config.aws import (
     AWS_REGION,
     DYNAMO_PERMISSIONS_TABLE_NAME,
-    SERVICE_TABLE_NAME,
     SCHEMA_TABLE_NAME,
+    SERVICE_TABLE_NAME,
 )
-from api.common.custom_exceptions import UserError, AWSServiceError
+from api.common.custom_exceptions import AWSServiceError, UserError
 from api.common.logger import AppLogger
 from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
@@ -87,7 +87,7 @@ class DatabaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def get_latest_schema_metadatas(self, dataset: Type[DatasetMetadata]) -> List[dict]:
+    def get_latest_schemas(self, dataset: Type[DatasetMetadata]) -> List[dict]:
         pass
 
     @abstractmethod
@@ -185,7 +185,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         if not subject_permissions:
             raise UserError("At least one permission must be provided")
         permissions_response = self._find_permissions(subject_permissions)
-        if not permissions_response["Count"] == len(subject_permissions):
+        if not len(permissions_response) == len(subject_permissions):
             AppLogger.info(f"Invalid permission in {subject_permissions}")
             raise UserError(
                 "One or more of the provided permissions is invalid or duplicated"
@@ -193,7 +193,8 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def get_all_permissions(self) -> List[PermissionItem]:
         try:
-            permissions = self.permissions_table.query(
+            permissions = self.collect_all_items(
+                self.permissions_table.query,
                 KeyConditionExpression=Key("PK").eq(PermissionsTableItem.PERMISSION),
             )
             return [
@@ -204,7 +205,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                     sensitivity=permission.get("Sensitivity"),
                     domain=permission.get("Domain"),
                 )
-                for permission in permissions["Items"]
+                for permission in permissions
             ]
 
         except KeyError as error:
@@ -223,13 +224,12 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def get_all_protected_permissions(self) -> List[PermissionItem]:
         try:
-            list_of_items = self.permissions_table.query(
+            items = self.collect_all_items(
+                self.permissions_table.query,
                 KeyConditionExpression=Key("PK").eq(PermissionsTableItem.PERMISSION),
                 FilterExpression=Attr("Sensitivity").eq(Sensitivity.PROTECTED),
-            )["Items"]
-            return [
-                self._generate_protected_permission_item(item) for item in list_of_items
-            ]
+            )
+            return [self._generate_protected_permission_item(item) for item in items]
         except ClientError as error:
             AppLogger.info(f"Error retrieving all protected permissions: {error}")
             raise AWSServiceError(
@@ -354,12 +354,13 @@ class DynamoDBAdapter(DatabaseAdapter):
         try:
             return [
                 self._map_job(job)
-                for job in self.service_table.query(
+                for job in self.collect_all_items(
+                    self.service_table.query,
                     KeyConditionExpression=Key("PK").eq(ServiceTableItem.JOB)
                     & Key("SK2").eq(subject_id),
                     FilterExpression=Attr("TTL").gt(int(time.time())),
                     IndexName="JOB_SUBJECT_ID",
-                )["Items"]
+                )
             ]
         except ClientError as error:
             self._handle_client_error("Error fetching jobs from the database", error)
@@ -376,7 +377,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         except ClientError as error:
             self._handle_client_error("Error fetching job from the database", error)
 
-    def get_schema(self, dataset: Type[DatasetMetadata]) -> dict:
+    def get_schema(self, dataset: Type[DatasetMetadata]) -> Optional[dict]:
         try:
             return self.schema_table.query(
                 KeyConditionExpression=Key("PK").eq(
@@ -389,7 +390,7 @@ class DynamoDBAdapter(DatabaseAdapter):
         except ClientError as error:
             self._handle_client_error("Error fetching schema from the database", error)
 
-    def get_latest_schema_metadatas(self, query: DatasetFilters) -> List[dict]:
+    def get_latest_schemas(self, query: DatasetFilters) -> Optional[List[dict]]:
         try:
             query_arguments = query.format_resource_query()
             if query_arguments:
@@ -397,9 +398,9 @@ class DynamoDBAdapter(DatabaseAdapter):
             else:
                 filter_expression = Attr("IsLatestVersion").eq(True)
 
-            return self.schema_table.scan(
-                FilterExpression=filter_expression,
-            )["Items"]
+            return self.collect_all_items(
+                self.schema_table.scan, FilterExpression=filter_expression
+            )
         except KeyError:
             return None
         except ClientError as error:
@@ -407,7 +408,7 @@ class DynamoDBAdapter(DatabaseAdapter):
                 "Error fetching the latest schemas from the database", error
             )
 
-    def get_latest_schema(self, dataset: Type[DatasetMetadata]) -> dict:
+    def get_latest_schema(self, dataset: Type[DatasetMetadata]) -> Optional[dict]:
         try:
             return self.schema_table.query(
                 KeyConditionExpression=Key("PK").eq(
@@ -507,7 +508,8 @@ class DynamoDBAdapter(DatabaseAdapter):
 
     def _find_permissions(self, permissions: List[str]) -> Dict[str, Any]:
         try:
-            return self.permissions_table.query(
+            return self.collect_all_items(
+                self.permissions_table.query,
                 KeyConditionExpression=Key("PK").eq(PermissionsTableItem.PERMISSION),
                 FilterExpression=reduce(
                     Or, ([Attr("Id").eq(value) for value in permissions])
@@ -536,3 +538,11 @@ class DynamoDBAdapter(DatabaseAdapter):
             domain=item["Domain"],
             layer=item["Layer"],
         )
+
+    def collect_all_items(self, method: Callable, **kwargs) -> List[Dict]:
+        response = method(**kwargs)
+        items = response["Items"]
+        while response.get("LastEvaluatedKey"):
+            response = method(ExclusiveStartKey=response["LastEvaluatedKey"], **kwargs)
+            items.extend(response["Items"])
+        return items

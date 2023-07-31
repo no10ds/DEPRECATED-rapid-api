@@ -4,7 +4,6 @@ import pytest
 
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
-from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
 
@@ -172,12 +171,10 @@ class TestProtectedDomainService:
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             existing_domain_permissions
         )
-        schema_service = Mock()
-        schema_service.get_schemas.return_value = []
 
-        self.protected_domain_service.delete_protected_domain_permission(
-            domain, [], schema_service
-        )
+        self.dynamodb_adapter.get_latest_schemas.return_value = []
+
+        self.protected_domain_service.delete_protected_domain_permission(domain, [])
 
         self.dynamodb_adapter.delete_permission.assert_has_calls(
             [
@@ -218,11 +215,11 @@ class TestProtectedDomainService:
             "DATA_ADMIN",
             "USER_ADMIN",
         ]
-        schema_service = Mock()
-        schema_service.get_schemas.return_value = []
+
+        self.dynamodb_adapter.get_latest_schemas.return_value = []
 
         self.protected_domain_service.delete_protected_domain_permission(
-            domain, ["xxx-yyy-zzz"], schema_service
+            domain, ["xxx-yyy-zzz"]
         )
 
         self.dynamodb_adapter.delete_permission.assert_has_calls(
@@ -265,9 +262,7 @@ class TestProtectedDomainService:
         with pytest.raises(
             UserError, match=r"The protected domain, \[domain]\ does not exist."
         ):
-            self.protected_domain_service.delete_protected_domain_permission(
-                domain, [], Mock()
-            )
+            self.protected_domain_service.delete_protected_domain_permission(domain, [])
 
     def test_delete_protected_domain_permission_when_domain_not_empty(self):
         domain = "other"
@@ -290,18 +285,15 @@ class TestProtectedDomainService:
             existing_domain_permissions
         )
 
-        schema_service = Mock()
-        schema_service.get_schemas.return_value = [
-            DatasetMetadata(layer="layer", domain="other", dataset="dataset")
+        self.dynamodb_adapter.get_latest_schemas.return_value = [
+            {"Dataset": "dataset"},
         ]
 
         with pytest.raises(
             DomainNotEmptyError,
             match=r"Cannot delete protected domain \[other\] as it is not empty. Please delete the datasets \['dataset'\].",
         ):
-            self.protected_domain_service.delete_protected_domain_permission(
-                domain, [], schema_service
-            )
+            self.protected_domain_service.delete_protected_domain_permission(domain, [])
 
     def test_list_protected_domains_from_db(self):
         expected_response = {"other", "domain"}
@@ -386,15 +378,14 @@ class TestProtectedDomainService:
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             generated_permissions
         )
-        schema_service = Mock()
-        schema_service.get_schemas.return_value = []
+        self.dynamodb_adapter.get_latest_schemas.return_value = []
         self.dynamodb_adapter.get_permission_keys_for_subject.return_value = [
             "READ_ALL_PROTECTED_DOMAIN",
             "WRITE_ALL_PROTECTED_DOMAIN",
         ]
 
         self.protected_domain_service.delete_protected_domain_permission(
-            "domain", ["xxx-yyy-zzz"], schema_service
+            "domain", ["xxx-yyy-zzz"]
         )
 
         self.dynamodb_adapter.delete_permission.assert_has_calls(
@@ -422,9 +413,7 @@ class TestProtectedDomainService:
         with pytest.raises(
             UserError, match=r"The protected domain, \[domain\] does not exist"
         ):
-            self.protected_domain_service.delete_protected_domain_permission(
-                domain, [], Mock()
-            )
+            self.protected_domain_service.delete_protected_domain_permission(domain, [])
 
     def test_delete_protected_domain_that_is_not_empty(self):
         domain = "domain"
@@ -443,23 +432,20 @@ class TestProtectedDomainService:
             ),
         ]
         exisiting_datasets = [
-            DatasetMetadata(layer="layer", domain="domain", dataset="dataset"),
-            DatasetMetadata(layer="layer", domain="domain", dataset="dataset_two"),
+            {"Dataset": "dataset"},
+            {"Dataset": "dataset_two"},
         ]
 
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             generated_permissions
         )
-        schema_service = Mock()
-        schema_service.get_schemas.return_value = exisiting_datasets
+        self.dynamodb_adapter.get_latest_schemas.return_value = exisiting_datasets
 
         with pytest.raises(
             DomainNotEmptyError,
             match=r"Cannot delete protected domain \[domain\] as it is not empty. Please delete the datasets \['dataset', 'dataset_two'\].",
         ):
-            self.protected_domain_service.delete_protected_domain_permission(
-                domain, [], schema_service
-            )
+            self.protected_domain_service.delete_protected_domain_permission(domain, [])
 
     def test_throws_if_invalid_domain_name(self):
         domain = "bad-domain"

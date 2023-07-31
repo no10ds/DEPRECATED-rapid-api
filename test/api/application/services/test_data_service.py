@@ -1100,7 +1100,7 @@ class TestListDatasets:
             },
         ]
 
-        self.schema_service.get_schemas.return_value = mock_schemas
+        self.schema_service.get_schema_metadatas.return_value = mock_schemas
 
         response = self.data_service.list_datasets("query")
         assert response == expected
@@ -1108,7 +1108,7 @@ class TestListDatasets:
     def test_list_datasets_not_enriched_empty(self):
         mock_schemas = []
 
-        self.schema_service.get_schemas.return_value = mock_schemas
+        self.schema_service.get_schema_metadatas.return_value = mock_schemas
 
         response = self.data_service.list_datasets("query")
         assert response == []
@@ -1162,7 +1162,7 @@ class TestListDatasets:
         ]
 
         self.s3_adapter.get_last_updated_time.side_effect = ["date1", "date2"]
-        self.schema_service.get_schemas.return_value = mock_schemas
+        self.schema_service.get_schema_metadatas.return_value = mock_schemas
 
         response = self.data_service.list_datasets("query", enriched=True)
         assert response == expected
@@ -1170,7 +1170,7 @@ class TestListDatasets:
     def test_list_datasets_enriched_empty(self):
         mock_schemas = []
 
-        self.schema_service.get_schemas.return_value = mock_schemas
+        self.schema_service.get_schema_metadatas.return_value = mock_schemas
 
         response = self.data_service.list_datasets("query", enriched=True)
         assert response == []

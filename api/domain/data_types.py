@@ -95,7 +95,7 @@ def extract_athena_types(df: DataFrame) -> dict:
     for column in df.columns:
         dtype = str(infer_dtype(df[column], skipna=True))
         try:
-            types[column] = PANDAS_TO_ATHENA_CONVERTER[dtype]
+            types[column] = PANDAS_TO_ATHENA_CONVERTER[dtype].value
         except KeyError:
             raise UnsupportedTypeError(
                 f"Unable to convert the column [{column}] of type [{dtype}] to Athena Schema. This type is currently unsupported."

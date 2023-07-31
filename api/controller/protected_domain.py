@@ -4,13 +4,12 @@ from fastapi import status as http_status
 
 from api.application.services.authorisation.authorisation_service import secure_endpoint
 from api.application.services.protected_domain_service import ProtectedDomainService
-from api.application.services.schema_service import SchemaService
 from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
 from api.common.config.constants import BASE_API_PATH
 
+
 protected_domain_service = ProtectedDomainService()
-schema_service = SchemaService()
 subject_service = SubjectService()
 
 protected_domain_router = APIRouter(
@@ -115,8 +114,6 @@ def delete_protected_domain(domain: str, response: Response):
     subjects_list = [
         subject["subject_id"] for subject in subject_service.list_subjects()
     ]
-    protected_domain_service.delete_protected_domain_permission(
-        domain, subjects_list, schema_service
-    )
+    protected_domain_service.delete_protected_domain_permission(domain, subjects_list)
     response.status_code = http_status.HTTP_202_ACCEPTED
     return {"details": f"{domain} has been deleted."}

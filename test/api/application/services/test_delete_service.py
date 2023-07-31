@@ -4,6 +4,7 @@ import pytest
 
 from api.application.services.delete_service import DeleteService
 from api.common.custom_exceptions import (
+    AWSServiceError,
     UserError,
 )
 from api.domain.dataset_metadata import DatasetMetadata
@@ -97,3 +98,35 @@ class TestDeleteService:
         )
         self.glue_adapter.delete_tables.assert_called_once_with(tables)
         self.schema_service.delete_schemas.assert_called_once_with(dataset_metadata)
+
+    def test_delete_schema_upload_success(self):
+        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.delete_service.delete_schema_upload(dataset_metadata)
+
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset_metadata.glue_table_name()]
+        )
+        self.schema_service.delete_schema.assert_called_once_with(dataset_metadata)
+
+    def test_delete_schema_upload_table_delete_fails(self):
+        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.glue_adapter.delete_tables.side_effect = AWSServiceError("Some message")
+
+        self.delete_service.delete_schema_upload(dataset_metadata)
+
+        self.schema_service.delete_schema.assert_called_once_with(dataset_metadata)
+
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset_metadata.glue_table_name()]
+        )
+
+    def test_delete_schema_upload_schema_delete_fails(self):
+        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.schema_service.delete_schema.side_effect = AWSServiceError("Some message")
+
+        self.delete_service.delete_schema_upload(dataset_metadata)
+
+        self.schema_service.delete_schema.assert_called_once_with(dataset_metadata)
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset_metadata.glue_table_name()]
+        )

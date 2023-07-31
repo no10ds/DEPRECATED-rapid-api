@@ -1,7 +1,6 @@
 from io import StringIO
 from typing import List, Union, Any
 
-import awswrangler as wr
 import pandas as pd
 
 from api.application.services.schema_validation import validate_schema
@@ -10,6 +9,7 @@ from api.common.config.layers import Layer
 from api.common.custom_exceptions import UserError
 from api.common.value_transformers import clean_column_name
 
+from api.domain.data_types import extract_athena_types
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 
@@ -24,7 +24,7 @@ class SchemaInferService:
         file_content: Union[bytes, str],
     ) -> dict[str, Any]:
         dataframe = self._construct_dataframe(file_content)
-        columns = self._infer_column_types(dataframe)
+        columns = self._infer_columns(dataframe)
 
         schema = Schema(
             metadata=SchemaMetadata(
@@ -51,13 +51,7 @@ class SchemaInferService:
     def _clean_error(self, error_message: str) -> str:
         return error_message.replace("\n", "")
 
-    def _infer_column_types(self, dataframe: pd.DataFrame) -> List[Column]:
-        column_types, _ = wr.catalog.extract_athena_types(
-            dataframe,
-        )
-        return self._infer_columns(column_types)
-
-    def _infer_columns(self, columns: dict) -> Column:
+    def _infer_columns(self, dataframe: pd.DataFrame) -> List[Column]:
         return [
             Column(
                 name=clean_column_name(name),
@@ -66,5 +60,5 @@ class SchemaInferService:
                 allow_null=True,
                 format=None,
             )
-            for name, _type in columns.items()
+            for name, _type in extract_athena_types(dataframe).items()
         ]

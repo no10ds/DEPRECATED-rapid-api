@@ -4,9 +4,9 @@ from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.schema_service import SchemaService
 from api.common.config.constants import FILENAME_WITH_TIMESTAMP_REGEX
-from api.common.custom_exceptions import UserError
+from api.common.custom_exceptions import AWSServiceError, UserError
+from api.common.logger import AppLogger
 from api.domain.dataset_metadata import DatasetMetadata
-from api.domain.schema_metadata import SchemaMetadata
 
 
 class DeleteService:
@@ -20,8 +20,22 @@ class DeleteService:
         self.glue_adapter = glue_adapter
         self.schema_service = schema_service
 
-    def delete_schemas(self, schema_metadata: SchemaMetadata):
-        self.schema_service.delete_schemas(schema_metadata)
+    def delete_schemas(self, metadata: type[DatasetMetadata]):
+        self.schema_service.delete_schemas(metadata)
+
+    def delete_schema_upload(self, metadata: type[DatasetMetadata]):
+        """Deletes the resources associated with a schema upload or update"""
+        try:
+            self.delete_table(metadata)
+        except AWSServiceError as error:
+            AppLogger.error(
+                f"Failed to delete table for schema upload: {error.message}"
+            )
+
+        try:
+            self.schema_service.delete_schema(metadata)
+        except AWSServiceError as error:
+            AppLogger.error(f"Failed to delete uploaded schema: {error.message}")
 
     def delete_dataset_file(self, dataset: DatasetMetadata, filename: str):
         self._validate_filename(filename)

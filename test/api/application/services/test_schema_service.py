@@ -419,24 +419,20 @@ class TestGetSchema:
             self.schema_service.get_schema(self.metadata)
             self.dynamodb_adapter.get_schema.assert_called_once_with(self.metadata)
 
-    def test_get_schemas(self):
-        self.dynamodb_adapter.get_latest_schema_metadatas.return_value = [
+    def test_get_schema_metadatas(self):
+        self.dynamodb_adapter.get_latest_schemas.return_value = [
             self.schema_dict,
             self.schema_dict,
         ]
-        res = self.schema_service.get_schemas("query")
-        assert res == [self.schema, self.schema]
-        self.dynamodb_adapter.get_latest_schema_metadatas.assert_called_once_with(
-            "query"
-        )
+        res = self.schema_service.get_schema_metadatas("query")
+        assert res == [self.schema.metadata, self.schema.metadata]
+        self.dynamodb_adapter.get_latest_schemas.assert_called_once_with("query")
 
-    def test_get_schemas_empty(self):
-        self.dynamodb_adapter.get_latest_schema_metadatas.return_value = []
-        res = self.schema_service.get_schemas("query")
+    def test_get_schema_metadatas_empty(self):
+        self.dynamodb_adapter.get_latest_schemas.return_value = []
+        res = self.schema_service.get_schema_metadatas("query")
         assert res == []
-        self.dynamodb_adapter.get_latest_schema_metadatas.assert_called_once_with(
-            "query"
-        )
+        self.dynamodb_adapter.get_latest_schemas.assert_called_once_with("query")
 
     def test_get_latest_schema_version(self):
         self.dynamodb_adapter.get_latest_schema.return_value = self.schema_dict

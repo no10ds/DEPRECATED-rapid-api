@@ -197,7 +197,7 @@ class DataService:
             )
 
     def list_datasets(self, query: DatasetFilters, enriched: bool = False):
-        metadatas = self.schema_service.get_schemas(query=query)
+        metadatas = self.schema_service.get_schema_metadatas(query=query)
         if metadatas:
             if enriched:
                 return [

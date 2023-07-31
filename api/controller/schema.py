@@ -185,27 +185,6 @@ async def update_schema(schema: Schema):
 
 
 def handle_schema_upload_failure(schema: Schema, error):
-    _delete_table(schema)
-    _delete_uploaded_schema(schema)
-    _log_and_raise_error("Failed to upload schema", error.message)
-
-
-def _delete_uploaded_schema(schema: Schema):
-    try:
-        schema_service.delete_schema(schema.metadata)
-    except AWSServiceError as error:
-        AppLogger.error(f"Failed to delete uploaded schema: {error.message}")
-
-
-def _delete_table(schema: Schema):
-    try:
-        delete_service.delete_table(schema.metadata)
-    except AWSServiceError as error:
-        AppLogger.error(
-            f"Failed to delete table for failed schema upload: {error.message}"
-        )
-
-
-def _log_and_raise_error(log_message: str, error_message: str):
-    AppLogger.error(f"{log_message}: {error_message}")
-    raise AWSServiceError(message=error_message)
+    delete_service.delete_schema_upload(schema.metadata)
+    AppLogger.error(f"Failed to upload schema {error.message}")
+    raise AWSServiceError(message=error.message)
