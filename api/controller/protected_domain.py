@@ -8,6 +8,7 @@ from api.application.services.subject_service import SubjectService
 from api.common.config.auth import Action
 from api.common.config.constants import BASE_API_PATH
 
+
 protected_domain_service = ProtectedDomainService()
 subject_service = SubjectService()
 

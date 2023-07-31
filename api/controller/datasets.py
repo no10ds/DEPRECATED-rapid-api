@@ -11,8 +11,6 @@ from pandas import DataFrame
 from starlette.responses import PlainTextResponse
 
 from api.adapter.athena_adapter import AthenaAdapter
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.adapter.s3_adapter import S3Adapter
 from api.application.services.authorisation.authorisation_service import (
     secure_dataset_endpoint,
     secure_endpoint,
@@ -21,6 +19,7 @@ from api.application.services.authorisation.authorisation_service import (
 from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.format_service import FormatService
+from api.application.services.schema_service import SchemaService
 from api.common.utilities import strtobool
 from api.common.config.auth import Action
 from api.common.config.constants import (
@@ -30,7 +29,6 @@ from api.common.config.constants import (
 )
 from api.common.config.layers import Layer
 from api.common.custom_exceptions import (
-    CrawlerStartFailsError,
     SchemaNotFoundError,
     UserError,
 )
@@ -46,11 +44,10 @@ from api.domain.Jobs.Job import generate_uuid
 
 CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
 
-s3_adapter = S3Adapter()
 athena_adapter = AthenaAdapter()
-resource_adapter = AWSResourceAdapter()
 data_service = DataService()
 delete_service = DeleteService()
+schema_service = SchemaService()
 
 
 datasets_router = APIRouter(
@@ -93,10 +90,7 @@ async def list_all_datasets(
     ### Click  `Try it out` to use the endpoint
 
     """
-    if enriched:
-        return resource_adapter.get_schemas_metadata(s3_adapter, query=tag_filters)
-    else:
-        return resource_adapter.get_datasets_metadata(query=tag_filters)
+    return data_service.list_datasets(query=tag_filters, enriched=enriched)
 
 
 if not CATALOG_DISABLED:
@@ -250,7 +244,7 @@ async def delete_dataset(layer: Layer, domain: str, dataset: str, response: Resp
     """
     ## Delete Dataset
 
-    Use this endpoint to delete all the contents linked to a layer/domain/dataset. It deletes the crawler, raw data, uploaded data
+    Use this endpoint to delete all the contents linked to a layer/domain/dataset. It deletes the table, raw data, uploaded data
     and all schemas.
 
     When all valid items in the domain/dataset have been deleted, a success message will be displayed.
@@ -283,7 +277,6 @@ async def delete_data_file(
     dataset: str,
     version: int,
     filename: str,
-    response: Response,
     domain: str = FastApiPath(
         default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
     ),
@@ -330,15 +323,10 @@ async def delete_data_file(
     ### Click  `Try it out` to use the endpoint
 
     """
-    try:
-        delete_service.delete_dataset_file(
-            DatasetMetadata(layer, domain, dataset, version), filename
-        )
-        return Response(status_code=http_status.HTTP_204_NO_CONTENT)
-    except CrawlerStartFailsError as error:
-        AppLogger.warning("Failed to start crawler: %s", error.args[0])
-        response.status_code = http_status.HTTP_202_ACCEPTED
-        return {"details": f"{filename} has been deleted."}
+    delete_service.delete_dataset_file(
+        DatasetMetadata(layer, domain, dataset, version), filename
+    )
+    return {"details": f"{filename} has been deleted."}
 
 
 @datasets_router.post(
@@ -480,7 +468,7 @@ async def query_dataset(
     """
     ## Query dataset
 
-    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run. Large datasets are not supported by this endpoint.
+    Data can be queried provided data has been uploaded at some point in the past. Large datasets are not supported by this endpoint.
 
     ### Inputs
 
@@ -566,7 +554,7 @@ async def query_large_dataset(
     """
     ## Query large dataset
 
-    Data can be queried provided data has been uploaded at some point in the past and the 'crawler' has completed its run.
+    Data can be queried provided data has been uploaded at some point in the past.
 
     This endpoint allows querying datasets larger than 100,000 rows.
 

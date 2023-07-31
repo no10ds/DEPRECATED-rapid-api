@@ -102,7 +102,7 @@ class TestCreateUploadJob:
         assert result.job_id == job_id
         assert result.subject_id == subject_id
         assert result.filename == filename
-        assert result.step == UploadStep.INITIALISATION
+        assert result.step == UploadStep.VALIDATION
         assert result.status == JobStatus.IN_PROGRESS
         mock_store_upload_job.assert_called_once_with(result)
 
@@ -150,7 +150,7 @@ class TestUpdateJob:
             DatasetMetadata("layer", "domain1", "dataset2", 4),
         )
 
-        assert job.step == UploadStep.INITIALISATION
+        assert job.step == UploadStep.VALIDATION
 
         # WHEN
         self.job_service.update_step(job, UploadStep.CLEAN_UP)

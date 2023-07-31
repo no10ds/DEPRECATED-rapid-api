@@ -4,20 +4,15 @@ import pytest
 
 from api.application.services.protected_domain_service import ProtectedDomainService
 from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
-from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
 
 
 class TestProtectedDomainService:
     def setup_method(self):
-        self.cognito_adapter = Mock()
         self.dynamodb_adapter = Mock()
-        self.resource_adapter = Mock()
         self.protected_domain_service = ProtectedDomainService(
-            self.cognito_adapter,
             self.dynamodb_adapter,
-            self.resource_adapter,
         )
 
     def test_create_protected_domain_permission(self):
@@ -54,7 +49,6 @@ class TestProtectedDomainService:
             ),
         ]
 
-        self.cognito_adapter.get_protected_scopes.return_value = []
         self.protected_domain_service.generate_protected_permission_items = Mock(
             return_value=mock_generated_permissions
         )
@@ -120,7 +114,6 @@ class TestProtectedDomainService:
         assert res == expected
 
     def test_create_protected_domain_permission_when_permission_exists_in_db(self):
-        existing_domains = ["bus", "domain"]
         existing_domain_permissions = [
             PermissionItem(
                 id="READ_PROTECTED_OTHER",
@@ -149,12 +142,9 @@ class TestProtectedDomainService:
         ]
         domain = "domain"
 
-        self.resource_adapter.get_existing_domains.return_value = existing_domains
-
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             existing_domain_permissions
         )
-        self.cognito_adapter.get_protected_scopes.return_value = []
 
         with pytest.raises(
             ConflictError, match=r"The protected domain, \[DOMAIN\] already exists"
@@ -181,7 +171,8 @@ class TestProtectedDomainService:
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             existing_domain_permissions
         )
-        self.resource_adapter.get_datasets_metadata.return_value = []
+
+        self.dynamodb_adapter.get_latest_schemas.return_value = []
 
         self.protected_domain_service.delete_protected_domain_permission(domain, [])
 
@@ -224,7 +215,8 @@ class TestProtectedDomainService:
             "DATA_ADMIN",
             "USER_ADMIN",
         ]
-        self.resource_adapter.get_datasets_metadata.return_value = []
+
+        self.dynamodb_adapter.get_latest_schemas.return_value = []
 
         self.protected_domain_service.delete_protected_domain_permission(
             domain, ["xxx-yyy-zzz"]
@@ -293,8 +285,8 @@ class TestProtectedDomainService:
             existing_domain_permissions
         )
 
-        self.resource_adapter.get_datasets_metadata.return_value = [
-            DatasetMetadata(layer="layer", domain="other", dataset="dataset")
+        self.dynamodb_adapter.get_latest_schemas.return_value = [
+            {"Dataset": "dataset"},
         ]
 
         with pytest.raises(
@@ -332,7 +324,6 @@ class TestProtectedDomainService:
             ),
         ]
 
-        self.cognito_adapter.get_protected_scopes.return_value = []
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             domain_permissions
         )
@@ -387,7 +378,7 @@ class TestProtectedDomainService:
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             generated_permissions
         )
-        self.resource_adapter.get_datasets_metadata.return_value = []
+        self.dynamodb_adapter.get_latest_schemas.return_value = []
         self.dynamodb_adapter.get_permission_keys_for_subject.return_value = [
             "READ_ALL_PROTECTED_DOMAIN",
             "WRITE_ALL_PROTECTED_DOMAIN",
@@ -441,19 +432,18 @@ class TestProtectedDomainService:
             ),
         ]
         exisiting_datasets = [
-            DatasetMetadata(layer="layer", domain="domain", dataset="dataset"),
-            DatasetMetadata(layer="layer", domain="domain", dataset="dataset_two"),
+            {"Dataset": "dataset"},
+            {"Dataset": "dataset_two"},
         ]
 
         self.dynamodb_adapter.get_all_protected_permissions.return_value = (
             generated_permissions
         )
-
-        self.resource_adapter.get_datasets_metadata.return_value = exisiting_datasets
+        self.dynamodb_adapter.get_latest_schemas.return_value = exisiting_datasets
 
         with pytest.raises(
             DomainNotEmptyError,
-            match=r"Cannot delete protected domain \[domain\] as it is not empty. Please delete the datasets \['dataset', 'dataset_two'\]",
+            match=r"Cannot delete protected domain \[domain\] as it is not empty. Please delete the datasets \['dataset', 'dataset_two'\].",
         ):
             self.protected_domain_service.delete_protected_domain_permission(domain, [])
 

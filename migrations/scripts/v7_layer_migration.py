@@ -1,15 +1,17 @@
 """
 This script migrates all of your current rAPId datasets to a given Layer, if none is given then it will just be the default layer.
+It also migrates the schemas to dynamodb, removing the need for crawlers in the process.
 
 The resources that get changed are the:
-- Data and Schemas in S3
-- Glue tables
-- Glue crawlers
+- The data folders in S3 are moved to reflect the layer that the datasets belong to.
+- Schemas will be read from S3 and written to DynamoDB.
+- Glue tables will be renamed to reflect the layer that the datasets belong to.
+- Glue crawlers will be deleted.
 - Permissions get updated
     1. Migrate old subjects have access to the migrated layer
     2. Alter the protected domain permissions to include the new possible layers
 
-Please ensure that none of the crawlers are running when you start this script
+Please ensure that none of the crawlers are running when you start this script.
 """
 import argparse
 from copy import deepcopy
@@ -17,11 +19,18 @@ import json
 import os
 from typing import List
 import re
+from pprint import pprint
 
 import boto3
 import dotenv
 
 dotenv.load_dotenv()
+
+
+from api.domain.schema import Schema  # noqa: E402
+from api.application.services.schema_service import SchemaService  # noqa: E402
+from api.adapter.athena_adapter import AthenaAdapter  # noqa: E402
+
 
 AWS_REGION = os.environ["AWS_REGION"]
 DATA_BUCKET = os.environ["DATA_BUCKET"]
@@ -41,10 +50,18 @@ def main(
     glue_client,
     resource_client,
     dynamodb_client,
+    schema_service,
+    athena_adapter,
 ):
     migrate_files(layer, s3_client)
-    migrate_crawlers(layer, glue_client, resource_client)
+    schema_errors = migrate_schemas(layer, schema_service, glue_client)
+    migrate_tables(layer, glue_client, athena_adapter)
+    migrate_crawlers(glue_client, resource_client)
     migrate_permissions(layer, all_layers, dynamodb_client)
+
+    if schema_errors:
+        print("- These were the schema errors that need to be addressed manually")
+        pprint(schema_errors)
 
 
 def migrate_permissions(layer, all_layers, dynamodb_client):
@@ -57,7 +74,7 @@ def migrate_permissions(layer, all_layers, dynamodb_client):
 def migrate_subject_permissions(layer, dynamodb_client):
     print("-- Migrating the permissions of the subjects")
 
-    PERMISSIONS_TO_CHANGE = [
+    PERMISSIONS_TO_REPLACE = [
         "READ_PUBLIC",
         "READ_PROTECTED",
         "READ_PRIVATE",
@@ -84,7 +101,7 @@ def migrate_subject_permissions(layer, dynamodb_client):
         permissions = item["Permissions"]["SS"]
         to_replace = False
         for idx, permission in enumerate(permissions):
-            for permission_to_change in PERMISSIONS_TO_CHANGE:
+            for permission_to_change in PERMISSIONS_TO_REPLACE:
                 # Amend the permission to include the layer
                 if permission.startswith(permission_to_change):
                     to_replace = True
@@ -92,6 +109,7 @@ def migrate_subject_permissions(layer, dynamodb_client):
                         permission_to_change,
                         permission_to_change.replace("_", f"_{layer.upper()}_"),
                     )
+
         if to_replace:
             print(f"--- Adding layer to the permissions for subject {item['SK']['S']}")
             dynamodb_client.update_item(
@@ -175,104 +193,92 @@ def migrate_protected_domain_permissions(layer, all_layers, dynamodb_client):
     print("-- Finished migrating the protected domain permissions")
 
 
-def migrate_crawlers(layer: str, glue_client, resource_client):
+def migrate_tables(layer: str, glue_client, athena_adapter: AthenaAdapter):
+    print("- Starting to migrate the tables")
+    tables = fetch_all_tables(glue_client, layer)
+
+    for table in tables:
+        print(f"-- Migrating the table: {table['Name']}")
+
+        partition_indexes = glue_client.get_partition_indexes(
+            DatabaseName=GLUE_DB,
+            TableName=table["Name"],
+        )
+
+        glue_client.create_table(
+            DatabaseName=GLUE_DB,
+            TableInput={
+                "Name": f"{layer}_{table['Name']}",
+                "Owner": "hadoop",
+                "StorageDescriptor": {
+                    "Columns": table["StorageDescriptor"]["Columns"],
+                    "Location": table["StorageDescriptor"]["Location"].replace(
+                        "/data/", f"/data/{layer}/"
+                    ),
+                    "InputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat",
+                    "OutputFormat": "org.apache.hadoop.hive.ql.io.parquet.MapredParquetOutputFormat",
+                    "Compressed": False,
+                    "SerdeInfo": {
+                        "SerializationLibrary": "org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe",
+                        "Parameters": {"serialization.format": "1"},
+                    },
+                    "NumberOfBuckets": -1,
+                    "StoredAsSubDirectories": False,
+                },
+                "PartitionKeys": table["PartitionKeys"],
+                "TableType": "EXTERNAL_TABLE",
+                "Parameters": {
+                    "classification": "parquet",
+                    "typeOfData": "file",
+                    "compressionType": "none",
+                    "EXTERNAL": "TRUE",
+                },
+            },
+            PartitionIndexes=[
+                {
+                    "Keys": [
+                        key["Name"]
+                        for key in partition_indexes["PartitionIndexDescriptorList"][0][
+                            "Keys"
+                        ]
+                    ],
+                    "IndexName": partition_indexes["PartitionIndexDescriptorList"][0][
+                        "IndexName"
+                    ],
+                }
+            ]
+            if partition_indexes["PartitionIndexDescriptorList"]
+            else [],
+        )
+
+        athena_adapter.query_sql_async(f"MSCK REPAIR TABLE `f{layer}_{table['Name']}`;")
+        glue_client.delete_table(Name=table["Name"], DatabaseName=GLUE_DB)
+
+
+def migrate_crawlers(glue_client, resource_client):
     """
     Steps:
-    1. Fetch all of the crawlers and their tags
-    2. Get the configuration for each crawler, add the layer changes and create the new one
-    3. Delete the old crawler and table
-    4. Run the new crawler
+    1. Fetch all of the crawlers
+    2. Delete the crawlers
     """
     print("- Starting to migrate the crawlers")
     crawlers = fetch_all_crawlers(resource_client)
-    tables = fetch_all_tables(glue_client)
 
     for crawler in crawlers:
-        # Don't recreate crawlers if have already been migrated - can happen if the script is run twice
-        if not crawler["Name"].startswith(f"{RESOURCE_PREFIX}_crawler/{layer}"):
-            print(f"-- Migrating the crawler: {crawler['Name']}")
-            # Create new crawler
-            new_crawler = create_new_crawler(layer, crawler, glue_client)
+        glue_client.delete_crawler(Name=crawler["Name"])
 
-            # Delete old table and crawler
-            table_prefix = glue_client.get_crawler(Name=crawler["Name"])["Crawler"][
-                "TablePrefix"
-            ]
-            tables_to_delete = [
-                table["Name"]
-                for table in tables
-                if table["Name"].startswith(table_prefix)
-            ]
-            for table in tables_to_delete:
-                glue_client.delete_table(Name=table, DatabaseName=GLUE_DB)
-
-            glue_client.delete_crawler(Name=crawler["Name"])
-
-            glue_client.start_crawler(Name=new_crawler)
     print("- Finished migrating the crawlers")
 
 
-def format_tags_acceptably_for_crawler_creation(tags: List[dict]) -> dict:
-    return {tag["Key"]: tag["Value"] for tag in tags}
-
-
-def create_new_crawler(layer: str, crawler_info: dict, glue_client) -> str:
-    res = glue_client.get_crawler(Name=crawler_info["Name"])
-    new_crawler = res["Crawler"]
-    # Add layer to the name
-    new_crawler["Name"] = new_crawler["Name"].replace(
-        f"{RESOURCE_PREFIX}_crawler", f"{RESOURCE_PREFIX}_crawler/{layer}"
-    )
-    # Add layer to table prefix
-    new_crawler["TablePrefix"] = f"{layer}_{new_crawler['TablePrefix']}"
-    # Increment TableLevelConfiguration level to 6
-    new_crawler[
-        "Configuration"
-    ] = """{"Version":1.0,"Grouping":{"TableGroupingPolicy":"CombineCompatibleSchemas","TableLevelConfiguration":6}}"""
-    # Add layer to the target path
-    s3_target = new_crawler["Targets"]["S3Targets"][0]
-    s3_target["Path"] = s3_target["Path"].replace(
-        f"/{DATA_PATH}", f"/{DATA_PATH}/{layer}"
-    )
-
-    # Delete unacceptable attributes
-    [
-        delete_crawler_attribute(new_crawler, attribute)
-        for attribute in [
-            "State",
-            "CrawlElapsedTime",
-            "CreationTime",
-            "LastUpdated",
-            "LastCrawl",
-            "Version",
-        ]
-    ]
-
-    # Add tags
-    new_crawler["Tags"] = format_tags_acceptably_for_crawler_creation(
-        crawler_info["Tags"]
-    )
-    domain = new_crawler["Name"].split("/")[1]
-    new_crawler["Tags"]["resource_prefix"] = RESOURCE_PREFIX
-    new_crawler["Tags"]["domain"] = domain
-    new_crawler["Tags"]["layer"] = layer
-    glue_client.create_crawler(**new_crawler)
-
-    return new_crawler["Name"]
-
-
-def delete_crawler_attribute(crawler, attribute):
-    try:
-        del crawler[attribute]
-    # Fail gracefully, it is fine if the attribute is not present, we were deleting it anyway
-    except KeyError:
-        pass
-
-
-def fetch_all_tables(glue_client):
+def fetch_all_tables(glue_client, layer):
     paginator = glue_client.get_paginator("get_tables")
     page_iterator = paginator.paginate(DatabaseName=GLUE_DB)
-    return [item for page in page_iterator for item in page["TableList"]]
+    return [
+        item
+        for page in page_iterator
+        for item in page["TableList"]
+        if not item["Name"].startswith(f"{layer}_")
+    ]
 
 
 def fetch_all_crawlers(resource_client):
@@ -289,39 +295,68 @@ def fetch_all_crawlers(resource_client):
     return crawlers
 
 
-def migrate_files(layer: str, s3_client):
-    print("- Migrating the files")
-    # Schemas
-    move_files_by_prefix(
-        s3_client, "data/schemas", f"schemas/{layer}", "data/schemas/.*/"
-    )
-    add_layer_to_schemas(s3_client, layer, f"schemas/{layer}")
+def migrate_schemas(layer, schema_service: SchemaService, glue_client):
+    print("- Migrating the schemas")
 
-    # Data
-    move_files_by_prefix(s3_client, "data", f"data/{layer}")
+    errors = []
 
-    # Raw data
-    move_files_by_prefix(s3_client, "raw_data", f"raw_data/{layer}")
-    print("- Finished migrating the files")
-
-
-def add_layer_to_schemas(s3_client, layer: str, path: str):
-    print("-- Adding layer to the schemas")
     paginator = s3_client.get_paginator("list_objects_v2")
-    page_iterator = paginator.paginate(Bucket=DATA_BUCKET, Prefix=path)
+    page_iterator = paginator.paginate(
+        Bucket=DATA_BUCKET, Prefix=f"data/{layer}/schemas"
+    )
     files = [item for page in page_iterator for item in page["Contents"]]
     for file in files:
+        # Read in and write to dynamodb with layer
+        print(f"-- Migrating the schema: {file['Key']}")
         res = s3_client.get_object(Bucket=DATA_BUCKET, Key=file["Key"])
         json_object = json.loads(res["Body"].read().decode("utf-8"))
         json_object["metadata"] = {"layer": layer, **json_object["metadata"]}
-        s3_client.put_object(
-            Body=json.dumps(json_object), Bucket=DATA_BUCKET, Key=file["Key"]
-        )
+
+        schema = Schema.parse_obj(json_object)
+        old_table_name = f"{schema.metadata.domain}_{schema.metadata.dataset}_{schema.metadata.version}"
+        try:
+            old_table = glue_client.get_table(DatabaseName=GLUE_DB, Name=old_table_name)
+            glue_column_types = {
+                col["Name"]: col["Type"]
+                for col in old_table["Table"]["StorageDescriptor"]["Columns"]
+                + old_table["Table"]["PartitionKeys"]
+            }
+
+            for column in schema.columns:
+                column.data_type = glue_column_types[column.name]
+
+            schema_service.store_schema(schema)
+            latest_version = schema_service.get_latest_schema(schema.metadata)
+
+            if (
+                latest_version.dataset_identifier()
+                != schema.metadata.dataset_identifier()
+            ):
+                schema_service.deprecate_schema(schema.metadata)
+
+            s3_client.delete_object(Bucket=DATA_BUCKET, Key=file["Key"])
+
+        except glue_client.exceptions.EntityNotFoundException:
+            errors.append(
+                f"-- Schema [{file['Key']}] could not be migrated because there is no corresponding table. Please delete the file manually and recreate it"
+            )
+
+    print("- Finished migrating the schemas")
+
+    return errors
 
 
-def move_files_by_prefix(
-    s3_client, src_prefix: str, dest_prefix: str, prefix_to_replace: str = None
-):
+def migrate_files(layer: str, s3_client):
+    print("- Migrating the files")
+    # Data
+    move_files_by_prefix(s3_client, "data/", f"data/{layer}/")
+
+    # Raw data
+    move_files_by_prefix(s3_client, "raw_data/", f"raw_data/{layer}/")
+    print("- Finished migrating the files")
+
+
+def move_files_by_prefix(s3_client, src_prefix: str, dest_prefix: str):
     print(f"-- Moving files from the prefix [{src_prefix}] to [{dest_prefix}]")
     paginator = s3_client.get_paginator("list_objects_v2")
     page_iterator = paginator.paginate(Bucket=DATA_BUCKET, Prefix=src_prefix)
@@ -332,14 +367,11 @@ def move_files_by_prefix(
         print(f"-- There were no files in the prefix [{src_prefix}] to migrate")
         return None
 
-    if not prefix_to_replace:
-        src_prefix = prefix_to_replace
-
     for file in files:
         src_key = file["Key"]
         # Don't move files if they are already in the destination - can happen if the script is run twice
         if not src_key.startswith(dest_prefix):
-            dest_key = re.sub(prefix_to_replace, dest_prefix, src_key)
+            dest_key = re.sub(f"^{src_prefix}", dest_prefix, src_key)
             copy_source = {"Bucket": DATA_BUCKET, "Key": src_key}
             s3_client.copy_object(
                 Bucket=DATA_BUCKET,
@@ -376,5 +408,16 @@ if __name__ == "__main__":
     glue_client = boto3.client("glue", region_name=AWS_REGION)
     resource_client = boto3.client("resourcegroupstaggingapi", region_name=AWS_REGION)
     dynamodb_client = boto3.client("dynamodb", region_name=AWS_REGION)
-    main(layer, all_layers, s3_client, glue_client, resource_client, dynamodb_client)
+    schema_service = SchemaService()
+    athena_adapter = AthenaAdapter()
+    main(
+        layer,
+        all_layers,
+        s3_client,
+        glue_client,
+        resource_client,
+        dynamodb_client,
+        schema_service,
+        athena_adapter,
+    )
     print("Migration finished")

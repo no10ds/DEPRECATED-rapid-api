@@ -77,23 +77,11 @@ class NotAuthorisedToViewPageError(Exception):
 # Handled in code to modify behaviour and improve readability ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-class CrawlerAlreadyExistsError(ConflictError):
+class TableAlreadyExistsError(ConflictError):
     pass
 
 
-class CrawlerCreationError(AWSServiceError):
-    pass
-
-
-class CrawlerUpdateError(AWSServiceError):
-    pass
-
-
-class CrawlerIsNotReadyError(TooManyRequestsError):
-    pass
-
-
-class CrawlerIncorrectlyTaggedError(AWSServiceError):
+class TableCreationError(AWSServiceError):
     pass
 
 
@@ -101,5 +89,5 @@ class TableDoesNotExistError(Exception):
     pass
 
 
-class CrawlerStartFailsError(Exception):
+class UnsupportedTypeError(Exception):
     pass

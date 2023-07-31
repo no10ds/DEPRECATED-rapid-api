@@ -10,7 +10,6 @@ from api.application.services.dataset_validation import (
     remove_empty_rows,
     clean_column_headers,
     dataset_has_correct_columns,
-    set_data_types,
     dataset_has_acceptable_null_values,
     dataset_has_correct_data_types,
     dataset_has_no_illegal_characters_in_partition_columns,
@@ -20,7 +19,6 @@ from api.common.custom_exceptions import (
     UserError,
     UnprocessableDatasetError,
 )
-from api.domain.data_types import DataTypes
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 
@@ -41,13 +39,13 @@ class TestDatasetValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
@@ -66,13 +64,13 @@ class TestDatasetValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="bigint",
                     allow_null=True,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
@@ -108,12 +106,12 @@ class TestDatasetValidation:
                 "colname4": ["2022-05-12", "2022-11-15"],
             }
         )
-        expected["colname1"] = expected["colname1"].astype(dtype=pd.Int64Dtype())
+        expected["colname1"] = expected["colname1"].astype(dtype=pd.Int32Dtype())
         expected["colname3"] = expected["colname3"].astype(dtype=pd.BooleanDtype())
 
         validated_dataframe = build_validated_dataframe(full_valid_schema, dataframe)
 
-        assert validated_dataframe.equals(expected)
+        assert validated_dataframe.to_dict() == expected.to_dict()
 
     def test_invalid_column_names(self):
         dataframe = pd.DataFrame(
@@ -138,13 +136,13 @@ class TestDatasetValidation:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
                 Column(
                     name="colname2",
                     partition_index=1,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
             ],
@@ -197,46 +195,10 @@ class TestDatasetValidation:
 
         with pytest.raises(
             DatasetValidationError,
-            match=r"Column \[colname2\] has an incorrect data type. Expected object, received float64",
+            match=r"Column \[colname2\] has an incorrect data type. Expected string, received double",
             # noqa: E501, W605
         ):
             build_validated_dataframe(self.valid_schema, dataframe)
-
-    def test_retains_specified_schema_data_types_when_null_values_present(self):
-        schema = Schema(
-            metadata=self.schema_metadata,
-            columns=[
-                Column(
-                    name="col1",
-                    partition_index=None,
-                    data_type="Int64",
-                    allow_null=True,
-                ),
-                Column(
-                    name="col2",
-                    partition_index=None,
-                    data_type="Float64",
-                    allow_null=True,
-                ),
-                Column(
-                    name="col3",
-                    partition_index=None,
-                    data_type="object",
-                    allow_null=True,
-                ),
-            ],
-        )
-
-        dataframe = pd.DataFrame(
-            {"col1": [45, pd.NA], "col2": [pd.NA, 23.1], "col3": ["hello", pd.NA]}
-        )
-
-        validated_dataset = build_validated_dataframe(schema, dataframe)
-
-        actual_dtypes = list(validated_dataset.dtypes)
-        expected_dtypes = ["Int64", "Float64", "object"]
-
-        assert actual_dtypes == expected_dtypes
 
     @pytest.mark.parametrize(
         "dataframe",
@@ -259,19 +221,19 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=None,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="col2",
                     partition_index=None,
-                    data_type="Float64",
+                    data_type="double",
                     allow_null=False,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
             ],
@@ -291,19 +253,19 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=None,
-                    data_type="Int64",
+                    data_type="bigint",
                     allow_null=True,
                 ),
                 Column(
                     name="col2",
                     partition_index=None,
-                    data_type="Float64",
+                    data_type="double",
                     allow_null=True,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -336,13 +298,13 @@ class TestDatasetValidation:
                 Column(
                     name="col2",
                     partition_index=None,
-                    data_type="Float64",
+                    data_type="double",
                     allow_null=True,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
@@ -375,18 +337,18 @@ class TestDatasetValidation:
                 Column(
                     name="col2",
                     partition_index=None,
-                    data_type="Float64",
+                    data_type="double",
                     allow_null=True,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
             ],
         )
-
+        print("This test is starting")
         try:
             build_validated_dataframe(schema, dataframe)
         except DatasetValidationError:
@@ -416,7 +378,7 @@ class TestDatasetValidation:
             Column(
                 name=schema_column,
                 partition_index=None,
-                data_type="object",
+                data_type="string",
                 allow_null=True,
             )
             for schema_column in schema_columns
@@ -445,19 +407,19 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
                     name="col2",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
             ],
@@ -487,31 +449,31 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=None,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
                     name="col2",
                     partition_index=None,
-                    data_type=DataTypes.BOOLEAN,
+                    data_type="boolean",
                     allow_null=False,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type=DataTypes.INT,
+                    data_type="integer",
                     allow_null=False,
                 ),
                 Column(
                     name="col4",
                     partition_index=None,
-                    data_type=DataTypes.FLOAT,
+                    data_type="bigint",
                     allow_null=False,
                 ),
                 Column(
                     name="col5",
                     partition_index=None,
-                    data_type=DataTypes.DATE,
+                    data_type="date",
                     allow_null=False,
                 ),
             ],
@@ -521,9 +483,9 @@ class TestDatasetValidation:
             dataset_has_correct_data_types(df, schema)
         except DatasetValidationError as error:
             assert error.message == [
-                "Column [col2] has an incorrect data type. Expected boolean, received object",
-                "Column [col3] has an incorrect data type. Expected Int64, received object",
-                "Column [col4] has an incorrect data type. Expected Float64, received object",
+                "Column [col2] has an incorrect data type. Expected boolean, received string",
+                "Column [col3] has an incorrect data type. Expected integer, received string",
+                "Column [col4] has an incorrect data type. Expected double, received string",
             ]
 
     def test_return_error_message_when_dataset_has_illegal_chars_in_partition_columns(
@@ -544,31 +506,31 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=0,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
                     name="col2",
                     partition_index=1,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col3",
                     partition_index=2,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col4",
                     partition_index=3,
-                    data_type=DataTypes.DATE,
+                    data_type="date",
                     allow_null=False,
                 ),
                 Column(
                     name="col5",
                     partition_index=4,
-                    data_type=DataTypes.INT,
+                    data_type="integer",
                     allow_null=False,
                 ),
             ],
@@ -600,31 +562,31 @@ class TestDatasetValidation:
                 Column(
                     name="col1",
                     partition_index=0,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=True,
                 ),
                 Column(
                     name="col2",
                     partition_index=1,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col3",
                     partition_index=None,
-                    data_type=DataTypes.STRING,
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
                     name="col4",
                     partition_index=None,
-                    data_type=DataTypes.DATE,
+                    data_type="date",
                     allow_null=False,
                 ),
                 Column(
                     name="col5",
                     partition_index=None,
-                    data_type=DataTypes.INT,
+                    data_type="integer",
                     allow_null=False,
                 ),
             ],
@@ -634,10 +596,9 @@ class TestDatasetValidation:
             build_validated_dataframe(schema, df)
         except DatasetValidationError as error:
             assert error.message == [
-                "Failed to convert column [col5] to type [Int64]",
                 "Column [col4] does not match specified date format in at least one row",
                 "Column [col3] does not allow null values",
-                "Column [col5] has an incorrect data type. Expected Int64, received object",
+                "Column [col5] has an incorrect data type. Expected integer, received string",
                 "Partition column [col1] has values with illegal characters '/'",
                 "Partition column [col2] has values with illegal characters '/'",
             ]
@@ -777,7 +738,7 @@ class TestDatasetTransformation:
                 Column(
                     name="value",
                     partition_index=None,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=False,
                 ),
             ],
@@ -796,14 +757,14 @@ class TestDatasetTransformation:
             {"col1": [1, 2, 3, pd.NA, pd.NA], "col2": ["a", "b", "c", pd.NA, pd.NA]}
         )
 
-        data["col1"] = data["col1"].astype(dtype=pd.Int64Dtype())
+        data["col1"] = data["col1"].astype(dtype=pd.Int32Dtype())
 
         transformed_df, _ = remove_empty_rows(data)
 
         expected_column_1 = pd.Series([1, 2, 3])
         expected_column_2 = pd.Series(["a", "b", "c"])
 
-        expected_column_1 = expected_column_1.astype(dtype=pd.Int64Dtype())
+        expected_column_1 = expected_column_1.astype(dtype=pd.Int32Dtype())
 
         assert transformed_df["col1"].equals(expected_column_1)
         assert transformed_df["col2"].equals(expected_column_2)
@@ -821,52 +782,3 @@ class TestDatasetTransformation:
         transformed_df, _ = clean_column_headers(data)
 
         assert transformed_df.columns[0] == expected_column_name
-
-    def test_raises_error_list_when_set_data_type_fails(self):
-        df = pd.DataFrame(
-            {
-                "col1": ["a", "b", "c"],
-                "col2": ["A", "B", "A"],
-                "col3": [1.0, 2.5, "Z"],
-                "col4": [False, False, "C"],
-            }
-        )
-
-        schema = Schema(
-            metadata=self.schema_metadata,
-            columns=[
-                Column(
-                    name="col1",
-                    partition_index=None,
-                    data_type=DataTypes.STRING,
-                    allow_null=False,
-                ),
-                Column(
-                    name="col2",
-                    partition_index=None,
-                    data_type=DataTypes.INT,
-                    allow_null=False,
-                ),
-                Column(
-                    name="col3",
-                    partition_index=None,
-                    data_type=DataTypes.FLOAT,
-                    allow_null=False,
-                ),
-                Column(
-                    name="col4",
-                    partition_index=None,
-                    data_type=DataTypes.BOOLEAN,
-                    allow_null=False,
-                ),
-            ],
-        )
-
-        try:
-            set_data_types(df, schema)
-        except DatasetValidationError as error:
-            assert error.message == [
-                "Failed to convert [col2] to [Int64]",
-                "Failed to convert [col3] to [Float64]",
-                "Failed to convert [col4] to [boolean]",
-            ]

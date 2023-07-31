@@ -1,9 +1,10 @@
 from unittest.mock import Mock
-
+import pytest
 
 from api.adapter.s3_adapter import S3Adapter
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
+from api.domain.data_types import BooleanType, NumericType, StringType
 
 
 class TestSchema:
@@ -20,13 +21,13 @@ class TestSchema:
                 Column(
                     name="colname1",
                     partition_index=1,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                 ),
                 Column(
                     name="colname2",
                     partition_index=0,
-                    data_type="object",
+                    data_type="string",
                     allow_null=False,
                 ),
                 Column(
@@ -45,20 +46,6 @@ class TestSchema:
 
         assert actual_column_names == expected_column_names
 
-    def test_gets_column_names_by_data_type(self):
-        expected_column_names = ["colname1"]
-
-        actual_column_names = self.schema.get_column_names_by_type("Int64")
-
-        assert actual_column_names == expected_column_names
-
-    def test_gets_numeric_column_dtypes(self):
-        expected_columns_dtypes = {"colname1": "Int64", "colname3": "boolean"}
-
-        actual_columns_dtypes = self.schema.get_column_dtypes_to_cast()
-
-        assert actual_columns_dtypes == expected_columns_dtypes
-
     def test_gets_partitions(self):
         expected_columns = ["colname2", "colname1"]
 
@@ -74,11 +61,65 @@ class TestSchema:
         assert actual_partitions_numbers == expected_partitions_numbers
 
     def test_get_data_types(self):
-        expected_data_types = {"Int64", "object", "boolean"}
+        expected_data_types = {"integer", "string", "boolean"}
 
         actual_data_types = self.schema.get_data_types()
 
         assert actual_data_types == expected_data_types
+
+    def test_get_partition_columns(self):
+        res = self.schema.get_partition_columns()
+        expected = [
+            Column(
+                name="colname2",
+                partition_index=0,
+                data_type="string",
+                allow_null=False,
+                format=None,
+            ),
+            Column(
+                name="colname1",
+                partition_index=1,
+                data_type="integer",
+                allow_null=True,
+                format=None,
+            ),
+        ]
+        assert res == expected
+
+    def test_get_partition_columns_for_glue(self):
+        res = self.schema.get_partition_columns_for_glue()
+        expected = [
+            {
+                "Name": "colname2",
+                "Type": "string",
+            },
+            {"Name": "colname1", "Type": "integer"},
+        ]
+
+        assert res == expected
+
+    def test_get_non_partition_columns_for_glue(self):
+        res = self.schema.get_non_partition_columns_for_glue()
+        expected = [
+            {
+                "Name": "colname3",
+                "Type": "boolean",
+            },
+        ]
+        assert res == expected
+
+    @pytest.mark.parametrize(
+        "type, expected",
+        [
+            (BooleanType, ["colname3"]),
+            (NumericType, ["colname1"]),
+            (StringType, ["colname2"]),
+        ],
+    )
+    def test_get_column_names_by_type(self, type, expected):
+        res = self.schema.get_column_names_by_type(type)
+        assert res == expected
 
 
 class TestSchemaMetadata:

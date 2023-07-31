@@ -13,9 +13,39 @@ from api.common.custom_exceptions import (
 from api.domain.Jobs.Job import JobStatus
 from api.domain.Jobs.QueryJob import QueryJob, QueryStep
 from api.domain.Jobs.UploadJob import UploadJob, UploadStep
+from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
+from api.domain.schema import Column, Schema
+from api.domain.schema_metadata import SchemaMetadata, Owner
+
+
+class TestDynamoDBAdapterGeneric:
+    def setup_method(self):
+        self.dynamo_data_source = Mock()
+
+        self.dynamo_data_source.Table.side_effect = [
+            Mock(),
+            Mock(),
+            Mock(),
+        ]
+
+        self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
+
+    def test_collect_all_items(self):
+        mock_call = Mock()
+        mock_call.side_effect = [
+            {"Items": ["item1", "item2"], "LastEvaluatedKey": "last_evaluated_key"},
+            {"Items": ["item3", "item4"]},
+        ]
+
+        actual_items = self.dynamo_adapter.collect_all_items(mock_call, key="arg")
+
+        assert actual_items == ["item1", "item2", "item3", "item4"]
+        mock_call.assert_has_calls(
+            [call(key="arg"), call(ExclusiveStartKey="last_evaluated_key", key="arg")]
+        )
 
 
 class TestDynamoDBAdapterPermissionsTable:
@@ -57,10 +87,12 @@ class TestDynamoDBAdapterPermissionsTable:
 
         self.permissions_table = Mock()
         self.service_table = Mock()
+        self.schema_table = Mock()
 
         self.dynamo_data_source.Table.side_effect = [
             self.permissions_table,
             self.service_table,
+            self.schema_table,
         ]
 
         self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
@@ -583,10 +615,12 @@ class TestDynamoDBAdapterServiceTable:
 
         self.permissions_table = Mock()
         self.service_table = Mock()
+        self.schema_table = Mock()
 
         self.dynamo_data_source.Table.side_effect = [
             self.permissions_table,
             self.service_table,
+            self.schema_table,
         ]
 
         self.test_service_table_name = "TEST SERVICE TABLE"
@@ -613,7 +647,7 @@ class TestDynamoDBAdapterServiceTable:
                 "SK2": "subject-123",
                 "Type": "UPLOAD",
                 "Status": "IN PROGRESS",
-                "Step": "INITIALISATION",
+                "Step": "VALIDATION",
                 "Errors": None,
                 "Filename": "filename.csv",
                 "RawFileIdentifier": "111-222-333",
@@ -946,3 +980,254 @@ class TestDynamoDBAdapterServiceTable:
             AWSServiceError, match="There was an error updating job status"
         ):
             self.dynamo_adapter.update_query_job(job)
+
+
+class TestDynamoDBAdapterSchemaTable:
+    def setup_method(self):
+        self.dynamo_data_source = Mock()
+
+        self.permissions_table = Mock()
+        self.service_table = Mock()
+        self.schema_table = Mock()
+
+        self.dynamo_data_source.Table.side_effect = [
+            self.permissions_table,
+            self.service_table,
+            self.schema_table,
+        ]
+
+        self.test_service_table_name = "TEST SCHEMA TABLE"
+        self.dynamo_adapter = DynamoDBAdapter(self.dynamo_data_source)
+
+        self.schema = Schema(
+            metadata=SchemaMetadata(
+                layer="raw",
+                domain="some",
+                dataset="other",
+                version=2,
+                sensitivity="PUBLIC",
+                description="This is a test schema",
+                owners=[Owner(name="owner", email="owner@email.com")],
+                key_only_tags=["key"],
+                key_value_tags={"key": "value"},
+            ),
+            columns=[
+                Column(
+                    name="colname1",
+                    partition_index=0,
+                    data_type="integer",
+                    allow_null=False,
+                ),
+                Column(
+                    name="colname2",
+                    partition_index=None,
+                    data_type="string",
+                    allow_null=True,
+                ),
+            ],
+        )
+
+    def test_store_schema(self):
+        self.dynamo_adapter.store_schema(self.schema)
+
+        self.schema_table.put_item.assert_called_once_with(
+            Item={
+                "PK": "raw/some/other",
+                "SK": 2,
+                "Layer": "raw",
+                "Domain": "some",
+                "Dataset": "other",
+                "Version": 2,
+                "Sensitivity": "PUBLIC",
+                "Description": "This is a test schema",
+                "UpdateBehaviour": "APPEND",
+                "KeyValueTags": {"key": "value"},
+                "KeyOnlyTags": ["key"],
+                "Owners": [{"name": "owner", "email": "owner@email.com"}],
+                "IsLatestVersion": True,
+                "Columns": [
+                    {
+                        "name": "colname1",
+                        "partition_index": 0,
+                        "data_type": "integer",
+                        "allow_null": False,
+                        "format": None,
+                    },
+                    {
+                        "name": "colname2",
+                        "partition_index": None,
+                        "data_type": "string",
+                        "allow_null": True,
+                        "format": None,
+                    },
+                ],
+            }
+        )
+
+    def test_store_schema_client_error(self):
+        self.schema_table.put_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "TableDoesNotExist"}},
+            operation_name="PutItems",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match=r"Error storing schema for layer \[raw\], domain \[some\], dataset \[other\] and version \[2\]",
+        ):
+            self.dynamo_adapter.store_schema(self.schema)
+
+    @pytest.mark.parametrize("result, expected", [(["schema"], "schema"), ([], None)])
+    def test_get_schema(self, result, expected):
+        self.schema_table.query.return_value = {"Items": result}
+
+        res = self.dynamo_adapter.get_schema(
+            DatasetMetadata("raw", "domain", "dataset", 1)
+        )
+
+        self.schema_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("raw/domain/dataset") & Key("SK").eq(1)
+        )
+        assert res == expected
+
+    def test_get_schema_client_error(self):
+        self.schema_table.query.side_effect = ClientError(
+            error_response={"Error": {"Code": "KeyDoesNotExist"}},
+            operation_name="Query",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error fetching schema from the database",
+        ):
+            self.dynamo_adapter.get_schema(
+                DatasetMetadata("raw", "domain", "dataset", 1)
+            )
+
+    def test_get_latest_schemas_with_no_args(self):
+        self.schema_table.scan.return_value = {"Items": ["schema", "schema_2"]}
+        res = self.dynamo_adapter.get_latest_schemas(DatasetFilters())
+
+        self.schema_table.scan.assert_called_once_with(
+            FilterExpression=Attr("IsLatestVersion").eq(True)
+        )
+        assert res == ["schema", "schema_2"]
+
+    @pytest.mark.parametrize(
+        "result, expected",
+        [({"Items": ["schema", "schema_2"]}, ["schema", "schema_2"]), ({}, None)],
+    )
+    def test_get_latest_schemas_with_args(self, result, expected):
+        self.schema_table.scan.return_value = result
+
+        mock_query = Attr("KeyOnlyTags").eq("2") & Attr("foo").is_in(["bar"])
+
+        dataset_filters = Mock()
+        dataset_filters.format_resource_query = Mock(return_value=mock_query)
+
+        res = self.dynamo_adapter.get_latest_schemas(dataset_filters)
+
+        self.schema_table.scan.assert_called_once_with(
+            FilterExpression=Attr("IsLatestVersion").eq(True) & mock_query
+        )
+        dataset_filters.format_resource_query.assert_called_once()
+        assert res == expected
+
+    def test_get_latest_schemas_client_error(self):
+        self.schema_table.scan.side_effect = ClientError(
+            error_response={"Error": {"Code": "KeyDoesNotExist"}},
+            operation_name="Query",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error fetching the latest schemas from the database",
+        ):
+            self.dynamo_adapter.get_latest_schemas(DatasetFilters())
+
+    @pytest.mark.parametrize("result, expected", [(["schema1"], "schema1"), ([], None)])
+    def test_get_latest_schema(self, result, expected):
+        self.schema_table.query.return_value = {"Items": result}
+
+        res = self.dynamo_adapter.get_latest_schema(
+            DatasetMetadata("raw", "domain", "dataset", 1)
+        )
+
+        self.schema_table.query.assert_called_once_with(
+            KeyConditionExpression=Key("PK").eq("raw/domain/dataset"),
+            FilterExpression=Attr("IsLatestVersion").eq(True),
+        )
+
+        assert res == expected
+
+    def test_get_latest_schema_client_error(self):
+        self.schema_table.query.side_effect = ClientError(
+            error_response={"Error": {"Code": "KeyDoesNotExist"}},
+            operation_name="Query",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error fetching latest schema from the database",
+        ):
+            self.dynamo_adapter.get_latest_schema(
+                DatasetMetadata("raw", "domain", "dataset", 1)
+            )
+
+    def test_deprecate_schema(self):
+        self.dynamo_adapter.deprecate_schema(
+            DatasetMetadata("raw", "domain", "dataset", 1)
+        )
+
+        self.schema_table.update_item.assert_called_once_with(
+            Key={
+                "PK": "raw/domain/dataset",
+                "SK": 1,
+            },
+            UpdateExpression="set #A = :a",
+            ExpressionAttributeNames={
+                "#A": "IsLatestVersion",
+            },
+            ExpressionAttributeValues={
+                ":a": False,
+            },
+        )
+
+    def test_deprecate_schema_client_error(self):
+        self.schema_table.update_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "ConditionalCheckFailedException"}},
+            operation_name="UpdateItem",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="There was an deprecating the schema",
+        ):
+            self.dynamo_adapter.deprecate_schema(
+                DatasetMetadata("raw", "domain", "dataset", 1)
+            )
+
+    def test_delete_schema(self):
+        self.dynamo_adapter.delete_schema(
+            DatasetMetadata("raw", "domain", "dataset", 1)
+        )
+
+        self.schema_table.delete_item.assert_called_once_with(
+            Key={
+                "PK": "raw/domain/dataset",
+                "SK": 1,
+            },
+        )
+
+    def test_delete_schema_client_error(self):
+        self.schema_table.delete_item.side_effect = ClientError(
+            error_response={"Error": {"Code": "FailedToDelete"}},
+            operation_name="DeleteItem",
+        )
+
+        with pytest.raises(
+            AWSServiceError,
+            match="Error deleting the schema ",
+        ):
+            self.dynamo_adapter.delete_schema(
+                DatasetMetadata("raw", "domain", "dataset", 1)
+            )

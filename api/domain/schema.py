@@ -1,8 +1,8 @@
+from strenum import StrEnum
 from typing import List, Dict, Optional, Set
 
 from pydantic.main import BaseModel
 
-from api.domain.data_types import DataTypes
 from api.domain.schema_metadata import Owner, SchemaMetadata, UpdateBehaviour
 
 
@@ -12,6 +12,9 @@ class Column(BaseModel):
     data_type: str
     allow_null: bool
     format: Optional[str] = None
+
+    def is_of_data_type(self, d_type: StrEnum) -> bool:
+        return self.data_type in list(d_type)
 
 
 class Schema(BaseModel):
@@ -54,13 +57,6 @@ class Schema(BaseModel):
     def get_column_names(self) -> List[str]:
         return [column.name for column in self.columns]
 
-    def get_column_dtypes_to_cast(self) -> Dict[str, str]:
-        return {
-            column.name: column.data_type
-            for column in self.columns
-            if column.data_type in DataTypes.data_types_to_cast()
-        }
-
     def get_partitions(self) -> List[str]:
         sorted_cols = self.get_partition_columns()
         return [column.name for column in sorted_cols]
@@ -72,11 +68,29 @@ class Schema(BaseModel):
     def get_data_types(self) -> Set[str]:
         return {column.data_type for column in self.columns}
 
-    def get_columns_by_type(self, d_type: str) -> List[Column]:
-        return [column for column in self.columns if column.data_type == d_type]
+    def get_columns_by_type(self, d_type: StrEnum) -> List[Column]:
+        return [column for column in self.columns if column.is_of_data_type(d_type)]
 
-    def get_column_names_by_type(self, d_type: str) -> List[str]:
-        return [column.name for column in self.columns if column.data_type == d_type]
+    def get_column_names_by_type(self, d_type: StrEnum) -> List[str]:
+        return [
+            column.name for column in self.columns if column.is_of_data_type(d_type)
+        ]
+
+    def get_non_partition_columns_for_glue(self) -> List[dict]:
+        return [
+            self.convert_column_to_glue_format(col)
+            for col in self.columns
+            if col.partition_index is None
+        ]
+
+    def get_partition_columns_for_glue(self) -> List[dict]:
+        return [
+            self.convert_column_to_glue_format(col)
+            for col in self.get_partition_columns()
+        ]
+
+    def convert_column_to_glue_format(self, column: List[Column]):
+        return {"Name": column.name, "Type": column.data_type}
 
     def get_partition_columns(self) -> List[Column]:
         return sorted(

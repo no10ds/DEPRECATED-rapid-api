@@ -1,12 +1,12 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple, Type, Union
+from typing import Dict, List, Type, Union
 
 import boto3
-import pandas as pd
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 
+from api.application.services.partitioning_service import Partition
 from api.common.config.aws import (
     AWS_REGION,
     DATA_BUCKET,
@@ -19,7 +19,6 @@ from api.common.config.constants import (
 from api.common.custom_exceptions import AWSServiceError, UserError
 from api.common.logger import AppLogger
 from api.domain.dataset_metadata import DatasetMetadata
-from api.domain.schema import Schema
 from api.domain.schema_metadata import SchemaMetadata
 
 
@@ -47,15 +46,6 @@ class S3Adapter:
         response: Dict = self.__s3_client.get_object(Bucket=self.__s3_bucket, Key=key)
         return response.get("Body")
 
-    def fetch_schema(self, dataset: DatasetMetadata) -> Schema:
-        try:
-            data = self.retrieve_data(dataset.schema_path()).read()
-            return Schema.parse_raw(data)
-
-        except ClientError as error:
-            if error.response["Error"]["Code"] == "NoSuchKey":
-                return None
-
     def find_raw_file(self, dataset: DatasetMetadata, filename: str):
         try:
             self.retrieve_data(dataset.raw_data_path(filename))
@@ -63,28 +53,14 @@ class S3Adapter:
             if error.response["Error"]["Code"] == "NoSuchKey":
                 raise UserError(f"The file [{filename}] does not exist")
 
-    def save_schema(self, schema: Schema) -> str:
-        schema_metadata = schema.metadata
-        self.store_data(
-            object_full_path=schema_metadata.schema_path(),
-            object_content=self._convert_to_bytes(schema.json()),
-        )
-        return schema_metadata.schema_name()
-
-    def delete_schema(self, schema_metadata: SchemaMetadata):
-        self._delete_data(schema_metadata.schema_path())
-
     def upload_partitioned_data(
-        self,
-        dataset: Type[DatasetMetadata],
-        filename: str,
-        partitioned_data: List[Tuple[str, pd.DataFrame]],
+        self, dataset: Type[DatasetMetadata], filename: str, partitions: List[Partition]
     ):
-        for index, (partition_path, data) in enumerate(partitioned_data):
+        for partition in partitions:
             upload_path = self._construct_partitioned_data_path(
-                partition_path, filename, dataset
+                partition.path, filename, dataset
             )
-            data_content = data.to_parquet(compression="gzip", index=False)
+            data_content = partition.df.to_parquet(compression="gzip", index=False)
             self.store_data(upload_path, data_content)
 
     def upload_raw_data(
@@ -99,7 +75,7 @@ class S3Adapter:
             Filename=file_path.name, Bucket=self.__s3_bucket, Key=raw_data_path
         )
         AppLogger.info(
-            f"Raw data upload for {schema_metadata.get_ui_upload_path()} completed"
+            f"Raw data upload for {schema_metadata.glue_table_name()} completed"
         )
 
     def list_raw_files(self, dataset: DatasetMetadata) -> List[str]:
@@ -111,9 +87,37 @@ class S3Adapter:
             *self.list_files_from_path(
                 dataset.construct_raw_dataset_uploads_location()
             ),
-            *self.list_files_from_path(dataset.dataset_location()),
-            *self.list_files_from_path(dataset.schema_location()),
+            *self.list_files_from_path(dataset.dataset_location(with_version=False)),
         ]
+
+    def get_last_updated_time(self, file_path: str) -> int:
+        """
+        :return: Returns the last updated time for the dataset
+        """
+        paginator = self.__s3_client.get_paginator("list_objects_v2")
+        page_iterator = paginator.paginate(Bucket=self.__s3_bucket, Prefix=file_path)
+        return max(
+            [
+                item["LastModified"]
+                for page in page_iterator
+                for item in page["Contents"]
+            ]
+        )
+
+    def get_folder_size(self, file_path: str) -> int:
+        """
+        :return: Returns the size in bytes.
+        """
+        try:
+            paginator = self.__s3_client.get_paginator("list_objects_v2")
+            page_iterator = paginator.paginate(
+                Bucket=self.__s3_bucket, Prefix=file_path
+            )
+            return sum(
+                [item["Size"] for page in page_iterator for item in page["Contents"]]
+            )
+        except KeyError:
+            return 0
 
     def delete_dataset_files(
         self, dataset: DatasetMetadata, raw_data_filename: str
@@ -121,7 +125,7 @@ class S3Adapter:
         """
         Deletes the raw file and the corresponding data file
         """
-        files = self.list_files_from_path(dataset.file_location())
+        files = self.list_files_from_path(dataset.dataset_location())
         raw_file_identifier = self._clean_filename(raw_data_filename)
 
         files_to_delete = [
@@ -135,7 +139,7 @@ class S3Adapter:
     def delete_previous_dataset_files(
         self, dataset: Type[DatasetMetadata], raw_file_identifier: str
     ):
-        files = self.list_files_from_path(dataset.file_location())
+        files = self.list_files_from_path(dataset.dataset_location())
         files_to_delete = [
             file
             for file in files
@@ -145,7 +149,7 @@ class S3Adapter:
             self._delete_data(file)
 
     def delete_dataset_files_using_key(self, keys: List[Dict], filename: str):
-        files_to_delete = [{"Key": key["Key"]} for key in keys]
+        files_to_delete = [{"Key": key} for key in keys]
         self._delete_objects(files_to_delete, filename)
 
     def delete_raw_dataset_files(
@@ -180,7 +184,7 @@ class S3Adapter:
     def _construct_partitioned_data_path(
         self, partition_path: str, filename: str, dataset: DatasetMetadata
     ) -> str:
-        return os.path.join(dataset.file_location(), partition_path, filename)
+        return os.path.join(dataset.dataset_location(), partition_path, filename)
 
     def _delete_objects(self, files_to_delete: List[Dict], filename: str):
         response = self.__s3_client.delete_objects(
@@ -206,8 +210,6 @@ class S3Adapter:
             page_iterator = paginator.paginate(
                 Bucket=self.__s3_bucket, Prefix=file_path
             )
-            print(page_iterator)
-            print("This is the page iterator")
             return [item["Key"] for page in page_iterator for item in page["Contents"]]
         except KeyError:
             return []

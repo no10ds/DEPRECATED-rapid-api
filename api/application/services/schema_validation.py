@@ -10,7 +10,7 @@ from api.common.config.constants import (
     COLUMN_NAME_REGEX,
 )
 from api.common.custom_exceptions import SchemaValidationError
-from api.domain.data_types import DataTypes
+from api.domain.data_types import AthenaDataType, is_date_type
 from api.domain.schema import Schema
 from api.domain.schema_metadata import UpdateBehaviour, Owner
 
@@ -162,17 +162,18 @@ def has_allow_null_false_on_partitioned_columns(schema):
 
 def has_only_accepted_data_types(schema: Schema):
     data_types = schema.get_data_types()
-    if any(
-        (data_type not in DataTypes.accepted_data_types() for data_type in data_types)
-    ):
+    try:
+        for data_type in data_types:
+            AthenaDataType(data_type)
+    except ValueError:
         raise SchemaValidationError(
-            "You are specifying one or more unaccepted data types"
+            "You are specifying one or more unaccepted data types",
         )
 
 
 def has_valid_date_column_definition(schema: Schema):
     for column in schema.columns:
-        if column.data_type == DataTypes.DATE and __has_value_for(column.format):
+        if is_date_type(column.data_type) and __has_value_for(column.format):
             __has_valid_date_format(column.format)
 
 
@@ -225,6 +226,7 @@ def __has_valid_date_format(date_format: str):
     duplicate_format_codes = any(
         date_format.count(letter) > 1 for letter in accepted_date_format_codes
     )
+    print(duplicate_format_codes)
 
     if duplicate_format_codes or not matches_accepted_format:
         raise SchemaValidationError(

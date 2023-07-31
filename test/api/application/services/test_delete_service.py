@@ -4,8 +4,7 @@ import pytest
 
 from api.application.services.delete_service import DeleteService
 from api.common.custom_exceptions import (
-    CrawlerIsNotReadyError,
-    CrawlerStartFailsError,
+    AWSServiceError,
     UserError,
 )
 from api.domain.dataset_metadata import DatasetMetadata
@@ -15,9 +14,12 @@ class TestDeleteService:
     def setup_method(self):
         self.s3_adapter = Mock()
         self.glue_adapter = Mock()
-        self.delete_service = DeleteService(self.s3_adapter, self.glue_adapter)
+        self.schema_service = Mock()
+        self.delete_service = DeleteService(
+            self.s3_adapter, self.glue_adapter, self.schema_service
+        )
 
-    def test_delete_file_when_crawler_is_ready(self):
+    def test_delete_file(self):
         dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 1)
         self.delete_service.delete_dataset_file(
             dataset_metadata,
@@ -28,14 +30,10 @@ class TestDeleteService:
             dataset_metadata,
             "2022-01-01T00:00:00-file.csv",
         )
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            dataset_metadata
-        )
         self.s3_adapter.delete_dataset_files.assert_called_once_with(
             dataset_metadata,
             "2022-01-01T00:00:00-file.csv",
         )
-        self.glue_adapter.start_crawler.assert_called_once_with(dataset_metadata)
 
     def test_delete_file_when_file_does_not_exist(self):
         self.s3_adapter.find_raw_file.side_effect = UserError("Some message")
@@ -49,51 +47,6 @@ class TestDeleteService:
             dataset_metadata,
             "2022-01-01T00:00:00-file.csv",
         )
-
-    def test_delete_file_when_crawler_is_not_ready_before_deletion(self):
-        self.glue_adapter.check_crawler_is_ready.side_effect = CrawlerIsNotReadyError(
-            "Not ready, try later"
-        )
-        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 2)
-        with pytest.raises(CrawlerIsNotReadyError):
-            self.delete_service.delete_dataset_file(
-                dataset_metadata,
-                "2022-01-01T00:00:00-file.csv",
-            )
-
-        self.s3_adapter.find_raw_file.assert_called_once_with(
-            dataset_metadata,
-            "2022-01-01T00:00:00-file.csv",
-        )
-
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            dataset_metadata
-        )
-        assert (
-            not self.s3_adapter.delete_dataset_files.called
-        ), "The delete method should not be called due to crawler fail error"
-
-    def test_delete_file_when_crawler_is_not_ready_after_deletion(self):
-        self.glue_adapter.start_crawler.side_effect = CrawlerStartFailsError(
-            "Not ready, try later"
-        )
-        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 11)
-        with pytest.raises(CrawlerStartFailsError):
-            self.delete_service.delete_dataset_file(
-                dataset_metadata,
-                "2022-01-01T00:00:00-file.csv",
-            )
-
-        self.s3_adapter.find_raw_file.assert_called_once_with(
-            dataset_metadata, "2022-01-01T00:00:00-file.csv"
-        )
-        self.glue_adapter.check_crawler_is_ready.assert_called_once_with(
-            dataset_metadata
-        )
-        self.s3_adapter.delete_dataset_files.assert_called_once_with(
-            dataset_metadata, "2022-01-01T00:00:00-file.csv"
-        )
-        self.glue_adapter.start_crawler.assert_called_once_with(dataset_metadata)
 
     @pytest.mark.parametrize(
         "filename",
@@ -116,6 +69,14 @@ class TestDeleteService:
                 DatasetMetadata("layer", "domain", "dataset", 1), filename
             )
 
+    def test_delete_table(self):
+        dataset = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.delete_service.delete_table(dataset)
+
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset.glue_table_name()]
+        )
+
     def test_delete_dataset(self):
         dataset_files = [
             {"key": "aaa"},
@@ -136,4 +97,36 @@ class TestDeleteService:
             dataset_metadata
         )
         self.glue_adapter.delete_tables.assert_called_once_with(tables)
-        self.glue_adapter.delete_crawler.assert_called_once_with(dataset_metadata)
+        self.schema_service.delete_schemas.assert_called_once_with(dataset_metadata)
+
+    def test_delete_schema_upload_success(self):
+        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.delete_service.delete_schema_upload(dataset_metadata)
+
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset_metadata.glue_table_name()]
+        )
+        self.schema_service.delete_schema.assert_called_once_with(dataset_metadata)
+
+    def test_delete_schema_upload_table_delete_fails(self):
+        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.glue_adapter.delete_tables.side_effect = AWSServiceError("Some message")
+
+        self.delete_service.delete_schema_upload(dataset_metadata)
+
+        self.schema_service.delete_schema.assert_called_once_with(dataset_metadata)
+
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset_metadata.glue_table_name()]
+        )
+
+    def test_delete_schema_upload_schema_delete_fails(self):
+        dataset_metadata = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.schema_service.delete_schema.side_effect = AWSServiceError("Some message")
+
+        self.delete_service.delete_schema_upload(dataset_metadata)
+
+        self.schema_service.delete_schema.assert_called_once_with(dataset_metadata)
+        self.glue_adapter.delete_tables.assert_called_once_with(
+            [dataset_metadata.glue_table_name()]
+        )

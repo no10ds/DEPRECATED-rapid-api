@@ -1,30 +1,23 @@
 from typing import List, Set
 
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.dynamodb_adapter import DynamoDBAdapter
-from api.adapter.s3_adapter import S3Adapter
+
 from api.application.services.schema_validation import valid_domain_name
 from api.common.config.auth import Sensitivity, Action, LayerPermissions
-from api.common.custom_exceptions import ConflictError, UserError, DomainNotEmptyError
+from api.common.custom_exceptions import ConflictError, UserError
 from api.common.logger import AppLogger
-from api.domain.permission_item import PermissionItem
 from api.domain.dataset_filters import DatasetFilters
+from api.domain.permission_item import PermissionItem
 from api.domain.subject_permissions import SubjectPermissions
+from api.common.custom_exceptions import DomainNotEmptyError
 
 
 class ProtectedDomainService:
     def __init__(
         self,
-        cognito_adapter=CognitoAdapter(),
         dynamodb_adapter=DynamoDBAdapter(),
-        resource_adapter=AWSResourceAdapter(),
-        s3_adapter=S3Adapter(),
     ):
-        self.cognito_adapter = cognito_adapter
         self.dynamodb_adapter = dynamodb_adapter
-        self.resource_adapter = resource_adapter
-        self.s3_adapter = s3_adapter
 
     def create_protected_domain_permission(self, domain: str) -> None:
         AppLogger.info(f"Creating protected domain permission {domain}")
@@ -45,7 +38,9 @@ class ProtectedDomainService:
         return self._list_protected_permission_domains()
 
     def delete_protected_domain_permission(
-        self, domain: str, user_subjects_list: List[str | None]
+        self,
+        domain: str,
+        user_subjects_list: List[str | None],
     ) -> None:
         AppLogger.info(f"Deleting protected domain permission {domain}")
         domain = domain.lower().strip()
@@ -90,16 +85,13 @@ class ProtectedDomainService:
             AppLogger.info(f"The protected domain, [{domain}] does not exist")
             raise UserError(f"The protected domain, [{domain}] does not exist.")
 
-    def _verify_protected_domain_is_empty(self, domain):
-        query = DatasetFilters(sensitivity=Sensitivity.PROTECTED)
-        datasets_metadata = self.resource_adapter.get_datasets_metadata(
-            s3_adapter=self.s3_adapter, query=query
-        )
-        datasets = [data.dataset for data in datasets_metadata if data.domain == domain]
+    def _verify_protected_domain_is_empty(self, domain: str):
+        query = DatasetFilters(sensitivity=Sensitivity.PROTECTED, domain=domain)
+        datasets = self.dynamodb_adapter.get_latest_schemas(query=query)
         if datasets:
             # Prompt to the user that datasets still exist and tell them to delete them
             raise DomainNotEmptyError(
-                f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {datasets}."
+                f"Cannot delete protected domain [{domain}] as it is not empty. Please delete the datasets {[dataset.get('Dataset') for dataset in datasets]}."
             )
 
     def generate_protected_permission_items(self, domain) -> List[PermissionItem]:

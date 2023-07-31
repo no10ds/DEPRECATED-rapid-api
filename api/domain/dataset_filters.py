@@ -1,6 +1,9 @@
-from typing import Optional, Dict, List, Union
+from functools import reduce
+from typing import Callable, Optional, Dict, List, Union
 
+from boto3.dynamodb.conditions import Attr, And, ConditionBase, Contains, Equals, In
 from pydantic.main import BaseModel
+
 
 from api.common.custom_exceptions import UserError
 from api.common.config.auth import Layer
@@ -13,42 +16,54 @@ class DatasetFilters(BaseModel):
     key_value_tags: Optional[Dict[str, Optional[str]]] = dict()
     key_only_tags: Optional[List[str]] = list()
 
+    def combine_conditions(func: Callable[..., List[ConditionBase]]) -> And:
+        """Combines a list of conditions into a single And condition"""
+
+        def inner(*args, **kwargs):
+            conditions = func(*args, **kwargs)
+            conditions = [condition for condition in conditions if condition]
+            if conditions:
+                if len(conditions) == 1:
+                    return conditions[0]
+                else:
+                    return reduce(lambda x, y: x & y, conditions)
+
+        return inner
+
+    @combine_conditions
     def format_resource_query(self):
         if self.sensitivity and any(
-            [key == "sensitivity" for key, _ in self.key_value_tags.items()]
+            [key == "Sensitivity" for key, _ in self.key_value_tags.items()]
         ):
             raise UserError(
-                "You cannot specify sensitivity both at the root level and in the tags"
+                "You cannot specify Sensitivity both at the root level and in the tags"
             )
         return [
-            *self._tag_filters(),
-            *self._build_generic_filter("sensitivity", self.sensitivity),
-            *self._build_generic_filter("layer", self.layer),
-            *self._build_generic_filter("domain", self.domain),
+            self.build_key_value_tags(),
+            self.build_key_only_tags(),
+            self.build_generic_filter("Sensitivity", self.sensitivity),
+            self.build_generic_filter("Layer", self.layer),
+            self.build_generic_filter("Domain", self.domain),
         ]
 
-    def _tag_filters(self) -> List[dict]:
-        key_value_tags_dict_list = self._build_key_value_tags()
+    @combine_conditions
+    def build_key_only_tags(self) -> List[Contains]:
+        return [Attr("KeyOnlyTags").contains(key) for key in self.key_only_tags]
 
-        key_only_tags_dict_list = self._build_key_only_tags()
-
-        return key_value_tags_dict_list + key_only_tags_dict_list
-
-    def _build_key_only_tags(self):
-        return [{"Key": key, "Values": []} for key in self.key_only_tags]
-
-    def _build_key_value_tags(self):
+    @combine_conditions
+    def build_key_value_tags(self) -> List[Equals]:
         return [
-            {"Key": key, "Values": [value] if value is not None and value != "" else []}
+            Attr(f"KeyValueTags.{key}").eq(value)
             for key, value in self.key_value_tags.items()
+            if value is not None and value != ""
         ]
 
-    def _build_generic_filter(
-        self, name: str, value: Union[List[str], str]
-    ) -> List[Dict]:
-        if isinstance(value, list):
-            values = value
-        else:
-            values = [value]
-
-        return [{"Key": name, "Values": values}] if value is not None else []
+    @staticmethod
+    def build_generic_filter(
+        name: str, value: Union[List[str], str]
+    ) -> Union[Equals, In]:
+        if value:
+            if isinstance(value, list):
+                return Attr(name).is_in(value)
+            else:
+                return Attr(name).eq(value)

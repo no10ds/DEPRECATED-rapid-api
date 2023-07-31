@@ -1,18 +1,18 @@
 from typing import List, Optional, Union
 
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
+from api.application.services.schema_service import SchemaService
 from api.common.config.layers import Layer
 from api.common.custom_exceptions import BaseAppException
 from api.domain.dataset_metadata import DatasetMetadata
 
-aws_resource_adapter = AWSResourceAdapter()
+schema_service = SchemaService()
 
 
 def construct_dataset_metadata(
     layer: Layer, domain: str, dataset: str, version: Optional[int] = None
 ) -> DatasetMetadata:
     dataset = DatasetMetadata(layer, domain, dataset, version)
-    dataset.set_version(aws_resource_adapter)
+    dataset.set_version(schema_service)
     return dataset
 
 

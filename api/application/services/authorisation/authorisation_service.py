@@ -84,7 +84,7 @@ def validate_token(
 
 
 def handle_authorisation_error(
-    user_token: Optional[str], error: Union[InvalidTokenError, InvalidTokenError]
+    user_token: Optional[str], error: Union[AuthorisationError, InvalidTokenError]
 ):
     if isinstance(error, InvalidTokenError):
         raise HTTPException(status_code=HTTP_401_UNAUTHORIZED, detail=str(error))
@@ -184,6 +184,9 @@ def check_permissions(subject_id: str, endpoint_scopes: List[Action]):
     Ensure that at least one of the endpoint_scopes exists in the users permissions.
     Raising an AuthorisationError if not.
     """
+    if not endpoint_scopes:
+        return True
+
     permissions = permission_service.get_subject_permissions(subject_id)
     if any([permission.type in endpoint_scopes for permission in permissions]):
         return True

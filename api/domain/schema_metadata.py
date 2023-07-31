@@ -1,9 +1,7 @@
 from typing import Dict, List, Optional
-from pydantic import BaseModel, EmailStr, Extra
+from pydantic import BaseModel, EmailStr
 from strenum import StrEnum
 
-from api.common.config.auth import Sensitivity
-from api.common.config.layers import Layer
 from api.domain.dataset_metadata import DatasetMetadata
 
 
@@ -17,16 +15,6 @@ class UpdateBehaviour(StrEnum):
     OVERWRITE = "OVERWRITE"
 
 
-class Tags(BaseModel):
-    sensitivity: Sensitivity
-    no_of_versions: int
-    layer: Layer
-    domain: str
-
-    class Config:
-        extra = Extra.allow
-
-
 class SchemaMetadata(DatasetMetadata):
     sensitivity: str
     description: Optional[str] = ""
@@ -34,6 +22,7 @@ class SchemaMetadata(DatasetMetadata):
     key_only_tags: List[str] = list()
     owners: Optional[List[Owner]] = None
     update_behaviour: str = UpdateBehaviour.APPEND
+    is_latest_version: bool = True
 
     def get_sensitivity(self) -> str:
         return self.sensitivity
@@ -58,6 +47,9 @@ class SchemaMetadata(DatasetMetadata):
 
     def get_update_behaviour(self) -> str:
         return self.update_behaviour
+
+    def get_is_latest_version(self) -> bool:
+        return self.is_latest_version
 
     def remove_duplicates(self):
         updated_key_only_list = []

@@ -35,7 +35,6 @@ from api.controller.permissions import permissions_router
 from api.controller.protected_domain import protected_domain_router
 from api.controller.schema import schema_router
 from api.controller.subjects import subjects_router
-from api.controller.table import table_router
 from api.controller.user import user_router
 from api.exception_handler import add_exception_handlers
 
@@ -69,7 +68,6 @@ app.include_router(user_router)
 app.include_router(protected_domain_router)
 app.include_router(subjects_router)
 app.include_router(jobs_router)
-app.include_router(table_router)
 app.include_router(layers_router)
 
 

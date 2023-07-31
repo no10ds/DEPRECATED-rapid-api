@@ -2,44 +2,34 @@ import os
 import uuid
 from pathlib import Path
 from threading import Thread
-from time import sleep
-from typing import List, Tuple, Type
+from typing import List, Tuple
 
 import pandas as pd
 from pandas.io.parsers import TextFileReader
 
 from api.adapter.athena_adapter import AthenaAdapter
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.adapter.cognito_adapter import CognitoAdapter
 from api.adapter.glue_adapter import GlueAdapter
 from api.adapter.s3_adapter import S3Adapter
 from api.application.services.dataset_validation import build_validated_dataframe
-from api.application.services.delete_service import DeleteService
 from api.application.services.job_service import JobService
 from api.application.services.partitioning_service import generate_partitioned_data
-from api.application.services.protected_domain_service import ProtectedDomainService
-from api.application.services.schema_validation import validate_schema_for_upload
-from api.common.config.auth import Sensitivity
+from api.application.services.schema_service import SchemaService
 from api.common.config.constants import (
     CONTENT_ENCODING,
-    DATASET_QUERY_LIMIT,
-    FIRST_SCHEMA_VERSION_NUMBER,
-    SCHEMA_VERSION_INCREMENT,
+    DATASET_ROWS_QUERY_LIMIT,
+    DATASET_SIZE_QUERY_LIMIT,
 )
 from api.common.custom_exceptions import (
     AWSServiceError,
-    ConflictError,
-    CrawlerIsNotReadyError,
-    CrawlerUpdateError,
     DatasetValidationError,
     QueryExecutionError,
-    SchemaNotFoundError,
     UnprocessableDatasetError,
     UserError,
 )
 from api.common.logger import AppLogger
 from api.common.utilities import build_error_message_list
-from api.domain.data_types import DataTypes
+from api.domain.data_types import DateType
+from api.domain.dataset_filters import DatasetFilters
 from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.enriched_schema import (
     EnrichedColumn,
@@ -62,20 +52,14 @@ class DataService:
         s3_adapter=S3Adapter(),
         glue_adapter=GlueAdapter(),
         athena_adapter=AthenaAdapter(),
-        protected_domain_service=ProtectedDomainService(),
-        cognito_adapter=CognitoAdapter(),
-        delete_service=DeleteService(),
         job_service=JobService(),
-        aws_resource_adapter=AWSResourceAdapter(),
+        schema_service=SchemaService(),
     ):
         self.s3_adapter = s3_adapter
         self.glue_adapter = glue_adapter
         self.athena_adapter = athena_adapter
-        self.protected_domain_service = protected_domain_service
-        self.cognito_adapter = cognito_adapter
-        self.delete_service = delete_service
         self.job_service = job_service
-        self.aws_resource_adapter = aws_resource_adapter
+        self.schema_service = schema_service
 
     def list_raw_files(self, dataset: DatasetMetadata) -> list[str]:
         raw_files = self.s3_adapter.list_raw_files(dataset)
@@ -99,31 +83,24 @@ class DataService:
         dataset: DatasetMetadata,
         file_path: Path,
     ) -> Tuple[str, int, str]:
-        schema = self.get_schema(dataset)
-        if not schema:
-            raise SchemaNotFoundError(
-                f"Could not find schema related to the {dataset.string_representation()}"
-            )
-        else:
-            raw_file_identifier = self.generate_raw_file_identifier()
-            upload_job = self.job_service.create_upload_job(
-                subject_id, job_id, file_path.name, raw_file_identifier, dataset
-            )
+        schema = self.schema_service.get_schema(dataset)
+        raw_file_identifier = self.generate_raw_file_identifier()
+        upload_job = self.job_service.create_upload_job(
+            subject_id, job_id, file_path.name, raw_file_identifier, dataset
+        )
 
-            Thread(
-                target=self.process_upload,
-                args=(upload_job, schema, file_path, raw_file_identifier),
-                name=upload_job.job_id,
-            ).start()
+        Thread(
+            target=self.process_upload,
+            args=(upload_job, schema, file_path, raw_file_identifier),
+            name=upload_job.job_id,
+        ).start()
 
-            return f"{raw_file_identifier}.csv", dataset.version, upload_job.job_id
+        return f"{raw_file_identifier}.csv", dataset.version, upload_job.job_id
 
     def process_upload(
         self, job: UploadJob, schema: Schema, file_path: Path, raw_file_identifier: str
     ) -> None:
         try:
-            self.job_service.update_step(job, UploadStep.INITIALISATION)
-            self.wait_until_crawler_is_ready(schema.metadata)
             self.job_service.update_step(job, UploadStep.VALIDATION)
             self.validate_incoming_data(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.RAW_DATA_UPLOAD)
@@ -132,6 +109,8 @@ class DataService:
             )
             self.job_service.update_step(job, UploadStep.DATA_UPLOAD)
             self.process_chunks(schema, file_path, raw_file_identifier)
+            self.job_service.update_step(job, UploadStep.LOAD_PARTITIONS)
+            self.load_partitions(schema)
             self.job_service.update_step(job, UploadStep.CLEAN_UP)
             self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             self.job_service.update_step(job, UploadStep.NONE)
@@ -143,18 +122,6 @@ class DataService:
             self.delete_incoming_raw_file(schema, file_path, raw_file_identifier)
             self.job_service.fail(job, build_error_message_list(error))
             raise error
-
-    def wait_until_crawler_is_ready(self, dataset: Type[DatasetMetadata]) -> None:
-        remaining_retries = 20
-        while remaining_retries > 0:
-            try:
-                self.glue_adapter.check_crawler_is_ready(dataset)
-                return
-            except CrawlerIsNotReadyError as error:
-                remaining_retries -= 1
-                if remaining_retries == 0:
-                    raise error
-                sleep(30)
 
     def validate_incoming_data(
         self, schema: Schema, file_path: Path, raw_file_identifier: str
@@ -184,8 +151,6 @@ class DataService:
         if schema.has_overwrite_behaviour():
             self.remove_existing_data(schema, raw_file_identifier)
 
-        self.glue_adapter.start_crawler(schema.metadata)
-        self.glue_adapter.update_catalog_table_config(schema)
         AppLogger.info(
             f"Processing chunks for {schema.get_layer()}/{schema.get_domain()}/{schema.get_dataset()}/{schema.get_version()} completed"
         )
@@ -231,75 +196,29 @@ class DataService:
                 f"Overriding existing data failed for layer [{schema.get_layer()}], domain [{schema.get_domain()}] and dataset [{schema.get_dataset()}]. Raw file identifier: {raw_file_identifier}"
             )
 
-    def upload_schema(self, schema: Schema) -> str:
-        schema.metadata.version = FIRST_SCHEMA_VERSION_NUMBER
-        schema.metadata.domain = schema.metadata.domain.lower()
-        dataset = schema.metadata
-        try:
-            if self.get_schema(dataset) is not None:
-                AppLogger.warning(
-                    f"Schema already exists for {dataset.string_representation()}"
-                )
-                raise ConflictError("Schema already exists")
-        except SchemaNotFoundError:
-            pass
-
-        self.check_for_protected_domain(schema)
-        validate_schema_for_upload(schema)
-        schema_name = self.s3_adapter.save_schema(schema)
-        self.glue_adapter.create_crawler(schema.metadata, schema.get_tags())
-        return schema_name
-
-    def update_schema(self, schema: Schema) -> str:
-        try:
-            dataset_metadata = DatasetMetadata(
-                schema.get_layer(),
-                schema.get_domain(),
-                schema.get_dataset(),
-                FIRST_SCHEMA_VERSION_NUMBER,
-            )
-            original_schema = self.get_schema(dataset_metadata)
-
-            new_schema_description = schema.metadata.description
-            new_version = (
-                self.aws_resource_adapter.get_version_from_crawler_tags(
-                    dataset_metadata
-                )
-                + SCHEMA_VERSION_INCREMENT
-            )
-            schema.metadata = original_schema.metadata
-            schema.metadata.version = new_version
-            schema.metadata.description = new_schema_description
-            self.check_for_protected_domain(schema)
-            self.glue_adapter.check_crawler_is_ready(schema.metadata)
-            validate_schema_for_upload(schema)
-
-            schema_name = self.s3_adapter.save_schema(schema)
-            self.glue_adapter.set_crawler_version_tag(schema.metadata)
-            return schema_name
-        except CrawlerUpdateError as error:
-            self.delete_service.delete_schema(schema.metadata)
-            raise error
-
-    def check_for_protected_domain(self, schema: Schema) -> str:
-        if Sensitivity.PROTECTED == schema.get_sensitivity():
-            if (
-                schema.get_domain()
-                not in self.protected_domain_service.list_protected_domains()
-            ):
-                raise UserError(
-                    f"The protected domain '{schema.get_domain()}' does not exist."
-                )
-        return schema.get_domain()
+    def list_datasets(self, query: DatasetFilters, enriched: bool = False):
+        metadatas = self.schema_service.get_schema_metadatas(query=query)
+        if metadatas:
+            if enriched:
+                return [
+                    dict(metadata)
+                    | {
+                        "last_updated_date": self.s3_adapter.get_last_updated_time(
+                            metadata.s3_file_location()
+                        )
+                    }
+                    for metadata in metadatas
+                ]
+            else:
+                return [dict(metadata) for metadata in metadatas]
+        return []
 
     def get_dataset_info(self, dataset: DatasetMetadata) -> EnrichedSchema:
-        schema = self.get_schema(dataset)
+        schema = self.schema_service.get_schema(dataset)
         statistics_dataframe = self.athena_adapter.query(
             dataset, self._build_query(schema)
         )
-        last_updated = self.glue_adapter.get_table_last_updated_date(
-            dataset.glue_table_name()
-        )
+        last_updated = self.s3_adapter.get_last_updated_time(dataset.s3_file_location())
         return EnrichedSchema(
             metadata=self._enrich_metadata(schema, statistics_dataframe, last_updated),
             columns=self._enrich_columns(schema, statistics_dataframe),
@@ -308,22 +227,27 @@ class DataService:
     def upload_data(
         self, schema: Schema, validated_dataframe: pd.DataFrame, filename: str
     ):
-        partitioned_data = generate_partitioned_data(schema, validated_dataframe)
+        partitions = generate_partitioned_data(schema, validated_dataframe)
         self.s3_adapter.upload_partitioned_data(
             schema.metadata,
             filename,
-            partitioned_data,
+            partitions,
         )
+
+    def load_partitions(self, schema: Schema):
+        if schema.get_partition_columns():
+            query_id = self.athena_adapter.query_sql_async(
+                f"MSCK REPAIR TABLE `{schema.metadata.glue_table_name()}`;"
+            )
+            self.athena_adapter.wait_for_query_to_complete(query_id)
 
     def is_query_too_large(self, dataset: DatasetMetadata, query: SQLQuery):
         if query.limit:
-            if int(query.limit) <= DATASET_QUERY_LIMIT:
+            if int(query.limit) <= DATASET_ROWS_QUERY_LIMIT:
                 return False
 
-        no_of_rows_in_table = self.glue_adapter.get_no_of_rows(
-            dataset.glue_table_name()
-        )
-        return no_of_rows_in_table > DATASET_QUERY_LIMIT
+        size_of_datasets = self.s3_adapter.get_folder_size(dataset.s3_file_location())
+        return size_of_datasets > DATASET_SIZE_QUERY_LIMIT
 
     def query_data(
         self,
@@ -333,7 +257,7 @@ class DataService:
         if not self.is_query_too_large(dataset, query):
             return self.athena_adapter.query(dataset, query)
         else:
-            raise UnprocessableDatasetError("Dataset too large")
+            raise UnprocessableDatasetError("Dataset too large for this endpoint")
 
     def query_large_data(
         self,
@@ -368,20 +292,8 @@ class DataService:
             self.job_service.fail(query_job, build_error_message_list(error))
             raise error
 
-    def update_table_config(self, dataset: DatasetMetadata) -> None:
-        schema = self.s3_adapter.fetch_schema(dataset)
-        self.glue_adapter.update_catalog_table_config(schema)
-
-    def get_schema(self, dataset: Type[DatasetMetadata]) -> Schema:
-        schema = self.s3_adapter.fetch_schema(dataset)
-        if not schema:
-            raise SchemaNotFoundError(
-                f"Could not find the schema for dataset {dataset.string_representation()}"
-            )
-        return schema
-
     def _build_query(self, schema: Schema) -> SQLQuery:
-        date_columns = schema.get_columns_by_type(DataTypes.DATE)
+        date_columns = schema.get_columns_by_type(DateType)
         date_range_queries = [
             *[f"max({column.name}) as max_{column.name}" for column in date_columns],
             *[f"min({column.name}) as min_{column.name}" for column in date_columns],
@@ -407,10 +319,10 @@ class DataService:
         self, schema: Schema, statistics_dataframe: pd.DataFrame
     ) -> List[EnrichedColumn]:
         enriched_columns = []
-        date_column_names = schema.get_column_names_by_type("date")
+        date_columns = schema.get_columns_by_type(DateType)
         for column in schema.columns:
             statistics = None
-            if column.name in date_column_names:
+            if column in date_columns:
                 statistics = {
                     "max": statistics_dataframe.at[0, f"max_{column.name}"],
                     "min": statistics_dataframe.at[0, f"min_{column.name}"],

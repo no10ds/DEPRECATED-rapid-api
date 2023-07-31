@@ -3,12 +3,11 @@ from fastapi import UploadFile, File, Security
 from fastapi import status as http_status
 from fastapi import Path as FastApiPath
 
-from api.adapter.cognito_adapter import CognitoAdapter
 from api.application.services.authorisation.authorisation_service import secure_endpoint
-from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
-from api.common.config.auth import Action
+from api.application.services.schema_service import SchemaService
+from api.common.config.auth import Action, Sensitivity
 from api.common.config.constants import (
     BASE_API_PATH,
     LOWERCASE_REGEX,
@@ -17,16 +16,13 @@ from api.common.config.constants import (
 from api.common.config.layers import Layer
 from api.common.custom_exceptions import (
     AWSServiceError,
-    CrawlerAlreadyExistsError,
-    CrawlerCreationError,
 )
 from api.common.logger import AppLogger
 from api.domain.schema import Schema
 
-data_service = DataService()
-schema_infer_service = SchemaInferService()
 delete_service = DeleteService()
-cognito_adapter = CognitoAdapter()
+schema_infer_service = SchemaInferService()
+schema_service = SchemaService()
 
 schema_router = APIRouter(
     prefix=f"{BASE_API_PATH}/schema",
@@ -38,7 +34,7 @@ schema_router = APIRouter(
 @schema_router.post("/{layer}/{sensitivity}/{domain}/{dataset}/generate")
 async def generate_schema(
     layer: Layer,
-    sensitivity: str,
+    sensitivity: Sensitivity,
     dataset: str,
     domain: str = FastApiPath(
         default="", regex=LOWERCASE_REGEX, description=LOWERCASE_ROUTE_DESCRIPTION
@@ -138,11 +134,10 @@ async def upload_schema(schema: Schema):
     ### Click  `Try it out` to use the endpoint
     """
     try:
-        schema_file_name = data_service.upload_schema(schema)
+        schema_file_name = schema_service.upload_schema(schema)
         return {"details": schema_file_name}
-    except (CrawlerCreationError, CrawlerAlreadyExistsError) as error:
-        _delete_uploaded_schema(schema)
-        raise error
+    except AWSServiceError as error:
+        handle_schema_upload_failure(schema, error)
 
 
 @schema_router.put(
@@ -182,14 +177,14 @@ async def update_schema(schema: Schema):
 
     ### Click  `Try it out` to use the endpoint
     """
-    schema_file_name = data_service.update_schema(schema)
-    return {"details": schema_file_name}
+    try:
+        schema_file_name = schema_service.update_schema(schema)
+        return {"details": schema_file_name}
+    except AWSServiceError as error:
+        handle_schema_upload_failure(schema, error)
 
 
-def _delete_uploaded_schema(schema: Schema):
-    delete_service.delete_schema(schema.metadata)
-
-
-def _log_and_raise_error(log_message: str, error_message: str):
-    AppLogger.error(f"{log_message}: {error_message}")
-    raise AWSServiceError(message=error_message)
+def handle_schema_upload_failure(schema: Schema, error):
+    delete_service.delete_schema_upload(schema.metadata)
+    AppLogger.error(f"Failed to upload schema {error.message}")
+    raise AWSServiceError(message=error.message)

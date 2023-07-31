@@ -1,18 +1,15 @@
-import pytest
 from typing import Tuple, Dict
 from unittest.mock import patch
 
-from api.application.services.data_service import DataService
 from api.application.services.delete_service import DeleteService
 from api.application.services.schema_infer_service import SchemaInferService
+from api.application.services.schema_service import SchemaService
 from api.common.custom_exceptions import (
     SchemaValidationError,
     ConflictError,
-    CrawlerCreationError,
     UserError,
     SchemaNotFoundError,
-    CrawlerIsNotReadyError,
-    CrawlerUpdateError,
+    AWSServiceError,
 )
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
@@ -21,7 +18,7 @@ from test.api.common.controller_test_utils import BaseClientTest
 
 
 class TestSchemaUpload(BaseClientTest):
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_calls_services_successfully(
         self,
         mock_upload_schema,
@@ -70,7 +67,7 @@ class TestSchemaUpload(BaseClientTest):
             ]
         }
 
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_returns_409_when_schema_already_exists(self, mock_upload_schema):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = ConflictError("Error message")
@@ -83,7 +80,7 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 409
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_returns_400_when_invalid_schema(self, mock_upload_schema):
         request_body, expected_schema = self._generate_schema()
         mock_upload_schema.side_effect = SchemaValidationError("Error message")
@@ -96,40 +93,7 @@ class TestSchemaUpload(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {"details": "Error message"}
 
-    @pytest.mark.focus
-    @patch.object(DeleteService, "delete_schema")
-    @patch.object(DataService, "upload_schema")
-    def test_schema_deletion_returns_500_if_crawler_creation_fails(
-        self, mock_upload_schema, mock_delete_schema
-    ):
-        request_body, _ = self._generate_schema()
-
-        mock_upload_schema.return_value = "some-thing.json"
-        mock_upload_schema.side_effect = CrawlerCreationError("Crawler creation error")
-
-        response = self.client.post(
-            f"{BASE_API_PATH}/schema",
-            json=request_body,
-            headers={"Authorization": "Bearer test-token"},
-        )
-
-        assert response.status_code == 500
-        assert response.json() == {"details": "Crawler creation error"}
-
-        mock_delete_schema.assert_called_once_with(
-            SchemaMetadata(
-                layer="raw",
-                domain="some",
-                dataset="thing",
-                sensitivity="PUBLIC",
-                version=1,
-                key_value_tags={"tag1": "value1", "tag2": "value2"},
-                key_only_tags=["tag3", "tag4"],
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
-        )
-
-    @patch.object(DataService, "upload_schema")
+    @patch.object(SchemaService, "upload_schema")
     def test_returns_500_if_protected_domain_does_not_exist(
         self,
         mock_upload_schema,
@@ -202,9 +166,30 @@ class TestSchemaUpload(BaseClientTest):
         )
         return request_body, expected_schema
 
+    @patch.object(SchemaService, "upload_schema")
+    @patch.object(DeleteService, "delete_schema_upload")
+    def test_returns_cleans_up_if_upload_fails(
+        self,
+        mock_delete_schema_upload,
+        mock_upload_schema,
+    ):
+        request_body, schema = self._generate_schema()
+
+        mock_upload_schema.side_effect = AWSServiceError("Upload error")
+
+        response = self.client.post(
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {"details": "Upload error"}
+        mock_delete_schema_upload.assert_called_once_with(schema.metadata)
+
 
 class TestSchemaUpdate(BaseClientTest):
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_calls_services_successfully(
         self,
         mock_update_schema,
@@ -253,7 +238,7 @@ class TestSchemaUpdate(BaseClientTest):
             ]
         }
 
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_returns_404_when_schema_does_not_exist(self, mock_update_schema):
         request_body, expected_schema = self._generate_schema()
         mock_update_schema.side_effect = SchemaNotFoundError("Error message")
@@ -266,7 +251,7 @@ class TestSchemaUpdate(BaseClientTest):
         assert response.status_code == 404
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_returns_400_when_invalid_schema(self, mock_update_schema):
         request_body, expected_schema = self._generate_schema()
         mock_update_schema.side_effect = SchemaValidationError("Error message")
@@ -279,47 +264,7 @@ class TestSchemaUpdate(BaseClientTest):
         assert response.status_code == 400
         assert response.json() == {"details": "Error message"}
 
-    @patch.object(DataService, "update_schema")
-    def test_schema_deletion_returns_429_if_crawler_is_running(
-        self, mock_update_schema
-    ):
-        request_body, _ = self._generate_schema()
-
-        mock_update_schema.return_value = "some-thing.json"
-        mock_update_schema.side_effect = CrawlerIsNotReadyError(
-            "Crawler is currently processing"
-        )
-
-        response = self.client.put(
-            f"{BASE_API_PATH}/schema",
-            json=request_body,
-            headers={"Authorization": "Bearer test-token"},
-        )
-
-        assert response.status_code == 429
-        assert response.json() == {"details": "Crawler is currently processing"}
-
-    @patch.object(DataService, "update_schema")
-    def test_schema_deletion_returns_500_if_crawler_update_fails(
-        self, mock_update_schema
-    ):
-        request_body, _ = self._generate_schema()
-
-        mock_update_schema.return_value = "some-thing.json"
-        mock_update_schema.side_effect = CrawlerUpdateError(
-            "Crawler could not be updated"
-        )
-
-        response = self.client.put(
-            f"{BASE_API_PATH}/schema",
-            json=request_body,
-            headers={"Authorization": "Bearer test-token"},
-        )
-
-        assert response.status_code == 500
-        assert response.json() == {"details": "Crawler could not be updated"}
-
-    @patch.object(DataService, "update_schema")
+    @patch.object(SchemaService, "update_schema")
     def test_returns_500_if_protected_domain_does_not_exist(
         self,
         mock_update_schema,
@@ -391,6 +336,27 @@ class TestSchemaUpdate(BaseClientTest):
         )
         return request_body, expected_schema
 
+    @patch.object(SchemaService, "update_schema")
+    @patch.object(DeleteService, "delete_schema_upload")
+    def test_returns_cleans_up_if_upload_fails(
+        self,
+        mock_delete_schema_upload,
+        mock_update_schema,
+    ):
+        request_body, schema = self._generate_schema()
+
+        mock_update_schema.side_effect = AWSServiceError("Upload error")
+
+        response = self.client.put(
+            f"{BASE_API_PATH}/schema",
+            json=request_body,
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+        assert response.status_code == 500
+        assert response.json() == {"details": "Upload error"}
+        mock_delete_schema_upload.assert_called_once_with(schema.metadata)
+
 
 class TestSchemaGeneration(BaseClientTest):
     @patch.object(SchemaInferService, "infer_schema")
@@ -407,14 +373,14 @@ class TestSchemaGeneration(BaseClientTest):
                 Column(
                     name="colname1",
                     partition_index=None,
-                    data_type="object",
+                    data_type="string",
                     allow_null=True,
                     format=None,
                 ),
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="Int64",
+                    data_type="integer",
                     allow_null=True,
                     format=None,
                 ),

@@ -3,11 +3,10 @@ from typing import List
 
 from api.common.custom_exceptions import AuthorisationError
 from api.common.config.auth import Action, Sensitivity, ALL, Layer
-from api.adapter.aws_resource_adapter import AWSResourceAdapter
-from api.adapter.glue_adapter import GlueAdapter
 from api.application.services.permissions_service import PermissionsService
+from api.application.services.schema_service import SchemaService
 from api.domain.dataset_filters import DatasetFilters
-from api.domain.schema_metadata import Tags
+from api.domain.schema_metadata import SchemaMetadata
 from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.permission_item import PermissionItem
 
@@ -28,12 +27,10 @@ LayerPermissionConverter = Enum(
 class DatasetAccessEvaluator:
     def __init__(
         self,
-        glue_adapter=GlueAdapter(),
-        resource_adapter=AWSResourceAdapter(),
+        schema_service=SchemaService(),
         permission_service=PermissionsService(),
     ):
-        self.glue_adapter = glue_adapter
-        self.resource_adapter = resource_adapter
+        self.schema_service = schema_service
         self.permission_serivice = permission_service
 
     def get_authorised_datasets(
@@ -56,21 +53,23 @@ class DatasetAccessEvaluator:
         """
         This function does the following:
         1. Gets the permisisons of the subject
-        2. Gets the tags of the dataset
+        2. Gets the schema metadata of the dataset
         3. Loops through the dataset actions
         4. Filters the permission by the relevant action
-        5. Assesses if the tags overlap with the permisisons, returning True if they do
+        5. Assesses if the schema metadata overlaps with the permisisons, returning True if they do
         6. Raise Authorisation if the loop is over and there was no permission overlap
         """
         permissions = self.permission_serivice.get_subject_permissions(subject_id)
-        tags = self.glue_adapter.get_crawler_tags(dataset)
+        schema_metadata = self.schema_service.get_schema(dataset).metadata
 
         for action in actions:
             filtered_permissions = self.filter_permissions_by_action(
                 permissions, action
             )
             if any(
-                self.tags_overlap_with_permission(tags, permission)
+                self.schema_metadata_overlaps_with_permission(
+                    schema_metadata, permission
+                )
                 for permission in filtered_permissions
             ):
                 return True
@@ -78,15 +77,16 @@ class DatasetAccessEvaluator:
             f"User {subject_id} does not have enough permisisons to access the dataset {dataset.string_representation()}"
         )
 
-    def tags_overlap_with_permission(
-        self, tags: Tags, permission: PermissionItem
+    def schema_metadata_overlaps_with_permission(
+        self, schema_metadata: SchemaMetadata, permission: PermissionItem
     ) -> bool:
         return all(
             [
-                tags.sensitivity
+                schema_metadata.get_sensitivity()
                 in SensitivityPermissionConverter[permission.sensitivity].value,
-                tags.layer in LayerPermissionConverter[permission.layer].value,
-                tags.domain == permission.domain
+                schema_metadata.get_layer()
+                in LayerPermissionConverter[permission.layer].value,
+                schema_metadata.get_domain() == permission.domain
                 if permission.is_protected_permission()
                 else True,
             ]
@@ -115,4 +115,4 @@ class DatasetAccessEvaluator:
             layer=LayerPermissionConverter[permission.layer].value,
             domain=permission.domain,
         )
-        return self.resource_adapter.get_datasets_metadata(query)
+        return self.schema_service.get_schema_metadatas(query)

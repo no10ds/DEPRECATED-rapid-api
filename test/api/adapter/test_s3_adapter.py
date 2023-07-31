@@ -6,16 +6,15 @@ import pytest
 from botocore.exceptions import ClientError
 
 from api.adapter.s3_adapter import S3Adapter
-from api.common.config.aws import SCHEMAS_LOCATION, OUTPUT_QUERY_BUCKET
+from api.application.services.partitioning_service import Partition
+from api.common.config.aws import OUTPUT_QUERY_BUCKET
 from api.common.custom_exceptions import (
     UserError,
     AWSServiceError,
 )
 from api.domain.dataset_metadata import DatasetMetadata
-from api.domain.schema import Schema, Column
-from api.domain.schema_metadata import Owner, SchemaMetadata
+from api.domain.schema_metadata import SchemaMetadata
 from test.test_utils import (
-    mock_schema_response,
     mock_list_schemas_response,
 )
 
@@ -91,8 +90,8 @@ class TestS3AdapterUpload:
         partition_2 = pd.DataFrame({"colname2": ["user2"]})
 
         partitioned_data = [
-            ("year=2020/month=1", partition_1),
-            ("year=2020/month=2", partition_2),
+            Partition(keys=[2020, 1], path="year=2020/month=1", df=partition_1),
+            Partition(keys=[2020, 2], path="year=2020/month=2", df=partition_2),
         ]
 
         self.persistence_adapter.upload_partitioned_data(
@@ -116,66 +115,6 @@ class TestS3AdapterUpload:
         ]
 
         self.mock_s3_client.put_object.assert_has_calls(calls)
-
-    def test_schema_upload(self):
-        valid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="raw",
-                domain="test_domain",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                version=1,
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=0,
-                    data_type="Int64",
-                    allow_null=True,
-                )
-            ],
-        )
-
-        result = self.persistence_adapter.save_schema(schema=valid_schema)
-
-        self.mock_s3_client.put_object.assert_called_with(
-            Bucket="dataset",
-            Key="schemas/raw/test_domain/test_dataset/1/schema.json",
-            Body=b'{"metadata": {"layer": "raw", "domain": "test_domain", "dataset": "test_dataset", "version": 1, "sensitivity": "PUBLIC", "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
-        )
-
-        assert result == "raw/test_domain/test_dataset/1/schema.json"
-
-    def test_schema_upload_capitalised(self):
-        valid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer="layer",
-                domain="TEST_DOMAIN",
-                dataset="test_dataset",
-                sensitivity="PUBLIC",
-                version=1,
-                owners=[Owner(name="owner", email="owner@email.com")],
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=0,
-                    data_type="Int64",
-                    allow_null=True,
-                )
-            ],
-        )
-
-        result = self.persistence_adapter.save_schema(schema=valid_schema)
-
-        self.mock_s3_client.put_object.assert_called_with(
-            Bucket="dataset",
-            Key="schemas/layer/test_domain/test_dataset/1/schema.json",
-            Body=b'{"metadata": {"layer": "layer", "domain": "test_domain", "dataset": "test_dataset", "version": 1, "sensitivity": "PUBLIC", "description": "", "key_value_tags": {}, "key_only_tags": [], "owners": [{"name": "owner", "email": "owner@email.com"}], "update_behaviour": "APPEND"}, "columns": [{"name": "colname1", "partition_index": 0, "data_type": "Int64", "allow_null": true, "format": null}]}',
-        )
-
-        assert result == "layer/test_domain/test_dataset/1/schema.json"
 
     def test_raw_data_upload(self):
         schema_metadata = SchemaMetadata(
@@ -213,61 +152,6 @@ class TestS3AdapterDataRetrieval:
         self.persistence_adapter.retrieve_data(key="an_s3_object")
         self.mock_s3_client.get_object.assert_called_once()
 
-    def test_retrieve_existing_schema(self):
-        layer = "raw"
-        domain = "test_domain"
-        dataset = "test_dataset"
-        version = 1
-
-        valid_schema = Schema(
-            metadata=SchemaMetadata(
-                layer=layer,
-                domain=domain,
-                dataset=dataset,
-                sensitivity="PUBLIC",
-                description="some test description",
-                version=1,
-            ),
-            columns=[
-                Column(
-                    name="colname1",
-                    partition_index=0,
-                    data_type="Int64",
-                    allow_null=True,
-                )
-            ],
-        )
-
-        self.mock_s3_client.get_object.return_value = mock_schema_response()
-
-        schema = self.persistence_adapter.fetch_schema(
-            DatasetMetadata(
-                layer=layer, domain=domain, dataset=dataset, version=version
-            )
-        )
-        self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset",
-            Key="schemas/raw/test_domain/test_dataset/1/schema.json",
-        )
-
-        assert schema == valid_schema
-
-    def test_retrieve_non_existent_schema(self):
-        self.mock_s3_client.get_object.side_effect = ClientError(
-            error_response={
-                "Error": {"Code": "NoSuchKey"},
-            },
-            operation_name="message",
-        )
-
-        schema = self.persistence_adapter.fetch_schema(
-            DatasetMetadata("raw", "bad", "data", 1)
-        )
-        self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="schemas/raw/bad/data/1/schema.json"
-        )
-        assert schema is None
-
     def test_find_raw_file_when_file_exists(self):
         self.persistence_adapter.find_raw_file(
             DatasetMetadata("raw", "domain", "dataset", 1), "filename.csv"
@@ -302,22 +186,6 @@ class TestS3Deletion:
         self.mock_s3_client = Mock()
         self.persistence_adapter = S3Adapter(
             s3_client=self.mock_s3_client, s3_bucket="data-bucket"
-        )
-
-    def test_deletion_of_schema(self):
-        self.persistence_adapter.delete_schema(
-            SchemaMetadata(
-                layer="raw",
-                domain="domain",
-                dataset="dataset",
-                sensitivity="PUBLIC",
-                version=2,
-            )
-        )
-
-        self.mock_s3_client.delete_object.assert_called_once_with(
-            Bucket="data-bucket",
-            Key="schemas/raw/domain/dataset/2/schema.json",
         )
 
     def test_deletion_of_dataset_files_with_no_partitions(self):
@@ -579,33 +447,6 @@ class TestS3Deletion:
         self.persistence_adapter._delete_data.assert_not_called()
 
 
-class TestDatasetMetadataRetrieval:
-    mock_s3_client = None
-    persistence_adapter = None
-
-    def setup_method(self):
-        self.mock_s3_client = Mock()
-        self.persistence_adapter = S3Adapter(
-            s3_client=self.mock_s3_client, s3_bucket="data-bucket"
-        )
-
-    def test_returns_none_if_not_schemas_exist(self):
-        layer, domain, dataset = "layer", "test_domain", "test_dataset"
-        self.mock_s3_client.get_object.side_effect = ClientError(
-            {"Error": {"Code": "NoSuchKey"}}, "get_object"
-        )
-
-        result = self.persistence_adapter.fetch_schema(
-            DatasetMetadata(layer, domain, dataset, 1)
-        )
-
-        self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="data-bucket",
-            Key=f"{SCHEMAS_LOCATION}/layer/test_domain/test_dataset/1/schema.json",
-        )
-        assert result is None
-
-
 class TestS3FileList:
     mock_s3_client = None
     persistence_adapter = None
@@ -726,18 +567,6 @@ class TestS3FileList:
                     "EncodingType": "url",
                 },
             ],
-            [
-                {
-                    "NextToken": "xxx",
-                    "ResponseMetadata": {"key": "value"},
-                    "Contents": [
-                        {"Key": "schemas/layer/my_domain/my_dataset/"},
-                        {"Key": "schemas/layer/my_domain/my_dataset/1/schema.json"},
-                    ],
-                    "Name": "my-bucket",
-                    "EncodingType": "url",
-                },
-            ],
         ]
 
         dataset_files = self.persistence_adapter.list_dataset_files(
@@ -752,17 +581,11 @@ class TestS3FileList:
             "data/layer/my_domain/my_dataset/",
             "data/layer/my_domain/my_dataset/2020-01-01T12:00:00-file1.parquet",
             "data/layer/my_domain/my_dataset/2020-06-01T15:00:00-file2.parquet",
-            "schemas/layer/my_domain/my_dataset/",
-            "schemas/layer/my_domain/my_dataset/1/schema.json",
         ]
 
         calls = [
             call(Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset"),
             call(Bucket="my-bucket", Prefix="data/layer/my_domain/my_dataset"),
-            call(
-                Bucket="my-bucket",
-                Prefix="schemas/layer/my_domain/my_dataset",
-            ),
         ]
         self.mock_s3_client.get_paginator.return_value.paginate.assert_has_calls(calls)
 

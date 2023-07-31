@@ -9,15 +9,15 @@ class TestConstructDataasetMetadata:
     def setup_method(self):
         self.dataset_metadata = DatasetMetadata
 
-    @patch("api.common.utilities.aws_resource_adapter")
+    @patch("api.common.utilities.schema_service")
     @patch.object(DatasetMetadata, "set_version")
     def test_construct_dataset_metadata(
-        self, mock_set_version: MagicMock, mock_aws_resource_adapter
+        self, mock_set_version: MagicMock, mock_schema_service
     ):
         expected = DatasetMetadata("layer", "domain", "dataset", 1)
         res = construct_dataset_metadata("layer", "domain", "dataset", 1)
         assert res == expected
-        mock_set_version.assert_called_once_with(mock_aws_resource_adapter)
+        mock_set_version.assert_called_once_with(mock_schema_service)
 
 
 class TestBuildErrorList:
