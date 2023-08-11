@@ -115,10 +115,13 @@ class DatasetAccessEvaluator:
     def extract_datasets_from_permission(
         self, permission: PermissionItem, filters: DatasetFilters = DatasetFilters()
     ) -> List[SchemaMetadata]:
+        """
+        Extracts the datasets from the permission, while combining with the filters argument.
+        The permission filters overwrite the filters argument to stop any injection of permissions via the filters.
+        """
         query = DatasetFilters(
-            # Combine filters and permission filters, permission filters will overwrite any that are passed in
-            # This is to stop any injection of permissions via the filters
             **(
+                # If there are overlapping keys, the permission values will overwrite the others
                 dict(filters)
                 | {
                     "sensitivity": SensitivityPermissionConverter[

@@ -100,22 +100,6 @@ class GlueAdapter:
         ]
         return tables
 
-    def get_table_last_updated_date(
-        self, table_name, supress_error: bool = False
-    ) -> str:
-        try:
-            table = self._get_table(table_name)
-        except TableDoesNotExistError as e:
-            if supress_error:
-                return None
-            else:
-                raise TableDoesNotExistError(e)
-        return str(table["Table"]["UpdateTime"])
-
-    def get_no_of_rows(self, table_name) -> int:
-        table = self._get_table(table_name)
-        return int(table["Table"]["StorageDescriptor"]["Parameters"]["recordCount"])
-
     def delete_tables(self, table_names: List[str]):
         try:
             self.glue_client.batch_delete_table(
