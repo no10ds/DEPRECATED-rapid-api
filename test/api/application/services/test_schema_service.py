@@ -276,24 +276,6 @@ class TestUpdateSchema:
         ):
             self.schema_service.update_schema(new_schema)
 
-    # TODO: Fix this test
-    # def test_update_schema_when_crawler_raises_error(self):
-    #     new_schema = self.valid_updated_schema
-    #     expected_schema = self.valid_updated_schema.copy(deep=True)
-    #     expected_schema.metadata.version = 2
-
-    #     self.schema_service.get_schema = Mock(return_value=self.valid_schema)
-    #     self.glue_adapter.create_table.side_effect = TableCreationError(
-    #         "error occurred"
-    #     )
-
-    #     with pytest.raises(TableCreationError, match="error occurred"):
-    #         self.schema_service.update_schema(new_schema)
-
-    #     self.glue_adapter.create_table.assert_called_once_with(new_schema)
-    #     self.schema_service.store_schema.assert_not_called()
-    #     self.schema_service.deprecate_schema.assert_not_called()
-
     def test_update_schema_success(self):
         original_schema = self.valid_schema
         original_schema.metadata.version = 2

@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v6.2.1 - _2023-05-10_
+
+See [v6.2.1] changes
+
+### Fixed
+
+- An error with the delete dataset endpoint
+
+## v6.2.0 - _2023-05-10_
+
+See [v6.2.0] changes
+
+### Added
+
+- The list datasets endpoint now provides the Last Updated Datetime for each dataset
+
+## v6.1.0 - _2023-05-03_
+
+See [v6.1.0] changes
+
+### Added
+
+- rAPId can now handle schemas being generated and data being uploaded in Apache Parquet Format.
+
+### Changed
+
+- When uploading a file into rAPId we automatically reject any file now that does not match a csv or Apache Parquet format. Before we used to handle the file regardless and wait for a exception being raised from within the api.
+
+### Fixed
+
+- When calling the list all datasets endpoint we now filter this list based on the permissions that the user has access to.
+
+
+[v6.1.0]: https://github.com/no10ds/rapid-api/compare/v6.0.2...v6.1.0
+
 ## v6.0.2 - _2023-03-24_
 
 See [v6.0.2] changes
@@ -10,6 +45,8 @@ See [v6.0.2] changes
 ### Fixed
 
 - Fixed a bug concerning dataset uploading with overwrite behaviour, making it much less brittle.
+
+[v6.0.2]: https://github.com/no10ds/rapid-api/compare/v6.0.0...v6.0.2
 
 ## v6.0.0 - _2023-03-17_
 
