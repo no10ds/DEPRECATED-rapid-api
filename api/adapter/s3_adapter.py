@@ -148,7 +148,7 @@ class S3Adapter:
         for file in files_to_delete:
             self._delete_data(file)
 
-    def delete_dataset_files_using_key(self, keys: List[Dict], filename: str):
+    def delete_dataset_files_using_key(self, keys: List[str], filename: str):
         files_to_delete = [{"Key": key} for key in keys]
         self._delete_objects(files_to_delete, filename)
 
