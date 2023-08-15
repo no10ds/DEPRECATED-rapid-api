@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 import pytest
 from botocore.exceptions import ClientError
@@ -14,6 +14,7 @@ from api.common.custom_exceptions import (
     ConflictError,
     UserError,
 )
+from api.domain.dataset_metadata import DatasetMetadata
 from api.domain.schema import Schema, Column
 from api.domain.schema_metadata import Owner, SchemaMetadata
 
@@ -427,3 +428,32 @@ class TestGetSchema:
         res = self.schema_service.get_latest_schema_version(self.metadata)
         assert res == 1
         self.dynamodb_adapter.get_latest_schema.assert_called_once_with(self.metadata)
+
+
+class TestDeleteSchema:
+    def setup_method(self):
+        self.dynamodb_adapter = Mock()
+        self.schema_service = SchemaService(
+            self.dynamodb_adapter,
+            None,
+            None,
+        )
+
+    def test_delete_schemas(self):
+        self.schema_service.get_latest_schema_version = Mock(return_value=3)
+        metadata = DatasetMetadata("layer", "domain", "dataset")
+
+        self.schema_service.delete_schemas(metadata)
+        self.dynamodb_adapter.delete_schema.assert_has_calls(
+            [
+                call(DatasetMetadata("layer", "domain", "dataset", 1)),
+                call(DatasetMetadata("layer", "domain", "dataset", 2)),
+                call(DatasetMetadata("layer", "domain", "dataset", 3)),
+            ]
+        )
+
+    def test_delete_schema(self):
+        metadata = DatasetMetadata("layer", "domain", "dataset", 1)
+        self.schema_service.delete_schema(metadata)
+
+        self.dynamodb_adapter.delete_schema.assert_called_once_with(metadata)
