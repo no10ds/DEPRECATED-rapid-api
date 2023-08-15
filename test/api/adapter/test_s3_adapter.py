@@ -238,7 +238,7 @@ class TestS3Deletion:
             ),
             "123-456-789.csv",
         )
-        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects_v2")
         self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/layer/domain/dataset/1"
         )
@@ -304,7 +304,7 @@ class TestS3Deletion:
         self.persistence_adapter.delete_dataset_files(
             DatasetMetadata("layer", "domain", "dataset", 1), "123-456-789.csv"
         )
-        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects_v2")
         self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="data-bucket", Prefix="data/layer/domain/dataset/1"
         )
@@ -327,8 +327,6 @@ class TestS3Deletion:
         )
 
     def test_deletion_of_dataset_files_when_error_is_thrown(self):
-        self.mock_s3_client.get_paginator.return_value.paginate.return_value = {}
-
         self.mock_s3_client.delete_objects.return_value = {
             "Errors": [
                 {
@@ -346,16 +344,30 @@ class TestS3Deletion:
             ]
         }
         msg = "The item \\[123-456-789.csv\\] could not be deleted. Please contact your administrator."
-
+        self.persistence_adapter.list_files_from_path = Mock(
+            return_value=["data/123-456-789.csv"]
+        )
         with pytest.raises(AWSServiceError, match=msg):
             self.persistence_adapter.delete_dataset_files(
                 DatasetMetadata("layer", "domain", "dataset", 3), "123-456-789.csv"
             )
 
-        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
-        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
-            Bucket="data-bucket", Prefix="data/layer/domain/dataset/3"
+        self.persistence_adapter.list_files_from_path.assert_called_once_with(
+            "data/layer/domain/dataset/3"
         )
+
+    def test_no_deletion_is_attempted_if_there_are_no_files(self):
+        self.persistence_adapter.list_files_from_path = Mock(return_value=[""])
+        self.persistence_adapter._delete_objects = Mock()
+
+        self.persistence_adapter.delete_dataset_files(
+            DatasetMetadata("layer", "domain", "dataset", 3), "123-456-789.csv"
+        )
+
+        self.persistence_adapter.list_files_from_path.assert_called_once_with(
+            "data/layer/domain/dataset/3"
+        )
+        self.mock_s3_client.delete_objects.assert_not_called()
 
     def test_deletion_of_raw_files(self):
         self.mock_s3_client.list_objects.return_value = {
@@ -489,7 +501,7 @@ class TestS3FileList:
             "2020-11-15T16:00:00-file3.csv",
         ]
 
-        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects_v2")
         self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset/1"
         )
@@ -510,7 +522,7 @@ class TestS3FileList:
         )
         assert raw_files == []
 
-        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects_v2")
         self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset/2"
         )
@@ -523,7 +535,7 @@ class TestS3FileList:
         )
         assert raw_files == []
 
-        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects")
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects_v2")
         self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
             Bucket="my-bucket", Prefix="raw_data/layer/my_domain/my_dataset/1"
         )
