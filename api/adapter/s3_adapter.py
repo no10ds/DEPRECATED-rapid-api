@@ -187,10 +187,13 @@ class S3Adapter:
         return os.path.join(dataset.dataset_location(), partition_path, filename)
 
     def _delete_objects(self, files_to_delete: List[Dict], filename: str):
-        response = self.__s3_client.delete_objects(
-            Bucket=self.__s3_bucket, Delete={"Objects": files_to_delete}
-        )
-        self._handle_deletion_response(filename, response)
+        if files_to_delete:
+            response = self.__s3_client.delete_objects(
+                Bucket=self.__s3_bucket, Delete={"Objects": files_to_delete}
+            )
+            self._handle_deletion_response(filename, response)
+        else:
+            AppLogger.info(f"No files to delete for: {filename}")
 
     def _handle_deletion_response(self, filename, response):
         if "Deleted" in response:
@@ -206,7 +209,7 @@ class S3Adapter:
 
     def list_files_from_path(self, file_path: str) -> List[Dict]:
         try:
-            paginator = self.__s3_client.get_paginator("list_objects")
+            paginator = self.__s3_client.get_paginator("list_objects_v2")
             page_iterator = paginator.paginate(
                 Bucket=self.__s3_bucket, Prefix=file_path
             )
