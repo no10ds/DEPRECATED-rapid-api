@@ -41,7 +41,7 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 ),
                 Column(
@@ -98,7 +98,7 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=True,
                 ),
             ],
@@ -125,7 +125,7 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=True,
                 ),
             ],
@@ -161,7 +161,7 @@ class TestUploadSchema:
                 Column(
                     name="colname1",
                     partition_index=invalid_partition_index,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=True,
                 )
             ],
@@ -197,7 +197,7 @@ class TestUpdateSchema:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 ),
                 Column(
@@ -250,7 +250,7 @@ class TestUpdateSchema:
                 Column(
                     name="colname1",
                     partition_index=invalid_partition_index,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=True,
                 )
             ],
@@ -352,7 +352,7 @@ class TestGetSchema:
             Column(
                 name="colname1",
                 partition_index=0,
-                data_type="integer",
+                data_type="int",
                 allow_null=False,
             ),
             Column(

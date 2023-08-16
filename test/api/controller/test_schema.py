@@ -385,7 +385,7 @@ class TestSchemaGeneration(BaseClientTest):
                 Column(
                     name="colname2",
                     partition_index=None,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=True,
                     format=None,
                 ),

@@ -22,7 +22,7 @@
     {
       "name": "year",
       "partition_index": null,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": true,
       "format": null
     },
@@ -64,7 +64,7 @@
     {
       "name": "newcolumn",
       "partition_index": null,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": true,
       "format": null
     }

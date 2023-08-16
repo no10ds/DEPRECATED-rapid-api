@@ -173,7 +173,7 @@ To create a schema manually from scratch, just create a json file filling all th
     {
       "name": "int_column_name",
       "partition_index": null,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": true
     },
     {
@@ -296,7 +296,7 @@ You might then change the values that fit your data and come with something like
     {
       "name": "int_column_name",
       "partition_index": 1,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": false
     },
     {

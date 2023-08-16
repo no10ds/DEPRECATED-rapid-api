@@ -55,7 +55,7 @@ class TestUploadDataset:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=True,
                 ),
                 Column(
@@ -405,7 +405,7 @@ class TestUploadDataset:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=True,
                 ),
                 Column(
@@ -580,7 +580,7 @@ class TestDatasetInfoRetrieval:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 ),
                 Column(
@@ -636,7 +636,7 @@ class TestDatasetInfoRetrieval:
                 EnrichedColumn(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 ),
                 EnrichedColumn(
@@ -692,7 +692,7 @@ class TestDatasetInfoRetrieval:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 ),
                 Column(
@@ -728,7 +728,7 @@ class TestDatasetInfoRetrieval:
                 EnrichedColumn(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 ),
                 EnrichedColumn(
@@ -794,7 +794,7 @@ class TestDatasetInfoRetrieval:
                 Column(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 )
             ],
@@ -815,7 +815,7 @@ class TestDatasetInfoRetrieval:
                 EnrichedColumn(
                     name="colname1",
                     partition_index=0,
-                    data_type="integer",
+                    data_type="int",
                     allow_null=False,
                 )
             ],

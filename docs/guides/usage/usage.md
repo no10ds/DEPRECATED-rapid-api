@@ -143,7 +143,7 @@ Schema in json format in the response body:
     {
       "name": "num_journeys",
       "partition_index": null,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": false
     }
   ]
@@ -218,7 +218,7 @@ Example schema JSON body:
     {
       "name": "num_journeys",
       "partition_index": null,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": false
     }
   ]
@@ -285,7 +285,7 @@ Example schema JSON body:
     {
       "name": "num_journeys",
       "partition_index": null,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": false
     }
   ]
@@ -585,7 +585,7 @@ Schema in json format in the response body:
     {
       "name": "num_journeys",
       "partition_index": null,
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": false,
       "statistics": null
     }
