@@ -1154,7 +1154,7 @@ class TestDynamoDBAdapterSchemaTable:
 
         self.schema_table.query.assert_called_once_with(
             KeyConditionExpression=Key("PK").eq("raw/domain/dataset"),
-            FilterExpression=Attr("IsLatestVersion").eq(True),
+            ScanIndexForward=False,
         )
 
         assert res == expected

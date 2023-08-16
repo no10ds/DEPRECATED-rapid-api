@@ -36,7 +36,7 @@ class SchemaService:
     def get_schema(
         self, dataset: Type[DatasetMetadata], latest: bool = False
     ) -> Schema:
-        if latest:
+        if latest or not dataset.get_version():
             schema_dict = self.dynamodb_adapter.get_latest_schema(dataset)
         else:
             schema_dict = self.dynamodb_adapter.get_schema(dataset)

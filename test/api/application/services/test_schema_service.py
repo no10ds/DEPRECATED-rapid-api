@@ -395,6 +395,15 @@ class TestGetSchema:
         assert res == self.schema
         self.dynamodb_adapter.get_latest_schema.assert_called_once_with(self.metadata)
 
+    def test_get_schema_with_no_version_success(self):
+        self.dynamodb_adapter.get_latest_schema = Mock(return_value=self.schema_dict)
+        metadata = DatasetMetadata("raw", "some", "other")
+
+        res = self.schema_service.get_schema(metadata)
+
+        assert res == self.schema
+        self.dynamodb_adapter.get_latest_schema.assert_called_once_with(metadata)
+
     def test_get_schema_raises_exception(self):
         self.dynamodb_adapter.get_schema = Mock(return_value=None)
 
