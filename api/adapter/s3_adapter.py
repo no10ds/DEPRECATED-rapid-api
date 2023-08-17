@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Dict, List, Type, Union
+from typing import Dict, List, Optional, Type, Union
 
 import boto3
 from botocore.exceptions import ClientError
@@ -90,19 +90,22 @@ class S3Adapter:
             *self.list_files_from_path(dataset.dataset_location(with_version=False)),
         ]
 
-    def get_last_updated_time(self, file_path: str) -> int:
+    def get_last_updated_time(self, file_path: str) -> Optional[str]:
         """
         :return: Returns the last updated time for the dataset
         """
         paginator = self.__s3_client.get_paginator("list_objects_v2")
         page_iterator = paginator.paginate(Bucket=self.__s3_bucket, Prefix=file_path)
-        return max(
-            [
-                item["LastModified"]
-                for page in page_iterator
-                for item in page["Contents"]
-            ]
-        )
+        try:
+            return max(
+                [
+                    item["LastModified"]
+                    for page in page_iterator
+                    for item in page["Contents"]
+                ]
+            )
+        except KeyError:
+            return None
 
     def get_folder_size(self, file_path: str) -> int:
         """

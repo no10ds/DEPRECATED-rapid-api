@@ -144,8 +144,9 @@ class TestS3AdapterDataRetrieval:
 
     def setup_method(self):
         self.mock_s3_client = Mock()
+        self.s3_bucket = "bucket"
         self.persistence_adapter = S3Adapter(
-            s3_client=self.mock_s3_client, s3_bucket="dataset"
+            s3_client=self.mock_s3_client, s3_bucket=self.s3_bucket
         )
 
     def test_retrieve_data(self):
@@ -157,7 +158,7 @@ class TestS3AdapterDataRetrieval:
             DatasetMetadata("raw", "domain", "dataset", 1), "filename.csv"
         )
         self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="raw_data/raw/domain/dataset/1/filename.csv"
+            Bucket=self.s3_bucket, Key="raw_data/raw/domain/dataset/1/filename.csv"
         )
 
     def test_throws_error_for_find_raw_file_when_file_does_not_exist(self):
@@ -174,7 +175,66 @@ class TestS3AdapterDataRetrieval:
             )
 
         self.mock_s3_client.get_object.assert_called_once_with(
-            Bucket="dataset", Key="raw_data/raw/domain/dataset/2/bad_file"
+            Bucket=self.s3_bucket, Key="raw_data/raw/domain/dataset/2/bad_file"
+        )
+
+    def test_get_last_updated_time_success(self):
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
+            {
+                "NextToken": "xxx",
+                "ResponseMetadata": {"key": "value"},
+                "Contents": [
+                    {
+                        "Key": "data/layer/domain/dataset/1/123-456-789_111-222-333.parquet",
+                        "LastModified": "2020-01-03",
+                    },
+                    {
+                        "Key": "data/layer/domain/dataset/1/123-456-789_444-555-666.parquet",
+                        "LastModified": "2020-01-03",
+                    },
+                    {
+                        "Key": "data/layer/domain/dataset/1/123-456-789_777-888-999.parquet",
+                        "LastModified": "2020-01-03",
+                    },
+                    {
+                        "Key": "data/layer/domain/dataset/1/999-999-999_111-888-999.parquet",
+                        "LastModified": "2020-01-03",
+                    },
+                    {
+                        "Key": "data/layer/domain/dataset/2/888-888-888_777-888-999.parquet",
+                        "LastModified": "2020-01-28",
+                    },
+                ],
+                "Name": "data-bucket",
+                "Prefix": "data/layer/domain/dataset",
+                "EncodingType": "url",
+            }
+        ]
+
+        res = self.persistence_adapter.get_last_updated_time("path")
+        assert res == "2020-01-28"
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects_v2")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
+            Bucket=self.s3_bucket, Prefix="path"
+        )
+
+    def test_get_last_updated_time_when_empty(self):
+        self.mock_s3_client.get_paginator.return_value.paginate.return_value = [
+            {
+                "NextToken": "xxx",
+                "ResponseMetadata": {"key": "value"},
+                "KeyCount": 0,
+                "Name": "data-bucket",
+                "Prefix": "data/layer/domain/dataset",
+                "EncodingType": "url",
+            }
+        ]
+
+        res = self.persistence_adapter.get_last_updated_time("path")
+        assert res is None
+        self.mock_s3_client.get_paginator.assert_called_once_with("list_objects_v2")
+        self.mock_s3_client.get_paginator.return_value.paginate.assert_called_once_with(
+            Bucket=self.s3_bucket, Prefix="path"
         )
 
 

@@ -619,6 +619,17 @@ class TestDatasetInfoRetrieval:
             self.valid_schema.metadata.s3_file_location()
         )
 
+    def test_get_last_updated_time_empty(self):
+        self.s3_adapter.get_last_updated_time.return_value = None
+
+        last_updated_time = self.data_service.get_last_updated_time(
+            self.valid_schema.metadata
+        )
+        assert last_updated_time == "Never updated"
+        self.s3_adapter.get_last_updated_time.assert_called_once_with(
+            self.valid_schema.metadata.s3_file_location()
+        )
+
     def test_get_schema_information(self):
         expected_schema = EnrichedSchema(
             metadata=EnrichedSchemaMetadata(
