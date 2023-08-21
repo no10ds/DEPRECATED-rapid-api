@@ -21,12 +21,12 @@
   "columns": [
     {
       "name": "year",
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": true
     },
     {
       "name": "month",
-      "data_type": "integer",
+      "data_type": "int",
       "allow_null": true
     },
     {
