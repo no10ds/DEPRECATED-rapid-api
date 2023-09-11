@@ -21,8 +21,6 @@ jobs:
       - name: Log commit SHA
         run: echo $GITHUB_SHA
 
-#      # Make sure to have a new line in .github.env. Otherwise, it would append the DOMAIN_NAME
-#      # to the last item
       - name: Populate .env with additional vars
         run: |
           cp ./.github/.github.env .env
