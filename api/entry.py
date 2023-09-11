@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from fastapi import FastAPI, Request, HTTPException, Security, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.status import HTTP_404_NOT_FOUND, HTTP_200_OK, HTTP_401_UNAUTHORIZED
@@ -47,6 +48,7 @@ PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", [])
 
 permissions_service = PermissionsService()
 upload_service = DatasetService()
@@ -67,6 +69,13 @@ app.include_router(protected_domain_router)
 app.include_router(subjects_router)
 app.include_router(jobs_router)
 app.include_router(table_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
