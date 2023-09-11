@@ -48,7 +48,7 @@ PROJECT_URL = os.environ.get("DOMAIN_NAME", None)
 PROJECT_CONTACT = os.environ.get("PROJECT_CONTACT", None)
 PROJECT_ORGANISATION = os.environ.get("PROJECT_ORGANISATION", None)
 CATALOG_DISABLED = strtobool(os.environ.get("CATALOG_DISABLED", "False"))
-ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", [])
+ALLOWED_ORIGINS = os.environ.get("ALLOWED_ORIGINS", "").split(",")
 
 permissions_service = PermissionsService()
 upload_service = DatasetService()
