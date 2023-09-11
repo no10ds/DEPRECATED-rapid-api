@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file. This project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## v6.2.2 - _2023-09-11_
+
+See [v6.2.2] changes
+
+### Added
+
+- Optionally set `ALLOWED_DOMAINS` environment variable for CORS
+
 ## v6.2.1 - _2023-05-10_
 
 See [v6.2.1] changes
