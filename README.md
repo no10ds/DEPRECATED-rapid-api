@@ -1,3 +1,5 @@
+# **DEPRECATED** Since v7.0.0 this repo has been deprecated and migrated into a new central repository (https://github.com/no10ds/rapid)
+
 <br>
 <img src="./logo.png" display=block margin-left=auto margin-right=auto width=60%;/>
 
